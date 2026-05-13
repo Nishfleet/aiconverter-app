@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="index,follow" />
+    <title>Security - AI Converter</title>
+    <meta
+      name="description"
+      content="Security controls for AI Converter uploads, job access, retention, abuse prevention, and OCR fallback."
+    />
+    <link rel="canonical" href="https://aiconverter.app/security" />
+    <link rel="stylesheet" href="/legal.css" />
+  </head>
+  <body>
+    <main class="legal-shell">
+      <header class="legal-header">
+        <a class="brand" href="/" aria-label="AI Converter home">
+          <span class="brand-mark">AI</span>
+          <span>AI Converter</span>
+        </a>
+        <a class="top-link" href="/">Back to converter</a>
+      </header>
+
+      <section class="legal-hero">
+        <p class="eyebrow">Security posture</p>
+        <h1>Security</h1>
+        <p class="lede">
+          AI Converter is built for sensitive source files: private storage,
+          short retention, tokenized job access, parser-first processing for bank
+          PDFs, OCR fallback where needed, and no human review queue.
+        </p>
+      </section>
+
+      <section class="policy-grid">
+        <article class="policy-card">
+          <h2>Upload and storage controls</h2>
+          <ul>
+            <li>Uploaded files and generated CSV files are stored in private object storage.</li>
+            <li>Files are not exposed through public object URLs.</li>
+            <li>Job access requires a job ID and random token.</li>
+            <li>API responses are marked no-store so browsers and intermediaries should not cache sensitive responses.</li>
+          </ul>
+        </article>
+
+        <article class="policy-card">
+          <h2>Processing controls</h2>
+          <p>
+            Digital bank statement PDFs use the native parser first. OCR fallback is
+            reserved for scanned, photo-based, receipt, screenshot, or messy files
+            when configured. Low-confidence files fail closed instead of being routed
+            to human review.
+          </p>
+        </article>
+
+        <article class="policy-card">
+          <h2>Retention controls</h2>
+          <ul>
+            <li>Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle.</li>
+            <li>Generated CSV files expire after 7 days.</li>
+            <li>Minimal job metadata is kept for payment, abuse prevention, debugging, and compliance records.</li>
+          </ul>
+        </article>
+
+        <article class="policy-card">
+          <h2>Anti-abuse controls</h2>
+          <ul>
+            <li>Server-side file validation and PDF page estimation.</li>
+            <li>Upload rate limits by hashed connection data.</li>
+            <li>Same-file free preview limits.</li>
+            <li>One automatic stronger redo per paid job.</li>
+            <li>Unique payment binding to prevent payment reuse.</li>
+          </ul>
+        </article>
+
+        <article class="policy-card">
+          <h2>Limits</h2>
+          <p>
+            AI Converter currently accepts files up to 50 MB and PDFs up to
+            500 pages. Password-protected, corrupted, unusual, or low-quality files
+            may fail. The export should always be reviewed before important use.
+          </p>
+        </article>
+
+        <article class="policy-card">
+          <h2>Report a security issue</h2>
+          <p>
+            Use the <a href="/support">support form</a> with a short description.
+            Do not include full bank statement, receipt, screenshot, or source-file
+            details in support messages.
+          </p>
+        </article>
+      </section>
+
+      <footer class="legal-footer">
+        <span>AI Converter</span>
+        <nav class="legal-links" aria-label="Legal links">
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/refund">Refunds</a>
+          <a href="/data-retention">Data retention</a>
+          <a href="/support">Support</a>
+        </nav>
+      </footer>
+    </main>
+  </body>
+</html>

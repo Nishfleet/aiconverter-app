@@ -1,0 +1,187 @@
+{
+  "converters": [
+    {
+      "id": "bank",
+      "title": "Bank statement",
+      "input": "PDF",
+      "output": "CSV",
+      "state": "Live",
+      "accept": "application/pdf,.pdf",
+      "description": "Preview and extract dates, descriptions, money in, money out, and balances from bank statement PDFs.",
+      "columns": [
+        { "key": "date", "label": "Date" },
+        { "key": "description", "label": "Description" },
+        { "key": "money_in", "label": "In" },
+        { "key": "money_out", "label": "Out" },
+        { "key": "balance", "label": "Balance" }
+      ],
+      "checks": ["Row extraction", "Date normalization", "Balance checks"]
+    },
+    {
+      "id": "receipt",
+      "title": "Receipt",
+      "input": "Image / PDF",
+      "output": "Expense CSV",
+      "state": "Beta",
+      "accept": "application/pdf,image/png,image/jpeg,image/webp,.pdf,.png,.jpg,.jpeg,.webp",
+      "description": "Extract vendor, date, category, total, tax, payment method, and notes from receipt images or PDFs.",
+      "columns": [
+        { "key": "date", "label": "Date" },
+        { "key": "vendor", "label": "Vendor" },
+        { "key": "category", "label": "Category" },
+        { "key": "total", "label": "Total" },
+        { "key": "currency", "label": "Currency" },
+        { "key": "subtotal", "label": "Subtotal" },
+        { "key": "tax", "label": "Tax" },
+        { "key": "payment_method", "label": "Payment method" },
+        { "key": "notes", "label": "Notes" }
+      ],
+      "checks": ["Vendor detection", "Tax and total checks", "Category inference"]
+    },
+    {
+      "id": "screenshot",
+      "title": "Screenshot",
+      "input": "PNG / JPG",
+      "output": "Spreadsheet",
+      "state": "Beta",
+      "accept": "application/pdf,image/png,image/jpeg,image/webp,.pdf,.png,.jpg,.jpeg,.webp",
+      "description": "Pull table-like data from screenshots and image PDFs into spreadsheet-ready CSV.",
+      "columns": [
+        { "key": "column_1", "label": "Column 1" },
+        { "key": "column_2", "label": "Column 2" },
+        { "key": "column_3", "label": "Column 3" },
+        { "key": "column_4", "label": "Column 4" },
+        { "key": "column_5", "label": "Column 5" }
+      ],
+      "checks": ["Table OCR", "Header inference", "Spreadsheet CSV"]
+    },
+    {
+      "id": "email",
+      "title": "Email monitor",
+      "input": "Inbox",
+      "output": "Converted files",
+      "state": "Upcoming",
+      "description": "Let AI watch a connected inbox for converter requests once the direct upload workflow is proven."
+    }
+  ],
+  "sampleRows": [
+    {
+      "date": "2026-04-02",
+      "description": "Stripe payout",
+      "moneyIn": "$8,420.12",
+      "moneyOut": "",
+      "balance": "$62,104.09"
+    },
+    {
+      "date": "2026-04-07",
+      "description": "Amazon Web Services",
+      "moneyIn": "",
+      "moneyOut": "$1,284.33",
+      "balance": "$60,819.76"
+    },
+    {
+      "date": "2026-04-14",
+      "description": "Payroll transfer",
+      "moneyIn": "",
+      "moneyOut": "$14,300.00",
+      "balance": "$46,519.76"
+    },
+    {
+      "date": "2026-04-22",
+      "description": "Client ACH",
+      "moneyIn": "$22,000.00",
+      "moneyOut": "",
+      "balance": "$68,519.76"
+    }
+  ],
+  "sampleRowsByConverter": {
+    "receipt": [
+      {
+        "date": "2026-05-12",
+        "vendor": "Central Coffee",
+        "category": "Meals",
+        "total": 8.37,
+        "currency": "USD",
+        "subtotal": 7.75,
+        "tax": 0.62,
+        "payment_method": "card",
+        "notes": "Latte $4.50; Bagel $3.25"
+      },
+      {
+        "date": "2026-05-13",
+        "vendor": "Cloud Hosting Inc",
+        "category": "Software",
+        "total": 22,
+        "currency": "USD",
+        "subtotal": 20,
+        "tax": 2,
+        "payment_method": "card",
+        "notes": "Hosting plan $20.00"
+      }
+    ],
+    "screenshot": [
+      {
+        "column_1": "2026-05-01",
+        "column_2": "Hosting",
+        "column_3": "$12.30"
+      },
+      {
+        "column_1": "2026-05-02",
+        "column_2": "Domain",
+        "column_3": "$10.46"
+      },
+      {
+        "column_1": "2026-05-03",
+        "column_2": "OCR API",
+        "column_3": "$1.92"
+      }
+    ]
+  },
+  "pricing": [
+    {
+      "id": "starter",
+      "name": "Starter",
+      "price": "$3",
+      "amount": 300,
+      "detail": "25 pages/images",
+      "pages": 25,
+      "note": "Free preview first"
+    },
+    {
+      "id": "batch",
+      "name": "Standard",
+      "price": "$5",
+      "amount": 500,
+      "detail": "100 pages/images",
+      "pages": 100,
+      "note": "Most one-off jobs"
+    },
+    {
+      "id": "pro",
+      "name": "Bulk",
+      "price": "$9",
+      "amount": 900,
+      "detail": "500 pages/images",
+      "pages": 500,
+      "note": "Best value"
+    }
+  ],
+  "trustProof": [
+    {
+      "title": "Preview before payment",
+      "detail": "Inspect sample rows before unlocking the full CSV."
+    },
+    {
+      "title": "Private source lifecycle",
+      "detail": "Source files are kept only for preview, unlock, and the short redo window."
+    },
+    {
+      "title": "Low-confidence fail closed",
+      "detail": "If the converter cannot safely extract a preview, there is no charge."
+    },
+    {
+      "title": "No human review queue",
+      "detail": "The live workflow is automated direct upload, preview, payment, and download."
+    }
+  ]
+}

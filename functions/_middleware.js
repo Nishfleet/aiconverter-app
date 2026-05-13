@@ -1,0 +1,413 @@
+import { withSecurityHeaders } from "./lib/http.js";
+
+const markdown = `---
+title: AI Converter - Automated file to CSV converters
+description: Upload a bank statement PDF, receipt, or screenshot table, generate a free sample preview, then pay once to run the full extraction and download the CSV.
+---
+
+# AI Converter
+
+AI Converter converts sensitive files to CSV with an automated, privacy-first workflow. Bank statements are the first live production module. Receipts and screenshot tables are beta modules.
+
+## Live and beta modules
+
+Live:
+
+- Direct browser upload.
+- Built-in parser first for digital PDFs.
+- Mistral OCR fallback for scanned or messy PDFs when configured.
+- Free sample preview before payment.
+- Full extraction and CSV download after payment.
+- One automatic stronger redo for paid jobs.
+- No email intake for bank statements.
+- No human review queue.
+- Source files are stored privately and deleted after failed extraction, completed redo, or the 24-hour source lifecycle.
+- Low-confidence conversions fail closed with no charge.
+- Free-preview reuse, payment reuse, and redo abuse are rate-limited.
+
+Beta:
+
+- Receipt image or PDF to expense CSV with vendor, date, category, total, tax, payment method, and notes when safely detected.
+- Screenshot PNG, JPG, WEBP, or image PDF to spreadsheet CSV with table/header inference when safely detected.
+- Beta modules use OCR and fail closed when confidence is too low.
+
+## Pricing
+
+- Free preview: first rows before payment.
+- Starter: $3 for 25 pages or images.
+- Standard: $5 for 100 pages or images.
+- Bulk: $9 for 500 pages or images.
+
+## Upcoming modules
+
+- AI-monitored email intake after the direct upload workflow is stable.
+
+## Security posture
+
+The workflow is designed for private storage, 24-hour source retention, 7-day CSV retention, random job tokens, no public object URLs, no emailed bank PDFs, and minimal job metadata.
+
+## Request access
+
+Use the upload flow at https://aiconverter.app.
+
+\`\`\`json
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "AI Converter",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "url": "https://aiconverter.app",
+  "description": "AI Converter converts bank statement PDFs, receipts, and screenshot tables to CSV using a preview-first workflow with OCR fallback where needed."
+}
+\`\`\`
+`;
+
+const aboutMarkdown = `---
+title: About AI Converter
+description: AI Converter is a preview-first file to CSV workflow with bank statement PDFs live first, beta receipt and screenshot converters, short retention, and no human review queue.
+---
+
+# About AI Converter
+
+AI Converter is a focused web converter for sensitive files that need spreadsheet-ready CSV output.
+
+The production workflow converts bank statement PDFs to CSV through direct upload, automated preview, paid full extraction, and download. Receipt and screenshot-table converters are now beta modules on the same workflow.
+
+## What is live
+
+- Bank statement PDF to CSV.
+- Free sample preview before payment.
+- Paid full CSV unlock from $3.
+- Parser-first extraction for digital PDFs.
+- OCR fallback for scanned or messy PDFs when configured.
+- Low-confidence files fail closed.
+- No human review queue.
+- Source files use a short private lifecycle.
+
+## What is beta
+
+- Receipt image or PDF to expense CSV with vendor, date, category, total, tax, payment method, and notes when safely detected.
+- Screenshot PNG, JPG, WEBP, or image PDF to spreadsheet CSV with table/header inference when safely detected.
+- Beta modules use OCR and can fail closed when the extracted structure is not reliable.
+
+## What is not claimed
+
+AI Converter does not claim support for every bank, every statement format, every receipt format, every screenshot layout, every file type, certified compliance, or guaranteed accuracy. Exports should be reviewed before important use.
+`;
+
+const bankStatementMarkdown = `---
+title: Bank statement PDF to CSV
+description: Convert a bank statement PDF to CSV with direct upload, free preview, paid unlock, and short source-file retention.
+---
+
+# Bank statement PDF to CSV
+
+AI Converter turns bank statement PDFs into CSV files for spreadsheet review.
+
+## Workflow
+
+1. Upload a bank statement PDF.
+2. Review a free sample preview.
+3. Unlock the full CSV if the preview is usable.
+4. Download the generated CSV.
+
+## Pricing
+
+- Free preview.
+- $3 for up to 25 pages.
+- $5 for up to 100 pages.
+- $9 for up to 500 pages.
+
+## Limits
+
+Files can fail when they are password-protected, corrupted, unusual, low quality, or too large. AI Converter currently accepts PDFs up to 50 MB and does not claim every bank format is supported.
+`;
+
+const convertMarkdown = `---
+title: Convert bank statement to CSV
+description: A practical bank statement to CSV converter for PDF uploads, sample preview, paid export, and reviewable fake sample data.
+---
+
+# Convert bank statement to CSV
+
+Use AI Converter when you have a bank statement PDF and need a CSV you can open in a spreadsheet.
+
+The current workflow is direct upload only. Email monitoring is upcoming, not live bank-statement intake.
+
+## Output columns
+
+The sample CSV uses date, description, money in, money out, and balance columns. Real outputs depend on what can be safely extracted from the uploaded PDF.
+
+## Try the sample
+
+Download the fake sample CSV at https://aiconverter.app/sample-bank-statement.csv.
+`;
+
+const sampleMarkdown = `---
+title: Sample bank statement CSV
+description: Download a fake sample CSV showing the bank statement output shape used by AI Converter.
+---
+
+# Sample bank statement CSV
+
+Download a fake CSV sample to see the output shape before uploading a real PDF.
+
+The sample data is fictional. It is not a customer file and does not contain real bank statement data.
+
+Columns: date, description, money_in, money_out, balance.
+`;
+
+const privacyMarkdown = `---
+title: Privacy Policy - AI Converter
+description: How AI Converter handles uploaded source files, generated CSV files, payment status, and short retention.
+---
+
+# Privacy Policy
+
+Last updated May 12, 2026.
+
+AI Converter handles sensitive source files only for the conversion workflow you start. The service is built around private upload, short retention, minimal metadata, and no human review queue.
+
+## Information collected
+
+- Uploaded source file.
+- Generated preview rows and CSV output.
+- Optional email for payment receipt and job recovery.
+- Payment status, payment ID, selected plan, timestamps, and job status.
+- Security metadata such as hashed IP, hashed user agent, file hash, and abuse-limit events.
+
+AI Converter does not ask for bank login credentials.
+
+## Processing
+
+Digital bank statement PDFs are parsed directly first. Mistral OCR may be used for scanned, image-heavy, receipt, screenshot, or messy files when configured. Azure Document Intelligence may be used as an optional paid-job fallback when configured.
+
+Low-confidence files fail closed instead of being sent to a human review queue.
+
+## Retention
+
+Source files are kept only for preview, paid unlock, and the automatic redo window. Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle. Generated CSV files expire after 7 days.
+
+## Requests
+
+Use https://aiconverter.app/support for deletion, privacy, or payment-related requests. Do not send source files through support.
+`;
+
+const termsMarkdown = `---
+title: Terms of Service - AI Converter
+description: Terms for using AI Converter's automated file to CSV conversion service.
+---
+
+# Terms of Service
+
+Last updated May 12, 2026.
+
+AI Converter provides automated file to CSV conversion. It is a data conversion tool, not accounting, tax, legal, lending, compliance, or financial advice.
+
+## Supported workflow
+
+The first production workflow is bank statement PDF to CSV. Receipt and screenshot-table converters are beta. Upload a supported file, review a free sample preview, then pay once to generate and download the full CSV.
+
+## User responsibility
+
+You are responsible for checking exported CSV files before using them for bookkeeping, taxes, lending, legal, compliance, or decision-making work. Automated extraction can be wrong, especially on unusual, scanned, damaged, password-protected, or low-quality files.
+
+## Payment and access
+
+A sample preview is free. Paid access unlocks the full extraction for the selected page pack. The service may reject files, block repeated previews, or limit access when needed to protect users, data, infrastructure, or the refund policy.
+
+## Redo and refund
+
+Paid jobs include one automatic stronger redo. If the stronger redo still cannot produce a usable CSV, the job is marked for refund or credit review under the refund policy.
+
+## Prohibited use
+
+Do not upload files you do not have the right to process. Do not upload malware, test attacks, intentionally corrupted files, or try to bypass payment, retention, rate limits, or access controls.
+`;
+
+const refundMarkdown = `---
+title: Refund Policy - AI Converter
+description: AI Converter refund, redo, and anti-abuse policy for paid CSV exports.
+---
+
+# Refund Policy
+
+Last updated May 12, 2026.
+
+AI Converter is designed around preview first, payment after sample rows, and one stronger automatic redo for paid jobs.
+
+## Free preview
+
+If AI Converter cannot safely produce a sample preview, there is no charge.
+
+## Paid export retry
+
+Paid jobs include one stronger automatic redo. Use it when the full CSV is incomplete, badly formatted, missing rows, or otherwise not usable.
+
+## Refund or credit
+
+If a paid job still cannot produce a usable CSV after the stronger redo, AI Converter records refund or credit due. If a usable CSV has already been delivered and downloaded, support may offer credit instead of a cash refund depending on the issue and abuse signals.
+
+## Anti-abuse limits
+
+Repeated free previews from the same file or connection are limited. Each paid job gets one automatic stronger redo. Payment IDs are bound to one job and cannot be reused.
+
+## Help
+
+Use https://aiconverter.app/support with your job ID, payment email, and a short issue description. Do not send source files through support.
+`;
+
+const securityMarkdown = `---
+title: Security - AI Converter
+description: Security controls for AI Converter uploads, job access, retention, abuse prevention, and OCR fallback.
+---
+
+# Security
+
+AI Converter is built for sensitive source files: private storage, short retention, tokenized job access, parser-first processing for bank PDFs, OCR fallback where needed, and no human review queue.
+
+## Upload and storage controls
+
+- Uploaded files and generated CSV files are stored in private object storage.
+- Files are not exposed through public object URLs.
+- Job access requires a job ID and random token.
+- API responses are marked no-store.
+
+## Processing controls
+
+Digital bank statement PDFs use the native parser first. OCR fallback is reserved for scanned, photo-based, receipt, screenshot, or messy files when configured. Low-confidence files fail closed.
+
+## Retention controls
+
+Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle. Generated CSV files expire after 7 days.
+
+## Anti-abuse controls
+
+Server-side file validation, upload rate limits, same-file free preview limits, one automatic stronger redo per paid job, and unique payment binding reduce abuse.
+
+## Limits
+
+AI Converter currently accepts files up to 50 MB and PDFs up to 500 pages. Password-protected, corrupted, unusual, or low-quality files may fail.
+`;
+
+const dataRetentionMarkdown = `---
+title: Data Retention - AI Converter
+description: How long AI Converter keeps source files, generated CSV files, job metadata, and abuse-prevention records.
+---
+
+# Data retention
+
+AI Converter keeps sensitive files only as long as needed for preview, paid unlock, redo, and download.
+
+## Source files
+
+Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle.
+
+## Generated CSV files
+
+Generated CSV files expire after 7 days.
+
+## Job metadata
+
+Minimal metadata such as job status, selected plan, timestamps, row count, confidence, payment status, and refund status may be retained for payment records, abuse prevention, debugging, and compliance.
+
+## Abuse-prevention records
+
+Hashed connection data, file hashes, and preview-limit events may be retained long enough to limit repeated free previews, payment reuse, and refund abuse. These records are not used to train a model.
+
+## Deletion requests
+
+Use https://aiconverter.app/support with your job ID and payment email. Do not send source files through support.
+`;
+
+const supportMarkdown = `---
+title: Support - AI Converter
+description: Get help with AI Converter payment, refund, deletion, and file to CSV conversion issues.
+---
+
+# Support
+
+Use https://aiconverter.app/support for conversion, payment, refund, deletion, or security requests.
+
+Include the job ID when you have one. Do not send full bank statement details, receipt details, or source files through support.
+
+## What to include
+
+- Job ID and payment email, if available.
+- The plan selected.
+- A short description of what went wrong.
+- Whether the stronger redo has already been tried.
+
+## Current support scope
+
+Support requests are recorded for review. Security reports and payment, deletion, or refund issues are treated as priority requests.
+`;
+
+const markdownByRoute = new Map([
+  ["/", markdown],
+  ["/index.html", markdown],
+  ["/about", aboutMarkdown],
+  ["/bank-statement-pdf-to-csv", bankStatementMarkdown],
+  ["/convert-bank-statement-to-csv", convertMarkdown],
+  ["/sample-csv", sampleMarkdown],
+  ["/privacy", privacyMarkdown],
+  ["/terms", termsMarkdown],
+  ["/refund", refundMarkdown],
+  ["/security", securityMarkdown],
+  ["/support", supportMarkdown],
+  ["/data-retention", dataRetentionMarkdown]
+]);
+
+const textLikeRoutes = new Set(markdownByRoute.keys());
+
+function wantsMarkdown(request) {
+  const accept = request.headers.get("Accept") || "";
+  return accept.toLowerCase().includes("text/markdown");
+}
+
+function isPageRequest(url) {
+  if (url.pathname.startsWith("/api/")) return false;
+  if (textLikeRoutes.has(url.pathname)) return true;
+  return !url.pathname.includes(".") && !url.pathname.startsWith("/assets/");
+}
+
+function normalizePagePath(pathname) {
+  if (pathname === "/") return pathname;
+  return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+}
+
+export async function onRequest(context) {
+  const request = context.request;
+  const url = new URL(request.url);
+
+  if (url.hostname === "www.aiconverter.app" || url.hostname.endsWith(".pages.dev")) {
+    url.hostname = "aiconverter.app";
+    return withSecurityHeaders(Response.redirect(url.toString(), 301));
+  }
+
+  if ((request.method === "GET" || request.method === "HEAD") && wantsMarkdown(request) && isPageRequest(url)) {
+    const markdownBody = markdownByRoute.get(normalizePagePath(url.pathname)) || markdown;
+    return withSecurityHeaders(
+      new Response(request.method === "HEAD" ? null : markdownBody, {
+        headers: {
+          "Content-Type": "text/markdown; charset=utf-8",
+          "Cache-Control": "public, max-age=300",
+          Vary: "Accept",
+          "X-Markdown-Tokens": String(Math.ceil(markdownBody.length / 4)),
+          "Content-Signal": "search=yes, ai-input=yes"
+        }
+      })
+    );
+  }
+
+  const response = await context.next();
+  const extraHeaders = {};
+  if (url.pathname.startsWith("/api/")) {
+    extraHeaders["Cache-Control"] = "no-store";
+  }
+
+  const secured = withSecurityHeaders(response, extraHeaders);
+  secured.headers.append("Vary", "Accept");
+  return secured;
+}

@@ -1,0 +1,86 @@
+# AI Converter full context
+
+AI Converter is a web app for automated file-to-CSV conversion. Bank statement PDF to CSV is the first production module.
+
+## Current product wedge
+
+The production module is bank statement PDF to CSV. Receipt and screenshot-table converters are beta modules on the same preview-first workflow. It is not a general document converter yet.
+
+Live behavior:
+- Direct browser upload for bank statement PDFs.
+- PDF upload limit: 50 MB.
+- Page-pack pricing up to 500 pages.
+- Built-in parser first for digital PDFs.
+- OCR fallback for scanned or messy PDFs when configured.
+- Free sample preview before payment.
+- Paid full extraction and CSV download.
+- One automatic stronger redo for paid jobs.
+- Low-confidence conversions fail closed.
+- No human review queue.
+- No emailed bank statements in the live bank-statement workflow.
+- Receipt image or PDF to expense CSV is beta. It can export vendor, date, category, total, tax, payment method, and notes when safely detected.
+- Screenshot PNG, JPG, WEBP, or image PDF to spreadsheet CSV is beta. It can infer table rows and headers when safely detected.
+- Beta modules use OCR and can fail closed when structure confidence is too low.
+
+## Pricing
+
+- Free preview.
+- Starter: $3 for 25 pages or images.
+- Standard: $5 for 100 pages or images.
+- Bulk: $9 for 500 pages or images.
+
+## Data handling
+
+- Source files are private.
+- Source files are kept for preview, paid unlock, and the redo window.
+- Source files are deleted after failed extraction, completed redo, or the 24-hour source lifecycle.
+- Generated CSV files expire after 7 days.
+- API responses for sensitive routes are marked no-store.
+- Job access uses a job ID and random token.
+
+## Output shape
+
+Typical CSV columns:
+- date
+- description
+- money_in
+- money_out
+- balance
+
+Beta receipt CSV columns:
+- date
+- vendor
+- category
+- total
+- currency
+- subtotal
+- tax
+- payment_method
+- notes
+
+Beta screenshot/table CSV columns are inferred from the visible table when safe. Markdown tables, OCR table blocks, HTML table output, and obvious date-description-amount rows are handled.
+
+Fake sample CSV:
+- https://aiconverter.app/sample-bank-statement.csv
+
+## Pages
+
+- Home: https://aiconverter.app
+- About: https://aiconverter.app/about
+- Bank statement PDF to CSV: https://aiconverter.app/bank-statement-pdf-to-csv
+- Convert bank statement to CSV: https://aiconverter.app/convert-bank-statement-to-csv
+- Sample CSV: https://aiconverter.app/sample-csv
+- Security: https://aiconverter.app/security
+- Privacy: https://aiconverter.app/privacy
+- Terms: https://aiconverter.app/terms
+- Refunds: https://aiconverter.app/refund
+- Data retention: https://aiconverter.app/data-retention
+- Support: https://aiconverter.app/support
+
+## Upcoming, not live as primary bank-statement intake
+
+- AI-monitored email intake after the secure direct upload workflow is stable.
+
+## Claims to avoid
+
+Do not claim AI Converter supports every bank, every statement format, every receipt format, every screenshot layout, every file type, certified compliance, human review, guaranteed accuracy, accounting or tax advice, instant processing, or customer-volume proof. Exports should be reviewed before important use.

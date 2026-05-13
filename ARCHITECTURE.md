@@ -1,0 +1,68 @@
+# AI Converter Privacy-First Architecture
+
+## Default Path
+
+1. Browser uploads one supported file to `/api/convert` with a converter ID.
+2. The API validates converter, type, size, and file signature before processing.
+3. The source file is written to private R2 under a random job key.
+4. Bank statement PDFs use the built-in PDF parser first for a free sample preview. Receipt and screenshot-table beta modules use Mistral OCR when configured.
+5. The API validates the preview rows and confidence score.
+6. If a bank PDF has too little selectable text or confidence is low, Mistral OCR is used as the configured fallback. Free OCR preview is capped to the first page by default.
+7. If validation passes, the source file stays in private R2 for the paid unlock and 24-hour redo window.
+8. Dodo redirect or webhook confirmation marks the matching job paid only after product, amount, currency, checkout session, and job metadata checks pass.
+9. Paid jobs run full parser-first extraction, store the CSV privately, and get one automatic stronger redo; failed paid exports are marked for refund or credit review.
+10. If validation fails before payment, the source file is deleted and the job fails closed with no charge.
+11. Downloads require the random job token plus either payment confirmation or an explicit free-download environment flag.
+
+## Privacy Controls
+
+- No public R2 bucket.
+- No public object URLs.
+- No emailed bank statements.
+- No human review queue.
+- Random job IDs and random download tokens.
+- Token hashes stored in D1, never raw tokens.
+- Source files deleted after failed preview, completed redo, failed full extraction, or the 24-hour private source lifecycle.
+- R2 lifecycle rule deletes source files under `sources/` after 24 hours and conversion artifacts under `jobs/` after 7 days.
+- D1 stores only job status, plan, timestamps, payment state, optional email, and non-content metadata.
+- API and download responses use `Cache-Control: no-store`.
+
+## Security Controls
+
+- Bank statement uploads are PDF-only. Receipt and screenshot beta uploads accept PDF, PNG, JPG, JPEG, and WEBP.
+- 50 MB file limit.
+- 500 page hard limit; larger PDFs are rejected with a split-file instruction.
+- PDF and image magic-byte validation.
+- Receipt beta extraction can produce one row per readable receipt page and includes category, subtotal, tax, payment method, and notes when safely detected.
+- Screenshot beta extraction handles markdown tables, OCR table blocks, HTML table output, and obvious date-description-amount rows.
+- Server-side page estimation so users cannot understate page count to force a cheaper plan.
+- Upload rate limits plus same-file free-preview reuse limits.
+- Payment IDs are bound to one job and cannot be reused across jobs.
+- Paid jobs get only one automatic stronger redo.
+- Cash refunds are requested through the payment provider only when refund automation is configured and the job has not already delivered a CSV; delivered jobs are marked for credit/refund review.
+- Checkout URLs are allowlisted to Dodo hosts.
+- Dodo checkout sessions, signed webhooks, payment event logs, and refund event logs are implemented when `DODO_PAYMENTS_API_KEY`, product IDs, and the Dodo webhook secret are configured.
+- A private admin overview endpoint and page are available when `ADMIN_TOKEN` is configured.
+- Turnstile verification is wired for uploads and support, and activates when both site and secret keys are configured.
+- Security headers are set in middleware and `_headers`.
+- The Cloudflare Pages preview domain redirects to `aiconverter.app`.
+
+## Fail-Closed Rules
+
+The converter does not charge or export full CSV when:
+
+- no transactions are found,
+- too many rows are missing valid dates,
+- too many rows are missing amounts,
+- both money-in and money-out are present on too many rows,
+- confidence is below the threshold,
+- the PDF appears to exceed 500 pages,
+- a receipt or screenshot/table file cannot be safely structured,
+- private storage or database bindings are missing.
+
+## Upcoming
+
+- Azure Document Intelligence remains disabled by default and requires both endpoint/key credentials and `ENABLE_AZURE_FALLBACK=true`.
+- Google Document AI as a later optional fallback if Azure misses a meaningful segment.
+- AI-monitored email intake only after the direct upload workflow is stable.
+- Cloudflare WAF rate limiting before broader paid traffic.

@@ -1,0 +1,48 @@
+# AI Converter
+
+AI Converter is a web app for automated file-to-CSV conversion. Bank statement PDF to CSV is the first production module.
+
+Live and beta modules:
+- Bank statement PDF to CSV.
+- Direct browser upload.
+- Built-in parser first for digital PDFs.
+- Mistral OCR fallback for scanned or messy PDFs when configured.
+- Free sample preview before payment.
+- Paid full extraction and CSV download.
+- One automatic stronger redo for paid jobs.
+- No emailed bank statements.
+- No human review queue.
+- Source files are deleted after failed extraction, completed redo, or the 24-hour source lifecycle.
+- Low-confidence conversions fail closed with no charge.
+- Free-preview reuse, payment reuse, and redo abuse are rate-limited.
+- Sample CSV uses fictional data only.
+- Receipt image or PDF to expense CSV is beta. It can export vendor, date, category, total, tax, payment method, and notes when safely detected.
+- Screenshot PNG, JPG, WEBP, or image PDF to spreadsheet CSV is beta. It can infer table rows and headers when safely detected.
+- Beta modules use OCR and fail closed when structure confidence is too low.
+
+Opening pricing:
+- Free preview.
+- Starter: $3 for 25 pages or images.
+- Standard: $5 for 100 pages or images.
+- Bulk: $9 for 500 pages or images.
+
+Upcoming module:
+- AI-monitored email intake after the secure direct upload workflow is stable.
+
+Important product truth:
+- AI Converter does not claim to support every bank, every statement format, every receipt format, every screenshot layout, or every file type.
+- Accuracy, security, compliance, and supported-format claims should stay limited to what the live product can prove.
+- Email monitoring is not the primary intake for bank PDFs.
+- Human review is not part of the automated workflow.
+- Source files use a 24-hour private retention window. Generated CSV files expire after 7 days.
+
+Primary URL:
+- https://aiconverter.app
+
+Useful pages:
+- https://aiconverter.app/about
+- https://aiconverter.app/bank-statement-pdf-to-csv
+- https://aiconverter.app/convert-bank-statement-to-csv
+- https://aiconverter.app/sample-csv
+- https://aiconverter.app/sample-bank-statement.csv
+- https://aiconverter.app/llms-full.txt

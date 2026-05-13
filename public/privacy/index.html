@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="index,follow" />
+    <title>Privacy Policy - AI Converter</title>
+    <meta
+      name="description"
+      content="How AI Converter handles uploaded source files, generated CSV files, payment status, and short retention."
+    />
+    <link rel="canonical" href="https://aiconverter.app/privacy" />
+    <link rel="stylesheet" href="/legal.css" />
+  </head>
+  <body>
+    <main class="legal-shell">
+      <header class="legal-header">
+        <a class="brand" href="/" aria-label="AI Converter home">
+          <span class="brand-mark">AI</span>
+          <span>AI Converter</span>
+        </a>
+        <a class="top-link" href="/">Back to converter</a>
+      </header>
+
+      <section class="legal-hero">
+        <p class="eyebrow">Last updated May 12, 2026</p>
+        <h1>Privacy Policy</h1>
+        <p class="lede">
+          AI Converter handles sensitive source files only for the conversion
+          workflow you start. The service is built around private upload, short
+          retention, minimal metadata, and no human review queue.
+        </p>
+      </section>
+
+      <section class="policy-grid">
+        <article class="policy-card">
+          <h2>Information we collect</h2>
+          <ul>
+            <li>The source file you upload for conversion.</li>
+            <li>Generated preview rows and CSV output.</li>
+            <li>Optional email address for payment receipt and job recovery.</li>
+            <li>Payment status, payment ID, selected plan, timestamps, and job status.</li>
+            <li>Security metadata such as hashed IP, hashed user agent, file hash, and abuse-limit events.</li>
+          </ul>
+          <p>We do not ask for bank login credentials and you should never provide them.</p>
+        </article>
+
+        <article class="policy-card">
+          <h2>How files are processed</h2>
+          <p>
+            Digital bank statement PDFs are parsed directly first. If a file is scanned,
+            image-heavy, a receipt, a screenshot, or too messy for the native parser,
+            Mistral OCR may be used when configured.
+            Azure Document Intelligence may be used as an optional paid-job fallback
+            when configured. Provider use is limited to extracting transaction data
+            for the conversion you requested.
+          </p>
+          <p>
+            Low-confidence files fail closed instead of being sent to a human review
+            queue. If the sample preview cannot be produced safely, there is no charge.
+          </p>
+        </article>
+
+        <article class="policy-card">
+          <h2>Payments</h2>
+          <p>
+            Payments are handled by the payment provider. AI Converter stores payment
+            status and payment identifiers needed to unlock a job, prevent payment
+            reuse, and process refunds or credits. We do not store full card numbers.
+          </p>
+        </article>
+
+        <article class="policy-card">
+          <h2>Retention</h2>
+          <p>
+            Source files are kept only for preview, paid unlock, and the automatic
+            redo window. Source files are deleted after a failed preview, failed full
+            extraction, completed redo, or the 24-hour private source lifecycle.
+            Generated CSV files expire after 7 days.
+          </p>
+          <p>
+            Minimal job metadata may be kept longer for payment records, abuse
+            prevention, service debugging, and legal or accounting obligations.
+          </p>
+        </article>
+
+        <article class="policy-card">
+          <h2>Security and abuse prevention</h2>
+          <p>
+            Uploaded files are stored privately, job access uses random tokens, and API
+            responses are served with no-store caching. The service limits repeated free
+            previews, repeated same-file uploads, payment reuse, and repeated redo
+            attempts to reduce abuse.
+          </p>
+        </article>
+
+        <article class="policy-card">
+          <h2>Your requests</h2>
+          <p>
+            For deletion, privacy, or payment-related requests, use the
+            <a href="/support">support form</a>. Do not send source files
+            through support; use the upload flow only.
+          </p>
+        </article>
+      </section>
+
+      <footer class="legal-footer">
+        <span>AI Converter</span>
+        <nav class="legal-links" aria-label="Legal links">
+          <a href="/terms">Terms</a>
+          <a href="/refund">Refunds</a>
+          <a href="/security">Security</a>
+          <a href="/data-retention">Data retention</a>
+          <a href="/support">Support</a>
+        </nav>
+      </footer>
+    </main>
+  </body>
+</html>

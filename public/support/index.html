@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="index,follow" />
+    <title>Support - AI Converter</title>
+    <meta
+      name="description"
+      content="Get help with AI Converter payment, refund, deletion, and file to CSV conversion issues."
+    />
+    <link rel="canonical" href="https://aiconverter.app/support" />
+    <link rel="stylesheet" href="/legal.css" />
+  </head>
+  <body>
+    <main class="legal-shell">
+      <header class="legal-header">
+        <a class="brand" href="/" aria-label="AI Converter home">
+          <span class="brand-mark">AI</span>
+          <span>AI Converter</span>
+        </a>
+        <a class="top-link" href="/">Back to converter</a>
+      </header>
+
+      <section class="legal-hero">
+        <p class="eyebrow">Support</p>
+        <h1>Get help</h1>
+        <p class="lede">
+          For conversion, payment, refund, deletion, or security requests, use this
+          support form. Include the job ID when you have one. Do not send full bank
+          statement, receipt, screenshot, or source-file details through support.
+        </p>
+      </section>
+
+      <section class="policy-grid">
+        <article class="policy-card">
+          <h2>Send a request</h2>
+          <form class="support-form" action="/api/support" method="post">
+            <label>
+              Issue type
+              <select name="category" required>
+                <option value="conversion">Conversion problem</option>
+                <option value="payment">Payment issue</option>
+                <option value="refund">Refund or credit</option>
+                <option value="deletion">Deletion request</option>
+                <option value="security">Security report</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label>
+              Email for reply
+              <input name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" />
+            </label>
+            <label>
+              Job ID
+              <input name="jobId" type="text" autocomplete="off" placeholder="job_..." />
+            </label>
+            <label>
+              What happened?
+              <textarea name="message" required minlength="12" maxlength="4000" placeholder="Describe the issue without pasting sensitive source-file data."></textarea>
+            </label>
+            <label class="hidden-field">
+              Website
+              <input name="website" type="text" autocomplete="off" tabindex="-1" />
+            </label>
+            <div class="turnstile-wrap" data-turnstile-support></div>
+            <button type="submit">Send support request</button>
+          </form>
+        </article>
+
+        <article class="policy-card">
+          <h2>What to include</h2>
+          <ul>
+            <li>Job ID and payment email, if available.</li>
+            <li>The plan you selected.</li>
+            <li>A short description of what went wrong.</li>
+            <li>Whether you already tried the stronger redo.</li>
+          </ul>
+        </article>
+
+        <article class="policy-card">
+          <h2>Do not send source files</h2>
+          <p>
+            Sensitive files should only be submitted through the upload flow. Email
+            monitoring is planned as a later feature, but the current support form
+            should not receive sensitive files or copied source data.
+          </p>
+        </article>
+
+        <article class="policy-card">
+          <h2>Refund and redo help</h2>
+          <p>
+            Paid jobs include one automatic stronger redo. If the redo still cannot
+            produce a usable CSV, the job is marked refund or credit due. Support can
+            use the recorded job status and payment record when reviewing the request.
+          </p>
+        </article>
+
+        <article class="policy-card">
+          <h2>Deletion requests</h2>
+          <p>
+            Source files are deleted automatically after the 24-hour private source
+            lifecycle or earlier after failed extraction or completed redo. For a
+            deletion request, send the job ID and payment email only through the form.
+          </p>
+        </article>
+
+        <article class="policy-card">
+          <h2>Expected response</h2>
+          <p>
+            Support requests are recorded for review. Security reports and payment,
+            deletion, or refund issues are treated as priority requests.
+          </p>
+        </article>
+      </section>
+
+      <footer class="legal-footer">
+        <span>AI Converter</span>
+        <nav class="legal-links" aria-label="Legal links">
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/refund">Refunds</a>
+          <a href="/security">Security</a>
+          <a href="/data-retention">Data retention</a>
+        </nav>
+      </footer>
+    </main>
+    <script src="/support/turnstile.js" defer></script>
+  </body>
+</html>
