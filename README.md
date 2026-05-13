@@ -27,6 +27,8 @@ node --test tests/*.test.mjs
 npm run build
 ```
 
+Database notes: [ops/database.md](ops/database.md)
+
 Deploy:
 
 ```bash

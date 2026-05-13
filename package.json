@@ -7,7 +7,10 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "check:pricing": "node scripts/check-pricing.mjs",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "db:migrations:list": "wrangler d1 migrations list aiconverter --remote",
+    "db:migrate:remote": "wrangler d1 migrations apply aiconverter --remote",
+    "db:tables": "wrangler d1 execute aiconverter --remote --command \"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name\""
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.1.1",
