@@ -52,6 +52,9 @@ export async function onRequestPost({ request, env }) {
       previewRows = parseStoredPreview(await object.text(), previewKey, 5);
     }
   }
+  if (job.status === "complete" && isUniversalConverter(job.converter_id)) {
+    previewRows = previewRows.map((row) => ({ ...row, status: "Ready to download" }));
+  }
 
   return json({
     status: job.status,

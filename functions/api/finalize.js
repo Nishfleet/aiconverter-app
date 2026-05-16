@@ -132,7 +132,10 @@ function responseForConversion(job, token, bodyToken, result) {
 async function storedPreviewRows(env, job) {
   if (!job.preview_key) return [];
   const object = await env.AICONVERTER_BUCKET.get(job.preview_key);
-  return object ? parseStoredPreview(await object.text(), job.preview_key, 5) : [];
+  const rows = object ? parseStoredPreview(await object.text(), job.preview_key, 5) : [];
+  return job.status === "complete" && isUniversalConverter(job.converter_id)
+    ? rows.map((row) => ({ ...row, status: "Ready to download" }))
+    : rows;
 }
 
 function columnsForPreview(converterId, previewRows) {
