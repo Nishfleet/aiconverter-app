@@ -7,7 +7,7 @@
     <title>Privacy Policy - AI Converter</title>
     <meta
       name="description"
-      content="How AI Converter handles uploaded source files, generated CSV files, payment status, and short retention."
+      content="How AI Converter handles uploaded source files, generated CSV and JSON files, local image conversion, payment status, and short retention."
     />
     <link rel="canonical" href="https://aiconverter.app/privacy" />
     <link rel="stylesheet" href="/legal.css" />
@@ -37,7 +37,7 @@
           <h2>Information we collect</h2>
           <ul>
             <li>The source file you upload for conversion.</li>
-            <li>Generated preview rows and CSV output.</li>
+            <li>Generated preview rows and CSV or JSON output.</li>
             <li>Optional email address for payment receipt and job recovery.</li>
             <li>Payment status, payment ID, selected plan, timestamps, and job status.</li>
             <li>Security metadata such as hashed IP, hashed user agent, file hash, and abuse-limit events.</li>
@@ -49,8 +49,8 @@
           <h2>How files are processed</h2>
           <p>
             Digital bank statement PDFs are parsed directly first. If a file is scanned,
-            image-heavy, a receipt, a screenshot, or too messy for the native parser,
-            Mistral OCR may be used when configured.
+            image-heavy, a receipt, an invoice, a screenshot, or too messy for the
+            native parser, Mistral OCR may be used when configured.
             Azure Document Intelligence may be used as an optional paid-job fallback
             when configured. Provider use is limited to extracting transaction data
             for the conversion you requested.
@@ -58,6 +58,10 @@
           <p>
             Low-confidence files fail closed instead of being sent to a human review
             queue. If the sample preview cannot be produced safely, there is no charge.
+          </p>
+          <p>
+            PNG/JPG/WEBP image-format conversion runs locally in the browser and does
+            not upload the image to AI Converter for that route.
           </p>
         </article>
 
@@ -76,7 +80,8 @@
             Source files are kept only for preview, paid unlock, and the automatic
             redo window. Source files are deleted after a failed preview, failed full
             extraction, completed redo, or the 24-hour private source lifecycle.
-            Generated CSV files expire after 7 days.
+            Generated CSV and JSON files expire after 7 days. Browser-local image
+            conversions do not create source files or generated files on AI Converter.
           </p>
           <p>
             Minimal job metadata may be kept longer for payment records, abuse

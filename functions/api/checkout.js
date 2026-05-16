@@ -50,7 +50,7 @@ export async function onRequestPost({ request, env }) {
   } catch (error) {
     const message =
       error?.code === "MERCHANT_NOT_LIVE"
-        ? "Dodo live payments are not enabled for this merchant yet. Preview is working; paid CSV unlock will open once Dodo activates live payments."
+        ? "Dodo live payments are not enabled for this merchant yet. Preview is working; paid unlock will open once Dodo activates live payments."
         : error?.message || "Dodo checkout could not be created.";
     return json({ error: message, code: error?.code || "DODO_CHECKOUT_ERROR" }, { status: 503 });
   }
@@ -66,7 +66,7 @@ export async function onRequestPost({ request, env }) {
   if (!checkoutUrl) {
     return json(
       {
-        error: "Payments are not connected yet. Preview is working; CSV unlock needs a live Dodo key and product IDs."
+        error: "Payments are not connected yet. Preview is working; paid unlock needs a live Dodo key and product IDs."
       },
       { status: 503 }
     );

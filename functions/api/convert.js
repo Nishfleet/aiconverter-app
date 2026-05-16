@@ -10,6 +10,7 @@ import {
   insertJob,
   MAX_PAGE_COUNT,
   normalizeConverterId,
+  normalizeOutputFormat,
   planForPages,
   PREVIEW_PAGE_LIMIT,
   randomId,
@@ -56,6 +57,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   const converterId = normalizeConverterId(form.get("converterId"));
+  const outputFormat = normalizeOutputFormat(form.get("outputFormat"), converterId);
   const file = form.get("file");
   if (!(file instanceof File)) return badRequest("Choose a file first.");
 
@@ -102,7 +104,7 @@ export async function onRequestPost({ request, env }) {
   const sourceExpiresAt = new Date(Date.now() + SOURCE_RETENTION_SECONDS * 1000).toISOString();
   const sourceKey = sourceObjectKey(jobId, fileName, converterId);
   const previewKey = `jobs/${jobId}/preview.csv`;
-  const resultKey = `jobs/${jobId}/result.csv`;
+  const resultKey = `jobs/${jobId}/result.${outputFormat}`;
 
   await insertJob(env, {
     id: jobId,
@@ -136,7 +138,8 @@ export async function onRequestPost({ request, env }) {
 
     const converted = await convertFileToCsv(env, converterId, fileName, file.type || (isPdf ? "application/pdf" : ""), arrayBuffer, {
       previewPages: PREVIEW_PAGE_LIMIT,
-      estimatedPages
+      estimatedPages,
+      outputFormat
     });
 
     if (!converted.ok) {
@@ -159,6 +162,7 @@ export async function onRequestPost({ request, env }) {
         rowCount: converted.rowCount || 0,
         columns: converted.columns || [],
         converterId,
+        outputFormat,
         plan
       });
     }
@@ -186,11 +190,12 @@ export async function onRequestPost({ request, env }) {
       token,
       plan,
       converterId,
+      outputFormat,
       columns: converted.columns || [],
       previewRows: converted.previewRows,
       confidence: converted.confidence,
       rowCount: converted.rowCount,
-      message: "Preview ready. Pay once to run the full extraction and download the CSV."
+      message: `Preview ready. Pay once to run the full extraction and download the ${outputFormat === "json" ? "JSON" : "CSV"}.`
     });
   } catch (error) {
     await env.AICONVERTER_BUCKET.delete(sourceKey).catch(() => {});

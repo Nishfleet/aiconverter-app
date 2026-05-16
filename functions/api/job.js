@@ -1,7 +1,7 @@
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
 import { verifyDodoPayment } from "../lib/dodo.js";
 import { CONVERTER_COLUMNS } from "../lib/extract.js";
-import { getAuthorizedJob, hasRequiredBindings, parseCsvPreview, sourceAvailableForRedo } from "../lib/jobs.js";
+import { getAuthorizedJob, hasRequiredBindings, outputFormatFromResultKey, parseStoredPreview, sourceAvailableForRedo } from "../lib/jobs.js";
 
 export function onRequestGet() {
   return methodNotAllowed("POST");
@@ -36,7 +36,7 @@ export async function onRequestPost({ request, env }) {
   if (previewKey) {
     const object = await env.AICONVERTER_BUCKET.get(previewKey);
     if (object) {
-      previewRows = parseCsvPreview(await object.text(), 5);
+      previewRows = parseStoredPreview(await object.text(), previewKey, 5);
     }
   }
 
@@ -46,6 +46,7 @@ export async function onRequestPost({ request, env }) {
     token,
     plan: job.plan_id,
     converterId: job.converter_id || "bank",
+    outputFormat: outputFormatFromResultKey(job.result_key),
     columns: columnsForPreview(job.converter_id || "bank", previewRows),
     rowCount: job.row_count || 0,
     confidence: job.confidence || 0,

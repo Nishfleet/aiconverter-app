@@ -78,6 +78,18 @@ export const CONVERTER_COLUMNS = {
     { key: "column_3", label: "Column 3" },
     { key: "column_4", label: "Column 4" },
     { key: "column_5", label: "Column 5" }
+  ],
+  invoice: [
+    { key: "vendor", label: "Vendor" },
+    { key: "invoice_number", label: "Invoice #" },
+    { key: "invoice_date", label: "Invoice date" },
+    { key: "due_date", label: "Due date" },
+    { key: "total", label: "Total" },
+    { key: "currency", label: "Currency" },
+    { key: "subtotal", label: "Subtotal" },
+    { key: "tax", label: "Tax" },
+    { key: "payment_terms", label: "Payment terms" },
+    { key: "notes", label: "Notes" }
   ]
 };
 
@@ -88,6 +100,9 @@ export async function convertFileToCsv(env, converterId, fileName, contentType, 
   }
   if (normalized === "screenshot") {
     return convertScreenshotTableToCsv(env, fileName, contentType, arrayBuffer, options);
+  }
+  if (normalized === "invoice") {
+    return convertInvoiceToStructuredFile(env, fileName, contentType, arrayBuffer, options);
   }
   return convertPdfToCsv(env, fileName, arrayBuffer, options);
 }
@@ -203,6 +218,54 @@ async function convertScreenshotTableToCsv(env, fileName, contentType, arrayBuff
     rowCount: parsed.rows.length,
     warnings: ocr.warnings,
     provider: "mistral-ocr-table"
+  };
+}
+
+async function convertInvoiceToStructuredFile(env, fileName, contentType, arrayBuffer, options = {}) {
+  if (!hasMistralConfig(env)) {
+    return failConversion("Invoice conversion needs OCR configuration before it can run.", "invoice-ocr");
+  }
+
+  const ocr = await runMistralOcr(env, contentType, arrayBuffer, options);
+  const markdown = ocr.pages.join("\n");
+  const invoice = parseInvoice(markdown);
+  if (!invoice || (!invoice.total && !invoice.invoice_number)) {
+    return failConversion("The invoice converter could not safely find invoice fields.", "invoice-ocr");
+  }
+
+  const confidence = clamp((ocr.confidence || 0.82) * invoiceStructureScore(invoice), 0, 0.98);
+  if (confidence < 0.56) {
+    return failConversion("The invoice trust score was too low for export.", "invoice-ocr", confidence, 1);
+  }
+
+  const row = invoiceSummaryRow(invoice, confidence);
+  const csv = rowsToCsv([row], CONVERTER_COLUMNS.invoice);
+  const outputFormat = options.outputFormat === "json" ? "json" : "csv";
+  const json = JSON.stringify(
+    {
+      invoice: row,
+      line_items: invoice.line_items || [],
+      warnings: ocr.warnings || [],
+      confidence
+    },
+    null,
+    2
+  );
+
+  return {
+    ok: true,
+    csv,
+    content: outputFormat === "json" ? json : csv,
+    contentType: outputFormat === "json" ? "application/json; charset=utf-8" : "text/csv; charset=utf-8",
+    fileExtension: outputFormat === "json" ? "json" : "csv",
+    outputFormat,
+    previewRows: [row],
+    columns: CONVERTER_COLUMNS.invoice,
+    confidence,
+    trustScore: confidence,
+    rowCount: 1,
+    warnings: ocr.warnings,
+    provider: "mistral-ocr-invoice"
   };
 }
 
@@ -561,6 +624,173 @@ function dedupeReceiptRows(rows) {
     seen.add(key);
     return true;
   });
+}
+
+function parseInvoice(markdown) {
+  const text = String(markdown || "");
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => cleanMarkdownText(line))
+    .filter(Boolean)
+    .filter((line) => !/^(#+|\|?\s*-{2,})/i.test(line));
+
+  const year = inferStatementYear(text);
+  const invoiceDate = inferDateNearLabel(lines, /\b(?:invoice\s+date|date\s+issued|issued\s+on|bill\s+date)\b/i, year) ||
+    inferFirstUsefulDate(lines, year);
+  const dueDate = inferDateNearLabel(lines, /\b(?:due\s+date|payment\s+due|pay\s+by)\b/i, year);
+  const vendor = inferInvoiceVendor(lines);
+  const invoiceNumber = inferInvoiceNumber(lines);
+  const totalLine = inferInvoiceTotalLine(lines);
+  const subtotalLine = inferInvoiceSubtotalLine(lines);
+  const taxLine = inferReceiptTaxLine(lines);
+  const totalToken = totalLine ? lastMoneyToken(totalLine) : largestMoneyToken(text);
+  const subtotalToken = subtotalLine ? lastMoneyToken(subtotalLine) : null;
+  const taxToken = taxLine ? lastMoneyToken(taxLine) : null;
+  const paymentTerms = inferPaymentTerms(lines);
+  const lineItems = inferInvoiceLineItems(lines, totalLine);
+
+  if (!vendor && !invoiceNumber && !totalToken) return null;
+
+  return {
+    vendor,
+    invoice_number: invoiceNumber,
+    invoice_date: invoiceDate,
+    due_date: dueDate,
+    total: totalToken ? Math.abs(totalToken.value) : "",
+    currency: currencyFromText(totalToken?.raw || subtotalToken?.raw || taxToken?.raw || text),
+    subtotal: subtotalToken ? Math.abs(subtotalToken.value) : "",
+    tax: taxToken ? Math.abs(taxToken.value) : "",
+    payment_terms: paymentTerms,
+    notes: inferInvoiceNotes(lines),
+    line_items: lineItems
+  };
+}
+
+function inferInvoiceVendor(lines) {
+  const ignored = /^(invoice|tax invoice|bill|statement|receipt|date|due date|invoice date|invoice number|invoice no|bill to|ship to|sold to|from|to|subtotal|total|amount due|balance due|payment|terms|description|qty|quantity|unit|price|amount)\b/i;
+  return (
+    lines.find((line) => line.length >= 3 && line.length <= 90 && !ignored.test(line) && !extractMoneyTokens(line).length && /[a-z]{2,}/i.test(line)) ||
+    lines.find((line) => line.length >= 3 && line.length <= 90 && !ignored.test(line) && /[a-z]{2,}/i.test(line)) ||
+    ""
+  ).replace(/[*_`#|]+/g, "").trim();
+}
+
+function inferInvoiceNumber(lines) {
+  const patterns = [
+    /\b(?:invoice|inv|bill)\s*(?:number|no|#|id)?\s*[:#-]?\s*([A-Z0-9][A-Z0-9._/-]{2,})\b/i,
+    /\b(?:number|no)\s*[:#-]\s*([A-Z0-9][A-Z0-9._/-]{2,})\b/i
+  ];
+  for (const line of lines) {
+    for (const pattern of patterns) {
+      const match = line.match(pattern);
+      if (match?.[1] && !/^(date|total|amount|due)$/i.test(match[1])) return match[1].replace(/[.,;]+$/, "");
+    }
+  }
+  return "";
+}
+
+function inferDateNearLabel(lines, labelPattern, year) {
+  for (const line of lines) {
+    if (!labelPattern.test(line)) continue;
+    const dateMatch = line.match(DATE_PATTERN);
+    if (dateMatch) return parseDateToken(dateMatch[0], year);
+  }
+  return "";
+}
+
+function inferFirstUsefulDate(lines, year) {
+  const line = lines.find((value) => !/\b(?:due|pay\s+by|paid)\b/i.test(value) && value.match(DATE_PATTERN));
+  const dateMatch = line?.match(DATE_PATTERN);
+  return dateMatch ? parseDateToken(dateMatch[0], year) : "";
+}
+
+function inferInvoiceTotalLine(lines) {
+  const strongTotalLines = lines.filter(
+    (line) =>
+      /\b(?:amount\s+due|balance\s+due|total\s+due|invoice\s+total|grand\s+total|amount\s+paid)\b/i.test(line) &&
+      !/\b(?:subtotal|sub\s+total|tax|vat|gst|discount|previous|paid)\b/i.test(line) &&
+      extractMoneyTokens(line).length
+  );
+  if (strongTotalLines.length) return strongTotalLines[strongTotalLines.length - 1];
+
+  const totalLines = lines.filter(
+    (line) =>
+      /\btotal\b/i.test(line) &&
+      !/\b(?:subtotal|sub\s+total|tax|vat|gst|discount|previous|paid)\b/i.test(line) &&
+      extractMoneyTokens(line).length
+  );
+  return totalLines[totalLines.length - 1] || "";
+}
+
+function inferInvoiceSubtotalLine(lines) {
+  const subtotalLines = lines.filter((line) => /\b(?:subtotal|sub\s+total)\b/i.test(line) && extractMoneyTokens(line).length);
+  return subtotalLines[subtotalLines.length - 1] || "";
+}
+
+function inferPaymentTerms(lines) {
+  const termsLine = lines.find((line) => /\b(?:net\s+\d+|due\s+on\s+receipt|payment\s+terms|terms\s*:|due\s+within\s+\d+)\b/i.test(line));
+  if (!termsLine) return "";
+  const net = termsLine.match(/\bnet\s+\d+\b/i)?.[0];
+  if (net) return net.replace(/\s+/, " ");
+  const dueReceipt = termsLine.match(/\bdue\s+on\s+receipt\b/i)?.[0];
+  if (dueReceipt) return "Due on receipt";
+  return termsLine.replace(/^payment\s+terms\s*[:#-]?\s*/i, "").slice(0, 80).trim();
+}
+
+function inferInvoiceLineItems(lines, totalLine) {
+  return lines
+    .filter((line) => {
+      if (line === totalLine) return false;
+      if (!extractMoneyTokens(line).length || !/[a-z]{2,}/i.test(line)) return false;
+      if (/\b(?:subtotal|sub\s+total|tax|vat|gst|total|amount\s+due|balance\s+due|paid|payment)\b/i.test(line)) return false;
+      return true;
+    })
+    .slice(0, 12)
+    .map((line) => {
+      const money = lastMoneyToken(line);
+      const description = line.slice(0, money?.index || line.length).replace(/\s+/g, " ").trim();
+      return {
+        description,
+        amount: money ? Math.abs(money.value) : "",
+        currency: money ? currencyFromText(money.raw) : ""
+      };
+    })
+    .filter((item) => item.description && item.amount);
+}
+
+function inferInvoiceNotes(lines) {
+  const references = lines
+    .filter((line) => /\b(?:po\s*(?:number|#)?|purchase\s+order|reference|memo|project|account)\b/i.test(line))
+    .slice(0, 3);
+  return references.join("; ");
+}
+
+function invoiceSummaryRow(invoice, confidence) {
+  return {
+    vendor: invoice.vendor || "",
+    invoice_number: invoice.invoice_number || "",
+    invoice_date: invoice.invoice_date || "",
+    due_date: invoice.due_date || "",
+    total: invoice.total || "",
+    currency: invoice.currency || "",
+    subtotal: invoice.subtotal || "",
+    tax: invoice.tax || "",
+    payment_terms: invoice.payment_terms || "",
+    notes: invoice.notes || "",
+    confidence
+  };
+}
+
+function invoiceStructureScore(invoice) {
+  let score = 0.48;
+  if (invoice.vendor) score += 0.12;
+  if (invoice.invoice_number) score += 0.1;
+  if (invoice.invoice_date || invoice.due_date) score += 0.08;
+  if (Number(invoice.total) > 0) score += 0.16;
+  if (invoice.tax !== "" || invoice.subtotal !== "") score += 0.04;
+  if (invoice.payment_terms) score += 0.03;
+  if (invoice.line_items?.length) score += 0.05;
+  return clamp(score, 0, 1);
 }
 
 function parseMarkdownTable(markdown) {

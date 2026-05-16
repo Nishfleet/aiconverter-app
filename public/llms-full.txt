@@ -1,10 +1,10 @@
 # AI Converter full context
 
-AI Converter is a web app for automated file-to-CSV conversion. Bank statement PDF to CSV is the first production module.
+AI Converter is a web app for automated AI document conversion and browser-local image conversion. Bank statement PDF to CSV is the first production AI module.
 
 ## Current product wedge
 
-The production module is bank statement PDF to CSV. Receipt and screenshot-table converters are beta modules on the same preview-first workflow. It is not a general document converter yet.
+The production AI module is bank statement PDF to CSV. Receipt, invoice, and screenshot-table converters are beta modules on the same preview-first workflow. PNG/JPG/WEBP image format conversion is a browser-local module and does not upload files. It is not a general document, audio, video, archive, or CloudConvert-style universal converter yet.
 
 Live behavior:
 - Direct browser upload for bank statement PDFs.
@@ -19,7 +19,9 @@ Live behavior:
 - No human review queue.
 - No emailed bank statements in the live bank-statement workflow.
 - Receipt image or PDF to expense CSV is beta. It can export vendor, date, category, total, tax, payment method, and notes when safely detected.
+- Invoice or bill image/PDF to CSV or JSON is beta. It can export vendor, invoice number, invoice date, due date, subtotal, tax, total, payment terms, notes, and JSON line items when safely detected.
 - Screenshot PNG, JPG, WEBP, or image PDF to spreadsheet CSV is beta. It can infer table rows and headers when safely detected.
+- Image format conversion from PNG, JPG, JPEG, or WEBP to PNG, JPG, or WEBP is live as a browser-local route. It does not use the server upload, D1, R2, Mistral, or Dodo workflow.
 - Beta modules use OCR and can fail closed when structure confidence is too low.
 
 ## Pricing
@@ -34,7 +36,7 @@ Live behavior:
 - Source files are private.
 - Source files are kept for preview, paid unlock, and the redo window.
 - Source files are deleted after failed extraction, completed redo, or the 24-hour source lifecycle.
-- Generated CSV files expire after 7 days.
+- Generated CSV and JSON files expire after 7 days.
 - API responses for sensitive routes are marked no-store.
 - Job access uses a job ID and random token.
 
@@ -60,6 +62,20 @@ Beta receipt CSV columns:
 
 Beta screenshot/table CSV columns are inferred from the visible table when safe. Markdown tables, OCR table blocks, HTML table output, and obvious date-description-amount rows are handled.
 
+Beta invoice CSV columns:
+- vendor
+- invoice_number
+- invoice_date
+- due_date
+- total
+- currency
+- subtotal
+- tax
+- payment_terms
+- notes
+
+Beta invoice JSON includes the invoice summary, line_items when safely detected, warnings, and confidence.
+
 Fake sample CSV:
 - https://aiconverter.app/sample-bank-statement.csv
 
@@ -83,4 +99,4 @@ Fake sample CSV:
 
 ## Claims to avoid
 
-Do not claim AI Converter supports every bank, every statement format, every receipt format, every screenshot layout, every file type, certified compliance, human review, guaranteed accuracy, accounting or tax advice, instant processing, or customer-volume proof. Exports should be reviewed before important use.
+Do not claim AI Converter supports every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every image format, every file type, certified compliance, human review, guaranteed accuracy, accounting or tax advice, instant AI processing, audio/video conversion, archive conversion, or customer-volume proof. Exports should be reviewed before important use.

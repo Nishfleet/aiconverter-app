@@ -1,5 +1,5 @@
 import { convertFileToCsv } from "./extract.js";
-import { updateJob } from "./jobs.js";
+import { outputFormatFromResultKey, updateJob } from "./jobs.js";
 import { requestDodoRefund } from "./dodo.js";
 
 export async function runFullConversion(env, job, options = {}) {
@@ -25,6 +25,7 @@ export async function runFullConversion(env, job, options = {}) {
       arrayBuffer,
       {
         estimatedPages: job.estimated_pages || 25,
+        outputFormat: outputFormatFromResultKey(job.result_key),
         allowPaidFallback: true,
         ...(options.convertOptions || {})
       }
@@ -54,11 +55,11 @@ export async function runFullConversion(env, job, options = {}) {
       };
     }
 
-    await env.AICONVERTER_BUCKET.put(job.result_key, converted.csv, {
-      httpMetadata: { contentType: "text/csv; charset=utf-8" },
+    await env.AICONVERTER_BUCKET.put(job.result_key, converted.content || converted.csv, {
+      httpMetadata: { contentType: converted.contentType || "text/csv; charset=utf-8" },
       customMetadata: {
         jobId: job.id,
-        purpose: "result-csv",
+        purpose: `result-${converted.fileExtension || "csv"}`,
         deleteAfter: job.expires_at
       }
     });
@@ -79,10 +80,11 @@ export async function runFullConversion(env, job, options = {}) {
       previewRows: converted.previewRows,
       columns: converted.columns || [],
       confidence: converted.confidence,
-      rowCount: converted.rowCount
+      rowCount: converted.rowCount,
+      outputFormat: converted.outputFormat || outputFormatFromResultKey(job.result_key)
     };
   } catch (error) {
-    const message = error?.message || "The full CSV could not be generated.";
+    const message = error?.message || "The full converted file could not be generated.";
     if (job.paid_at) {
       await env.AICONVERTER_BUCKET.delete(job.source_key).catch(() => {});
       const refund = await requestDodoRefund(env, job, message, { cashRefund: options.cashRefund !== false });

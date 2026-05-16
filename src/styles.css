@@ -377,6 +377,10 @@ a {
   opacity: 0.62;
 }
 
+.converter-choice.is-muted {
+  opacity: 0.5;
+}
+
 .choice-icon {
   width: 32px;
   height: 32px;
@@ -469,6 +473,48 @@ a {
   background: var(--surface);
   font-size: 12px;
   font-weight: 780;
+}
+
+.route-options,
+.format-picker {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.route-options > span,
+.format-picker > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.route-options > div,
+.format-picker > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.route-option,
+.format-option {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  color: var(--ink);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 780;
+  cursor: pointer;
+}
+
+.route-option.is-selected,
+.format-option.is-selected {
+  color: #06170d;
+  background: var(--green);
+  border-color: rgba(0, 0, 0, 0.1);
 }
 
 .upload-panel p {
@@ -699,6 +745,43 @@ tbody tr:last-child td {
   max-width: 360px;
   color: #88412a;
   line-height: 1.45;
+}
+
+.local-result {
+  display: grid;
+  gap: 14px;
+}
+
+.local-result img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(45deg, #eef3ee 25%, transparent 25%),
+    linear-gradient(-45deg, #eef3ee 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eef3ee 75%),
+    linear-gradient(-45deg, transparent 75%, #eef3ee 75%),
+    #ffffff;
+  background-size: 18px 18px;
+  background-position:
+    0 0,
+    0 9px,
+    9px -9px,
+    -9px 0;
+}
+
+.local-result strong {
+  display: block;
+  font-size: 15px;
+}
+
+.local-result p {
+  margin: 6px 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .result-card {

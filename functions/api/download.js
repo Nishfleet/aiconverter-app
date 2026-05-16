@@ -1,5 +1,5 @@
 import { badRequest, json, methodNotAllowed, serverError, withSecurityHeaders } from "../lib/http.js";
-import { getAuthorizedJob, hasRequiredBindings, updateJob } from "../lib/jobs.js";
+import { getAuthorizedJob, hasRequiredBindings, outputFormatFromResultKey, updateJob } from "../lib/jobs.js";
 
 export async function onRequestPost(context) {
   return handleDownload(context);
@@ -21,16 +21,16 @@ async function handleDownload({ request, env }) {
 
   const freeDownloads = env.FREE_DOWNLOADS_ENABLED === "true";
   if (!job.paid_at && !freeDownloads) {
-    return json({ error: "Payment is required before downloading the full CSV." }, { status: 402 });
+    return json({ error: "Payment is required before downloading the full file." }, { status: 402 });
   }
 
   const object = await env.AICONVERTER_BUCKET.get(job.result_key);
   if (!object) {
     await updateJob(env, job.id, {
       status: "expired",
-      error: "The CSV has expired."
+      error: "The converted file has expired."
     }).catch(() => {});
-    return badRequest("The CSV has expired.");
+    return badRequest("The converted file has expired.");
   }
 
   await updateJob(env, job.id, {
@@ -40,7 +40,7 @@ async function handleDownload({ request, env }) {
   return withSecurityHeaders(
     new Response(object.body, {
       headers: {
-        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Type": contentTypeForJob(job),
         "Content-Disposition": `attachment; filename="${downloadFileName(job)}"`,
         "Cache-Control": "no-store, private",
         "X-Robots-Tag": "noindex, noarchive, nosnippet"
@@ -50,13 +50,22 @@ async function handleDownload({ request, env }) {
 }
 
 function downloadFileName(job) {
+  const extension = outputFormatFromResultKey(job.result_key);
   const prefix =
-    job.converter_id === "receipt"
+    job.converter_id === "invoice"
+      ? "invoice"
+      : job.converter_id === "receipt"
       ? "receipt-expense"
       : job.converter_id === "screenshot"
         ? "screenshot-table"
         : "bank-statement";
-  return `aiconverter-${prefix}.csv`;
+  return `aiconverter-${prefix}.${extension}`;
+}
+
+function contentTypeForJob(job) {
+  return outputFormatFromResultKey(job.result_key) === "json"
+    ? "application/json; charset=utf-8"
+    : "text/csv; charset=utf-8";
 }
 
 async function downloadCredentials(request) {

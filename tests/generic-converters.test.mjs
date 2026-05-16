@@ -161,6 +161,80 @@ test("screenshot converter recovers obvious rows from plain OCR text", async () 
   restoreFetch();
 });
 
+test("invoice converter creates a structured invoice CSV from OCR markdown", async () => {
+  mockFetch({
+    pages: [
+      {
+        markdown: [
+          "Cloud Hosting Inc",
+          "Invoice # INV-2026-042",
+          "Invoice Date May 10 2026",
+          "Due Date May 24 2026",
+          "Hosting plan $220.00",
+          "Tax $22.00",
+          "Amount Due $242.00",
+          "Payment terms Net 14"
+        ].join("\n"),
+        confidence_scores: { average_page_confidence_score: 0.93 }
+      }
+    ]
+  });
+
+  const result = await convertFileToCsv(
+    { MISTRAL_API_KEY: "test-key" },
+    "invoice",
+    "invoice.pdf",
+    "application/pdf",
+    PNG_BYTES
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.outputFormat, "csv");
+  assert.equal(result.columns[0].key, "vendor");
+  assert.match(result.csv, /Cloud Hosting Inc/);
+  assert.match(result.csv, /INV-2026-042/);
+  assert.match(result.csv, /242/);
+  assert.match(result.csv, /Net 14/i);
+  restoreFetch();
+});
+
+test("invoice converter can produce JSON for structured workflows", async () => {
+  mockFetch({
+    pages: [
+      {
+        markdown: [
+          "Cloud Hosting Inc",
+          "Invoice Number INV-2026-042",
+          "Invoice Date 2026-05-10",
+          "Due Date 2026-05-24",
+          "Usage overage $20.00",
+          "Subtotal $220.00",
+          "Tax $22.00",
+          "Grand Total $242.00"
+        ].join("\n"),
+        confidence_scores: { average_page_confidence_score: 0.93 }
+      }
+    ]
+  });
+
+  const result = await convertFileToCsv(
+    { MISTRAL_API_KEY: "test-key" },
+    "invoice",
+    "invoice.pdf",
+    "application/pdf",
+    PNG_BYTES,
+    { outputFormat: "json" }
+  );
+
+  const parsed = JSON.parse(result.content);
+  assert.equal(result.ok, true);
+  assert.equal(result.outputFormat, "json");
+  assert.equal(parsed.invoice.invoice_number, "INV-2026-042");
+  assert.equal(parsed.invoice.total, 242);
+  assert.ok(Array.isArray(parsed.line_items));
+  restoreFetch();
+});
+
 let originalFetch = globalThis.fetch;
 
 function mockFetch(payload) {

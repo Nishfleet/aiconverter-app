@@ -8,8 +8,10 @@ import {
   CreditCard,
   Database,
   Download,
+  FileJson,
   FileSpreadsheet,
   FileText,
+  Image as ImageIcon,
   LoaderCircle,
   Lock,
   RefreshCw,
@@ -43,6 +45,43 @@ function planForPages(pages) {
   return data.pricing.find((plan) => plan.id === "pro");
 }
 
+function isLiveConverter(converter) {
+  return converter.id !== "email";
+}
+
+function isLocalConverter(converter) {
+  return converter?.mode === "local-image";
+}
+
+function allAcceptedTypes() {
+  return [...new Set(data.converters.filter(isLiveConverter).flatMap((converter) => String(converter.accept || "").split(",")))]
+    .filter(Boolean)
+    .join(",");
+}
+
+function converterAcceptsFile(converter, candidate) {
+  if (!converter || !candidate || !converter.accept) return false;
+  const fileName = candidate.name.toLowerCase();
+  const fileType = String(candidate.type || "").toLowerCase();
+  return String(converter.accept)
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .some((rule) => {
+      if (!rule) return false;
+      if (rule.startsWith(".")) return fileName.endsWith(rule);
+      if (rule.endsWith("/*")) return fileType.startsWith(rule.slice(0, -1));
+      return fileType === rule;
+    });
+}
+
+function defaultOutputFormat(converter) {
+  return converter?.outputFormats?.[0]?.id || "csv";
+}
+
+function outputLabel(converter, outputFormat) {
+  return converter?.outputFormats?.find((format) => format.id === outputFormat)?.label || "CSV";
+}
+
 function money(value) {
   if (value === null || value === undefined || value === "") return "";
   if (typeof value === "number") {
@@ -63,6 +102,7 @@ function formatCell(value, key) {
 
 function App() {
   const [selectedId, setSelectedId] = useState("bank");
+  const [outputFormat, setOutputFormat] = useState("csv");
   const [file, setFile] = useState(null);
   const [pageCount, setPageCount] = useState(25);
   const [email, setEmail] = useState("");
@@ -81,19 +121,30 @@ function App() {
     () => data.converters.find((converter) => converter.id === selectedId),
     [selectedId]
   );
+  const liveConverters = useMemo(() => data.converters.filter(isLiveConverter), []);
+  const compatibleConverters = useMemo(
+    () => (file ? liveConverters.filter((converter) => converterAcceptsFile(converter, file)) : []),
+    [file, liveConverters]
+  );
   const selectedPlan = useMemo(() => planForPages(pageCount), [pageCount]);
+  const isLocalImageConverter = isLocalConverter(selected);
   const fileSizeLabel = file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : "";
   const needsTurnstile = Boolean(turnstileSiteKey);
   const previewColumns = result?.columns?.length ? result.columns : selected?.columns || data.converters[0].columns;
   const previewRows = result?.previewRows || data.sampleRowsByConverter?.[selectedId] || data.sampleRows;
-  const previewCountLabel = result ? `${result.rowCount || 0} rows` : `${previewRows.length} sample rows`;
+  const previewCountLabel = result?.localDownloadUrl
+    ? "1 converted file"
+    : result
+      ? `${result.rowCount || 0} rows`
+      : `${previewRows.length} sample rows`;
   const isPdfFirstConverter = selectedId === "bank";
+  const selectedOutputLabel = outputLabel(selected, outputFormat);
   const canConvert =
     file &&
     !converting &&
     file.size <= MAX_SIZE_MB * 1024 * 1024 &&
     pageCount <= MAX_PAGES &&
-    (!needsTurnstile || Boolean(turnstileToken));
+    (isLocalImageConverter || !needsTurnstile || Boolean(turnstileToken));
 
   useEffect(() => {
     fetch("/api/config")
@@ -101,6 +152,16 @@ function App() {
       .then((payload) => setTurnstileSiteKey(payload.turnstileSiteKey || ""))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    setOutputFormat(defaultOutputFormat(selected));
+  }, [selected]);
+
+  useEffect(() => {
+    return () => {
+      if (result?.localDownloadUrl) URL.revokeObjectURL(result.localDownloadUrl);
+    };
+  }, [result?.localDownloadUrl]);
 
   useEffect(() => {
     if (!turnstileSiteKey || !turnstileRef.current) return;
@@ -156,6 +217,8 @@ function App() {
             plan: data.pricing.find((plan) => plan.id === restored.plan) || selectedPlan
           };
           setResult(restoredResult);
+          if (restoredResult.converterId) setSelectedId(restoredResult.converterId);
+          if (restoredResult.outputFormat) setOutputFormat(restoredResult.outputFormat);
           if (restoredResult.paid && restoredResult.status === "preview_ready") {
             await finalizeConversion(jobId, token, paymentId);
           }
@@ -181,17 +244,28 @@ function App() {
     setError("");
     setResult(null);
     setFile(nextFile);
+    if (nextFile) {
+      const matches = liveConverters.filter((converter) => converterAcceptsFile(converter, nextFile));
+      const nextSelected = matches.find((converter) => converter.id === selectedId) || matches[0];
+      if (nextSelected) {
+        setSelectedId(nextSelected.id);
+        setOutputFormat(defaultOutputFormat(nextSelected));
+      }
+    }
     setPageCount(isPdfFile(nextFile) ? estimatePages(nextFile) : 1);
   }
 
   function handleConverterSelect(converter) {
     if (converter.id === "email") return;
     setSelectedId(converter.id);
+    setOutputFormat(defaultOutputFormat(converter));
     setError("");
     setResult(null);
-    setFile(null);
     setPageCount(1);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (file && !converterAcceptsFile(converter, file)) {
+      setFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   }
 
   function resetTurnstile() {
@@ -218,6 +292,11 @@ function App() {
       return;
     }
 
+    if (isLocalImageConverter) {
+      await handleLocalImageConversion();
+      return;
+    }
+
     setConverting(true);
     setError("");
     setResult(null);
@@ -228,6 +307,7 @@ function App() {
     form.append("email", email);
     form.append("planId", selectedPlan.id);
     form.append("estimatedPages", String(pageCount));
+    form.append("outputFormat", outputFormat);
     if (turnstileToken) form.append("turnstileToken", turnstileToken);
 
     try {
@@ -250,7 +330,38 @@ function App() {
     }
   }
 
+  async function handleLocalImageConversion() {
+    setConverting(true);
+    setError("");
+    setResult(null);
+
+    try {
+      const converted = await convertImageInBrowser(file, outputFormat);
+      setResult({
+        status: "complete",
+        localDownloadUrl: converted.url,
+        localFileName: converted.fileName,
+        localPreviewUrl: converted.url,
+        outputFormat,
+        converterId: selectedId,
+        rowCount: 1,
+        confidence: 1,
+        paid: true,
+        columns: [],
+        previewRows: []
+      });
+    } catch (err) {
+      setError(err.message || "This image could not be converted in the browser.");
+    } finally {
+      setConverting(false);
+    }
+  }
+
   async function handleUnlock() {
+    if (result?.localDownloadUrl) {
+      downloadLocalFile(result);
+      return;
+    }
     if (!result?.jobId || !result?.token) return;
     if (result.status === "complete") {
       await downloadCsv(result.jobId, result.token);
@@ -317,22 +428,31 @@ function App() {
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.error || "The CSV could not be downloaded.");
+        throw new Error(payload.error || "The converted file could not be downloaded.");
       }
       const blob = await response.blob();
       const href = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = href;
-      link.download = "aiconverter-export.csv";
+      link.download = result?.outputFormat === "json" ? "aiconverter-export.json" : "aiconverter-export.csv";
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(href);
     } catch (err) {
-      setError(err.message || "The CSV could not be downloaded.");
+      setError(err.message || "The converted file could not be downloaded.");
     } finally {
       setUnlocking(false);
     }
+  }
+
+  function downloadLocalFile(localResult) {
+    const link = document.createElement("a");
+    link.href = localResult.localDownloadUrl;
+    link.download = localResult.localFileName || `aiconverter-image.${outputFormat}`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   }
 
   async function finalizeConversion(jobId, token, paymentId = "") {
@@ -345,11 +465,11 @@ function App() {
         body: JSON.stringify({ jobId, token, paymentId })
       });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "The full CSV could not be prepared.");
+      if (!response.ok) throw new Error(payload.error || "The full file could not be prepared.");
       const planId = typeof payload.plan === "string" ? payload.plan : payload.plan?.id;
       setResult({ ...payload, plan: data.pricing.find((plan) => plan.id === planId) || payload.plan || selectedPlan });
     } catch (err) {
-      setError(err.message || "The full CSV could not be prepared.");
+      setError(err.message || "The full file could not be prepared.");
     } finally {
       setUnlocking(false);
     }
@@ -381,11 +501,12 @@ function App() {
   }
 
   function resultButtonLabel() {
-    if (result?.status === "converting_full") return "Generating full CSV...";
-    if (unlocking) return result?.status === "preview_ready" && result?.paid ? "Generating full CSV..." : "Preparing...";
-    if (result?.status === "complete") return "Download full CSV";
-    if (result?.paid) return "Generate full CSV";
-    return `Unlock full CSV · ${result?.plan?.price || selectedPlan.price}`;
+    if (result?.localDownloadUrl) return `Download ${selectedOutputLabel}`;
+    if (result?.status === "converting_full") return "Generating full file...";
+    if (unlocking) return result?.status === "preview_ready" && result?.paid ? "Generating full file..." : "Preparing...";
+    if (result?.status === "complete") return `Download ${result?.outputFormat === "json" ? "JSON" : "full CSV"}`;
+    if (result?.paid) return `Generate ${outputFormat === "json" ? "JSON" : "full CSV"}`;
+    return `Unlock ${outputFormat === "json" ? "JSON" : "full CSV"} · ${result?.plan?.price || selectedPlan.price}`;
   }
 
   return (
@@ -400,8 +521,8 @@ function App() {
         <nav className="header-nav" aria-label="Primary navigation">
           <a href="#workflow">Workflow</a>
           <a href="#pricing">Pricing</a>
-          <a href="/sample-csv">Sample CSV</a>
           <a href="#security">Security</a>
+          <a href="/sample-csv">Samples</a>
         </nav>
         <button className="header-action" onClick={() => fileInputRef.current?.click()}>
           Upload file
@@ -411,15 +532,15 @@ function App() {
 
       <section id="top" className="hero-section">
         <div className="hero-copy">
-          <h1>PDFs, receipts, and screenshots to CSV. Preview first.</h1>
+          <h1>AI Converter for useful files. Preview first.</h1>
           <p>
-            Bank statements are live. Receipts and screenshot tables are now in beta
-            on the same private preview-first workflow. If confidence is too low,
-            the job fails without charging.
+            Convert bank statements, receipts, invoices, screenshots, and common
+            images into useful CSV, JSON, spreadsheet, or image outputs. AI routes
+            handle messy documents; simple image swaps stay local in your browser.
           </p>
           <div className="hero-price-strip" aria-label="Pricing summary">
             <strong>Free preview</strong>
-            <span>Full CSV unlocks at {data.pricing[0].price}</span>
+            <span>AI extraction unlocks at {data.pricing[0].price}</span>
             <a href="#pricing">See all prices</a>
           </div>
           <div className="hero-actions">
@@ -439,11 +560,11 @@ function App() {
             </span>
             <span>
               <Database size={16} />
-              Full extraction only after payment
+              AI extraction only after preview
             </span>
             <span>
               <Lock size={16} />
-              Fails closed when confidence is low
+              Local image swaps upload nothing
             </span>
           </div>
         </div>
@@ -452,27 +573,32 @@ function App() {
           <div className="workspace-topbar">
             <div>
               <span className="status-dot" />
-              Automated preview
+              Hybrid conversion engine
             </div>
-            <strong>{selected.title} to {selected.output}</strong>
+            <strong>{selected.title} to {selectedOutputLabel || selected.output}</strong>
           </div>
 
           <div className="workspace-grid">
             <div className="converter-list" aria-label="Converter choices">
-              {data.converters.map((converter) => (
+              {liveConverters.map((converter) => (
                 <button
                   className={classNames(
                     "converter-choice",
                     selectedId === converter.id && "is-selected",
-                    converter.id === "email" && "is-disabled"
+                    file && !converterAcceptsFile(converter, file) && "is-muted"
                   )}
                   key={converter.id}
                   onClick={() => handleConverterSelect(converter)}
-                  disabled={converter.id === "email"}
                   type="button"
                 >
                   <span className="choice-icon">
-                    <FileText size={18} />
+                    {converter.mode === "local-image" ? (
+                      <ImageIcon size={18} />
+                    ) : converter.id === "invoice" ? (
+                      <FileJson size={18} />
+                    ) : (
+                      <FileText size={18} />
+                    )}
                   </span>
                   <span>
                     <strong>{converter.title}</strong>
@@ -490,30 +616,68 @@ function App() {
                   <small>
                     {file
                       ? `${fileSizeLabel} selected. Max ${MAX_SIZE_MB} MB${isPdfFile(file) ? ` and ${MAX_PAGES} pages` : ""}.`
-                      : `Private upload. ${selected.input} to ${selected.output}. Max ${MAX_SIZE_MB} MB${isPdfFirstConverter ? ` and ${MAX_PAGES} pages` : ""}.`}
+                      : isLocalImageConverter
+                        ? `Local file. ${selected.input} to ${selected.output}. No upload.`
+                        : `Private upload. ${selected.input} to ${selected.output}. Max ${MAX_SIZE_MB} MB${isPdfFirstConverter ? ` and ${MAX_PAGES} pages` : ""}.`}
                   </small>
                 </span>
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept={selected.accept || "application/pdf,.pdf"}
+                  accept={allAcceptedTypes()}
                   onChange={handleFileChange}
                 />
               </label>
 
+              {file && (
+                <div className="route-options" aria-label="Available conversions">
+                  <span>Available for this file</span>
+                  <div>
+                    {compatibleConverters.map((converter) => (
+                      <button
+                        type="button"
+                        key={converter.id}
+                        className={classNames("route-option", selectedId === converter.id && "is-selected")}
+                        onClick={() => handleConverterSelect(converter)}
+                      >
+                        {converter.title}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="conversion-route">
                 <span>{selected.input}</span>
                 <ArrowRight size={16} />
-                <span>{selected.output}</span>
+                <span>{selectedOutputLabel || selected.output}</span>
               </div>
 
               <p>{selected.description}</p>
+
+              {selected.outputFormats?.length > 1 && (
+                <div className="format-picker" aria-label="Output format">
+                  <span>Output</span>
+                  <div>
+                    {selected.outputFormats.map((format) => (
+                      <button
+                        type="button"
+                        key={format.id}
+                        className={classNames("format-option", outputFormat === format.id && "is-selected")}
+                        onClick={() => setOutputFormat(format.id)}
+                      >
+                        {format.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="order-summary" aria-label="Estimated order">
                 <label>
                   <span>
                     <Clock size={15} />
-                    {selectedId === "bank" ? "Estimated pages" : "Pages / images"}
+                    {isLocalImageConverter ? "Files" : selectedId === "bank" ? "Estimated pages" : "Pages / images"}
                   </span>
                   <input
                     min="1"
@@ -521,33 +685,36 @@ function App() {
                     type="number"
                     value={pageCount}
                     onChange={(event) => setPageCount(Number(event.target.value || 1))}
+                    disabled={isLocalImageConverter}
                   />
                 </label>
                 <div>
-                  <span>Unlock price</span>
+                  <span>{isLocalImageConverter ? "Cost" : "Unlock price"}</span>
                   <strong>
-                    {selectedPlan.price} · {selectedPlan.detail}
+                    {isLocalImageConverter ? "Free · browser local" : `${selectedPlan.price} · ${selectedPlan.detail}`}
                   </strong>
                 </div>
               </div>
 
-              <label className="email-field">
-                <span>Email for payment receipt</span>
-                <input
-                  type="email"
-                  inputMode="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                />
-              </label>
+              {!isLocalImageConverter && (
+                <label className="email-field">
+                  <span>Email for payment receipt</span>
+                  <input
+                    type="email"
+                    inputMode="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                  />
+                </label>
+              )}
 
-              {turnstileSiteKey && (
+              {turnstileSiteKey && !isLocalImageConverter && (
                 <div className="turnstile-wrap" ref={turnstileRef} aria-label="Human check" />
               )}
 
               <button className="primary-button full-width" disabled={!canConvert} type="submit">
-                {converting ? "Checking file..." : "Generate free preview"}
+                {converting ? "Checking file..." : isLocalImageConverter ? `Convert to ${selectedOutputLabel}` : "Generate free preview"}
                 {converting ? <LoaderCircle className="spin" size={18} /> : <Wand2 size={18} />}
               </button>
 
@@ -568,7 +735,19 @@ function App() {
                 <span>{previewCountLabel}</span>
               </div>
 
-              {result?.status === "failed" ? (
+              {result?.localDownloadUrl ? (
+                <div className="local-result">
+                  <img src={result.localPreviewUrl} alt="Converted image preview" />
+                  <div>
+                    <strong>{result.localFileName}</strong>
+                    <p>This conversion happened in your browser. The image was not uploaded to AI Converter.</p>
+                    <button className="primary-button" onClick={handleUnlock} type="button">
+                      {resultButtonLabel()}
+                      <Download size={17} />
+                    </button>
+                  </div>
+                </div>
+              ) : result?.status === "failed" ? (
                 <div className="failed-state">
                   <AlertCircle size={24} />
                   <strong>No charge.</strong>
@@ -587,7 +766,7 @@ function App() {
                       </thead>
                       <tbody>
                         {previewRows.map((row, index) => (
-                          <tr key={`${row.date || row.description || row.vendor || row.column_1 || "row"}-${index}`}>
+                          <tr key={`${row.date || row.invoice_number || row.description || row.vendor || row.column_1 || "row"}-${index}`}>
                             {previewColumns.slice(0, 5).map((column) => (
                               <td key={column.key}>{formatCell(row[column.key] ?? row[camelKey(column.key)], column.key)}</td>
                             ))}
@@ -663,7 +842,7 @@ function App() {
           <h2>Automated first. Human-free by design.</h2>
           <p>
             The first workflow is direct upload, sample extraction, validation,
-            payment, full extraction, and CSV download. Email monitoring stays
+            payment, full extraction, and file download. Email monitoring stays
             upcoming until this path is stable.
           </p>
         </div>
@@ -698,7 +877,7 @@ function App() {
       <section id="pricing" className="pricing-section">
         <div className="section-heading compact">
           <h2>Lower pricing for an automated workflow.</h2>
-          <p>Sample preview is free. Pay once to generate and download the full CSV.</p>
+          <p>Sample preview is free. Pay once to generate and download the full AI export. Image-format swaps are free and local.</p>
         </div>
         <div className="pricing-grid">
           {data.pricing.map((plan) => (
@@ -739,7 +918,7 @@ function App() {
       <footer className="footer">
         <div className="footer-brand">
           <strong>AI Converter</strong>
-          <span>Automated converter workflows with bank statements live first.</span>
+          <span>Automated document conversion with browser-local image swaps.</span>
         </div>
         <nav className="footer-links" aria-label="Footer navigation">
           <a href="/privacy">Privacy</a>
@@ -776,6 +955,60 @@ function loadTurnstile() {
     document.head.appendChild(script);
   });
   return turnstileScriptPromise;
+}
+
+function convertImageInBrowser(file, format) {
+  return new Promise((resolve, reject) => {
+    if (!file?.type?.startsWith("image/")) {
+      reject(new Error("Choose a PNG, JPG, or WEBP image."));
+      return;
+    }
+
+    const imageUrl = URL.createObjectURL(file);
+    const image = new window.Image();
+    image.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = image.naturalWidth || image.width;
+        canvas.height = image.naturalHeight || image.height;
+        const context = canvas.getContext("2d");
+        if (!context || !canvas.width || !canvas.height) throw new Error("The browser could not read this image.");
+
+        if (format === "jpeg") {
+          context.fillStyle = "#ffffff";
+          context.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        context.drawImage(image, 0, 0);
+
+        const mimeType = format === "jpeg" ? "image/jpeg" : `image/${format}`;
+        canvas.toBlob(
+          (blob) => {
+            URL.revokeObjectURL(imageUrl);
+            if (!blob) {
+              reject(new Error("This browser could not export that image format."));
+              return;
+            }
+            const extension = format === "jpeg" ? "jpg" : format;
+            const baseName = file.name.replace(/\.[^.]+$/, "") || "image";
+            resolve({
+              url: URL.createObjectURL(blob),
+              fileName: `${baseName}.${extension}`
+            });
+          },
+          mimeType,
+          0.92
+        );
+      } catch (error) {
+        URL.revokeObjectURL(imageUrl);
+        reject(error);
+      }
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(imageUrl);
+      reject(new Error("This browser could not decode the image."));
+    };
+    image.src = imageUrl;
+  });
 }
 
 createRoot(document.getElementById("root")).render(<App />);

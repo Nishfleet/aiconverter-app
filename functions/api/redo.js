@@ -2,7 +2,7 @@ import { runFullConversion } from "../lib/conversion.js";
 import { requestDodoRefund } from "../lib/dodo.js";
 import { CONVERTER_COLUMNS } from "../lib/extract.js";
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
-import { getAuthorizedJob, hasRequiredBindings, PLANS, sourceAvailableForRedo, updateJob } from "../lib/jobs.js";
+import { getAuthorizedJob, hasRequiredBindings, outputFormatFromResultKey, PLANS, sourceAvailableForRedo, updateJob } from "../lib/jobs.js";
 
 export function onRequestGet() {
   return methodNotAllowed("POST");
@@ -56,6 +56,7 @@ export async function onRequestPost({ request, env }) {
         token: String(body.token || ""),
         plan: PLANS[job.plan_id] || PLANS.starter,
         converterId: job.converter_id || "bank",
+        outputFormat: outputFormatFromResultKey(job.result_key),
         columns: CONVERTER_COLUMNS[job.converter_id || "bank"] || [],
         message: result.message,
         confidence: result.confidence,
@@ -71,6 +72,7 @@ export async function onRequestPost({ request, env }) {
       token: String(body.token || ""),
       plan: PLANS[job.plan_id] || PLANS.starter,
       converterId: job.converter_id || "bank",
+      outputFormat: result.outputFormat || outputFormatFromResultKey(job.result_key),
       columns: result.columns || columnsForPreview(job.converter_id || "bank", result.previewRows || []),
       paid: true,
       previewRows: result.previewRows,
@@ -97,6 +99,7 @@ export async function onRequestPost({ request, env }) {
       token: String(body.token || ""),
       plan: PLANS[job.plan_id] || PLANS.starter,
       converterId: job.converter_id || "bank",
+      outputFormat: outputFormatFromResultKey(job.result_key),
       columns: CONVERTER_COLUMNS[job.converter_id || "bank"] || [],
       message: error?.message || "Automatic redo could not be completed.",
       confidence: 0,

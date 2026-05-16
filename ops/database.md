@@ -15,7 +15,7 @@ D1 stores small workflow records, not uploaded files:
 - rate-limit and same-file preview protection
 - support requests
 
-Uploaded files and generated CSVs live in private R2, not in D1.
+Uploaded files and generated CSV/JSON files live in private R2, not in D1.
 
 ## Live Database
 

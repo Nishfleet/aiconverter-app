@@ -56,6 +56,47 @@
       "checks": ["Table OCR", "Header inference", "Spreadsheet CSV"]
     },
     {
+      "id": "invoice",
+      "title": "Invoice / bill",
+      "input": "Image / PDF",
+      "output": "Structured file",
+      "state": "Beta",
+      "accept": "application/pdf,image/png,image/jpeg,image/webp,.pdf,.png,.jpg,.jpeg,.webp",
+      "description": "Extract vendor, invoice number, dates, totals, tax, payment terms, notes, and line items from invoices or bills.",
+      "outputFormats": [
+        { "id": "csv", "label": "CSV" },
+        { "id": "json", "label": "JSON" }
+      ],
+      "columns": [
+        { "key": "vendor", "label": "Vendor" },
+        { "key": "invoice_number", "label": "Invoice #" },
+        { "key": "invoice_date", "label": "Invoice date" },
+        { "key": "due_date", "label": "Due date" },
+        { "key": "total", "label": "Total" },
+        { "key": "currency", "label": "Currency" },
+        { "key": "tax", "label": "Tax" },
+        { "key": "payment_terms", "label": "Payment terms" },
+        { "key": "notes", "label": "Notes" }
+      ],
+      "checks": ["Invoice fields", "Total checks", "Line-item capture"]
+    },
+    {
+      "id": "image-format",
+      "title": "Image format",
+      "input": "PNG / JPG / WEBP",
+      "output": "PNG / JPG / WEBP",
+      "state": "Local",
+      "mode": "local-image",
+      "accept": "image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp",
+      "description": "Convert common image formats inside the browser. The file does not upload to AI Converter.",
+      "outputFormats": [
+        { "id": "png", "label": "PNG" },
+        { "id": "jpeg", "label": "JPG" },
+        { "id": "webp", "label": "WEBP" }
+      ],
+      "checks": ["Browser-local", "No server upload", "Instant download"]
+    },
+    {
       "id": "email",
       "title": "Email monitor",
       "input": "Inbox",
@@ -135,6 +176,19 @@
         "column_2": "OCR API",
         "column_3": "$1.92"
       }
+    ],
+    "invoice": [
+      {
+        "vendor": "Cloud Hosting Inc",
+        "invoice_number": "INV-2026-042",
+        "invoice_date": "2026-05-10",
+        "due_date": "2026-05-24",
+        "total": 242,
+        "currency": "USD",
+        "tax": 22,
+        "payment_terms": "Net 14",
+        "notes": "Hosting plan; usage overage"
+      }
     ]
   },
   "pricing": [
@@ -169,7 +223,7 @@
   "trustProof": [
     {
       "title": "Preview before payment",
-      "detail": "Inspect sample rows before unlocking the full CSV."
+      "detail": "Inspect sample rows before unlocking the full export."
     },
     {
       "title": "Private source lifecycle",

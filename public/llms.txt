@@ -1,6 +1,6 @@
 # AI Converter
 
-AI Converter is a web app for automated file-to-CSV conversion. Bank statement PDF to CSV is the first production module.
+AI Converter is a web app for automated AI document conversion and browser-local image conversion. Bank statement PDF to CSV is the first production AI module.
 
 Live and beta modules:
 - Bank statement PDF to CSV.
@@ -17,7 +17,9 @@ Live and beta modules:
 - Free-preview reuse, payment reuse, and redo abuse are rate-limited.
 - Sample CSV uses fictional data only.
 - Receipt image or PDF to expense CSV is beta. It can export vendor, date, category, total, tax, payment method, and notes when safely detected.
+- Invoice or bill image/PDF to CSV or JSON is beta. It can export vendor, invoice number, dates, total, subtotal, tax, payment terms, notes, and JSON line items when safely detected.
 - Screenshot PNG, JPG, WEBP, or image PDF to spreadsheet CSV is beta. It can infer table rows and headers when safely detected.
+- Image format conversion from PNG, JPG, JPEG, or WEBP to PNG, JPG, or WEBP is live as a browser-local module. The image does not upload to AI Converter for that route.
 - Beta modules use OCR and fail closed when structure confidence is too low.
 
 Opening pricing:
@@ -28,13 +30,14 @@ Opening pricing:
 
 Upcoming module:
 - AI-monitored email intake after the secure direct upload workflow is stable.
+- Broader generic document, audio, video, and archive conversion is not live unless a future page says otherwise.
 
 Important product truth:
-- AI Converter does not claim to support every bank, every statement format, every receipt format, every screenshot layout, or every file type.
+- AI Converter does not claim to support every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every image format, or every file type.
 - Accuracy, security, compliance, and supported-format claims should stay limited to what the live product can prove.
 - Email monitoring is not the primary intake for bank PDFs.
 - Human review is not part of the automated workflow.
-- Source files use a 24-hour private retention window. Generated CSV files expire after 7 days.
+- Source files use a 24-hour private retention window. Generated CSV or JSON files expire after 7 days. Browser-local image conversions do not create server-side source files.
 
 Primary URL:
 - https://aiconverter.app

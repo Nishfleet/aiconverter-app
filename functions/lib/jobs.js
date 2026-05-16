@@ -147,8 +147,25 @@ export function supportedConverters() {
       sourcePrefix: "screenshot",
       acceptedTypes: ["application/pdf", "image/png", "image/jpeg", "image/webp"],
       acceptedExtensions: [".pdf", ".png", ".jpg", ".jpeg", ".webp"]
+    },
+    invoice: {
+      id: "invoice",
+      label: "Invoice",
+      sourcePrefix: "invoice",
+      acceptedTypes: ["application/pdf", "image/png", "image/jpeg", "image/webp"],
+      acceptedExtensions: [".pdf", ".png", ".jpg", ".jpeg", ".webp"]
     }
   };
+}
+
+export function normalizeOutputFormat(value, converterId = "bank") {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (converterId === "invoice" && ["csv", "json"].includes(normalized)) return normalized;
+  return "csv";
+}
+
+export function outputFormatFromResultKey(resultKey = "") {
+  return String(resultKey || "").toLowerCase().endsWith(".json") ? "json" : "csv";
 }
 
 export function normalizeConverterId(value) {
@@ -459,6 +476,17 @@ export function parseCsvPreview(csv, limit = 5) {
       return row;
     }, {});
   });
+}
+
+export function parseStoredPreview(content, resultKey = "", limit = 5) {
+  if (outputFormatFromResultKey(resultKey) !== "json") return parseCsvPreview(content, limit);
+  try {
+    const parsed = JSON.parse(content);
+    if (Array.isArray(parsed)) return parsed.slice(0, limit);
+    if (parsed?.invoice) return [parsed.invoice].slice(0, limit);
+    if (parsed && typeof parsed === "object") return [parsed].slice(0, limit);
+  } catch {}
+  return [];
 }
 
 function parseCsvLine(line) {
