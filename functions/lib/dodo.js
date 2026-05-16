@@ -766,13 +766,16 @@ function formatDodoAmount(minorAmount, currency) {
       style: "currency",
       currency
     }).resolvedOptions().maximumFractionDigits;
+    const majorAmount = Math.ceil(minorAmount / 10 ** decimals);
     return new Intl.NumberFormat(undefined, {
       style: "currency",
       currency,
-      currencyDisplay: "narrowSymbol"
-    }).format(minorAmount / 10 ** decimals);
+      currencyDisplay: "narrowSymbol",
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0
+    }).format(majorAmount);
   } catch {
-    return `${currency} ${(minorAmount / 100).toFixed(2)}`;
+    return `${currency} ${Math.ceil(minorAmount / 100)}`;
   }
 }
 

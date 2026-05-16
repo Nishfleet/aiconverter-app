@@ -7,9 +7,9 @@ test("Dodo pricing preview returns Dodo-calculated local totals", async () => {
   const originalFetch = globalThis.fetch;
   const calls = [];
   const responses = {
-    prod_starter_in: { currency: "INR", current_breakup: { total_amount: 24900 }, billing_country: "IN" },
-    prod_batch_in: { currency: "INR", current_breakup: { total_amount: 41900 }, billing_country: "IN" },
-    prod_pro_in: { currency: "INR", current_breakup: { total_amount: 74900 }, billing_country: "IN" }
+    prod_starter_in: { currency: "INR", current_breakup: { total_amount: 24980 }, billing_country: "IN" },
+    prod_batch_in: { currency: "INR", current_breakup: { total_amount: 41933 }, billing_country: "IN" },
+    prod_pro_in: { currency: "INR", current_breakup: { total_amount: 74939 }, billing_country: "IN" }
   };
 
   globalThis.fetch = async (url, options = {}) => {
@@ -34,8 +34,9 @@ test("Dodo pricing preview returns Dodo-calculated local totals", async () => {
     assert.equal(preview.available, true);
     assert.equal(preview.provider, "dodo");
     assert.equal(preview.prices.starter.currency, "INR");
-    assert.equal(preview.prices.starter.amount, 24900);
-    assert.match(preview.prices.starter.display, /249/);
+    assert.equal(preview.prices.starter.amount, 24980);
+    assert.match(preview.prices.starter.display, /250/);
+    assert.doesNotMatch(preview.prices.starter.display, /\./);
     assert.equal(calls.length, 3);
     assert.equal(calls[0].url, "https://live.dodopayments.com/checkouts/preview");
     assert.equal(calls[0].headers.Authorization, "Bearer dodo_test");
