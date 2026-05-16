@@ -982,45 +982,45 @@ function App() {
 
       <section id="workflow" className="section-band">
         <div className="section-heading">
-          <h2>Automated first. Human-free by design.</h2>
+          <h2>Built for files you would not email around.</h2>
           <p>
-            The first workflow is direct upload, sample extraction, validation,
-            payment, full extraction, and file download. Email monitoring stays
-            upcoming until this path is stable.
+            Upload directly, review a sample, then unlock only if it looks right.
+            Source files stay private, expire quickly, and never enter a human
+            file review queue.
           </p>
         </div>
         <div className="queue-list">
           <article className="queue-item">
             <span className="queue-number">01</span>
             <div>
-              <h3>Upload file</h3>
-              <p>The file is stored privately for preview, unlock, and the 24-hour redo window.</p>
+              <h3>Upload directly</h3>
+              <p>Your file goes into private storage for preview and download, not a public link or shared inbox.</p>
             </div>
             <strong>Private</strong>
           </article>
           <article className="queue-item">
             <span className="queue-number">02</span>
             <div>
-              <h3>Parser extracts rows</h3>
-              <p>Bank PDFs use our own parser first. Receipt and screenshot beta jobs use OCR when needed.</p>
+              <h3>Check a real sample</h3>
+              <p>We parse digital bank PDFs first and use OCR only when a file needs it. If the preview is not reliable, the job stops.</p>
             </div>
-            <strong>Automated</strong>
+            <strong>Fail-closed</strong>
           </article>
           <article className="queue-item">
             <span className="queue-number">03</span>
             <div>
-              <h3>Pay after preview</h3>
-              <p>Paid jobs get one stronger automatic redo. Failed paid exports are marked refund or credit due.</p>
+              <h3>Unlock, download, expire</h3>
+              <p>Pay only after the preview. Paid jobs can run one stronger redo, then source files leave the short retention window.</p>
             </div>
-            <strong>Anti-abuse guarded</strong>
+            <strong>Short retention</strong>
           </article>
         </div>
       </section>
 
       <section id="pricing" className="pricing-section">
         <div className="section-heading compact">
-          <h2>Lower pricing for an automated workflow.</h2>
-              <p>Sample preview is free. Pay once to generate and download the full AI export. Image and SVG swaps are free and local.</p>
+          <h2>Higher-trust conversion. Lower one-off pricing.</h2>
+          <p>Preview is free. Pay once only when the sample looks right. Browser-local image and SVG tools stay free and never upload the source file.</p>
         </div>
         <div className="pricing-grid">
           {data.pricing.map((plan) => (
@@ -1046,10 +1046,11 @@ function App() {
 
       <section id="security" className="request-section">
         <div>
-          <h2>Built for sensitive files.</h2>
+          <h2>Private conversion, plainly stated.</h2>
           <p>
-            Source files are private, never emailed, and deleted after failed extraction,
-            completed redo, or the 24-hour source lifecycle. Low-confidence files fail closed.
+            Source files are private, never accepted by email, and removed after failed
+            extraction, completed redo, or the 24-hour lifecycle. Local image and SVG
+            conversions stay in your browser.
           </p>
         </div>
         <button className="primary-button" onClick={() => fileInputRef.current?.click()}>

@@ -1,13 +1,13 @@
 ---
 title: About AI Converter
-description: AI Converter is a focused AI conversion workflow with bank statement PDFs live first, beta receipt, invoice, screenshot, audio, document Markdown, screenshot-to-HTML, provider-backed universal conversion when configured, browser-local image/SVG conversion, free preview, short retention, and no human review queue.
+description: AI Converter is a private, preview-first AI conversion app with bank statement PDFs live first, beta receipt, invoice, screenshot, audio, document Markdown, screenshot-to-HTML, provider-backed universal conversion when configured, browser-local image/SVG conversion, short retention, and no human file review queue.
 ---
 
 # About AI Converter
 
 AI Converter is a focused web converter for sensitive files that need spreadsheet-ready CSV, structured JSON, Markdown, transcript, HTML, SVG, or browser-local image output.
 
-The production AI workflow converts bank statement PDFs to CSV through direct upload, automated preview, paid full extraction, and download. Receipt, invoice, screenshot-table, audio transcript, document Markdown, screenshot-to-HTML, and provider-backed universal file conversion are beta/provider modules on the same workflow when configured. Common image-format and raster-to-SVG conversion run locally in the browser and do not upload the image.
+The production AI route converts bank statement PDFs to CSV through direct upload, automated preview, paid full extraction, and download. Receipt, invoice, screenshot-table, audio transcript, document Markdown, screenshot-to-HTML, and provider-backed universal file conversion are beta/provider modules on the same preview-first path when configured. Common image-format and raster-to-SVG conversion run locally in the browser and do not upload the image.
 
 ## What is live
 
@@ -17,7 +17,7 @@ The production AI workflow converts bank statement PDFs to CSV through direct up
 - Parser-first extraction for digital PDFs.
 - OCR fallback for scanned or messy PDFs when configured.
 - Low-confidence files fail closed.
-- No human review queue.
+- No human file review queue.
 - Source files use a short private lifecycle.
 - PNG/JPG/WEBP to PNG/JPG/WEBP browser-local conversion.
 - PNG/JPG/WEBP to SVG browser-local posterized conversion.

@@ -367,20 +367,20 @@
   ],
   "trustProof": [
     {
-      "title": "Preview before payment",
-      "detail": "Inspect sample rows before unlocking the full export."
+      "title": "See the sample first",
+      "detail": "Review real preview rows before you pay for the full export."
     },
     {
-      "title": "Private source lifecycle",
-      "detail": "Source files are kept only for preview, unlock, and the short redo window."
+      "title": "Private, short-lived uploads",
+      "detail": "Source files stay in private storage only for preview, unlock, and the redo window."
     },
     {
-      "title": "Low-confidence fail closed",
-      "detail": "If the converter cannot safely extract a preview, there is no charge."
+      "title": "Uncertain files stop early",
+      "detail": "If we cannot produce a reliable preview, the job fails closed and you are not charged."
     },
     {
-      "title": "No human review queue",
-      "detail": "The live workflow is automated direct upload, preview, payment, and download."
+      "title": "No human file review",
+      "detail": "The live path is direct upload, automated processing, payment, and download."
     }
   ]
 }

@@ -11,7 +11,7 @@ Live and beta modules:
 - Paid full extraction and CSV download.
 - One automatic stronger redo for paid jobs.
 - No emailed bank statements.
-- No human review queue.
+- No human file review queue.
 - Source files are deleted after failed extraction, completed redo, or the 24-hour source lifecycle.
 - Low-confidence conversions fail closed with no charge.
 - Free-preview reuse, payment reuse, and redo abuse are rate-limited.
@@ -41,7 +41,7 @@ Important product truth:
 - AI Converter does not claim to support every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every audio file, every document, every image format, or every file type.
 - Accuracy, security, compliance, and supported-format claims should stay limited to what the live product can prove.
 - Email monitoring is not the primary intake for bank PDFs.
-- Human review is not part of the automated workflow.
+- Human file review is not part of the automated workflow.
 - Source files use a 24-hour private retention window. Generated files expire after 7 days. Browser-local image/SVG conversions do not create server-side source files.
 
 Primary URL:
