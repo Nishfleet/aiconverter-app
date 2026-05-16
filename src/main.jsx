@@ -8,10 +8,8 @@ import {
   CreditCard,
   Database,
   Download,
-  FileJson,
   FileSpreadsheet,
   FileText,
-  Image as ImageIcon,
   LoaderCircle,
   Lock,
   RefreshCw,
@@ -237,16 +235,36 @@ function capableOutputFormats(converter, candidate) {
   return formats.filter((format) => capableIds.includes(format.id) && format.id !== inputFormat);
 }
 
-function converterDisplayTitle(converter, candidate, outputFormat) {
-  if (converter?.id === "universal-file" && candidate) {
-    return `${fileExtension(candidate)} to ${outputLabel(converter, outputFormat || defaultOutputFormat(converter))}`;
-  }
-  return `${converter.title} to ${outputLabel(converter, outputFormat || defaultOutputFormat(converter))}`;
+function routeChoiceLabel(converter) {
+  const labels = {
+    bank: "Bank statement data",
+    receipt: "Receipt data",
+    invoice: "Invoice / bill data",
+    screenshot: "Screenshot table data",
+    "document-markdown": "Document to Markdown",
+    "audio-transcript": "Audio transcript",
+    "screenshot-code": "Screenshot to HTML",
+    "image-format": "Browser image conversion",
+    "raster-vector": "Raster to SVG",
+    "universal-file": "File format conversion"
+  };
+  return labels[converter?.id] || converter?.title || "Conversion";
+}
+
+function fileEntryId(candidate) {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `${candidate.name}-${candidate.size}-${candidate.lastModified}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function preferredConverterForFile(matches, currentSelectedId) {
+  if (!matches.length) return null;
+  const current = matches.find((converter) => converter.id === currentSelectedId && currentSelectedId !== "bank");
+  return current || matches.find((converter) => converter.id === "universal-file") || matches[0];
 }
 
 function selectedRouteTitle(converter, candidate) {
   if (converter?.id === "universal-file" && candidate) return `Convert uploaded ${fileExtension(candidate)} file`;
-  return converter?.title || "Selected conversion";
+  return routeChoiceLabel(converter);
 }
 
 function selectedRouteDescription(converter, candidate) {
@@ -275,7 +293,8 @@ function routeRank(converter) {
 function App() {
   const [selectedId, setSelectedId] = useState("bank");
   const [outputFormat, setOutputFormat] = useState("csv");
-  const [file, setFile] = useState(null);
+  const [fileQueue, setFileQueue] = useState([]);
+  const [activeFileId, setActiveFileId] = useState("");
   const [pageCount, setPageCount] = useState(25);
   const [email, setEmail] = useState("");
   const [converting, setConverting] = useState(false);
@@ -294,6 +313,11 @@ function App() {
     () => data.converters.find((converter) => converter.id === selectedId),
     [selectedId]
   );
+  const activeFileEntry = useMemo(
+    () => fileQueue.find((entry) => entry.id === activeFileId) || null,
+    [fileQueue, activeFileId]
+  );
+  const file = activeFileEntry?.file || null;
   const universalProviderReady = Boolean(capabilities.universalProvider || capabilities.cloudConvert || capabilities.convertioBackup);
   const converterIsEnabled = (converter) => !isProviderConverter(converter) || universalProviderReady;
   const liveConverters = useMemo(() => data.converters.filter(isLiveConverter), []);
@@ -305,11 +329,10 @@ function App() {
     () => (file ? selectableConverters.filter((converter) => converterAcceptsFile(converter, file)) : []),
     [file, selectableConverters]
   );
-  const suggestedConverters = useMemo(
+  const routeChoices = useMemo(
     () => [...compatibleConverters].sort((a, b) => routeRank(a) - routeRank(b)),
     [compatibleConverters]
   );
-  const visibleRouteChoices = suggestedConverters.length > 1 ? suggestedConverters : [];
   const selectedOutputFormats = useMemo(() => capableOutputFormats(selected, file), [selected, file]);
   const selectedPlan = useMemo(() => planForPages(pageCount), [pageCount]);
   const isLocalImageConverter = isLocalConverter(selected);
@@ -424,20 +447,41 @@ function App() {
     restoreJob();
   }, [selectedPlan]);
 
-  function handleFileChange(event) {
-    const nextFile = event.target.files?.[0] || null;
-    setError("");
-    setResult(null);
-    setFile(nextFile);
-    if (nextFile) {
-      const matches = selectableConverters.filter((converter) => converterAcceptsFile(converter, nextFile));
-      const nextSelected = matches.find((converter) => converter.id === selectedId) || matches[0];
-      if (nextSelected) {
-        setSelectedId(nextSelected.id);
-        setOutputFormat(defaultOutputFormat(nextSelected));
-      }
+  function applyFileDefaults(nextFile, preferredSelectedId = selectedId) {
+    if (!nextFile) {
+      setPageCount(25);
+      return;
+    }
+    const matches = selectableConverters.filter((converter) => converterAcceptsFile(converter, nextFile));
+    const nextSelected = preferredConverterForFile(matches, preferredSelectedId);
+    if (nextSelected) {
+      setSelectedId(nextSelected.id);
+      setOutputFormat(capableOutputFormats(nextSelected, nextFile)[0]?.id || defaultOutputFormat(nextSelected));
     }
     setPageCount(isPdfFile(nextFile) ? estimatePages(nextFile) : 1);
+  }
+
+  function activateFileEntry(entry) {
+    setError("");
+    setResult(null);
+    setActiveFileId(entry.id);
+    applyFileDefaults(entry.file);
+  }
+
+  function handleFileChange(event) {
+    const incomingFiles = Array.from(event.target.files || []);
+    if (!incomingFiles.length) return;
+    const nextEntries = incomingFiles.map((nextFile) => ({
+      id: fileEntryId(nextFile),
+      file: nextFile
+    }));
+    setError("");
+    setResult(null);
+    setFileQueue((currentQueue) => [...currentQueue, ...nextEntries]);
+    const nextActive = nextEntries[0];
+    setActiveFileId(nextActive.id);
+    applyFileDefaults(nextActive.file);
+    event.target.value = "";
   }
 
   function handleUploadAnotherFile() {
@@ -457,10 +501,9 @@ function App() {
     setOutputFormat(capableOutputFormats(converter, file)[0]?.id || defaultOutputFormat(converter));
     setError("");
     setResult(null);
-    setPageCount(1);
+    setPageCount(isPdfFile(file) ? estimatePages(file) : 1);
     if (file && !converterAcceptsFile(converter, file)) {
-      setFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setError("That conversion type is not available for the active file.");
     }
   }
 
@@ -788,6 +831,7 @@ function App() {
                 <input
                   ref={fileInputRef}
                   type="file"
+                  multiple
                   accept={allAcceptedTypes(selectableConverters)}
                   onChange={handleFileChange}
                 />
@@ -799,6 +843,7 @@ function App() {
                 ref={fileInputRef}
                 className="sr-only-file-input"
                 type="file"
+                multiple
                 accept={allAcceptedTypes(selectableConverters)}
                 onChange={handleFileChange}
               />
@@ -823,7 +868,7 @@ function App() {
                   <div>
                     <FileText size={18} />
                     <span>
-                      <small>Uploaded file</small>
+                      <small>{fileQueue.length > 1 ? "Active file" : "Uploaded file"}</small>
                       <strong>{file.name}</strong>
                       <small>{fileKindLabel(file)}</small>
                     </span>
@@ -835,36 +880,25 @@ function App() {
                   </div>
                 </div>
 
-                {visibleRouteChoices.length > 0 && (
-                  <div className="suggested-routes" aria-label="Available conversion routes">
+                {fileQueue.length > 1 && (
+                  <div className="file-queue" aria-label="Queued uploaded files">
                     <div className="mini-section-heading">
-                      <span>Available for this {fileExtension(file)} file</span>
-                      <strong>Choose a conversion type</strong>
+                      <span>Queued files</span>
+                      <strong>{fileQueue.length} uploaded</strong>
                     </div>
-                    <div className="route-card-grid">
-                      {visibleRouteChoices.map((converter) => (
+                    <div className="file-queue-list">
+                      {fileQueue.map((entry) => (
                         <button
                           type="button"
-                          key={converter.id}
-                          className={classNames("route-card", selectedId === converter.id && "is-selected")}
-                          onClick={() => handleConverterSelect(converter)}
+                          key={entry.id}
+                          className={classNames("file-queue-item", entry.id === activeFileId && "is-active")}
+                          onClick={() => activateFileEntry(entry)}
                         >
-                          <span className="choice-icon">
-                            {converter.mode === "local-image" || converter.mode === "local-svg" ? (
-                              <ImageIcon size={18} />
-                            ) : converter.id === "invoice" ? (
-                              <FileJson size={18} />
-                            ) : converter.id === "bank" || converter.id === "screenshot" ? (
-                              <FileSpreadsheet size={18} />
-                            ) : (
-                              <FileText size={18} />
-                            )}
+                          <FileText size={16} />
+                          <span>
+                            <strong>{entry.file.name}</strong>
+                            <small>{fileKindLabel(entry.file)}</small>
                           </span>
-                          <strong>{converterDisplayTitle(converter, file)}</strong>
-                          <small>{converter.state === "Live" ? "Best match" : converter.state}</small>
-                          <em className={classNames("route-badge", routeKindLabel(converter).toLowerCase())}>
-                            {routeKindLabel(converter)}
-                          </em>
                         </button>
                       ))}
                     </div>
@@ -872,6 +906,25 @@ function App() {
                 )}
 
                 <div className="selected-route-panel">
+                  {routeChoices.length > 1 && (
+                    <label className="route-picker">
+                      <span>Conversion type</span>
+                      <select
+                        value={selectedId}
+                        onChange={(event) => {
+                          const nextConverter = routeChoices.find((converter) => converter.id === event.target.value);
+                          if (nextConverter) handleConverterSelect(nextConverter);
+                        }}
+                      >
+                        {routeChoices.map((converter) => (
+                          <option key={converter.id} value={converter.id}>
+                            {routeChoiceLabel(converter)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+
                   <div>
                     <span className={classNames("route-badge", routeKindLabel(selected).toLowerCase())}>
                       {routeKindLabel(selected)}

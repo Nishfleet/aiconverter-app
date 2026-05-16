@@ -1080,7 +1080,7 @@ tbody tr:last-child td {
   cursor: pointer;
 }
 
-.suggested-routes,
+.file-queue,
 .selected-route-panel {
   margin-top: 18px;
 }
@@ -1105,62 +1105,57 @@ tbody tr:last-child td {
   font-size: 12px;
 }
 
-.route-card-grid {
+.file-queue-list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
-.route-card {
-  position: relative;
-  min-height: 126px;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 8px;
+.file-queue-item {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
   text-align: left;
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 12px;
+  padding: 10px;
   color: var(--ink);
   background: var(--surface);
   cursor: pointer;
-  transition:
-    transform 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease;
 }
 
-.route-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+.file-queue-item.is-active {
+  border-color: rgba(37, 99, 235, 0.5);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-.route-card.is-selected {
-  border-color: rgba(37, 99, 235, 0.52);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-}
-
-.choice-icon {
-  width: 30px;
-  height: 30px;
+.file-queue-item svg {
   flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: var(--blue-soft);
-  color: var(--blue);
+  color: #ef4444;
 }
 
-.route-card strong {
-  max-width: 160px;
-  font-size: 13px;
-  line-height: 1.25;
+.file-queue-item span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
 }
 
-.route-card small {
-  color: var(--muted);
+.file-queue-item strong,
+.file-queue-item small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-queue-item strong {
   font-size: 12px;
+}
+
+.file-queue-item small {
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .route-badge {
@@ -1192,6 +1187,32 @@ tbody tr:last-child td {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #fbfcff;
+}
+
+.route-picker {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.route-picker span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.route-picker select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0 12px;
+  color: var(--ink);
+  background: #ffffff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 760;
 }
 
 .selected-route-panel h2 {
@@ -1736,7 +1757,7 @@ tbody tr:last-child td {
     border-top: 1px solid var(--line);
   }
 
-  .route-card-grid {
+  .file-queue-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1781,7 +1802,7 @@ tbody tr:last-child td {
     min-height: 120px;
   }
 
-  .route-card-grid {
+  .file-queue-list {
     grid-template-columns: 1fr;
   }
 
