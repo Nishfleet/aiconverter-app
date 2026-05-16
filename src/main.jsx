@@ -153,12 +153,6 @@ function previewMetricLabel(converterId, result) {
   return `${result.rowCount || 0} rows`;
 }
 
-function routeKindLabel(converter) {
-  if (isLocalConverter(converter)) return "Local";
-  if (isProviderConverter(converter)) return "Provider";
-  return "AI";
-}
-
 function fileKindLabel(candidate) {
   if (!candidate) return "No file selected";
   const extension = fileExtension(candidate);
@@ -235,22 +229,6 @@ function capableOutputFormats(converter, candidate) {
   return formats.filter((format) => capableIds.includes(format.id) && format.id !== inputFormat);
 }
 
-function routeChoiceLabel(converter) {
-  const labels = {
-    bank: "Bank statement data",
-    receipt: "Receipt data",
-    invoice: "Invoice / bill data",
-    screenshot: "Screenshot table data",
-    "document-markdown": "Document to Markdown",
-    "audio-transcript": "Audio transcript",
-    "screenshot-code": "Screenshot to HTML",
-    "image-format": "Browser image conversion",
-    "raster-vector": "Raster to SVG",
-    "universal-file": "File format conversion"
-  };
-  return labels[converter?.id] || converter?.title || "Conversion";
-}
-
 function fileEntryId(candidate) {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `${candidate.name}-${candidate.size}-${candidate.lastModified}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -264,30 +242,14 @@ function preferredConverterForFile(matches, currentSelectedId) {
 
 function selectedRouteTitle(converter, candidate) {
   if (converter?.id === "universal-file" && candidate) return `Convert uploaded ${fileExtension(candidate)} file`;
-  return routeChoiceLabel(converter);
+  return converter?.title || "Convert uploaded file";
 }
 
 function selectedRouteDescription(converter, candidate) {
   if (converter?.id === "universal-file" && candidate) {
-    return `Choose the output format for ${candidate.name}. Provider conversion runs in the background and keeps the result private.`;
+    return `Choose the output format for ${candidate.name}. The conversion runs in the background and keeps the result private.`;
   }
   return converter?.description || "";
-}
-
-function routeRank(converter) {
-  const rank = {
-    bank: 1,
-    receipt: 2,
-    invoice: 3,
-    screenshot: 4,
-    "document-markdown": 5,
-    "audio-transcript": 6,
-    "screenshot-code": 7,
-    "local-image": 8,
-    "local-svg": 9,
-    "universal-file": 10
-  };
-  return rank[converter?.id] || 99;
 }
 
 function App() {
@@ -324,14 +286,6 @@ function App() {
   const selectableConverters = useMemo(
     () => liveConverters.filter(converterIsEnabled),
     [liveConverters, universalProviderReady]
-  );
-  const compatibleConverters = useMemo(
-    () => (file ? selectableConverters.filter((converter) => converterAcceptsFile(converter, file)) : []),
-    [file, selectableConverters]
-  );
-  const routeChoices = useMemo(
-    () => [...compatibleConverters].sort((a, b) => routeRank(a) - routeRank(b)),
-    [compatibleConverters]
   );
   const selectedOutputFormats = useMemo(() => capableOutputFormats(selected, file), [selected, file]);
   const selectedPlan = useMemo(() => planForPages(pageCount), [pageCount]);
@@ -489,22 +443,6 @@ function App() {
     setResult(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     fileInputRef.current?.click();
-  }
-
-  function handleConverterSelect(converter) {
-    if (converter.id === "email") return;
-    if (!converterIsEnabled(converter)) {
-      setError("Universal provider conversion is not connected yet.");
-      return;
-    }
-    setSelectedId(converter.id);
-    setOutputFormat(capableOutputFormats(converter, file)[0]?.id || defaultOutputFormat(converter));
-    setError("");
-    setResult(null);
-    setPageCount(isPdfFile(file) ? estimatePages(file) : 1);
-    if (file && !converterAcceptsFile(converter, file)) {
-      setError("That conversion type is not available for the active file.");
-    }
   }
 
   function resetTurnstile() {
@@ -826,7 +764,7 @@ function App() {
                 </span>
                 <span>
                   <strong>Drop a file here or click to upload</strong>
-                  <small>PDF, images, audio, documents, and provider-backed routes</small>
+                  <small>PDF, images, audio, documents, media, and archives</small>
                 </span>
                 <input
                   ref={fileInputRef}
@@ -906,29 +844,7 @@ function App() {
                 )}
 
                 <div className="selected-route-panel">
-                  {routeChoices.length > 1 && (
-                    <label className="route-picker">
-                      <span>Conversion type</span>
-                      <select
-                        value={selectedId}
-                        onChange={(event) => {
-                          const nextConverter = routeChoices.find((converter) => converter.id === event.target.value);
-                          if (nextConverter) handleConverterSelect(nextConverter);
-                        }}
-                      >
-                        {routeChoices.map((converter) => (
-                          <option key={converter.id} value={converter.id}>
-                            {routeChoiceLabel(converter)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-
                   <div>
-                    <span className={classNames("route-badge", routeKindLabel(selected).toLowerCase())}>
-                      {routeKindLabel(selected)}
-                    </span>
                     <h2>{selectedRouteTitle(selected, file)}</h2>
                     <p>{selectedRouteDescription(selected, file)}</p>
                   </div>
@@ -998,7 +914,7 @@ function App() {
 
                   {!selectedEnabled && (
                     <div className="inline-note">
-                      Provider conversion is built but waiting on a production provider key.
+                      This conversion is built but waiting on a production key.
                     </div>
                   )}
                 </div>

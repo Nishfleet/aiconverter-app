@@ -1158,30 +1158,6 @@ tbody tr:last-child td {
   font-size: 11px;
 }
 
-.route-badge {
-  width: fit-content;
-  min-height: 24px;
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 0 8px;
-  color: #175cd3;
-  background: var(--blue-soft);
-  font-style: normal;
-  font-size: 11px;
-  font-weight: 820;
-}
-
-.route-badge.local {
-  color: #087443;
-  background: #e7f8ef;
-}
-
-.route-badge.provider {
-  color: #7a4b00;
-  background: #fff5db;
-}
-
 .selected-route-panel {
   padding: 16px;
   border: 1px solid var(--line);
@@ -1189,34 +1165,8 @@ tbody tr:last-child td {
   background: #fbfcff;
 }
 
-.route-picker {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.route-picker span {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.route-picker select {
-  width: 100%;
-  min-height: 44px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 0 12px;
-  color: var(--ink);
-  background: #ffffff;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 760;
-}
-
 .selected-route-panel h2 {
-  margin: 10px 0 0;
+  margin: 0;
   font-size: 20px;
   line-height: 1.2;
 }
