@@ -28,6 +28,10 @@ for (let round = 0; round < rounds; round += 1) {
       timings.push(elapsed);
       if (!response.ok) failures.push({ url, status: response.status, elapsed });
       if (path === "/" && !body.includes("AI Converter")) failures.push({ url, status: "missing-brand", elapsed });
+      if (path === "/api/health") {
+        const health = JSON.parse(body);
+        if (!health.ok) failures.push({ url, status: "health-not-ready", missing: health.missing || [], elapsed });
+      }
       if (path === "/llms.txt" && !body.includes("Audio transcript")) failures.push({ url, status: "stale-llms", elapsed });
     } catch (error) {
       failures.push({ url, status: error?.message || "fetch failed" });
@@ -39,7 +43,7 @@ const negativeChecks = [
   fetch(new URL("/api/convert", baseUrl), { method: "POST" }).then(async (response) => ({
     name: "empty convert",
     status: response.status,
-    ok: response.status === 400 || response.status === 403 || response.status === 500,
+    ok: response.status === 400 || response.status === 403 || response.status === 429,
     body: await response.text()
   })),
   fetch(new URL("/api/download", baseUrl), {

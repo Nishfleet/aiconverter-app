@@ -35,6 +35,9 @@ npm run check:pricing
 node --test tests/*.test.mjs
 npm run stress:converters
 npm run build
+npm run stress:live
+npm run stress:checkout
+npm run readiness:live
 ```
 
 Database notes: [ops/database.md](ops/database.md)
@@ -51,7 +54,7 @@ Use the safe-deploy wrapper on Nish's machine before live commands.
 
 - Preview is free.
 - Full AI extraction unlock is paid.
-- Paid unlock is currently blocked until Dodo activates live merchant payments.
+- Dodo checkout creation is live; a real paid card/webhook/download drill must pass before scaling paid traffic.
 - Source files are private and short-retention.
 - No human review queue.
 - Broad generic 200+ format conversion, video conversion, archive conversion, and pixel-perfect screenshot-to-code are not live unless a future page says otherwise.

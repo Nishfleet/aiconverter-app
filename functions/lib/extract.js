@@ -5,6 +5,7 @@ import { validateStatementRows } from "./validate-statement.js";
 const DEFAULT_AZURE_MODEL = "prebuilt-bankStatement.us";
 const DEFAULT_AZURE_API_VERSION = "2024-11-30";
 const DEFAULT_MISTRAL_MODEL = "mistral-ocr-latest";
+const DEFAULT_WHISPER_MODEL = "@cf/openai/whisper-large-v3-turbo";
 
 const extractionSchema = {
   type: "object",
@@ -299,9 +300,12 @@ async function convertAudioToTranscript(env, fileName, contentType, arrayBuffer,
     return failConversion("Audio transcription needs the Cloudflare Workers AI binding before it can run.", "workers-ai-whisper");
   }
 
-  const response = await env.AI.run(env.WHISPER_MODEL || "@cf/openai/whisper", {
-    audio: [...new Uint8Array(arrayBuffer)]
+  const model = env.WHISPER_MODEL || DEFAULT_WHISPER_MODEL;
+  const response = await env.AI.run(model, {
+    audio: arrayBufferToBase64(arrayBuffer),
+    task: "transcribe"
   });
+
   const transcript = String(response?.text || response?.transcription || response?.result?.text || "").trim();
   if (!transcript) {
     return failConversion("The audio converter could not safely transcribe this file.", "workers-ai-whisper");

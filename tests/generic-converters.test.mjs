@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { convertFileToCsv } from "../functions/lib/extract.js";
+import { assertSupportedUpload } from "../functions/lib/jobs.js";
 
 const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).buffer;
 
@@ -240,8 +241,9 @@ test("audio converter creates TXT transcript with Workers AI", async () => {
     {
       AI: {
         async run(model, input) {
-          assert.equal(model, "@cf/openai/whisper");
-          assert.ok(Array.isArray(input.audio));
+          assert.equal(model, "@cf/openai/whisper-large-v3-turbo");
+          assert.equal(typeof input.audio, "string");
+          assert.ok(input.audio.length > 0);
           return { text: "Close the books and export the statement rows.", word_count: 8 };
         }
       }
@@ -256,6 +258,40 @@ test("audio converter creates TXT transcript with Workers AI", async () => {
   assert.equal(result.outputFormat, "txt");
   assert.match(result.content, /Close the books/);
   assert.match(result.csv, /word_count/);
+});
+
+test("audio converter sends larger files as one base64 audio file instead of a huge byte array", async () => {
+  const calls = [];
+  const bytes = new Uint8Array(1024 * 1024 + 8);
+  bytes.set([0xff, 0xfb, 0x90, 0x64], 0);
+
+  const result = await convertFileToCsv(
+    {
+      AI: {
+        async run(model, input) {
+          calls.push({ model, input });
+          assert.equal(typeof input.audio, "string");
+          assert.ok(input.audio.length > bytes.byteLength);
+          return { text: "whole file transcript", word_count: 3 };
+        }
+      }
+    },
+    "audio-transcript",
+    "memo.mp3",
+    "audio/mpeg",
+    bytes.buffer
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(calls.length, 1);
+  assert.match(result.content, /whole file transcript/);
+  assert.deepEqual(result.warnings, []);
+});
+
+test("audio upload validation accepts ADTS AAC files that are advertised in the UI", () => {
+  const bytes = new Uint8Array([0xff, 0xf1, 0x50, 0x80, 0x00, 0x1f, 0xfc, 0x00]);
+  const file = { name: "voice.aac", type: "audio/aac", size: bytes.byteLength };
+  assert.equal(assertSupportedUpload(file, bytes.buffer, "audio-transcript"), "");
 });
 
 test("audio converter can produce JSON transcript", async () => {

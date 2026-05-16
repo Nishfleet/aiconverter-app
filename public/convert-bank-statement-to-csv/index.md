@@ -7,7 +7,7 @@ description: A practical bank statement to CSV converter for PDF uploads, sample
 
 Use AI Converter when you have a bank statement PDF and need a CSV you can open in a spreadsheet.
 
-The current workflow is direct upload only. Email monitoring and receipt conversion are upcoming modules, not live bank-statement intake.
+The current bank-statement workflow is direct upload only. Email monitoring is upcoming, not live bank-statement intake. Receipt conversion is a separate beta module.
 
 ## Output columns
 

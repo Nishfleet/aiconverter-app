@@ -1,6 +1,6 @@
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
 import { createDodoCheckout } from "../lib/dodo.js";
-import { getAuthorizedJob, hasRequiredBindings, PLANS } from "../lib/jobs.js";
+import { getAuthorizedJob, hasRequiredBindings, jobAccessCookie, PLANS, tokenFromBodyOrCookie } from "../lib/jobs.js";
 
 const TRUSTED_CHECKOUT_HOSTS = new Set([
   "checkout.dodopayments.com",
@@ -23,7 +23,9 @@ export async function onRequestPost({ request, env }) {
     return badRequest("Invalid checkout request.");
   }
 
-  const job = await getAuthorizedJob(env, String(body.jobId || ""), String(body.token || ""));
+  const jobId = String(body.jobId || "");
+  const token = tokenFromBodyOrCookie(request, jobId, String(body.token || ""));
+  const job = await getAuthorizedJob(env, jobId, token);
   if (!job) return badRequest("Unknown or expired conversion.");
   if (!["preview_ready", "complete"].includes(job.status)) {
     return badRequest("Only ready conversions can be unlocked.");
@@ -35,6 +37,8 @@ export async function onRequestPost({ request, env }) {
     return json({
       mode: job.status === "complete" ? "download" : "finalize",
       finalizeUrl: "/api/finalize"
+    }, {
+      headers: { "Set-Cookie": jobAccessCookie(job.id, token) }
     });
   }
 
@@ -59,6 +63,8 @@ export async function onRequestPost({ request, env }) {
       mode: "checkout",
       checkoutUrl: dodoCheckoutUrl,
       plan
+    }, {
+      headers: { "Set-Cookie": jobAccessCookie(job.id, token) }
     });
   }
 
@@ -94,6 +100,8 @@ export async function onRequestPost({ request, env }) {
     mode: "checkout",
     checkoutUrl: url.toString(),
     plan
+  }, {
+    headers: { "Set-Cookie": jobAccessCookie(job.id, token) }
   });
 }
 

@@ -2,7 +2,7 @@ import { runFullConversion } from "../lib/conversion.js";
 import { requestDodoRefund } from "../lib/dodo.js";
 import { CONVERTER_COLUMNS } from "../lib/extract.js";
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
-import { getAuthorizedJob, hasRequiredBindings, outputFormatFromResultKey, PLANS, sourceAvailableForRedo, updateJob } from "../lib/jobs.js";
+import { getAuthorizedJob, hasRequiredBindings, outputFormatFromResultKey, PLANS, sourceAvailableForRedo, tokenFromBodyOrCookie, updateJob } from "../lib/jobs.js";
 
 export function onRequestGet() {
   return methodNotAllowed("POST");
@@ -20,7 +20,10 @@ export async function onRequestPost({ request, env }) {
     return badRequest("Invalid redo request.");
   }
 
-  let job = await getAuthorizedJob(env, String(body.jobId || ""), String(body.token || ""));
+  const jobId = String(body.jobId || "");
+  const bodyToken = String(body.token || "");
+  const token = tokenFromBodyOrCookie(request, jobId, bodyToken);
+  let job = await getAuthorizedJob(env, jobId, token);
   if (!job) return badRequest("Unknown or expired conversion.");
   if (!job.paid_at) return json({ error: "Redo is available only after payment." }, { status: 402 });
   if (Number(job.redo_count || 0) >= 1) {
@@ -37,7 +40,7 @@ export async function onRequestPost({ request, env }) {
     redo_count: Number(job.redo_count || 0) + 1,
     last_redo_at: new Date().toISOString()
   });
-  job = await getAuthorizedJob(env, String(body.jobId || ""), String(body.token || ""));
+  job = await getAuthorizedJob(env, jobId, token);
 
   try {
     const result = await runFullConversion(env, job, {
@@ -53,7 +56,7 @@ export async function onRequestPost({ request, env }) {
       return json({
         status: "failed",
         jobId: job.id,
-        token: String(body.token || ""),
+        token: bodyToken ? token : "",
         plan: PLANS[job.plan_id] || PLANS.starter,
         converterId: job.converter_id || "bank",
         outputFormat: outputFormatFromResultKey(job.result_key),
@@ -69,7 +72,7 @@ export async function onRequestPost({ request, env }) {
     return json({
       status: "complete",
       jobId: job.id,
-      token: String(body.token || ""),
+      token: bodyToken ? token : "",
       plan: PLANS[job.plan_id] || PLANS.starter,
       converterId: job.converter_id || "bank",
       outputFormat: result.outputFormat || outputFormatFromResultKey(job.result_key),
@@ -96,7 +99,7 @@ export async function onRequestPost({ request, env }) {
     return json({
       status: "failed",
       jobId: job.id,
-      token: String(body.token || ""),
+      token: bodyToken ? token : "",
       plan: PLANS[job.plan_id] || PLANS.starter,
       converterId: job.converter_id || "bank",
       outputFormat: outputFormatFromResultKey(job.result_key),

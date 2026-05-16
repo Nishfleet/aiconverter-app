@@ -2,7 +2,7 @@ import { runFullConversion } from "../lib/conversion.js";
 import { verifyDodoPayment } from "../lib/dodo.js";
 import { CONVERTER_COLUMNS } from "../lib/extract.js";
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
-import { getAuthorizedJob, hasRequiredBindings, outputFormatFromResultKey, parseStoredPreview, PLANS, sourceAvailableForRedo } from "../lib/jobs.js";
+import { getAuthorizedJob, hasRequiredBindings, outputFormatFromResultKey, parseStoredPreview, PLANS, sourceAvailableForRedo, tokenFromBodyOrCookie } from "../lib/jobs.js";
 
 export function onRequestGet() {
   return methodNotAllowed("POST");
@@ -20,13 +20,16 @@ export async function onRequestPost({ request, env }) {
     return badRequest("Invalid finalize request.");
   }
 
-  let job = await getAuthorizedJob(env, String(body.jobId || ""), String(body.token || ""));
+  const jobId = String(body.jobId || "");
+  const bodyToken = String(body.token || "");
+  const token = tokenFromBodyOrCookie(request, jobId, bodyToken);
+  let job = await getAuthorizedJob(env, jobId, token);
   if (!job) return badRequest("Unknown or expired conversion.");
 
   if (!job.paid_at && env.FREE_DOWNLOADS_ENABLED !== "true") {
     const verified = await verifyDodoPayment(env, String(body.paymentId || ""), job);
     if (!verified) return json({ error: "Payment could not be verified yet." }, { status: 402 });
-    job = await getAuthorizedJob(env, String(body.jobId || ""), String(body.token || ""));
+    job = await getAuthorizedJob(env, jobId, token);
   }
 
   if (job.status === "complete") {
@@ -35,7 +38,7 @@ export async function onRequestPost({ request, env }) {
     return json({
       status: "complete",
       jobId: job.id,
-      token: String(body.token || ""),
+      token: bodyToken ? token : "",
       plan: PLANS[job.plan_id] || PLANS.starter,
       converterId: job.converter_id || "bank",
       outputFormat: outputFormatFromResultKey(job.result_key),
@@ -59,7 +62,7 @@ export async function onRequestPost({ request, env }) {
       return json({
         status: "failed",
         jobId: job.id,
-        token: String(body.token || ""),
+        token: bodyToken ? token : "",
         plan: PLANS[job.plan_id] || PLANS.starter,
         converterId: job.converter_id || "bank",
         outputFormat: outputFormatFromResultKey(job.result_key),
@@ -74,7 +77,7 @@ export async function onRequestPost({ request, env }) {
     return json({
       status: "complete",
       jobId: job.id,
-      token: String(body.token || ""),
+      token: bodyToken ? token : "",
       plan: PLANS[job.plan_id] || PLANS.starter,
       converterId: job.converter_id || "bank",
       outputFormat: result.outputFormat || outputFormatFromResultKey(job.result_key),
@@ -89,7 +92,7 @@ export async function onRequestPost({ request, env }) {
   } catch (error) {
     return json(
       {
-        error: error?.message || "The full CSV could not be generated."
+        error: error?.message || "The full file could not be generated."
       },
       { status: 500 }
     );

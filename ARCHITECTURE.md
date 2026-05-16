@@ -37,6 +37,7 @@
 - Invoice beta extraction can export invoice summary fields to CSV or JSON and includes line items in JSON when safely detected.
 - Screenshot beta extraction handles markdown tables, OCR table blocks, HTML table output, and obvious date-description-amount rows.
 - Audio transcript beta exports TXT or JSON transcripts through Workers AI speech recognition.
+- Audio transcript sends whole-file base64 to Workers AI instead of expanding the upload into one large JavaScript number array.
 - Document-to-Markdown beta exports Markdown from PDF, image, HTML/XML, CSV, Office, OpenDocument, and Apple Numbers inputs supported by Cloudflare Markdown Conversion.
 - Screenshot-to-HTML beta generates a clean HTML starter from detected screenshot content and explicitly does not claim pixel-perfect cloning.
 - Server-side page estimation so users cannot understate page count to force a cheaper plan.
@@ -74,3 +75,4 @@ The converter does not charge or export a full generated file when:
 - AI-monitored email intake only after the direct upload workflow is stable.
 - Generic 200+ format conversion, video conversion, archive conversion, and pixel-perfect image-to-code remain unclaimed until a real provider-backed connector is configured and tested.
 - Cloudflare WAF rate limiting before broader paid traffic.
+- A real paid card/webhook/finalize/download drill is still required before scaling paid traffic beyond synthetic checkout smoke tests.

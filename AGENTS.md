@@ -9,7 +9,7 @@ This repo is the durable local home for `aiconverter.app`.
 - Treat Cloudflare D1, R2, Pages, and Dodo changes as live production work.
 - Keep D1 as the workflow database unless a real scale/feature need appears; see `ops/database.md`.
 - Run pricing, tests, audit, and build before deploy when possible.
-- Keep Dodo live payment activation as an external blocker until checkout stops returning `MERCHANT_NOT_LIVE`.
+- Treat Dodo checkout creation, real payment webhook, paid finalize, download, redo, and refund proof as separate checks; checkout creation alone is not full paid-path proof.
 
 ## Checks
 
@@ -18,6 +18,10 @@ npm run check:pricing
 node --test tests/*.test.mjs
 npm audit --audit-level=moderate
 npm run build
+npm run stress:converters
+npm run stress:live
+npm run stress:checkout
+npm run readiness:live
 ```
 
 ## Deploy

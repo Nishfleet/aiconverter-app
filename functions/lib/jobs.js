@@ -299,12 +299,15 @@ function assertAudioSignature(fileName, arrayBuffer) {
   const isMp3 = ascii.startsWith("ID3") || (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0);
   const isWav = ascii.startsWith("RIFF") && ascii.slice(8, 12) === "WAVE";
   const isMp4Audio = ascii.slice(4, 8) === "ftyp";
+  const isAdtsAac = bytes[0] === 0xff && (bytes[1] === 0xf1 || bytes[1] === 0xf9);
+  const isAdifAac = ascii.startsWith("ADIF");
   const isOgg = ascii.startsWith("OggS");
   const isWebm = bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
   const matched =
     (fileName.endsWith(".mp3") && isMp3) ||
     (fileName.endsWith(".wav") && isWav) ||
-    ((fileName.endsWith(".m4a") || fileName.endsWith(".aac")) && isMp4Audio) ||
+    (fileName.endsWith(".m4a") && isMp4Audio) ||
+    (fileName.endsWith(".aac") && (isMp4Audio || isAdtsAac || isAdifAac)) ||
     (fileName.endsWith(".ogg") && isOgg) ||
     (fileName.endsWith(".webm") && isWebm);
   return matched ? "" : "That audio file type is not supported yet.";
@@ -558,6 +561,33 @@ export async function getAuthorizedJob(env, id, token) {
     .bind(id, tokenHash)
     .first();
   return enforceJobExpiry(env, job || null);
+}
+
+export function jobAccessCookie(jobId, token, maxAgeSeconds = RESULT_RETENTION_SECONDS) {
+  const value = `${encodeURIComponent(String(jobId || ""))}.${encodeURIComponent(String(token || ""))}`;
+  return `__Host-aiconverter_job=${value}; Path=/; Max-Age=${maxAgeSeconds}; HttpOnly; Secure; SameSite=Lax`;
+}
+
+export function clearJobAccessCookie() {
+  return "__Host-aiconverter_job=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax";
+}
+
+export function tokenFromJobCookie(request, jobId) {
+  const cookie = request.headers.get("Cookie") || "";
+  const match = cookie.match(/(?:^|;\s*)__Host-aiconverter_job=([^;]+)/);
+  if (!match) return "";
+  const [cookieJobId, cookieToken] = String(match[1] || "").split(".");
+  try {
+    const decodedJobId = decodeURIComponent(cookieJobId || "");
+    const decodedToken = decodeURIComponent(cookieToken || "");
+    return decodedJobId === String(jobId || "") ? decodedToken : "";
+  } catch {
+    return "";
+  }
+}
+
+export function tokenFromBodyOrCookie(request, jobId, token = "") {
+  return String(token || "") || tokenFromJobCookie(request, jobId);
 }
 
 export async function enforceRateLimit(env, request) {

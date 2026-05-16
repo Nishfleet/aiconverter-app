@@ -1,5 +1,5 @@
 import { badRequest, json, methodNotAllowed, serverError, withSecurityHeaders } from "../lib/http.js";
-import { getAuthorizedJob, hasRequiredBindings, outputFormatFromResultKey, updateJob } from "../lib/jobs.js";
+import { getAuthorizedJob, hasRequiredBindings, outputFormatFromResultKey, tokenFromBodyOrCookie, updateJob } from "../lib/jobs.js";
 
 export async function onRequestPost(context) {
   return handleDownload(context);
@@ -15,7 +15,8 @@ async function handleDownload({ request, env }) {
   }
 
   const credentials = await downloadCredentials(request);
-  const job = await getAuthorizedJob(env, credentials.jobId, credentials.token);
+  const token = tokenFromBodyOrCookie(request, credentials.jobId, credentials.token);
+  const job = await getAuthorizedJob(env, credentials.jobId, token);
   if (!job) return badRequest("Unknown or expired conversion.");
   if (job.status !== "complete") return badRequest("The conversion is not complete.");
 

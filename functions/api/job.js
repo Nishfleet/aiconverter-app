@@ -1,7 +1,7 @@
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
 import { verifyDodoPayment } from "../lib/dodo.js";
 import { CONVERTER_COLUMNS } from "../lib/extract.js";
-import { getAuthorizedJob, hasRequiredBindings, outputFormatFromResultKey, parseStoredPreview, sourceAvailableForRedo } from "../lib/jobs.js";
+import { getAuthorizedJob, hasRequiredBindings, outputFormatFromResultKey, parseStoredPreview, sourceAvailableForRedo, tokenFromBodyOrCookie } from "../lib/jobs.js";
 
 export function onRequestGet() {
   return methodNotAllowed("POST");
@@ -20,7 +20,8 @@ export async function onRequestPost({ request, env }) {
   }
 
   const jobId = String(body.jobId || "");
-  const token = String(body.token || "");
+  const bodyToken = String(body.token || "");
+  const token = tokenFromBodyOrCookie(request, jobId, bodyToken);
   let job = await getAuthorizedJob(env, jobId, token);
   if (!job) return badRequest("Unknown or expired conversion.");
 
@@ -43,7 +44,7 @@ export async function onRequestPost({ request, env }) {
   return json({
     status: job.status,
     jobId: job.id,
-    token,
+    token: bodyToken ? token : "",
     plan: job.plan_id,
     converterId: job.converter_id || "bank",
     outputFormat: outputFormatFromResultKey(job.result_key),
