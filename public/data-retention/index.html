@@ -19,71 +19,87 @@
           <span class="brand-mark">AI</span>
           <span>AI Converter</span>
         </a>
-        <a class="top-link" href="/">Back to converter</a>
+        <a class="top-link" href="/">Open converter</a>
       </header>
 
       <section class="legal-hero">
-        <p class="eyebrow">Data retention</p>
-        <h1>Short retention for sensitive files</h1>
-        <p class="lede">
-          AI Converter keeps sensitive files only as long as needed for preview,
-          paid unlock, redo, and download. Retention is intentionally short because
-          source documents are sensitive.
-        </p>
+        <div>
+          <p class="eyebrow">Data retention</p>
+          <h1>Short windows for sensitive files.</h1>
+        </div>
+        <div>
+          <p class="lede">
+            AI Converter keeps source files only long enough to preview, unlock, redo,
+            and download the conversion. The product is built around short retention,
+            not long-term file storage.
+          </p>
+          <p class="hero-note">Generated files expire after 7 days.</p>
+        </div>
+      </section>
+
+      <section class="timeline" aria-label="Retention windows">
+        <div class="timeline-item">
+          <span class="timeline-index">01</span>
+          <div>
+            <h2>Source files</h2>
+            <p>
+              Deleted after failed preview, failed full extraction, completed redo, or
+              the 24-hour private source lifecycle.
+            </p>
+          </div>
+          <span class="timeline-tag">Up to 24h</span>
+        </div>
+        <div class="timeline-item">
+          <span class="timeline-index">02</span>
+          <div>
+            <h2>Generated files</h2>
+            <p>
+              Kept for download after conversion, then expired. Download the file after
+              the export completes if you need a copy later.
+            </p>
+          </div>
+          <span class="timeline-tag">7 days</span>
+        </div>
+        <div class="timeline-item">
+          <span class="timeline-index">03</span>
+          <div>
+            <h2>Browser-local routes</h2>
+            <p>
+              Image-format and raster-to-SVG conversions that run locally do not create
+              source files, generated files, jobs, or payment records on AI Converter.
+            </p>
+          </div>
+          <span class="timeline-tag">No server file</span>
+        </div>
       </section>
 
       <section class="policy-grid">
         <article class="policy-card">
-          <h2>Source files</h2>
+          <p class="kicker">Metadata</p>
+          <h2>Small records may stay longer.</h2>
           <p>
-            Source files are deleted after failed preview, failed full extraction,
-            completed redo, or the 24-hour private source lifecycle. This means the
-            automatic redo window is time-limited.
+            Minimal metadata such as job status, selected plan, timestamps, row count,
+            confidence, payment status, and refund status may be retained for payment
+            records, abuse prevention, debugging, and compliance.
           </p>
         </article>
 
         <article class="policy-card">
-          <h2>Generated files</h2>
+          <p class="kicker">Abuse prevention</p>
+          <h2>Some abuse signals last longer.</h2>
           <p>
-            Generated files expire after 7 days.
-            Download the file after the paid export completes and keep your own copy
-            if you need it later.
+            Hashed connection data, file hashes, and preview-limit events may be retained
+            long enough to limit repeated free previews, payment reuse, and refund abuse.
+            These records are not used to train a model.
           </p>
         </article>
 
-        <article class="policy-card">
-          <h2>Local image conversions</h2>
+        <article class="policy-card is-wide">
+          <p class="kicker">Deletion requests</p>
+          <h2>Use the job ID, not the source file.</h2>
           <p>
-            PNG/JPG/WEBP image-format and raster-to-SVG conversions run in the
-            browser and do not create source files, generated files, jobs, or
-            payment records on AI Converter.
-          </p>
-        </article>
-
-        <article class="policy-card">
-          <h2>Job metadata</h2>
-          <p>
-            Minimal metadata such as job status, selected plan, timestamps, row
-            count, confidence, payment status, and refund status may be retained for
-            payment records, abuse prevention, debugging, and compliance.
-          </p>
-        </article>
-
-        <article class="policy-card">
-          <h2>Abuse-prevention records</h2>
-          <p>
-            Hashed connection data, file hashes, and preview-limit events may be
-            retained long enough to limit repeated free previews, payment reuse,
-            and refund abuse. These records are not used to train a model.
-          </p>
-        </article>
-
-        <article class="policy-card">
-          <h2>Deletion requests</h2>
-          <p>
-            For deletion questions, use the <a href="/support">support form</a>
-            with your job ID and payment email. Do not send source files
-            through support.
+            For deletion questions, use the <a href="/support">support form</a> with your
+            job ID and payment email. Do not send source files through support.
           </p>
         </article>
       </section>

@@ -5,12 +5,12 @@ description: Convert a bank statement PDF to CSV with direct upload, free previe
 
 # Bank statement PDF to CSV
 
-AI Converter turns bank statement PDFs into CSV files for spreadsheet review.
+AI Converter turns bank statement PDFs into spreadsheet-ready CSV. Upload the PDF, check sample rows first, then unlock the full CSV only when the preview looks useful.
 
 ## Workflow
 
 1. Upload a bank statement PDF.
-2. Review a free sample preview.
+2. Review sample rows before payment.
 3. Unlock the full CSV if the preview is usable.
 4. Download the generated CSV.
 
@@ -24,3 +24,5 @@ AI Converter turns bank statement PDFs into CSV files for spreadsheet review.
 ## Limits
 
 Files can fail when they are password-protected, corrupted, unusual, low quality, or too large. AI Converter currently accepts PDFs up to 50 MB and does not claim every bank format is supported.
+
+No bank login is requested. The export should be reviewed before important use.

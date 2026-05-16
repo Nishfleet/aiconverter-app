@@ -19,23 +19,28 @@
           <span class="brand-mark">AI</span>
           <span>AI Converter</span>
         </a>
-        <a class="top-link" href="/">Back to converter</a>
+        <a class="top-link" href="/">Open converter</a>
       </header>
 
       <section class="legal-hero">
-        <p class="eyebrow">Last updated May 12, 2026</p>
-        <h1>Privacy Policy</h1>
-        <p class="lede">
-          AI Converter handles only the file you choose and only for the
-          conversion you start. The service is built around private upload,
-          short retention, minimal metadata, browser-local routes where possible,
-          and no human file review queue.
-        </p>
+        <div>
+          <p class="eyebrow">Privacy Policy</p>
+          <h1>Your files are handled for the job you start.</h1>
+        </div>
+        <div>
+          <p class="lede">
+            AI Converter is built for private upload, short retention, minimal job
+            metadata, and preview-first conversion. We do not ask for bank credentials,
+            and sensitive files should not be sent through support.
+          </p>
+          <p class="hero-note">Last updated May 17, 2026.</p>
+        </div>
       </section>
 
       <section class="policy-grid">
         <article class="policy-card">
-          <h2>Information we collect</h2>
+          <p class="kicker">Collected</p>
+          <h2>Only what the workflow needs.</h2>
           <ul>
             <li>The source file you upload for conversion.</li>
             <li>Generated preview rows and converted output files.</li>
@@ -43,11 +48,21 @@
             <li>Payment status, payment ID, selected plan, timestamps, and job status.</li>
             <li>Security metadata such as hashed IP, hashed user agent, file hash, and abuse-limit events.</li>
           </ul>
-          <p>We do not ask for bank login credentials and you should never provide them.</p>
         </article>
 
         <article class="policy-card">
-          <h2>How files are processed</h2>
+          <p class="kicker">Not collected</p>
+          <h2>No bank logins. No files through support.</h2>
+          <p>
+            AI Converter does not ask for bank usernames, bank passwords, or one-time
+            banking codes. Support requests should include a job ID and short issue
+            summary, not pasted source-file data.
+          </p>
+        </article>
+
+        <article class="policy-card is-wide">
+          <p class="kicker">Processing</p>
+          <h2>Files are used to produce the output you requested.</h2>
           <p>
             Digital bank statement PDFs are parsed directly first. If a file is scanned,
             image-heavy, a receipt, an invoice, a screenshot, or too messy for the
@@ -60,17 +75,14 @@
             for the conversion you requested.
           </p>
           <p>
-            Low-confidence files fail closed instead of being sent to a human file review
-            queue. If the sample preview cannot be produced safely, there is no charge.
-          </p>
-          <p>
-            PNG/JPG/WEBP image-format and raster-to-SVG conversion run locally in
-            the browser and do not upload the image to AI Converter for those routes.
+            Low-confidence files fail closed instead of being sent to a human review queue.
+            If the preview cannot be produced safely, there is no charge.
           </p>
         </article>
 
         <article class="policy-card">
-          <h2>Payments</h2>
+          <p class="kicker">Payments</p>
+          <h2>We store unlock status, not card numbers.</h2>
           <p>
             Payments are handled by the payment provider. AI Converter stores payment
             status and payment identifiers needed to unlock a job, prevent payment
@@ -79,7 +91,8 @@
         </article>
 
         <article class="policy-card">
-          <h2>Retention</h2>
+          <p class="kicker">Retention</p>
+          <h2>Source files have a short lifecycle.</h2>
           <p>
             Source files are kept only for preview, paid unlock, and the automatic
             redo window. Source files are deleted after a failed preview, failed full
@@ -95,7 +108,8 @@
         </article>
 
         <article class="policy-card">
-          <h2>Security and abuse prevention</h2>
+          <p class="kicker">Security</p>
+          <h2>Access is tokened and rate-limited.</h2>
           <p>
             Uploaded files are stored privately, job access uses random tokens, and API
             responses are served with no-store caching. The service limits repeated free
@@ -105,7 +119,8 @@
         </article>
 
         <article class="policy-card">
-          <h2>Your requests</h2>
+          <p class="kicker">Requests</p>
+          <h2>Use support for privacy and deletion questions.</h2>
           <p>
             For deletion, privacy, or payment-related requests, use the
             <a href="/support">support form</a>. Do not send source files

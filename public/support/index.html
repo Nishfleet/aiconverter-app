@@ -19,22 +19,28 @@
           <span class="brand-mark">AI</span>
           <span>AI Converter</span>
         </a>
-        <a class="top-link" href="/">Back to converter</a>
+        <a class="top-link" href="/">Open converter</a>
       </header>
 
       <section class="legal-hero">
-        <p class="eyebrow">Support</p>
-        <h1>Get help</h1>
-        <p class="lede">
-          For conversion, payment, refund, deletion, or security requests, use this
-          support form. Include the job ID when you have one. Do not send full bank
-          statement, receipt, invoice, screenshot, or source-file details through support.
-        </p>
+        <div>
+          <p class="eyebrow">Support</p>
+          <h1>Get help without sending sensitive files.</h1>
+        </div>
+        <div>
+          <p class="lede">
+            Use this form for conversion, payment, refund, deletion, or security requests.
+            Include the job ID if you have one. Do not paste bank statements, receipts,
+            invoices, screenshots, or source-file details into the message.
+          </p>
+          <p class="hero-note">Support can use recorded job status when a job ID is provided.</p>
+        </div>
       </section>
 
       <section class="policy-grid">
-        <article class="policy-card">
-          <h2>Send a request</h2>
+        <article class="policy-card is-wide">
+          <p class="kicker">Request</p>
+          <h2>Send the issue, not the file.</h2>
           <form class="support-form" action="/api/support" method="post">
             <label>
               Issue type
@@ -69,6 +75,7 @@
         </article>
 
         <article class="policy-card">
+          <p class="kicker">Helpful details</p>
           <h2>What to include</h2>
           <ul>
             <li>Job ID and payment email, if available.</li>
@@ -79,7 +86,8 @@
         </article>
 
         <article class="policy-card">
-          <h2>Do not send source files</h2>
+          <p class="kicker">Privacy</p>
+          <h2>Do not send source files.</h2>
           <p>
             Sensitive files should only be submitted through the upload flow. Email
             monitoring is planned as a later feature, but the current support form
@@ -88,6 +96,7 @@
         </article>
 
         <article class="policy-card">
+          <p class="kicker">Paid jobs</p>
           <h2>Refund and redo help</h2>
           <p>
             Paid jobs include one automatic stronger redo. If the redo still cannot
@@ -97,6 +106,7 @@
         </article>
 
         <article class="policy-card">
+          <p class="kicker">Deletion</p>
           <h2>Deletion requests</h2>
           <p>
             Source files are deleted automatically after the 24-hour private source
@@ -106,6 +116,7 @@
         </article>
 
         <article class="policy-card">
+          <p class="kicker">Priority</p>
           <h2>Expected response</h2>
           <p>
             Support requests are recorded for review. Security reports and payment,

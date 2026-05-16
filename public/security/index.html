@@ -19,23 +19,28 @@
           <span class="brand-mark">AI</span>
           <span>AI Converter</span>
         </a>
-        <a class="top-link" href="/">Back to converter</a>
+        <a class="top-link" href="/">Open converter</a>
       </header>
 
       <section class="legal-hero">
-        <p class="eyebrow">Security posture</p>
-        <h1>Security</h1>
-        <p class="lede">
-          AI Converter is built for files you would not send through a shared
-          inbox: private storage, short retention, tokenized job access,
-          parser-first bank PDF processing, OCR fallback where needed, and no
-          human file review queue.
-        </p>
+        <div>
+          <p class="eyebrow">Security</p>
+          <h1>Private by default. Closed when unsure.</h1>
+        </div>
+        <div>
+          <p class="lede">
+            AI Converter is designed for files you would not put in a shared inbox:
+            private storage, tokened job access, short source retention, abuse limits,
+            and low-confidence failures instead of human file review.
+          </p>
+          <p class="hero-note">No public object URLs for uploaded or generated files.</p>
+        </div>
       </section>
 
       <section class="policy-grid">
         <article class="policy-card">
-          <h2>Upload and storage controls</h2>
+          <p class="kicker">Storage</p>
+          <h2>Files stay private.</h2>
           <ul>
             <li>Uploaded files and generated files are stored in private object storage.</li>
             <li>Files are not exposed through public object URLs.</li>
@@ -44,8 +49,9 @@
           </ul>
         </article>
 
-        <article class="policy-card">
-          <h2>Processing controls</h2>
+        <article class="policy-card is-wide">
+          <p class="kicker">Processing</p>
+          <h2>The route depends on the file and selected output.</h2>
           <p>
             Digital bank statement PDFs use the native parser first. OCR fallback is
             reserved for scanned, photo-based, receipt, invoice, screenshot, or
@@ -60,7 +66,8 @@
         </article>
 
         <article class="policy-card">
-          <h2>Retention controls</h2>
+          <p class="kicker">Retention</p>
+          <h2>Source files do not stay around.</h2>
           <ul>
             <li>Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle.</li>
             <li>Generated files expire after 7 days.</li>
@@ -69,7 +76,8 @@
         </article>
 
         <article class="policy-card">
-          <h2>Anti-abuse controls</h2>
+          <p class="kicker">Abuse prevention</p>
+          <h2>Guardrails are built into the flow.</h2>
           <ul>
             <li>Server-side file validation and PDF page estimation.</li>
             <li>Upload rate limits by hashed connection data.</li>
@@ -80,7 +88,8 @@
         </article>
 
         <article class="policy-card">
-          <h2>Limits</h2>
+          <p class="kicker">Limits</p>
+          <h2>Security does not mean every file works.</h2>
           <p>
             AI Converter currently accepts files up to 50 MB, audio-transcript files up to
             25 MB, and PDFs up to 500 pages. Password-protected, corrupted,
@@ -90,7 +99,8 @@
         </article>
 
         <article class="policy-card">
-          <h2>Report a security issue</h2>
+          <p class="kicker">Report</p>
+          <h2>Send a short security report.</h2>
           <p>
             Use the <a href="/support">support form</a> with a short description.
             Do not include full bank statement, receipt, screenshot, or source-file
