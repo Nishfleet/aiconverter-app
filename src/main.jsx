@@ -163,8 +163,97 @@ function routeKindLabel(converter) {
 
 function fileKindLabel(candidate) {
   if (!candidate) return "No file selected";
-  const extension = candidate.name.split(".").pop()?.toUpperCase() || "FILE";
+  const extension = fileExtension(candidate);
   return `${extension} · ${(candidate.size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function fileExtension(candidate) {
+  if (!candidate) return "FILE";
+  return candidate.name.split(".").pop()?.toUpperCase() || "FILE";
+}
+
+function normalizedFormatId(candidate) {
+  const extension = fileExtension(candidate).toLowerCase();
+  const aliases = {
+    jpeg: "jpg",
+    htm: "html"
+  };
+  return aliases[extension] || extension;
+}
+
+function fileFamily(candidate) {
+  if (!candidate) return "file";
+  const extension = fileExtension(candidate).toLowerCase();
+  const type = String(candidate.type || "").toLowerCase();
+  if (["png", "jpg", "jpeg", "webp", "gif", "bmp", "tif", "tiff", "heic", "heif", "svg"].includes(extension) || type.startsWith("image/")) return "image";
+  if (type.startsWith("video/")) return "video";
+  if (type.startsWith("audio/")) return "audio";
+  if (["mp4", "mov", "avi", "mkv", "wmv", "webm"].includes(extension)) return "video";
+  if (["mp3", "wav", "m4a", "aac", "ogg", "flac"].includes(extension)) return "audio";
+  if (["zip", "7z", "tar", "gz", "rar"].includes(extension)) return "archive";
+  if (["xls", "xlsx", "xlsm", "csv", "ods", "numbers"].includes(extension)) return "spreadsheet";
+  if (["ppt", "pptx", "odp"].includes(extension)) return "presentation";
+  if (["pdf", "doc", "docx", "rtf", "txt", "md", "html", "htm", "odt"].includes(extension)) return "document";
+  return "file";
+}
+
+function universalOutputCapabilityIds(candidate) {
+  const extension = fileExtension(candidate).toLowerCase();
+  const type = String(candidate?.type || "").toLowerCase();
+
+  const groups = {
+    text: ["txt", "md", "html", "pdf", "docx"],
+    pdf: ["pdf", "docx", "txt", "html", "md", "png", "jpg"],
+    word: ["docx", "pdf", "txt", "html", "md"],
+    spreadsheet: ["xlsx", "csv", "pdf", "html"],
+    presentation: ["pptx", "pdf", "png", "jpg"],
+    image: ["png", "jpg", "webp", "gif", "svg", "pdf"],
+    svg: ["svg", "png", "jpg", "webp", "pdf"],
+    audio: ["mp3", "wav", "m4a", "ogg", "flac"],
+    video: ["mp4", "webm", "mov", "gif"],
+    archive: ["zip", "7z", "tar"]
+  };
+
+  if (["txt", "md", "html", "htm", "rtf"].includes(extension) || ["text/plain", "text/markdown", "text/html"].includes(type)) return groups.text;
+  if (extension === "pdf" || type === "application/pdf") return groups.pdf;
+  if (["doc", "docx", "odt"].includes(extension)) return groups.word;
+  if (["csv", "xls", "xlsx", "xlsm", "xlsb", "ods", "numbers"].includes(extension)) return groups.spreadsheet;
+  if (["ppt", "pptx", "odp"].includes(extension)) return groups.presentation;
+  if (extension === "svg" || type === "image/svg+xml") return groups.svg;
+  if (fileFamily(candidate) === "image") return groups.image;
+  if (fileFamily(candidate) === "audio") return groups.audio;
+  if (fileFamily(candidate) === "video") return groups.video;
+  if (fileFamily(candidate) === "archive") return groups.archive;
+  return groups.text;
+}
+
+function capableOutputFormats(converter, candidate) {
+  const formats = converter?.outputFormats || [];
+  if (!candidate) return formats;
+  const inputFormat = normalizedFormatId(candidate);
+  if (converter?.id === "image-format") return formats.filter((format) => format.id !== inputFormat);
+  if (converter?.id !== "universal-file") return formats;
+  const capableIds = universalOutputCapabilityIds(candidate);
+  return formats.filter((format) => capableIds.includes(format.id) && format.id !== inputFormat);
+}
+
+function converterDisplayTitle(converter, candidate, outputFormat) {
+  if (converter?.id === "universal-file" && candidate) {
+    return `${fileExtension(candidate)} to ${outputLabel(converter, outputFormat || defaultOutputFormat(converter))}`;
+  }
+  return `${converter.title} to ${outputLabel(converter, outputFormat || defaultOutputFormat(converter))}`;
+}
+
+function selectedRouteTitle(converter, candidate) {
+  if (converter?.id === "universal-file" && candidate) return `Convert uploaded ${fileExtension(candidate)} file`;
+  return converter?.title || "Selected conversion";
+}
+
+function selectedRouteDescription(converter, candidate) {
+  if (converter?.id === "universal-file" && candidate) {
+    return `Choose the output format for ${candidate.name}. Provider conversion runs in the background and keeps the result private.`;
+  }
+  return converter?.description || "";
 }
 
 function routeRank(converter) {
@@ -220,6 +309,8 @@ function App() {
     () => [...compatibleConverters].sort((a, b) => routeRank(a) - routeRank(b)),
     [compatibleConverters]
   );
+  const visibleRouteChoices = suggestedConverters.length > 1 ? suggestedConverters : [];
+  const selectedOutputFormats = useMemo(() => capableOutputFormats(selected, file), [selected, file]);
   const selectedPlan = useMemo(() => planForPages(pageCount), [pageCount]);
   const isLocalImageConverter = isLocalConverter(selected);
   const selectedEnabled = converterIsEnabled(selected);
@@ -255,8 +346,9 @@ function App() {
   }, []);
 
   useEffect(() => {
-    setOutputFormat(defaultOutputFormat(selected));
-  }, [selected]);
+    const nextFormat = selectedOutputFormats[0]?.id || defaultOutputFormat(selected);
+    if (!selectedOutputFormats.some((format) => format.id === outputFormat)) setOutputFormat(nextFormat);
+  }, [selected, selectedOutputFormats, outputFormat]);
 
   useEffect(() => {
     return () => {
@@ -348,6 +440,13 @@ function App() {
     setPageCount(isPdfFile(nextFile) ? estimatePages(nextFile) : 1);
   }
 
+  function handleUploadAnotherFile() {
+    setError("");
+    setResult(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    fileInputRef.current?.click();
+  }
+
   function handleConverterSelect(converter) {
     if (converter.id === "email") return;
     if (!converterIsEnabled(converter)) {
@@ -355,7 +454,7 @@ function App() {
       return;
     }
     setSelectedId(converter.id);
-    setOutputFormat(defaultOutputFormat(converter));
+    setOutputFormat(capableOutputFormats(converter, file)[0]?.id || defaultOutputFormat(converter));
     setError("");
     setResult(null);
     setPageCount(1);
@@ -677,21 +776,33 @@ function App() {
               ))}
             </div>
 
-            <label className={classNames("upload-target", file && "has-file")}>
-              <span className="upload-symbol">
-                <Upload size={26} />
-              </span>
-              <span>
-                <strong>{file ? "File selected" : "Drop a file here or click to upload"}</strong>
-                <small>{file ? `${file.name} · ${fileKindLabel(file)}` : "PDF, images, audio, documents, and provider-backed routes"}</small>
-              </span>
+            {!file && (
+              <label className="upload-target">
+                <span className="upload-symbol">
+                  <Upload size={26} />
+                </span>
+                <span>
+                  <strong>Drop a file here or click to upload</strong>
+                  <small>PDF, images, audio, documents, and provider-backed routes</small>
+                </span>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={allAcceptedTypes(selectableConverters)}
+                  onChange={handleFileChange}
+                />
+              </label>
+            )}
+
+            {file && (
               <input
                 ref={fileInputRef}
+                className="sr-only-file-input"
                 type="file"
                 accept={allAcceptedTypes(selectableConverters)}
                 onChange={handleFileChange}
               />
-            </label>
+            )}
 
             {!file && (
               <div className="quiet-benefits" aria-label="Conversion guardrails">
@@ -712,63 +823,68 @@ function App() {
                   <div>
                     <FileText size={18} />
                     <span>
+                      <small>Uploaded file</small>
                       <strong>{file.name}</strong>
                       <small>{fileKindLabel(file)}</small>
                     </span>
                   </div>
-                  <button type="button" onClick={() => fileInputRef.current?.click()}>
-                    Replace
-                  </button>
+                  <div className="detected-file-actions">
+                    <button type="button" onClick={handleUploadAnotherFile}>
+                      Upload another file
+                    </button>
+                  </div>
                 </div>
 
-                <div className="suggested-routes" aria-label="Suggested outputs">
-                  <div className="mini-section-heading">
-                    <span>Suggested outputs</span>
-                    <strong>{suggestedConverters.length ? "Pick one route" : "No route found"}</strong>
+                {visibleRouteChoices.length > 0 && (
+                  <div className="suggested-routes" aria-label="Available conversion routes">
+                    <div className="mini-section-heading">
+                      <span>Available for this {fileExtension(file)} file</span>
+                      <strong>Choose a conversion type</strong>
+                    </div>
+                    <div className="route-card-grid">
+                      {visibleRouteChoices.map((converter) => (
+                        <button
+                          type="button"
+                          key={converter.id}
+                          className={classNames("route-card", selectedId === converter.id && "is-selected")}
+                          onClick={() => handleConverterSelect(converter)}
+                        >
+                          <span className="choice-icon">
+                            {converter.mode === "local-image" || converter.mode === "local-svg" ? (
+                              <ImageIcon size={18} />
+                            ) : converter.id === "invoice" ? (
+                              <FileJson size={18} />
+                            ) : converter.id === "bank" || converter.id === "screenshot" ? (
+                              <FileSpreadsheet size={18} />
+                            ) : (
+                              <FileText size={18} />
+                            )}
+                          </span>
+                          <strong>{converterDisplayTitle(converter, file)}</strong>
+                          <small>{converter.state === "Live" ? "Best match" : converter.state}</small>
+                          <em className={classNames("route-badge", routeKindLabel(converter).toLowerCase())}>
+                            {routeKindLabel(converter)}
+                          </em>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="route-card-grid">
-                    {suggestedConverters.map((converter) => (
-                      <button
-                        type="button"
-                        key={converter.id}
-                        className={classNames("route-card", selectedId === converter.id && "is-selected")}
-                        onClick={() => handleConverterSelect(converter)}
-                      >
-                        <span className="choice-icon">
-                          {converter.mode === "local-image" || converter.mode === "local-svg" ? (
-                            <ImageIcon size={18} />
-                          ) : converter.id === "invoice" ? (
-                            <FileJson size={18} />
-                          ) : converter.id === "bank" || converter.id === "screenshot" ? (
-                            <FileSpreadsheet size={18} />
-                          ) : (
-                            <FileText size={18} />
-                          )}
-                        </span>
-                        <strong>{converter.title} to {outputLabel(converter, defaultOutputFormat(converter))}</strong>
-                        <small>{converter.state === "Live" ? "Best match" : converter.state}</small>
-                        <em className={classNames("route-badge", routeKindLabel(converter).toLowerCase())}>
-                          {routeKindLabel(converter)}
-                        </em>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                )}
 
                 <div className="selected-route-panel">
                   <div>
                     <span className={classNames("route-badge", routeKindLabel(selected).toLowerCase())}>
                       {routeKindLabel(selected)}
                     </span>
-                    <h2>{selected.title} to {selectedOutputLabel || selected.output}</h2>
-                    <p>{selected.description}</p>
+                    <h2>{selectedRouteTitle(selected, file)}</h2>
+                    <p>{selectedRouteDescription(selected, file)}</p>
                   </div>
 
-                  {selected.outputFormats?.length > 1 && (
+                  {selectedOutputFormats.length > 1 && (
                     <div className="format-picker" aria-label="Output format">
-                      <span>Output</span>
+                      <span>Choose output</span>
                       <div>
-                        {selected.outputFormats.map((format) => (
+                        {selectedOutputFormats.map((format) => (
                           <button
                             type="button"
                             key={format.id}
@@ -946,8 +1062,8 @@ function App() {
             ) : (
               <div className="empty-preview">
                 <Wand2 size={22} />
-                <strong>{selected.title} to {selectedOutputLabel || selected.output}</strong>
-                <p>Generate a free preview before paying for the full file.</p>
+                <strong>{file ? `${fileExtension(file)} file to ${selectedOutputLabel || selected.output}` : "Ready to preview"}</strong>
+                <p>{file ? `Uploaded: ${file.name}. Generate a free preview before paying for the full file.` : "Generate a free preview before paying for the full file."}</p>
               </div>
             )}
           </aside>

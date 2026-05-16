@@ -437,6 +437,14 @@ a {
   pointer-events: none;
 }
 
+.sr-only-file-input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .conversion-route {
   display: flex;
   align-items: center;
@@ -1053,7 +1061,14 @@ tbody tr:last-child td {
   font-size: 12px;
 }
 
-.detected-file button {
+.detected-file-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.detected-file-actions button {
   min-height: 34px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1775,7 +1790,8 @@ tbody tr:last-child td {
     flex-direction: column;
   }
 
-  .detected-file button {
+  .detected-file-actions,
+  .detected-file-actions button {
     width: 100%;
   }
 
