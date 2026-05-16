@@ -11,7 +11,6 @@ import {
   FileSpreadsheet,
   FileText,
   LoaderCircle,
-  Lock,
   RefreshCw,
   ShieldCheck,
   Upload,
@@ -739,7 +738,7 @@ function App() {
           <p>Drop a file and AI Converter will suggest the cleanest outputs.</p>
         </div>
 
-        <section className={classNames("converter-workspace", file && "has-file")} aria-label="AI conversion workspace">
+        <section className={classNames("converter-workspace", file && "has-file", result && "has-result")} aria-label="AI conversion workspace">
           <form className="conversion-flow" id="start" onSubmit={handleConvert}>
             <div className="flow-rail" aria-label="Conversion steps">
               {["Upload", "Choose output", "Preview", "Unlock"].map((step, index) => (
@@ -929,113 +928,103 @@ function App() {
             )}
           </form>
 
-          <aside className="preview-panel">
-            <div className="preview-header">
-              <div>
-                <FileSpreadsheet size={18} />
-                <strong>{result ? "Preview" : "Next step"}</strong>
-              </div>
-              <span>{result ? previewCountLabel : file ? "Ready when you are" : "Waiting for file"}</span>
-            </div>
-
-            {!file ? (
-              <div className="empty-preview">
-                <Lock size={22} />
-                <strong>Ready for a file.</strong>
-                <p>Preview is free. Unlock only when the result looks right.</p>
-              </div>
-            ) : result?.localDownloadUrl ? (
-              <div className="local-result">
-                <img src={result.localPreviewUrl} alt="Converted image preview" />
+          {result && (
+            <aside className="preview-panel">
+              <div className="preview-header">
                 <div>
-                  <strong>{result.localFileName}</strong>
-                  <p>This conversion happened in your browser. The image was not uploaded to AI Converter.</p>
-                  <button className="primary-button" onClick={handleUnlock} type="button">
-                    {resultButtonLabel()}
-                    <Download size={17} />
-                  </button>
+                  <FileSpreadsheet size={18} />
+                  <strong>Preview</strong>
                 </div>
+                <span>{previewCountLabel}</span>
               </div>
-            ) : result?.status === "failed" ? (
-              <div className="failed-state">
-                <AlertCircle size={24} />
-                <strong>No charge.</strong>
-                <p>{result.message || "The converter could not safely extract this file."}</p>
-              </div>
-            ) : result ? (
-              <>
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        {previewColumns.slice(0, 5).map((column) => (
-                          <th key={column.key}>{column.label}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {previewRows.map((row, index) => (
-                        <tr key={`${row.date || row.invoice_number || row.description || row.vendor || row.column_1 || "row"}-${index}`}>
+
+              {result.localDownloadUrl ? (
+                <div className="local-result">
+                  <img src={result.localPreviewUrl} alt="Converted image preview" />
+                  <div>
+                    <strong>{result.localFileName}</strong>
+                    <p>This conversion happened in your browser. The image was not uploaded to AI Converter.</p>
+                    <button className="primary-button" onClick={handleUnlock} type="button">
+                      {resultButtonLabel()}
+                      <Download size={17} />
+                    </button>
+                  </div>
+                </div>
+              ) : result.status === "failed" ? (
+                <div className="failed-state">
+                  <AlertCircle size={24} />
+                  <strong>No charge.</strong>
+                  <p>{result.message || "The converter could not safely extract this file."}</p>
+                </div>
+              ) : (
+                <>
+                  <div className="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
                           {previewColumns.slice(0, 5).map((column) => (
-                            <td key={column.key}>{formatCell(row[column.key] ?? row[camelKey(column.key)], column.key)}</td>
+                            <th key={column.key}>{column.label}</th>
                           ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {previewRows.map((row, index) => (
+                          <tr key={`${row.date || row.invoice_number || row.description || row.vendor || row.column_1 || "row"}-${index}`}>
+                            {previewColumns.slice(0, 5).map((column) => (
+                              <td key={column.key}>{formatCell(row[column.key] ?? row[camelKey(column.key)], column.key)}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
-                <div className="checks">
-                  {(selected.checks || data.converters[0].checks).map((check) => (
-                    <span key={check}>
-                      <Check size={15} />
-                      {check}
-                    </span>
-                  ))}
-                </div>
+                  <div className="checks">
+                    {(selected.checks || data.converters[0].checks).map((check) => (
+                      <span key={check}>
+                        <Check size={15} />
+                        {check}
+                      </span>
+                    ))}
+                  </div>
 
-                {["preview_ready", "complete", "converting_full"].includes(result?.status) && (
-                  <div className="result-card">
-                    <div>
-                      <span>{result.status === "complete" ? resultFormatLabel(result.outputFormat) : "Preview confidence"}</span>
-                      <strong>{Math.round((result.confidence || 0) * 100)}%</strong>
-                    </div>
-                    <div className="result-actions">
-                      <button className="primary-button" onClick={handleUnlock} disabled={unlocking || result.status === "converting_full"}>
-                        {resultButtonLabel()}
-                        {unlocking ? (
-                          <LoaderCircle className="spin" size={17} />
-                        ) : result.status === "complete" ? (
-                          <Download size={17} />
-                        ) : (
-                          <CreditCard size={17} />
-                        )}
-                      </button>
-                      {result.status === "complete" && result.redoAvailable && (
-                        <button className="secondary-button" onClick={handleRedo} disabled={redoing}>
-                          {redoing ? "Redoing..." : "Stronger redo"}
-                          {redoing ? <LoaderCircle className="spin" size={16} /> : <RefreshCw size={16} />}
+                  {["preview_ready", "complete", "converting_full"].includes(result.status) && (
+                    <div className="result-card">
+                      <div>
+                        <span>{result.status === "complete" ? resultFormatLabel(result.outputFormat) : "Preview confidence"}</span>
+                        <strong>{Math.round((result.confidence || 0) * 100)}%</strong>
+                      </div>
+                      <div className="result-actions">
+                        <button className="primary-button" onClick={handleUnlock} disabled={unlocking || result.status === "converting_full"}>
+                          {resultButtonLabel()}
+                          {unlocking ? (
+                            <LoaderCircle className="spin" size={17} />
+                          ) : result.status === "complete" ? (
+                            <Download size={17} />
+                          ) : (
+                            <CreditCard size={17} />
+                          )}
                         </button>
-                      )}
+                        {result.status === "complete" && result.redoAvailable && (
+                          <button className="secondary-button" onClick={handleRedo} disabled={redoing}>
+                            {redoing ? "Redoing..." : "Stronger redo"}
+                            {redoing ? <LoaderCircle className="spin" size={16} /> : <RefreshCw size={16} />}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
-                {result?.refundStatus && (
-                  <div className="inline-note">
-                    {result.refundStatus === "credit_due"
-                      ? "Credit review is queued because a full CSV was already delivered."
-                      : "Refund review is queued for this failed paid export."}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="empty-preview">
-                <Wand2 size={22} />
-                <strong>{file ? `${fileExtension(file)} file to ${selectedOutputLabel || selected.output}` : "Ready to preview"}</strong>
-                <p>{file ? `Uploaded: ${file.name}. Generate a free preview before paying for the full file.` : "Generate a free preview before paying for the full file."}</p>
-              </div>
-            )}
-          </aside>
+                  )}
+                  {result.refundStatus && (
+                    <div className="inline-note">
+                      {result.refundStatus === "credit_due"
+                        ? "Credit review is queued because a full CSV was already delivered."
+                        : "Refund review is queued for this failed paid export."}
+                    </div>
+                  )}
+                </>
+              )}
+            </aside>
+          )}
         </section>
       </section>
 

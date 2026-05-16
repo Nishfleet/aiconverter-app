@@ -858,9 +858,9 @@ tbody tr:last-child td {
 
 .converter-workspace {
   min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
-  gap: 0;
+  display: block;
+  width: min(100%, 900px);
+  margin: 0 auto;
   border: 1px solid var(--line);
   background: var(--surface);
   border-radius: 14px;
@@ -868,14 +868,8 @@ tbody tr:last-child td {
   overflow: hidden;
 }
 
-.converter-workspace:not(.has-file) {
-  display: block;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.converter-workspace:not(.has-file) .preview-panel {
-  display: none;
+.converter-workspace.has-result {
+  width: min(100%, 980px);
 }
 
 .conversion-flow {
@@ -1212,37 +1206,7 @@ tbody tr:last-child td {
   min-width: 0;
   padding: 22px;
   background: #f8fafc;
-  border-left: 1px solid var(--line);
-}
-
-.empty-preview {
-  min-height: 252px;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 10px;
-  padding: 26px;
-  text-align: center;
-  color: #344054;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #ffffff;
-}
-
-.empty-preview svg {
-  color: var(--blue);
-}
-
-.empty-preview strong {
-  font-size: 15px;
-}
-
-.empty-preview p {
-  max-width: 270px;
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.5;
+  border-top: 1px solid var(--line);
 }
 
 .section-band,
@@ -1697,16 +1661,6 @@ tbody tr:last-child td {
 }
 
 @media (max-width: 980px) {
-  .converter-workspace,
-  .converter-workspace:not(.has-file) {
-    grid-template-columns: 1fr;
-  }
-
-  .preview-panel {
-    border-left: 0;
-    border-top: 1px solid var(--line);
-  }
-
   .file-queue-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
