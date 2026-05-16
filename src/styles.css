@@ -83,7 +83,6 @@ a {
   border-radius: 8px;
 }
 
-.header-action,
 .secondary-button,
 .primary-button {
   display: inline-flex;
@@ -103,7 +102,6 @@ a {
     background 160ms ease;
 }
 
-.header-action,
 .secondary-button {
   color: var(--ink);
   background: rgba(255, 255, 255, 0.76);
@@ -117,15 +115,13 @@ a {
   box-shadow: 0 14px 30px rgba(37, 99, 235, 0.16);
 }
 
-.header-action:hover,
 .secondary-button:hover,
 .primary-button:hover {
   transform: translateY(-1px);
 }
 
 .primary-button:disabled,
-.secondary-button:disabled,
-.header-action:disabled {
+.secondary-button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
   transform: none;
@@ -1624,10 +1620,6 @@ tbody tr:last-child td {
     height: auto;
     padding: 18px 0;
     align-items: flex-start;
-  }
-
-  .header-action {
-    padding: 0 12px;
   }
 
   .hero-section {

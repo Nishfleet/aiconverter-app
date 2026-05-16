@@ -651,10 +651,6 @@ function App() {
           </span>
           <span>AI Converter</span>
         </a>
-        <button className="header-action" onClick={() => fileInputRef.current?.click()}>
-          Upload file
-          <ArrowRight size={16} />
-        </button>
       </header>
 
       <section id="top" className="conversion-stage">
@@ -702,10 +698,6 @@ function App() {
                 <span>
                   <ShieldCheck size={15} />
                   Free preview first
-                </span>
-                <span>
-                  <Lock size={15} />
-                  Local image routes upload nothing
                 </span>
                 <span>
                   <Database size={15} />
