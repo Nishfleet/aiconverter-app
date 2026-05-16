@@ -651,11 +651,6 @@ function App() {
           </span>
           <span>AI Converter</span>
         </a>
-        <nav className="header-nav" aria-label="Primary navigation">
-          <a href="#workflow">Workflow</a>
-          <a href="#pricing">Pricing</a>
-          <a href="#security">Security</a>
-        </nav>
         <button className="header-action" onClick={() => fileInputRef.current?.click()}>
           Upload file
           <ArrowRight size={16} />

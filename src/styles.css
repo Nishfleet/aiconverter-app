@@ -83,19 +83,6 @@ a {
   border-radius: 8px;
 }
 
-.header-nav {
-  display: flex;
-  align-items: center;
-  gap: 26px;
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 650;
-}
-
-.header-nav a:hover {
-  color: var(--ink);
-}
-
 .header-action,
 .secondary-button,
 .primary-button {
@@ -1637,10 +1624,6 @@ tbody tr:last-child td {
     height: auto;
     padding: 18px 0;
     align-items: flex-start;
-  }
-
-  .header-nav {
-    display: none;
   }
 
   .header-action {
