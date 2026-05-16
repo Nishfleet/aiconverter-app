@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { startCloudConvertConversion, refreshCloudConvertConversion } from "../functions/lib/cloudconvert.js";
 import { convertFileToCsv } from "../functions/lib/extract.js";
-import { assertSupportedUpload } from "../functions/lib/jobs.js";
+import { assertSupportedUpload, normalizeOutputFormat } from "../functions/lib/jobs.js";
 
 const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).buffer;
 
@@ -372,6 +373,177 @@ test("screenshot to HTML creates an honest starter file", async () => {
   assert.match(result.warnings.join(" "), /not a pixel-perfect clone/);
 });
 
+test("paid screenshot to HTML uses Workers AI vision for standalone HTML", async () => {
+  const result = await convertFileToCsv(
+    {
+      AI: {
+        async run(model, input) {
+          assert.equal(model, "@cf/meta/llama-3.2-11b-vision-instruct");
+          assert.equal(input.prompt.includes("standalone HTML"), true);
+          assert.equal(Array.isArray(input.image), true);
+          assert.equal(input.image[0], 0x89);
+          return {
+            response:
+              "<!doctype html><html><head><title>Settings</title><style>body{font-family:sans-serif}</style></head><body><main><h1>Settings</h1><button>Save</button></main></body></html>"
+          };
+        }
+      }
+    },
+    "screenshot-code",
+    "settings.png",
+    "image/png",
+    PNG_BYTES,
+    { allowPaidFallback: true }
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.outputFormat, "html");
+  assert.equal(result.provider, "workers-ai-vision-html");
+  assert.match(result.content, /<button>Save<\/button>/);
+  assert.match(result.warnings.join(" "), /not guaranteed pixel-perfect/);
+});
+
+test("universal converter creates a provider-backed route preview only when CloudConvert is configured", async () => {
+  const result = await convertFileToCsv(
+    { CLOUDCONVERT_API_KEY: "test-key" },
+    "universal-file",
+    "deck.pptx",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    new Uint8Array([0x50, 0x4b, 0x03, 0x04]).buffer,
+    { outputFormat: "pdf" }
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.provider, "cloudconvert-preview");
+  assert.equal(result.columns[0].key, "file");
+  assert.match(result.csv, /deck.pptx/);
+  assert.match(result.csv, /PDF/);
+  assert.equal(normalizeOutputFormat("mp4", "universal-file"), "mp4");
+});
+
+test("universal converter fails closed without CloudConvert configuration", async () => {
+  const result = await convertFileToCsv(
+    {},
+    "universal-file",
+    "deck.pptx",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    new Uint8Array([0x50, 0x4b, 0x03, 0x04]).buffer,
+    { outputFormat: "pdf" }
+  );
+
+  assert.equal(result.ok, false);
+  assert.match(result.message, /CloudConvert/);
+});
+
+test("universal upload validation accepts provider document, media, and archive signatures", () => {
+  const docx = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
+  assert.equal(
+    assertSupportedUpload(
+      {
+        name: "deck.pptx",
+        type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        size: docx.byteLength
+      },
+      docx.buffer,
+      "universal-file"
+    ),
+    ""
+  );
+
+  const mp4 = new Uint8Array([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d]);
+  assert.equal(
+    assertSupportedUpload({ name: "clip.mp4", type: "video/mp4", size: mp4.byteLength }, mp4.buffer, "universal-file"),
+    ""
+  );
+
+  const archive = new Uint8Array([0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c]);
+  assert.equal(
+    assertSupportedUpload({ name: "files.7z", type: "application/x-7z-compressed", size: archive.byteLength }, archive.buffer, "universal-file"),
+    ""
+  );
+});
+
+test("CloudConvert start uses import/upload and records an async provider job", async () => {
+  const fetchCalls = mockCloudConvertFetch([
+    {
+      match: "https://api.cloudconvert.com/v2/jobs",
+      response: {
+        data: {
+          id: "cc-job-1",
+          status: "waiting",
+          tasks: [
+            {
+              id: "upload-task-1",
+              operation: "import/upload",
+              result: {
+                form: {
+                  url: "https://upload.cloudconvert.test/job",
+                  parameters: { signature: "sig", expires: "1" }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      match: "https://upload.cloudconvert.test/job",
+      response: {}
+    }
+  ]);
+  const env = mockJobEnv();
+  const result = await startCloudConvertConversion(env, mockUniversalJob(), new Uint8Array([1, 2, 3]).buffer);
+
+  assert.equal(result.pending, true);
+  assert.equal(result.status, "converting_full");
+  assert.equal(fetchCalls.length, 2);
+  assert.deepEqual(fetchCalls[0].body.tasks["convert-file"].output_format, "pdf");
+  assert.equal(fetchCalls[0].body.tasks["convert-file"].input, "upload-source");
+  assert.equal(fetchCalls[1].body instanceof FormData, true);
+  assert.equal(env.updates.at(-1).fields.external_job_id, "cc-job-1");
+  restoreFetch();
+});
+
+test("CloudConvert refresh downloads the exported file into private result storage", async () => {
+  const fetchCalls = mockCloudConvertFetch([
+    {
+      match: "https://api.cloudconvert.com/v2/jobs/cc-job-1",
+      response: {
+        data: {
+          id: "cc-job-1",
+          status: "finished",
+          tasks: [
+            {
+              id: "export-task-1",
+              operation: "export/url",
+              status: "finished",
+              result: {
+                files: [{ filename: "deck.pdf", url: "https://storage.cloudconvert.test/deck.pdf" }]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      match: "https://storage.cloudconvert.test/deck.pdf",
+      response: new Uint8Array([0x25, 0x50, 0x44, 0x46]).buffer,
+      contentType: "application/pdf"
+    }
+  ]);
+  const env = mockJobEnv();
+  const job = { ...mockUniversalJob(), status: "converting_full", external_job_id: "cc-job-1" };
+  const result = await refreshCloudConvertConversion(env, job);
+
+  assert.equal(result.ok, true);
+  assert.equal(result.status, "complete");
+  assert.equal(fetchCalls.length, 2);
+  assert.equal(env.bucketPuts[0].key, "jobs/job_test/result.pdf");
+  assert.equal(env.bucketPuts[0].metadata.httpMetadata.contentType, "application/pdf");
+  assert.equal(env.updates.at(-1).fields.status, "complete");
+  restoreFetch();
+});
+
 let originalFetch = globalThis.fetch;
 
 function mockFetch(payload) {
@@ -393,4 +565,91 @@ function mockFetch(payload) {
 
 function restoreFetch() {
   globalThis.fetch = originalFetch;
+}
+
+function mockCloudConvertFetch(sequence) {
+  const calls = [];
+  originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options = {}) => {
+    const next = sequence.shift();
+    assert.ok(next, `Unexpected fetch ${url}`);
+    assert.equal(String(url), next.match);
+    const body = typeof options.body === "string" ? JSON.parse(options.body) : options.body;
+    calls.push({ url: String(url), options, body });
+    return {
+      ok: true,
+      status: 200,
+      headers: new Headers(next.contentType ? { "Content-Type": next.contentType } : {}),
+      async json() {
+        return next.response || {};
+      },
+      async arrayBuffer() {
+        return next.response instanceof ArrayBuffer ? next.response : new ArrayBuffer(0);
+      }
+    };
+  };
+  return calls;
+}
+
+function mockJobEnv() {
+  const env = {
+    CLOUDCONVERT_API_KEY: "test-key",
+    updates: [],
+    bucketPuts: [],
+    AICONVERTER_DB: {
+      prepare() {
+        return {
+          bind(...values) {
+            return {
+              async run() {
+                env.updates.push({ values, fields: extractUpdateFields(values) });
+              }
+            };
+          }
+        };
+      }
+    },
+    AICONVERTER_BUCKET: {
+      async put(key, body, metadata) {
+        env.bucketPuts.push({ key, body, metadata });
+      },
+      async delete() {}
+    }
+  };
+  return env;
+}
+
+function mockUniversalJob() {
+  return {
+    id: "job_test",
+    result_key: "jobs/job_test/result.pdf",
+    source_key: "sources/job_test/universal.pptx",
+    original_file_name: "deck.pptx",
+    input_mime_type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    expires_at: "2026-05-17T00:00:00.000Z",
+    paid_at: "2026-05-16T00:00:00.000Z",
+    download_count: 0
+  };
+}
+
+function extractUpdateFields(values) {
+  const fields = {};
+  const names = [
+    "status",
+    "extractor",
+    "external_provider",
+    "external_job_id",
+    "external_task_id",
+    "external_status",
+    "external_updated_at",
+    "confidence",
+    "row_count",
+    "completed_at",
+    "external_result_name",
+    "external_result_url"
+  ];
+  names.forEach((name, index) => {
+    if (index < values.length - 2) fields[name] = values[index];
+  });
+  return fields;
 }

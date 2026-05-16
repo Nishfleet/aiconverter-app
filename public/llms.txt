@@ -23,7 +23,8 @@ Live and beta modules:
 - Raster-to-SVG conversion from PNG, JPG, JPEG, or WEBP to SVG is live as a browser-local posterized module. The image does not upload to AI Converter for that route.
 - Audio transcript from MP3, WAV, M4A, AAC, OGG, or WEBM to TXT or JSON is beta and uses Cloudflare Workers AI speech recognition when configured.
 - Document Markdown conversion for Cloudflare-supported rich document formats is beta and uses Cloudflare Workers AI Markdown Conversion when configured.
-- Screenshot to HTML starter is beta. It creates a clean HTML starter from detected content and does not claim pixel-perfect screenshot cloning.
+- Screenshot to HTML is beta. It creates a clean starter preview and uses Workers AI vision for paid image exports when configured. It does not claim pixel-perfect screenshot cloning.
+- Universal file conversion for documents, images, audio, video, and archives is provider-backed through CloudConvert when configured.
 - Beta modules use OCR and fail closed when structure confidence is too low.
 
 Opening pricing:
@@ -34,14 +35,14 @@ Opening pricing:
 
 Upcoming module:
 - AI-monitored email intake after the secure direct upload workflow is stable.
-- Generic 200+ format conversion, video conversion, archive conversion, and pixel-perfect image-to-code are not live unless a future page says otherwise.
+- Pixel-perfect image-to-code is not live.
 
 Important product truth:
 - AI Converter does not claim to support every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every audio file, every document, every image format, or every file type.
 - Accuracy, security, compliance, and supported-format claims should stay limited to what the live product can prove.
 - Email monitoring is not the primary intake for bank PDFs.
 - Human review is not part of the automated workflow.
-- Source files use a 24-hour private retention window. Generated CSV, JSON, TXT, Markdown, and HTML files expire after 7 days. Browser-local image/SVG conversions do not create server-side source files.
+- Source files use a 24-hour private retention window. Generated files expire after 7 days. Browser-local image/SVG conversions do not create server-side source files.
 
 Primary URL:
 - https://aiconverter.app

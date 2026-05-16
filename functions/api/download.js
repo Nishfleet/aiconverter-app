@@ -1,5 +1,6 @@
 import { badRequest, json, methodNotAllowed, serverError, withSecurityHeaders } from "../lib/http.js";
 import { getAuthorizedJob, hasRequiredBindings, outputFormatFromResultKey, tokenFromBodyOrCookie, updateJob } from "../lib/jobs.js";
+import { contentTypeForOutputFormat, isUniversalConverter } from "../lib/universal.js";
 
 export async function onRequestPost(context) {
   return handleDownload(context);
@@ -59,6 +60,7 @@ function downloadFileName(job) {
   if (job.converter_id === "invoice") prefix = "invoice";
   if (job.converter_id === "receipt") prefix = "receipt-expense";
   if (job.converter_id === "screenshot") prefix = "screenshot-table";
+  if (isUniversalConverter(job.converter_id)) prefix = "converted-file";
   return `aiconverter-${prefix}.${extension}`;
 }
 
@@ -68,6 +70,7 @@ function contentTypeForJob(job) {
   if (format === "txt") return "text/plain; charset=utf-8";
   if (format === "md") return "text/markdown; charset=utf-8";
   if (format === "html") return "text/html; charset=utf-8";
+  if (isUniversalConverter(job.converter_id)) return contentTypeForOutputFormat(format);
   return "text/csv; charset=utf-8";
 }
 

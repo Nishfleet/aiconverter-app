@@ -4,7 +4,7 @@ AI Converter is a web app for automated AI conversion and browser-local image/SV
 
 ## Current product wedge
 
-The production AI module is bank statement PDF to CSV. Receipt, invoice, screenshot-table, audio transcript, document-to-Markdown, and screenshot-to-HTML converters are beta modules on the same preview-first workflow. PNG/JPG/WEBP image format conversion and raster-to-SVG conversion are browser-local modules and do not upload files. It is not a video, archive, pixel-perfect image-to-code, or CloudConvert-style universal converter yet.
+The production AI module is bank statement PDF to CSV. Receipt, invoice, screenshot-table, audio transcript, document-to-Markdown, screenshot-to-HTML, and CloudConvert-backed universal file conversion are beta/provider modules on the same preview-first workflow when configured. PNG/JPG/WEBP image format conversion and raster-to-SVG conversion are browser-local modules and do not upload files. Pixel-perfect image-to-code is not claimed.
 
 Live behavior:
 - Direct browser upload for bank statement PDFs.
@@ -25,7 +25,8 @@ Live behavior:
 - Raster-to-SVG conversion from PNG, JPG, JPEG, or WEBP to SVG is live as a browser-local posterized route. It does not use the server upload, D1, R2, Mistral, or Dodo workflow.
 - Audio transcript from MP3, WAV, M4A, AAC, OGG, or WEBM to TXT or JSON is beta and uses Cloudflare Workers AI speech recognition when configured.
 - Document Markdown conversion for Cloudflare-supported rich document formats is beta and uses Cloudflare Workers AI Markdown Conversion when configured.
-- Screenshot to HTML starter is beta. It creates a clean HTML starter from detected content and does not claim pixel-perfect screenshot cloning.
+- Screenshot to HTML is beta. It creates a clean starter preview and uses Workers AI vision for paid image exports when configured. It does not claim pixel-perfect screenshot cloning.
+- Universal file conversion for documents, images, audio, video, and archives is provider-backed through CloudConvert when configured. Long provider jobs run in the background and update automatically.
 - Beta modules use OCR and can fail closed when structure confidence is too low.
 
 ## Pricing
@@ -40,7 +41,7 @@ Live behavior:
 - Source files are private.
 - Source files are kept for preview, paid unlock, and the redo window.
 - Source files are deleted after failed extraction, completed redo, or the 24-hour source lifecycle.
-- Generated CSV, JSON, TXT, Markdown, and HTML files expire after 7 days.
+- Generated files expire after 7 days.
 - API responses for sensitive routes are marked no-store.
 - Job access uses a job ID and random token.
 
@@ -107,4 +108,4 @@ Fake sample CSV:
 
 ## Claims to avoid
 
-Do not claim AI Converter supports every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every audio file, every document, every image format, every file type, certified compliance, human review, guaranteed accuracy, accounting or tax advice, instant AI processing, video conversion, archive conversion, pixel-perfect screenshot-to-code, or customer-volume proof. Exports should be reviewed before important use.
+Do not claim AI Converter supports every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every audio file, every document, every image format, every file type, certified compliance, human review, guaranteed accuracy, accounting or tax advice, instant AI processing, pixel-perfect screenshot-to-code, or customer-volume proof. CloudConvert-backed video/archive/file conversion depends on CloudConvert being configured and accepting that exact input/output pair. Exports should be reviewed before important use.

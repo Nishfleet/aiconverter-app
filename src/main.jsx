@@ -54,8 +54,12 @@ function isLocalConverter(converter) {
   return ["local-image", "local-svg"].includes(converter?.mode);
 }
 
-function allAcceptedTypes() {
-  return [...new Set(data.converters.filter(isLiveConverter).flatMap((converter) => String(converter.accept || "").split(",")))]
+function isProviderConverter(converter) {
+  return converter?.mode === "provider-cloudconvert";
+}
+
+function allAcceptedTypes(converters) {
+  return [...new Set(converters.filter(isLiveConverter).flatMap((converter) => String(converter.accept || "").split(",")))]
     .filter(Boolean)
     .join(",");
 }
@@ -108,10 +112,27 @@ function resultFormatLabel(format) {
     txt: "TXT transcript",
     md: "Markdown",
     html: "HTML",
+    pdf: "PDF",
+    docx: "DOCX",
+    xlsx: "XLSX",
+    pptx: "PPTX",
     png: "PNG",
+    jpg: "JPG",
     jpeg: "JPG",
     webp: "WEBP",
-    svg: "SVG"
+    gif: "GIF",
+    svg: "SVG",
+    mp3: "MP3",
+    wav: "WAV",
+    m4a: "M4A",
+    ogg: "OGG",
+    flac: "FLAC",
+    mp4: "MP4",
+    webm: "WEBM",
+    mov: "MOV",
+    zip: "ZIP",
+    "7z": "7Z",
+    tar: "TAR"
   };
   return labels[format] || "converted file";
 }
@@ -130,7 +151,7 @@ function downloadNameForResult(result) {
 
 function previewMetricLabel(converterId, result) {
   if (converterId === "audio-transcript") return `${result.rowCount || 0} words`;
-  if (["document-markdown", "screenshot-code"].includes(converterId)) return "1 generated file";
+  if (["document-markdown", "screenshot-code", "universal-file"].includes(converterId)) return "1 generated file";
   return `${result.rowCount || 0} rows`;
 }
 
@@ -147,6 +168,7 @@ function App() {
   const [error, setError] = useState("");
   const [turnstileSiteKey, setTurnstileSiteKey] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [capabilities, setCapabilities] = useState({});
   const fileInputRef = useRef(null);
   const turnstileRef = useRef(null);
   const turnstileWidgetIdRef = useRef(null);
@@ -155,14 +177,21 @@ function App() {
     () => data.converters.find((converter) => converter.id === selectedId),
     [selectedId]
   );
+  const cloudConvertReady = Boolean(capabilities.cloudConvert);
+  const converterIsEnabled = (converter) => !isProviderConverter(converter) || cloudConvertReady;
   const liveConverters = useMemo(() => data.converters.filter(isLiveConverter), []);
+  const selectableConverters = useMemo(
+    () => liveConverters.filter(converterIsEnabled),
+    [liveConverters, cloudConvertReady]
+  );
   const compatibleConverters = useMemo(
-    () => (file ? liveConverters.filter((converter) => converterAcceptsFile(converter, file)) : []),
-    [file, liveConverters]
+    () => (file ? selectableConverters.filter((converter) => converterAcceptsFile(converter, file)) : []),
+    [file, selectableConverters]
   );
   const selectedPlan = useMemo(() => planForPages(pageCount), [pageCount]);
   const isLocalImageConverter = isLocalConverter(selected);
-  const selectedMaxSizeMb = selectedId === "audio-transcript" ? 25 : MAX_SIZE_MB;
+  const selectedEnabled = converterIsEnabled(selected);
+  const selectedMaxSizeMb = selectedId === "audio-transcript" ? 25 : selectedId === "screenshot-code" ? 8 : MAX_SIZE_MB;
   const fileSizeLabel = file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : "";
   const needsTurnstile = Boolean(turnstileSiteKey);
   const previewColumns = result?.columns?.length ? result.columns : selected?.columns || data.converters[0].columns;
@@ -179,12 +208,16 @@ function App() {
     !converting &&
     file.size <= selectedMaxSizeMb * 1024 * 1024 &&
     pageCount <= MAX_PAGES &&
+    selectedEnabled &&
     (isLocalImageConverter || !needsTurnstile || Boolean(turnstileToken));
 
   useEffect(() => {
     fetch("/api/config")
       .then((response) => response.json())
-      .then((payload) => setTurnstileSiteKey(payload.turnstileSiteKey || ""))
+      .then((payload) => {
+        setTurnstileSiteKey(payload.turnstileSiteKey || "");
+        setCapabilities(payload.capabilities || {});
+      })
       .catch(() => {});
   }, []);
 
@@ -272,7 +305,7 @@ function App() {
     setResult(null);
     setFile(nextFile);
     if (nextFile) {
-      const matches = liveConverters.filter((converter) => converterAcceptsFile(converter, nextFile));
+      const matches = selectableConverters.filter((converter) => converterAcceptsFile(converter, nextFile));
       const nextSelected = matches.find((converter) => converter.id === selectedId) || matches[0];
       if (nextSelected) {
         setSelectedId(nextSelected.id);
@@ -284,6 +317,10 @@ function App() {
 
   function handleConverterSelect(converter) {
     if (converter.id === "email") return;
+    if (!converterIsEnabled(converter)) {
+      setError("Universal provider conversion is not connected yet.");
+      return;
+    }
     setSelectedId(converter.id);
     setOutputFormat(defaultOutputFormat(converter));
     setError("");
@@ -504,6 +541,40 @@ function App() {
     }
   }
 
+  useEffect(() => {
+    if (result?.status !== "converting_full" || !result.jobId) return;
+    let cancelled = false;
+    let inFlight = false;
+
+    async function pollJob() {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const response = await fetch("/api/job", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobId: result.jobId, ...(result.token ? { token: result.token } : {}) })
+        });
+        const payload = await response.json();
+        if (!cancelled && response.ok) {
+          const planId = typeof payload.plan === "string" ? payload.plan : payload.plan?.id;
+          setResult({ ...payload, plan: data.pricing.find((plan) => plan.id === planId) || payload.plan || selectedPlan });
+        }
+      } catch {
+        if (!cancelled) setError("The conversion is still running. Refresh this page if it does not update.");
+      } finally {
+        inFlight = false;
+      }
+    }
+
+    pollJob();
+    const timer = window.setInterval(pollJob, 4000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [result?.status, result?.jobId, result?.token, selectedPlan]);
+
   async function handleRedo() {
     if (!result?.jobId || !result.redoAvailable) return;
     setRedoing(true);
@@ -564,9 +635,9 @@ function App() {
           <h1>AI Converter for useful files. Preview first.</h1>
           <p>
             Convert bank statements, receipts, invoices, screenshots, documents,
-            audio, and common images into useful CSV, JSON, Markdown, transcript,
-            HTML, SVG, or image outputs. AI routes handle messy files; simple image
-            swaps stay local in your browser.
+            audio, provider-backed file routes, and common images into useful
+            outputs. AI routes handle messy files; provider routes activate when
+            connected; simple image swaps stay local in your browser.
           </p>
           <div className="hero-price-strip" aria-label="Pricing summary">
             <strong>Free preview</strong>
@@ -615,10 +686,12 @@ function App() {
                   className={classNames(
                     "converter-choice",
                     selectedId === converter.id && "is-selected",
-                    file && !converterAcceptsFile(converter, file) && "is-muted"
+                    file && !converterAcceptsFile(converter, file) && "is-muted",
+                    !converterIsEnabled(converter) && "is-disabled"
                   )}
                   key={converter.id}
                   onClick={() => handleConverterSelect(converter)}
+                  disabled={!converterIsEnabled(converter)}
                   type="button"
                 >
                   <span className="choice-icon">
@@ -632,7 +705,7 @@ function App() {
                   </span>
                   <span>
                     <strong>{converter.title}</strong>
-                    <small>{converter.state}</small>
+                    <small>{!converterIsEnabled(converter) ? "Provider key needed" : converter.state}</small>
                   </span>
                 </button>
               ))}
@@ -654,7 +727,7 @@ function App() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept={allAcceptedTypes()}
+                  accept={allAcceptedTypes(selectableConverters)}
                   onChange={handleFileChange}
                 />
               </label>
@@ -747,6 +820,12 @@ function App() {
                 {converting ? "Checking file..." : isLocalImageConverter ? `Convert to ${selectedOutputLabel}` : "Generate free preview"}
                 {converting ? <LoaderCircle className="spin" size={18} /> : <Wand2 size={18} />}
               </button>
+
+              {!selectedEnabled && (
+                <div className="inline-note">
+                  Provider conversion is built but waiting on the production CloudConvert key.
+                </div>
+              )}
 
               {error && (
                 <div className="inline-alert" role="alert">

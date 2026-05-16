@@ -1,6 +1,8 @@
 import { convertFileToCsv } from "./extract.js";
 import { outputFormatFromResultKey, updateJob } from "./jobs.js";
 import { requestDodoRefund } from "./dodo.js";
+import { startCloudConvertConversion } from "./cloudconvert.js";
+import { isUniversalConverter } from "./universal.js";
 
 export async function runFullConversion(env, job, options = {}) {
   if (!job?.source_key || !job?.result_key) {
@@ -17,6 +19,34 @@ export async function runFullConversion(env, job, options = {}) {
 
   try {
     const arrayBuffer = await source.arrayBuffer();
+    if (isUniversalConverter(job.converter_id)) {
+      const started = await startCloudConvertConversion(env, job, arrayBuffer);
+      if (!started.ok) {
+        await env.AICONVERTER_BUCKET.delete(job.source_key).catch(() => {});
+        const refund = job.paid_at
+          ? await requestDodoRefund(env, job, started.message, { cashRefund: options.cashRefund !== false })
+          : { status: "", refundId: "" };
+        await updateJob(env, job.id, {
+          status: "failed",
+          error: started.message,
+          confidence: 0,
+          row_count: 0,
+          source_deleted_at: new Date().toISOString(),
+          extractor: started.provider || "cloudconvert",
+          refund_status: refund.status || job.refund_status || "",
+          refund_id: refund.refundId || job.refund_id || ""
+        });
+        return {
+          ok: false,
+          message: started.message,
+          confidence: 0,
+          rowCount: 0,
+          refundStatus: refund.status || ""
+        };
+      }
+      return started;
+    }
+
     const converted = await convertFileToCsv(
       env,
       job.converter_id || "bank",

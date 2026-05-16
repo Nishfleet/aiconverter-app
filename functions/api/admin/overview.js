@@ -1,4 +1,5 @@
 import { json, methodNotAllowed, serverError } from "../../lib/http.js";
+import { hasCloudConvertConfig } from "../../lib/cloudconvert.js";
 import { dodoProductIdForPlan, hasDodoApi, hasDodoWebhookSecret } from "../../lib/dodo.js";
 import { hasAzureConfig, hasExtractorBinding, hasMistralConfig, hasRequiredBindings, PLANS } from "../../lib/jobs.js";
 
@@ -83,6 +84,7 @@ function runtimeHealth(env) {
   });
   if (!hasExtractorBinding(env)) missing.push("OCR fallback provider");
   if (!env.TURNSTILE_SITE_KEY || !env.TURNSTILE_SECRET_KEY) missing.push("Turnstile keys");
+  if (!hasCloudConvertConfig(env)) missing.push("CloudConvert API key");
 
   return {
     status: missing.length ? "attention" : "ready",
@@ -104,7 +106,9 @@ function runtimeHealth(env) {
       cloudflareFallback: Boolean(env.ALLOW_CLOUDFLARE_FALLBACK === "true" && env.AI),
       workersAi: Boolean(env.AI),
       markdownConversion: Boolean(env.AI?.toMarkdown),
-      whisper: Boolean(env.AI?.run)
+      whisper: Boolean(env.AI?.run),
+      screenshotVision: Boolean(env.AI?.run),
+      cloudConvert: hasCloudConvertConfig(env)
     },
     protection: {
       turnstile: Boolean(env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET_KEY),

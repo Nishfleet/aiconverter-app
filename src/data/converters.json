@@ -152,10 +152,10 @@
       "id": "screenshot-code",
       "title": "Screenshot to HTML",
       "input": "PNG / JPG / WEBP / PDF",
-      "output": "HTML starter",
+      "output": "HTML",
       "state": "Beta",
       "accept": "application/pdf,image/png,image/jpeg,image/webp,.pdf,.png,.jpg,.jpeg,.webp",
-      "description": "Turn readable screenshot content into a clean HTML starter. This is not a pixel-perfect clone.",
+      "description": "Turn readable screenshot content into HTML. Preview uses a starter; paid image exports use a vision model when configured. This is not a pixel-perfect clone.",
       "outputFormats": [
         { "id": "html", "label": "HTML" }
       ],
@@ -164,7 +164,51 @@
         { "key": "source", "label": "Source" },
         { "key": "preview", "label": "Preview" }
       ],
-      "checks": ["Screenshot to Markdown", "HTML starter", "Truthful non-pixel-perfect output"]
+      "checks": ["Vision HTML on paid image export", "HTML preview starter", "Truthful non-pixel-perfect output"]
+    },
+    {
+      "id": "universal-file",
+      "title": "Universal file",
+      "input": "Docs / media / archives",
+      "output": "200+ formats",
+      "state": "Provider",
+      "mode": "provider-cloudconvert",
+      "accept": "application/pdf,application/msword,application/rtf,text/plain,text/markdown,text/html,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/vnd.ms-powerpoint,application/vnd.oasis.opendocument.text,application/vnd.oasis.opendocument.spreadsheet,application/vnd.oasis.opendocument.presentation,image/png,image/jpeg,image/webp,image/gif,image/bmp,image/tiff,image/heic,image/heif,image/svg+xml,audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/ogg,audio/flac,audio/webm,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/x-ms-wmv,video/webm,application/zip,application/x-7z-compressed,application/x-tar,application/gzip,application/vnd.rar,application/x-rar-compressed,.pdf,.doc,.docx,.rtf,.txt,.md,.html,.htm,.csv,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.png,.jpg,.jpeg,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,.svg,.mp3,.wav,.m4a,.aac,.ogg,.flac,.webm,.mp4,.mov,.avi,.mkv,.wmv,.zip,.7z,.tar,.gz,.rar",
+      "description": "Convert documents, images, audio, video, and archives through CloudConvert after a free route preview. Long media jobs run in the background and update automatically.",
+      "outputFormats": [
+        { "id": "pdf", "label": "PDF" },
+        { "id": "docx", "label": "DOCX" },
+        { "id": "txt", "label": "TXT" },
+        { "id": "html", "label": "HTML" },
+        { "id": "md", "label": "MD" },
+        { "id": "csv", "label": "CSV" },
+        { "id": "xlsx", "label": "XLSX" },
+        { "id": "pptx", "label": "PPTX" },
+        { "id": "png", "label": "PNG" },
+        { "id": "jpg", "label": "JPG" },
+        { "id": "webp", "label": "WEBP" },
+        { "id": "gif", "label": "GIF" },
+        { "id": "svg", "label": "SVG" },
+        { "id": "mp3", "label": "MP3" },
+        { "id": "wav", "label": "WAV" },
+        { "id": "m4a", "label": "M4A" },
+        { "id": "ogg", "label": "OGG" },
+        { "id": "flac", "label": "FLAC" },
+        { "id": "mp4", "label": "MP4" },
+        { "id": "webm", "label": "WEBM" },
+        { "id": "mov", "label": "MOV" },
+        { "id": "zip", "label": "ZIP" },
+        { "id": "7z", "label": "7Z" },
+        { "id": "tar", "label": "TAR" }
+      ],
+      "columns": [
+        { "key": "file", "label": "File" },
+        { "key": "input", "label": "Input" },
+        { "key": "output", "label": "Output" },
+        { "key": "route", "label": "Route" },
+        { "key": "status", "label": "Status" }
+      ],
+      "checks": ["Provider-backed conversion", "Async job polling", "Private download"]
     },
     {
       "id": "email",
@@ -279,7 +323,16 @@
       {
         "component": "HTML starter",
         "source": "image/png",
-        "preview": "Readable text and sections from the screenshot are converted into a clean HTML starting point."
+        "preview": "Readable text and sections from the screenshot are converted into an HTML starting point."
+      }
+    ],
+    "universal-file": [
+      {
+        "file": "deck.pptx",
+        "input": "PPTX",
+        "output": "PDF",
+        "route": "CloudConvert",
+        "status": "Ready to unlock"
       }
     ]
   },

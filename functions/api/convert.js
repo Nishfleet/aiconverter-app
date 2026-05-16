@@ -226,7 +226,27 @@ function outputFormatLabel(format) {
     json: "JSON",
     txt: "TXT transcript",
     md: "Markdown",
-    html: "HTML"
+    html: "HTML",
+    pdf: "PDF",
+    docx: "DOCX",
+    xlsx: "XLSX",
+    pptx: "PPTX",
+    png: "PNG",
+    jpg: "JPG",
+    webp: "WEBP",
+    gif: "GIF",
+    svg: "SVG",
+    mp3: "MP3",
+    wav: "WAV",
+    m4a: "M4A",
+    ogg: "OGG",
+    flac: "FLAC",
+    mp4: "MP4",
+    webm: "WEBM",
+    mov: "MOV",
+    zip: "ZIP",
+    "7z": "7Z",
+    tar: "TAR"
   };
   return labels[format] || "converted file";
 }

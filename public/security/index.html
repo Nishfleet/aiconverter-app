@@ -36,7 +36,7 @@
         <article class="policy-card">
           <h2>Upload and storage controls</h2>
           <ul>
-            <li>Uploaded files and generated CSV, JSON, TXT, Markdown, or HTML files are stored in private object storage.</li>
+            <li>Uploaded files and generated files are stored in private object storage.</li>
             <li>Files are not exposed through public object URLs.</li>
             <li>Job access requires a job ID and random token.</li>
             <li>API responses are marked no-store so browsers and intermediaries should not cache sensitive responses.</li>
@@ -50,6 +50,7 @@
             reserved for scanned, photo-based, receipt, invoice, screenshot, or
             messy files when configured. Workers AI is used for audio transcript,
             document Markdown, and screenshot-to-HTML beta modules when configured.
+            CloudConvert is used for universal provider conversion when configured.
             Browser-local image-format and raster-to-SVG conversion do not upload
             files to AI Converter. Low-confidence AI extraction files fail closed
             instead of being routed to human review.
@@ -60,7 +61,7 @@
           <h2>Retention controls</h2>
           <ul>
             <li>Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle.</li>
-            <li>Generated CSV, JSON, TXT, Markdown, and HTML files expire after 7 days.</li>
+            <li>Generated files expire after 7 days.</li>
             <li>Minimal job metadata is kept for payment, abuse prevention, debugging, and compliance records.</li>
           </ul>
         </article>
@@ -79,9 +80,9 @@
         <article class="policy-card">
           <h2>Limits</h2>
           <p>
-            AI Converter currently accepts files up to 50 MB, audio files up to
+            AI Converter currently accepts files up to 50 MB, audio-transcript files up to
             25 MB, and PDFs up to 500 pages. Password-protected, corrupted,
-            unusual, noisy, or low-quality files may fail. The export should always
+            unusual, noisy, unsupported provider pairs, or low-quality files may fail. The export should always
             be reviewed before important use.
           </p>
         </article>

@@ -5,12 +5,12 @@
 1. Browser uploads one supported file to `/api/convert` with a converter ID.
 2. The API validates converter, type, size, and file signature before processing.
 3. The source file is written to private R2 under a random job key.
-4. Bank statement PDFs use the built-in PDF parser first for a free sample preview. Receipt, invoice, and screenshot-table beta modules use Mistral OCR when configured. Audio transcript, document-to-Markdown, and screenshot-to-HTML beta modules use Cloudflare Workers AI when configured. Common image-format and raster-to-SVG conversion runs in the browser and does not upload to the backend.
+4. Bank statement PDFs use the built-in PDF parser first for a free sample preview. Receipt, invoice, and screenshot-table beta modules use Mistral OCR when configured. Audio transcript, document-to-Markdown, and screenshot-to-HTML beta modules use Cloudflare Workers AI when configured. Universal file conversion uses CloudConvert when configured. Common image-format and raster-to-SVG conversion runs in the browser and does not upload to the backend.
 5. The API validates the preview rows and confidence score.
 6. If a bank PDF has too little selectable text or confidence is low, Mistral OCR is used as the configured fallback. Free OCR preview is capped to the first page by default.
 7. If validation passes, the source file stays in private R2 for the paid unlock and 24-hour redo window.
 8. Dodo redirect or webhook confirmation marks the matching job paid only after product, amount, currency, checkout session, and job metadata checks pass.
-9. Paid jobs run full extraction, store the generated CSV, JSON, TXT, Markdown, or HTML privately, and get one automatic stronger redo; failed paid exports are marked for refund or credit review.
+9. Paid jobs run full extraction or provider conversion, store the generated file privately, and get one automatic stronger redo when the route is AI-extraction based; failed paid exports are marked for refund or credit review.
 10. If validation fails before payment, the source file is deleted and the job fails closed with no charge.
 11. Downloads require the random job token plus either payment confirmation or an explicit free-download environment flag.
 
@@ -33,13 +33,14 @@
 - 50 MB file limit.
 - 500 page hard limit; larger PDFs are rejected with a split-file instruction.
 - PDF and image magic-byte validation.
+- Universal provider conversion validates common document, image, audio, video, and archive signatures, starts CloudConvert asynchronously, uploads via CloudConvert `import/upload`, polls the provider job, then stores the exported result privately before download.
 - Receipt beta extraction can produce one row per readable receipt page and includes category, subtotal, tax, payment method, and notes when safely detected.
 - Invoice beta extraction can export invoice summary fields to CSV or JSON and includes line items in JSON when safely detected.
 - Screenshot beta extraction handles markdown tables, OCR table blocks, HTML table output, and obvious date-description-amount rows.
 - Audio transcript beta exports TXT or JSON transcripts through Workers AI speech recognition.
 - Audio transcript sends whole-file base64 to Workers AI instead of expanding the upload into one large JavaScript number array.
 - Document-to-Markdown beta exports Markdown from PDF, image, HTML/XML, CSV, Office, OpenDocument, and Apple Numbers inputs supported by Cloudflare Markdown Conversion.
-- Screenshot-to-HTML beta generates a clean HTML starter from detected screenshot content and explicitly does not claim pixel-perfect cloning.
+- Screenshot-to-HTML beta generates a clean starter for preview and uses Workers AI vision for paid image exports when configured. It explicitly does not claim pixel-perfect cloning.
 - Server-side page estimation so users cannot understate page count to force a cheaper plan.
 - Upload rate limits plus same-file free-preview reuse limits.
 - Payment IDs are bound to one job and cannot be reused across jobs.
@@ -66,6 +67,7 @@ The converter does not charge or export a full generated file when:
 - an invoice or bill file cannot be safely structured,
 - an audio file cannot be transcribed,
 - a document cannot be converted to Markdown,
+- a provider conversion cannot be started, completed, or downloaded safely,
 - private storage or database bindings are missing.
 
 ## Upcoming
@@ -73,6 +75,6 @@ The converter does not charge or export a full generated file when:
 - Azure Document Intelligence remains disabled by default and requires both endpoint/key credentials and `ENABLE_AZURE_FALLBACK=true`.
 - Google Document AI as a later optional fallback if Azure misses a meaningful segment.
 - AI-monitored email intake only after the direct upload workflow is stable.
-- Generic 200+ format conversion, video conversion, archive conversion, and pixel-perfect image-to-code remain unclaimed until a real provider-backed connector is configured and tested.
+- Pixel-perfect image-to-code remains unclaimed until a real provider-backed connector is configured and tested.
 - Cloudflare WAF rate limiting before broader paid traffic.
 - A real paid card/webhook/finalize/download drill is still required before scaling paid traffic beyond synthetic checkout smoke tests.

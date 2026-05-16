@@ -11,7 +11,8 @@ Current beta modules:
 - Invoice/bill image/PDF to CSV or JSON.
 - Audio file to TXT or JSON transcript.
 - Rich document/image to Markdown.
-- Screenshot/image to HTML starter.
+- Screenshot/image to HTML, with a free starter preview and paid Workers AI vision export when configured.
+- Universal file conversion through CloudConvert when `CLOUDCONVERT_API_KEY` is configured.
 
 Current local module:
 - PNG/JPG/WEBP to PNG/JPG/WEBP in the browser with no upload.
@@ -26,6 +27,7 @@ Current local module:
 - Payment provider: Dodo Payments
 - OCR and document extraction fallback: Mistral OCR
 - Speech recognition and Markdown conversion: Cloudflare Workers AI
+- Universal provider conversion: CloudConvert
 
 ## Local Commands
 
@@ -57,5 +59,6 @@ Use the safe-deploy wrapper on Nish's machine before live commands.
 - Dodo checkout creation is live; a real paid card/webhook/download drill must pass before scaling paid traffic.
 - Source files are private and short-retention.
 - No human review queue.
-- Broad generic 200+ format conversion, video conversion, archive conversion, and pixel-perfect screenshot-to-code are not live unless a future page says otherwise.
+- CloudConvert-backed universal conversion is implemented and activates only when the production `CLOUDCONVERT_API_KEY` secret is configured.
+- Pixel-perfect screenshot-to-code is not live.
 - Do not claim universal support for every bank, receipt, invoice, screenshot, document, audio file, image, file type, or compliance regime.

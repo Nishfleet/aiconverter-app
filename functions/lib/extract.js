@@ -1,11 +1,19 @@
 import { extractText, getDocumentProxy } from "unpdf";
 import { hasAzureConfig, hasMistralConfig, MAX_PAGE_COUNT, normalizeConverterId, rowsToCsv } from "./jobs.js";
+import { hasCloudConvertConfig } from "./cloudconvert.js";
+import {
+  isUniversalConverter,
+  normalizeUniversalOutputFormat,
+  UNIVERSAL_COLUMNS,
+  universalPreviewRow
+} from "./universal.js";
 import { validateStatementRows } from "./validate-statement.js";
 
 const DEFAULT_AZURE_MODEL = "prebuilt-bankStatement.us";
 const DEFAULT_AZURE_API_VERSION = "2024-11-30";
 const DEFAULT_MISTRAL_MODEL = "mistral-ocr-latest";
 const DEFAULT_WHISPER_MODEL = "@cf/openai/whisper-large-v3-turbo";
+const DEFAULT_SCREENSHOT_CODE_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
 
 const extractionSchema = {
   type: "object",
@@ -107,7 +115,8 @@ export const CONVERTER_COLUMNS = {
     { key: "component", label: "Component" },
     { key: "source", label: "Source" },
     { key: "preview", label: "Preview" }
-  ]
+  ],
+  "universal-file": UNIVERSAL_COLUMNS
 };
 
 export async function convertFileToCsv(env, converterId, fileName, contentType, arrayBuffer, options = {}) {
@@ -129,6 +138,9 @@ export async function convertFileToCsv(env, converterId, fileName, contentType, 
   }
   if (normalized === "screenshot-code") {
     return convertScreenshotToHtml(env, fileName, contentType, arrayBuffer, options);
+  }
+  if (isUniversalConverter(normalized)) {
+    return convertUniversalFile(env, fileName, contentType, arrayBuffer, options);
   }
   return convertPdfToCsv(env, fileName, arrayBuffer, options);
 }
@@ -375,7 +387,11 @@ async function convertDocumentToMarkdown(env, fileName, contentType, arrayBuffer
   };
 }
 
-async function convertScreenshotToHtml(env, fileName, contentType, arrayBuffer) {
+async function convertScreenshotToHtml(env, fileName, contentType, arrayBuffer, options = {}) {
+  if (options.allowPaidFallback && env?.AI?.run && String(contentType || "").toLowerCase().startsWith("image/")) {
+    return convertScreenshotToVisionHtml(env, fileName, contentType, arrayBuffer);
+  }
+
   const markdown = await documentToMarkdown(env, fileName, contentType, arrayBuffer);
   if (!markdown.ok) return markdown;
 
@@ -399,10 +415,86 @@ async function convertScreenshotToHtml(env, fileName, contentType, arrayBuffer) 
     trustScore: markdown.content.trim().length > 80 ? 0.78 : 0.6,
     rowCount: 1,
     warnings: [
-      "HTML output is a clean starter based on detected content and structure, not a pixel-perfect clone.",
+      "Preview HTML is a clean starter based on detected content and structure, not a pixel-perfect clone. Paid image exports use the vision route when configured.",
       ...(markdown.warnings || [])
     ],
     provider: "workers-ai-markdown-html"
+  };
+}
+
+async function convertScreenshotToVisionHtml(env, fileName, contentType, arrayBuffer) {
+  const model = env.SCREENSHOT_CODE_MODEL || DEFAULT_SCREENSHOT_CODE_MODEL;
+  const prompt = [
+    "Convert this UI screenshot into one complete, standalone HTML document.",
+    "Return only HTML. Include <!doctype html>, <html>, <head>, responsive CSS, and <body>.",
+    "Use semantic HTML, accessible labels where obvious, and CSS that approximates layout, spacing, colors, typography, and visible UI states.",
+    "Do not use external images, scripts, CDNs, frameworks, or SVG placeholder art.",
+    "If exact content is unreadable, use concise neutral placeholders instead of inventing specific private data."
+  ].join(" ");
+
+  const response = await env.AI.run(model, {
+    prompt,
+    image: [...new Uint8Array(arrayBuffer)],
+    max_tokens: Number(env.SCREENSHOT_CODE_MAX_TOKENS || 4096),
+    temperature: 0.15
+  });
+  const raw = String(response?.response || response?.text || response?.result?.response || response?.output || "").trim();
+  const html = extractHtmlDocument(raw);
+  if (!html) {
+    return failConversion("The vision HTML generator could not safely produce a complete HTML file.", "workers-ai-vision-html");
+  }
+
+  const row = {
+    component: "Vision HTML",
+    source: contentType || "image",
+    preview: `Standalone HTML generated from ${fileName || "uploaded screenshot"}.`
+  };
+
+  return {
+    ok: true,
+    csv: rowsToCsv([row], CONVERTER_COLUMNS["screenshot-code"]),
+    content: html,
+    contentType: "text/html; charset=utf-8",
+    fileExtension: "html",
+    outputFormat: "html",
+    previewRows: [row],
+    columns: CONVERTER_COLUMNS["screenshot-code"],
+    confidence: 0.84,
+    trustScore: 0.84,
+    rowCount: 1,
+    warnings: ["Generated HTML should be reviewed before reuse. It is not guaranteed pixel-perfect."],
+    provider: "workers-ai-vision-html"
+  };
+}
+
+function extractHtmlDocument(value) {
+  const text = String(value || "").trim();
+  const fenced = text.match(/```html\s*([\s\S]*?)```/i)?.[1] || text.match(/```\s*([\s\S]*?)```/i)?.[1] || text;
+  const start = fenced.search(/<!doctype html>|<html[\s>]/i);
+  if (start < 0) return "";
+  const html = fenced.slice(start).trim();
+  return /<html[\s>]/i.test(html) && /<\/html>/i.test(html) && /<body[\s>]/i.test(html) ? html : "";
+}
+
+async function convertUniversalFile(env, fileName, contentType, arrayBuffer, options = {}) {
+  if (!hasCloudConvertConfig(env)) {
+    return failConversion("Universal file conversion needs CloudConvert configuration before it can run.", "cloudconvert");
+  }
+
+  const outputFormat = normalizeUniversalOutputFormat(options.outputFormat);
+  const row = universalPreviewRow(fileName, contentType, outputFormat);
+  return {
+    ok: true,
+    csv: rowsToCsv([row], UNIVERSAL_COLUMNS),
+    previewRows: [row],
+    columns: UNIVERSAL_COLUMNS,
+    confidence: 0.9,
+    trustScore: 0.9,
+    rowCount: 1,
+    warnings: [
+      "Preview confirms the conversion route. The provider-backed file is generated after unlock."
+    ],
+    provider: "cloudconvert-preview"
   };
 }
 

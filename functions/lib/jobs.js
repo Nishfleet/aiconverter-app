@@ -1,5 +1,16 @@
+import {
+  assertUniversalSignature,
+  isUniversalConverter,
+  normalizeUniversalOutputFormat,
+  UNIVERSAL_ACCEPTED_EXTENSIONS,
+  UNIVERSAL_ACCEPTED_TYPES,
+  UNIVERSAL_CONVERTER_ID,
+  UNIVERSAL_MAX_FILE_BYTES
+} from "./universal.js";
+
 export const MAX_FILE_BYTES = 50 * 1024 * 1024;
 export const MAX_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
+export const MAX_SCREENSHOT_CODE_FILE_BYTES = 8 * 1024 * 1024;
 export const MAX_PAGE_COUNT = 500;
 export const PREVIEW_PAGE_LIMIT = 3;
 export const SOURCE_RETENTION_SECONDS = 24 * 60 * 60;
@@ -225,7 +236,16 @@ export function supportedConverters() {
       label: "Screenshot to HTML",
       sourcePrefix: "screenshot-code",
       acceptedTypes: ["application/pdf", "image/png", "image/jpeg", "image/webp"],
-      acceptedExtensions: [".pdf", ".png", ".jpg", ".jpeg", ".webp"]
+      acceptedExtensions: [".pdf", ".png", ".jpg", ".jpeg", ".webp"],
+      maxBytes: MAX_SCREENSHOT_CODE_FILE_BYTES
+    },
+    [UNIVERSAL_CONVERTER_ID]: {
+      id: UNIVERSAL_CONVERTER_ID,
+      label: "Universal file",
+      sourcePrefix: "universal",
+      acceptedTypes: UNIVERSAL_ACCEPTED_TYPES,
+      acceptedExtensions: UNIVERSAL_ACCEPTED_EXTENSIONS,
+      maxBytes: UNIVERSAL_MAX_FILE_BYTES
     }
   };
 }
@@ -236,13 +256,14 @@ export function normalizeOutputFormat(value, converterId = "bank") {
   if (converterId === "audio-transcript" && ["txt", "json"].includes(normalized)) return normalized;
   if (converterId === "document-markdown") return "md";
   if (converterId === "screenshot-code") return "html";
+  if (isUniversalConverter(converterId)) return normalizeUniversalOutputFormat(normalized);
   return "csv";
 }
 
 export function outputFormatFromResultKey(resultKey = "") {
   const match = String(resultKey || "").toLowerCase().match(/\.([a-z0-9]+)$/);
   const extension = match?.[1] || "csv";
-  return ["csv", "json", "txt", "md", "html"].includes(extension) ? extension : "csv";
+  return ["csv", "json", "txt", "md", "html", "pdf", "docx", "xlsx", "pptx", "png", "jpg", "webp", "gif", "svg", "mp3", "wav", "m4a", "ogg", "flac", "mp4", "webm", "mov", "zip", "7z", "tar"].includes(extension) ? extension : "csv";
 }
 
 export function normalizeConverterId(value) {
@@ -272,6 +293,7 @@ export function assertSupportedUpload(file, arrayBuffer, converterId = "bank") {
 
   if (converter.id === "audio-transcript") return assertAudioSignature(fileName, arrayBuffer);
   if (converter.id === "document-markdown") return assertDocumentMarkdownSignature(fileName, fileType, arrayBuffer);
+  if (converter.id === UNIVERSAL_CONVERTER_ID) return assertUniversalSignature(fileName, fileType, arrayBuffer);
 
   if (fileName.endsWith(".pdf") || fileType === "application/pdf") {
     const signature = new TextDecoder().decode(arrayBuffer.slice(0, 5));

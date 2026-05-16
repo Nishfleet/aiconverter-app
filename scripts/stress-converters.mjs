@@ -44,6 +44,7 @@ globalThis.fetch = async (_url, options) => {
 
 const env = {
   MISTRAL_API_KEY: "stress-test",
+  CLOUDCONVERT_API_KEY: "stress-test",
   AI: {
     async run() {
       return { text: "Close the books and export clean rows before Friday.", word_count: 9 };
@@ -74,7 +75,16 @@ const scenarios = [
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       DOC_BYTES
     ),
-  () => convertFileToCsv(env, "screenshot-code", "screen.png", "image/png", PNG_BYTES)
+  () => convertFileToCsv(env, "screenshot-code", "screen.png", "image/png", PNG_BYTES),
+  () =>
+    convertFileToCsv(
+      env,
+      "universal-file",
+      "deck.pptx",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      DOC_BYTES,
+      { outputFormat: "pdf" }
+    )
 ];
 
 const started = Date.now();
