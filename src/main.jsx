@@ -780,7 +780,7 @@ function App() {
   return (
     <main className="page-shell">
       <header className="site-header" aria-label="Site header">
-        <a className="brand" href="#top" aria-label="AI Converter home">
+        <a className="brand" href="/" aria-label="AI Converter home">
           <span className="brand-mark">
             <Wand2 size={18} strokeWidth={2.4} />
           </span>
