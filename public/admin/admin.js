@@ -129,7 +129,7 @@ function renderCloudConvert(provider) {
         ${metricCard("Failed today", usage.failed || 0)}
         ${metricCard("Still converting", usage.converting || 0)}
         ${metricCard("Credit guard", provider.requireCreditCheck ? "Required" : "Advisory")}
-        ${metricCard("Backup provider", backup.configured ? "Zamzar on" : "Zamzar off")}
+        ${metricCard("Backup provider", backup.configured ? "Convertio on" : "Convertio off")}
         ${metricCard("Backup daily cap", backup.dailyLimit ?? "-")}
       </div>
       ${
@@ -160,7 +160,7 @@ function renderUsage(usage) {
         ${metricCard("Provider complete", usage.provider_complete || 0)}
         ${metricCard("Provider failed", usage.provider_failed || 0)}
         ${metricCard("CloudConvert jobs", usage.cloudconvert_total || 0)}
-        ${metricCard("Zamzar jobs", usage.zamzar_total || 0)}
+        ${metricCard("Convertio jobs", usage.convertio_total || 0)}
       </div>
     </section>
   `;

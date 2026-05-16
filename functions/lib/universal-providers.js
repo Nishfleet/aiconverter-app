@@ -1,5 +1,5 @@
 import { refreshCloudConvertConversion, startCloudConvertConversion } from "./cloudconvert.js";
-import { hasZamzarConfig, refreshZamzarConversion, startZamzarConversion } from "./zamzar.js";
+import { hasConvertioConfig, refreshConvertioConversion, startConvertioConversion } from "./convertio.js";
 
 export async function startUniversalProviderConversion(env, job, arrayBuffer) {
   const attempts = [];
@@ -8,10 +8,10 @@ export async function startUniversalProviderConversion(env, job, arrayBuffer) {
   if (cloudConvert.result?.ok) return cloudConvert.result;
   attempts.push(cloudConvert.failure);
 
-  if (hasZamzarConfig(env)) {
-    const zamzar = await attemptProvider("zamzar", () => startZamzarConversion(env, job, arrayBuffer));
-    if (zamzar.result?.ok) return zamzar.result;
-    attempts.push(zamzar.failure);
+  if (hasConvertioConfig(env)) {
+    const convertio = await attemptProvider("convertio", () => startConvertioConversion(env, job, arrayBuffer));
+    if (convertio.result?.ok) return convertio.result;
+    attempts.push(convertio.failure);
   }
 
   const meaningful = attempts.filter(Boolean);
@@ -30,7 +30,7 @@ export async function startUniversalProviderConversion(env, job, arrayBuffer) {
 }
 
 export async function refreshUniversalProviderConversion(env, job) {
-  if (job.external_provider === "zamzar") return refreshZamzarConversion(env, job);
+  if (job.external_provider === "convertio") return refreshConvertioConversion(env, job);
   return refreshCloudConvertConversion(env, job);
 }
 

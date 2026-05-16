@@ -7,9 +7,9 @@ import {
   getCloudConvertAccount,
   hasCloudConvertConfig
 } from "../../lib/cloudconvert.js";
+import { hasConvertioConfig, convertioDailyJobLimit } from "../../lib/convertio.js";
 import { dodoProductIdForPlan, hasDodoApi, hasDodoWebhookSecret } from "../../lib/dodo.js";
 import { hasAzureConfig, hasExtractorBinding, hasMistralConfig, hasRequiredBindings, PLANS, rateLimitSaltStatus } from "../../lib/jobs.js";
-import { hasZamzarConfig, zamzarDailyJobLimit } from "../../lib/zamzar.js";
 
 export function onRequestPost() {
   return methodNotAllowed("GET");
@@ -98,10 +98,10 @@ export async function onRequestGet({ request, env }) {
          COALESCE(SUM(CASE WHEN external_provider = 'cloudconvert' AND status = 'complete' THEN 1 ELSE 0 END), 0) AS cloudconvert_complete,
          COALESCE(SUM(CASE WHEN external_provider = 'cloudconvert' AND status = 'failed' THEN 1 ELSE 0 END), 0) AS cloudconvert_failed,
          COALESCE(SUM(CASE WHEN external_provider = 'cloudconvert' AND status = 'converting_full' THEN 1 ELSE 0 END), 0) AS cloudconvert_converting,
-         COALESCE(SUM(CASE WHEN external_provider = 'zamzar' THEN 1 ELSE 0 END), 0) AS zamzar_total,
-         COALESCE(SUM(CASE WHEN external_provider = 'zamzar' AND status = 'complete' THEN 1 ELSE 0 END), 0) AS zamzar_complete,
-         COALESCE(SUM(CASE WHEN external_provider = 'zamzar' AND status = 'failed' THEN 1 ELSE 0 END), 0) AS zamzar_failed,
-         COALESCE(SUM(CASE WHEN external_provider = 'zamzar' AND status = 'converting_full' THEN 1 ELSE 0 END), 0) AS zamzar_converting
+         COALESCE(SUM(CASE WHEN external_provider = 'convertio' THEN 1 ELSE 0 END), 0) AS convertio_total,
+         COALESCE(SUM(CASE WHEN external_provider = 'convertio' AND status = 'complete' THEN 1 ELSE 0 END), 0) AS convertio_complete,
+         COALESCE(SUM(CASE WHEN external_provider = 'convertio' AND status = 'failed' THEN 1 ELSE 0 END), 0) AS convertio_failed,
+         COALESCE(SUM(CASE WHEN external_provider = 'convertio' AND status = 'converting_full' THEN 1 ELSE 0 END), 0) AS convertio_converting
        FROM jobs
        WHERE created_at >= ?`,
       [since24h]
@@ -110,7 +110,7 @@ export async function onRequestGet({ request, env }) {
       env,
       `SELECT id, status, converter_id, plan_id, external_provider, external_status, substr(error, 1, 240) AS error, updated_at
        FROM jobs
-       WHERE (external_provider IN ('cloudconvert', 'zamzar') OR extractor IN ('cloudconvert', 'zamzar'))
+       WHERE (external_provider IN ('cloudconvert', 'convertio') OR extractor IN ('cloudconvert', 'convertio'))
          AND (status = 'failed' OR COALESCE(external_status, '') IN ('error', 'failed'))
        ORDER BY updated_at DESC
        LIMIT 25`
@@ -119,7 +119,7 @@ export async function onRequestGet({ request, env }) {
       env,
       `SELECT id, status, converter_id, plan_id, external_provider, external_status, updated_at
        FROM jobs
-       WHERE external_provider IN ('cloudconvert', 'zamzar')
+       WHERE external_provider IN ('cloudconvert', 'convertio')
          AND status = 'converting_full'
          AND updated_at < ?
        ORDER BY updated_at ASC
@@ -206,7 +206,7 @@ function runtimeHealth(env) {
   });
   if (!hasExtractorBinding(env)) missing.push("OCR fallback provider");
   if (!env.TURNSTILE_SITE_KEY || !env.TURNSTILE_SECRET_KEY) missing.push("Turnstile keys");
-  if (!hasCloudConvertConfig(env) && !hasZamzarConfig(env)) missing.push("universal conversion provider");
+  if (!hasCloudConvertConfig(env) && !hasConvertioConfig(env)) missing.push("universal conversion provider");
   if (!rateLimitSaltStatus(env).ok) missing.push("strong rate-limit salt");
 
   return {
@@ -232,7 +232,7 @@ function runtimeHealth(env) {
       whisper: Boolean(env.AI?.run),
       screenshotVision: Boolean(env.AI?.run),
       cloudConvert: hasCloudConvertConfig(env),
-      zamzarBackup: hasZamzarConfig(env)
+      convertioBackup: hasConvertioConfig(env)
     },
     protection: {
       turnstile: Boolean(env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET_KEY),
@@ -252,9 +252,9 @@ async function buildCloudConvertOverview(env) {
   return {
     configured,
     backup: {
-      provider: "zamzar",
-      configured: hasZamzarConfig(env),
-      dailyLimit: zamzarDailyJobLimit(env)
+      provider: "convertio",
+      configured: hasConvertioConfig(env),
+      dailyLimit: convertioDailyJobLimit(env)
     },
     dailyLimit,
     minCredits,
@@ -281,7 +281,7 @@ function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckPr
   if (!cloudConvert.configured && !backup.configured) {
     alerts.push({ severity: "critical", title: "No universal provider is configured", detail: "Provider-backed universal conversions are blocked." });
   } else if (!cloudConvert.configured && backup.configured) {
-    alerts.push({ severity: "warning", title: "CloudConvert is offline", detail: "Zamzar backup is configured and will be used for provider conversions." });
+    alerts.push({ severity: "warning", title: "CloudConvert is offline", detail: "Convertio backup is configured and will be used for provider conversions." });
   } else {
     const usage = cloudConvert.usageToday || {};
     const primaryIssueSeverity = backup.configured ? "warning" : "critical";

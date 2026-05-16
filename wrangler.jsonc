@@ -26,7 +26,7 @@
     "CLOUDCONVERT_REQUIRE_CREDIT_CHECK": "true",
     "ENABLE_AZURE_FALLBACK": "false",
     "FREE_DOWNLOADS_ENABLED": "false",
-    "ZAMZAR_DAILY_JOB_LIMIT": "5",
+    "CONVERTIO_DAILY_JOB_LIMIT": "10",
     // Set RATE_LIMIT_SALT as a secret, not a committed var:
     // wrangler pages secret put RATE_LIMIT_SALT
     "RATE_LIMIT_MAX_PER_HOUR": "8"

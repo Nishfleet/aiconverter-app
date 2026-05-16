@@ -31,13 +31,13 @@ The private admin page shows credits, started/remaining jobs for today, provider
 
 ## Backup Provider
 
-Set `ZAMZAR_API_KEY` as a secret to enable the backup route for provider-backed universal conversions.
+Set `CONVERTIO_API_KEY` as a secret to enable the backup route for provider-backed universal conversions.
 
 Configured in `wrangler.jsonc`:
 
-- `ZAMZAR_DAILY_JOB_LIMIT`: max backup provider jobs started per UTC day
+- `CONVERTIO_DAILY_JOB_LIMIT`: max backup provider jobs started per UTC day
 
-If CloudConvert is unavailable before a job starts cleanly, the app attempts Zamzar before failing/refunding the paid job.
+If CloudConvert is unavailable before a job starts cleanly, the app attempts Convertio before failing/refunding the paid job.
 
 ## Dodo Alerts
 

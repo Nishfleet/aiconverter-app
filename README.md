@@ -12,7 +12,7 @@ Current beta modules:
 - Audio file to TXT or JSON transcript.
 - Rich document/image to Markdown.
 - Screenshot/image to HTML, with a free starter preview and paid Workers AI vision export when configured.
-- Universal file conversion through CloudConvert, with Zamzar backup when `ZAMZAR_API_KEY` is configured.
+- Universal file conversion through CloudConvert, with Convertio backup when `CONVERTIO_API_KEY` is configured.
 
 Current local module:
 - PNG/JPG/WEBP to PNG/JPG/WEBP in the browser with no upload.
@@ -28,7 +28,7 @@ Current local module:
 - OCR and document extraction fallback: Mistral OCR
 - Speech recognition and Markdown conversion: Cloudflare Workers AI
 - Universal provider conversion: CloudConvert
-- Universal provider backup: Zamzar
+- Universal provider backup: Convertio
 
 ## Local Commands
 
@@ -64,7 +64,7 @@ Use the safe-deploy wrapper on Nish's machine before live commands.
 - No human review queue.
 - CloudConvert-backed universal conversion is implemented and activates only when the production `CLOUDCONVERT_API_KEY` secret is configured.
 - CloudConvert-backed universal conversion is implemented when the production `CLOUDCONVERT_API_KEY` secret is configured.
-- Zamzar backup conversion is implemented when the production `ZAMZAR_API_KEY` secret is configured.
-- CloudConvert daily cap/credit reserve and Zamzar daily cap guardrails are enforced before new provider jobs start.
+- Convertio backup conversion is implemented when the production `CONVERTIO_API_KEY` secret is configured.
+- CloudConvert daily cap/credit reserve and Convertio daily cap guardrails are enforced before new provider jobs start.
 - Pixel-perfect screenshot-to-code is not live.
 - Do not claim universal support for every bank, receipt, invoice, screenshot, document, audio file, image, file type, or compliance regime.

@@ -555,7 +555,7 @@ test("CloudConvert credit reserve blocks new provider jobs before conversion spe
   restoreFetch();
 });
 
-test("universal provider route falls back to Zamzar when CloudConvert cap is reached", async () => {
+test("universal provider route falls back to Convertio when CloudConvert cap is reached", async () => {
   const fetchCalls = mockCloudConvertFetch([
     {
       match: "https://api.cloudconvert.com/v2/users/me",
@@ -564,13 +564,17 @@ test("universal provider route falls back to Zamzar when CloudConvert cap is rea
       }
     },
     {
-      match: "https://api.zamzar.com/v1/jobs",
+      match: "https://api.convertio.co/convert",
       response: {
-        id: 77,
-        status: "initialising",
-        source_file: { id: 2, name: "deck.pptx" },
-        target_files: [],
-        target_format: "pdf"
+        status: "ok",
+        data: { id: "convertio-job-77", minutes: 1 }
+      }
+    },
+    {
+      match: "https://api.convertio.co/convert/convertio-job-77/deck.pptx",
+      response: {
+        status: "ok",
+        data: { file: "deck.pptx" }
       }
     }
   ]);
@@ -578,45 +582,55 @@ test("universal provider route falls back to Zamzar when CloudConvert cap is rea
     cloudConvertUsage: { started: 10, complete: 8, failed: 1, converting: 1 },
     vars: {
       CLOUDCONVERT_DAILY_JOB_LIMIT: "10",
-      ZAMZAR_API_KEY: "zamzar-test-key",
-      ZAMZAR_DAILY_JOB_LIMIT: "5"
+      CONVERTIO_API_KEY: "convertio-test-key",
+      CONVERTIO_DAILY_JOB_LIMIT: "10"
     }
   });
   const result = await startUniversalProviderConversion(env, mockUniversalJob(), new Uint8Array([1, 2, 3]).buffer);
 
   assert.equal(result.pending, true);
-  assert.equal(result.provider, "zamzar");
-  assert.equal(result.previewRows[0].route, "Zamzar");
-  assert.equal(fetchCalls.length, 2);
-  assert.equal(fetchCalls[1].body instanceof FormData, true);
-  assert.equal(env.updates.at(-1).fields.external_provider, "zamzar");
+  assert.equal(result.provider, "convertio");
+  assert.equal(result.previewRows[0].route, "Convertio");
+  assert.equal(fetchCalls.length, 3);
+  assert.equal(fetchCalls[1].body.outputformat, "pdf");
+  assert.equal(fetchCalls[2].body instanceof ArrayBuffer, true);
+  assert.equal(env.updates.at(-1).fields.external_provider, "convertio");
   restoreFetch();
 });
 
-test("Zamzar backup refresh downloads the exported file into private result storage", async () => {
+test("Convertio backup refresh downloads the exported file into private result storage", async () => {
   const fetchCalls = mockCloudConvertFetch([
     {
-      match: "https://api.zamzar.com/v1/jobs/77",
+      match: "https://api.convertio.co/convert/convertio-job-77/status",
       response: {
-        id: 77,
-        status: "successful",
-        target_files: [{ id: 3, name: "deck.pdf", size: 4 }]
+        status: "ok",
+        data: {
+          id: "convertio-job-77",
+          step: "finish",
+          output: { url: "https://storage.convertio.test/deck.pdf", size: 4 }
+        }
       }
     },
     {
-      match: "https://api.zamzar.com/v1/files/3/content",
+      match: "https://storage.convertio.test/deck.pdf",
       response: new Uint8Array([0x25, 0x50, 0x44, 0x46]).buffer,
       contentType: "application/pdf"
+    },
+    {
+      match: "https://api.convertio.co/convert/convertio-job-77",
+      response: {
+        status: "ok"
+      }
     }
   ]);
-  const env = mockJobEnv({ vars: { ZAMZAR_API_KEY: "zamzar-test-key" } });
-  const job = { ...mockUniversalJob(), status: "converting_full", external_provider: "zamzar", external_job_id: "77" };
+  const env = mockJobEnv({ vars: { CONVERTIO_API_KEY: "convertio-test-key" } });
+  const job = { ...mockUniversalJob(), status: "converting_full", external_provider: "convertio", external_job_id: "convertio-job-77" };
   const result = await refreshUniversalProviderConversion(env, job);
 
   assert.equal(result.ok, true);
   assert.equal(result.status, "complete");
-  assert.equal(result.provider, "zamzar");
-  assert.equal(fetchCalls.length, 2);
+  assert.equal(result.provider, "convertio");
+  assert.equal(fetchCalls.length, 3);
   assert.equal(env.bucketPuts[0].key, "jobs/job_test/result.pdf");
   assert.equal(env.bucketPuts[0].metadata.httpMetadata.contentType, "application/pdf");
   assert.equal(env.updates.at(-1).fields.status, "complete");
