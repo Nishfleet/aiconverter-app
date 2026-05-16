@@ -1,6 +1,6 @@
 const securityHeaders = {
   "Content-Security-Policy":
-    "default-src 'self'; base-uri 'self'; form-action 'self' https://*.dodopayments.com; frame-ancestors 'none'; object-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-src https://challenges.cloudflare.com; upgrade-insecure-requests",
+    "default-src 'self'; base-uri 'self'; form-action 'self' https://*.dodopayments.com; frame-ancestors 'none'; object-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src https://challenges.cloudflare.com; upgrade-insecure-requests",
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "no-referrer",

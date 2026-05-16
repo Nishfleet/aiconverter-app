@@ -235,6 +235,107 @@ test("invoice converter can produce JSON for structured workflows", async () => 
   restoreFetch();
 });
 
+test("audio converter creates TXT transcript with Workers AI", async () => {
+  const result = await convertFileToCsv(
+    {
+      AI: {
+        async run(model, input) {
+          assert.equal(model, "@cf/openai/whisper");
+          assert.ok(Array.isArray(input.audio));
+          return { text: "Close the books and export the statement rows.", word_count: 8 };
+        }
+      }
+    },
+    "audio-transcript",
+    "memo.mp3",
+    "audio/mpeg",
+    new Uint8Array([0xff, 0xfb, 0x90, 0x64]).buffer
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.outputFormat, "txt");
+  assert.match(result.content, /Close the books/);
+  assert.match(result.csv, /word_count/);
+});
+
+test("audio converter can produce JSON transcript", async () => {
+  const result = await convertFileToCsv(
+    {
+      AI: {
+        async run() {
+          return { text: "Review the invoice before Friday.", word_count: 6, vtt: "WEBVTT" };
+        }
+      }
+    },
+    "audio-transcript",
+    "memo.mp3",
+    "audio/mpeg",
+    new Uint8Array([0xff, 0xfb, 0x90, 0x64]).buffer,
+    { outputFormat: "json" }
+  );
+
+  const parsed = JSON.parse(result.content);
+  assert.equal(result.ok, true);
+  assert.equal(result.outputFormat, "json");
+  assert.equal(parsed.word_count, 6);
+  assert.match(parsed.transcript, /invoice/);
+});
+
+test("document converter creates Markdown from Workers AI markdown conversion", async () => {
+  const result = await convertFileToCsv(
+    {
+      AI: {
+        async toMarkdown(file) {
+          assert.equal(file.name, "plan.docx");
+          assert.ok(file.blob);
+          return {
+            format: "markdown",
+            mimetype: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            tokens: 42,
+            data: "# Operating plan\n\n- Close books\n- Export rows"
+          };
+        }
+      }
+    },
+    "document-markdown",
+    "plan.docx",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    new Uint8Array([0x50, 0x4b, 0x03, 0x04]).buffer
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.outputFormat, "md");
+  assert.match(result.content, /Operating plan/);
+  assert.match(result.csv, /tokens/);
+});
+
+test("screenshot to HTML creates an honest starter file", async () => {
+  const result = await convertFileToCsv(
+    {
+      AI: {
+        async toMarkdown() {
+          return {
+            format: "markdown",
+            mimetype: "image/png",
+            tokens: 35,
+            data: "# Settings\n\n- Profile\n- Billing\n\nSave changes"
+          };
+        }
+      }
+    },
+    "screenshot-code",
+    "settings.png",
+    "image/png",
+    PNG_BYTES
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.outputFormat, "html");
+  assert.match(result.content, /<!doctype html>/);
+  assert.match(result.content, /Settings/);
+  assert.match(result.warnings.join(" "), /not a pixel-perfect clone/);
+});
+
 let originalFetch = globalThis.fetch;
 
 function mockFetch(payload) {

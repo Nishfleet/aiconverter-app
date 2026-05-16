@@ -1,4 +1,5 @@
 export const MAX_FILE_BYTES = 50 * 1024 * 1024;
+export const MAX_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
 export const MAX_PAGE_COUNT = 500;
 export const PREVIEW_PAGE_LIMIT = 3;
 export const SOURCE_RETENTION_SECONDS = 24 * 60 * 60;
@@ -154,6 +155,77 @@ export function supportedConverters() {
       sourcePrefix: "invoice",
       acceptedTypes: ["application/pdf", "image/png", "image/jpeg", "image/webp"],
       acceptedExtensions: [".pdf", ".png", ".jpg", ".jpeg", ".webp"]
+    },
+    "audio-transcript": {
+      id: "audio-transcript",
+      label: "Audio transcript",
+      sourcePrefix: "audio",
+      acceptedTypes: [
+        "audio/mpeg",
+        "audio/mp3",
+        "audio/wav",
+        "audio/wave",
+        "audio/x-wav",
+        "audio/mp4",
+        "audio/x-m4a",
+        "audio/aac",
+        "audio/ogg",
+        "audio/webm"
+      ],
+      acceptedExtensions: [".mp3", ".wav", ".m4a", ".aac", ".ogg", ".webm"],
+      maxBytes: MAX_AUDIO_FILE_BYTES
+    },
+    "document-markdown": {
+      id: "document-markdown",
+      label: "Document Markdown",
+      sourcePrefix: "document",
+      acceptedTypes: [
+        "application/pdf",
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/svg+xml",
+        "text/html",
+        "application/xml",
+        "text/xml",
+        "text/csv",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+        "application/vnd.ms-excel.sheet.macroenabled.12",
+        "application/vnd.ms-excel.sheet.binary.macroenabled.12",
+        "application/vnd.oasis.opendocument.spreadsheet",
+        "application/vnd.oasis.opendocument.text",
+        "application/vnd.apple.numbers"
+      ],
+      acceptedExtensions: [
+        ".pdf",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".webp",
+        ".svg",
+        ".html",
+        ".htm",
+        ".xml",
+        ".csv",
+        ".docx",
+        ".xlsx",
+        ".xlsm",
+        ".xlsb",
+        ".xls",
+        ".et",
+        ".ods",
+        ".odt",
+        ".numbers"
+      ]
+    },
+    "screenshot-code": {
+      id: "screenshot-code",
+      label: "Screenshot to HTML",
+      sourcePrefix: "screenshot-code",
+      acceptedTypes: ["application/pdf", "image/png", "image/jpeg", "image/webp"],
+      acceptedExtensions: [".pdf", ".png", ".jpg", ".jpeg", ".webp"]
     }
   };
 }
@@ -161,11 +233,16 @@ export function supportedConverters() {
 export function normalizeOutputFormat(value, converterId = "bank") {
   const normalized = String(value || "").trim().toLowerCase();
   if (converterId === "invoice" && ["csv", "json"].includes(normalized)) return normalized;
+  if (converterId === "audio-transcript" && ["txt", "json"].includes(normalized)) return normalized;
+  if (converterId === "document-markdown") return "md";
+  if (converterId === "screenshot-code") return "html";
   return "csv";
 }
 
 export function outputFormatFromResultKey(resultKey = "") {
-  return String(resultKey || "").toLowerCase().endsWith(".json") ? "json" : "csv";
+  const match = String(resultKey || "").toLowerCase().match(/\.([a-z0-9]+)$/);
+  const extension = match?.[1] || "csv";
+  return ["csv", "json", "txt", "md", "html"].includes(extension) ? extension : "csv";
 }
 
 export function normalizeConverterId(value) {
@@ -178,6 +255,9 @@ export function assertSupportedUpload(file, arrayBuffer, converterId = "bank") {
   if (!file) return "Choose a file first.";
   if (file.size <= 0) return "The file is empty.";
   if (file.size > MAX_FILE_BYTES) return "This service accepts files up to 50 MB.";
+  if (converter.maxBytes && file.size > converter.maxBytes) {
+    return `${converter.label} conversion accepts files up to ${Math.floor(converter.maxBytes / 1024 / 1024)} MB.`;
+  }
 
   const fileName = safeFileName(file.name).toLowerCase();
   const fileType = String(file.type || "application/octet-stream").toLowerCase();
@@ -189,6 +269,9 @@ export function assertSupportedUpload(file, arrayBuffer, converterId = "bank") {
   if (!hasAcceptedExtension || !hasAcceptedType) {
     return `${converter.label} conversion accepts ${converter.acceptedExtensions.join(", ")} files.`;
   }
+
+  if (converter.id === "audio-transcript") return assertAudioSignature(fileName, arrayBuffer);
+  if (converter.id === "document-markdown") return assertDocumentMarkdownSignature(fileName, fileType, arrayBuffer);
 
   if (fileName.endsWith(".pdf") || fileType === "application/pdf") {
     const signature = new TextDecoder().decode(arrayBuffer.slice(0, 5));
@@ -208,6 +291,84 @@ export function assertSupportedUpload(file, arrayBuffer, converterId = "bank") {
     bytes[10] === 0x42 &&
     bytes[11] === 0x50;
   return isPng || isJpeg || isWebp ? "" : "That image file type is not supported yet.";
+}
+
+function assertAudioSignature(fileName, arrayBuffer) {
+  const bytes = new Uint8Array(arrayBuffer.slice(0, 16));
+  const ascii = new TextDecoder("latin1").decode(arrayBuffer.slice(0, 16));
+  const isMp3 = ascii.startsWith("ID3") || (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0);
+  const isWav = ascii.startsWith("RIFF") && ascii.slice(8, 12) === "WAVE";
+  const isMp4Audio = ascii.slice(4, 8) === "ftyp";
+  const isOgg = ascii.startsWith("OggS");
+  const isWebm = bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
+  const matched =
+    (fileName.endsWith(".mp3") && isMp3) ||
+    (fileName.endsWith(".wav") && isWav) ||
+    ((fileName.endsWith(".m4a") || fileName.endsWith(".aac")) && isMp4Audio) ||
+    (fileName.endsWith(".ogg") && isOgg) ||
+    (fileName.endsWith(".webm") && isWebm);
+  return matched ? "" : "That audio file type is not supported yet.";
+}
+
+function assertDocumentMarkdownSignature(fileName, fileType, arrayBuffer) {
+  if (fileName.endsWith(".pdf") || fileType === "application/pdf") {
+    const signature = new TextDecoder().decode(arrayBuffer.slice(0, 5));
+    return signature === "%PDF-" ? "" : "That file does not look like a valid PDF.";
+  }
+
+  const bytes = new Uint8Array(arrayBuffer.slice(0, 16));
+  const ascii = new TextDecoder("latin1").decode(arrayBuffer.slice(0, 512));
+  const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+  const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  const isWebp =
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50;
+  if ([".png", ".jpg", ".jpeg", ".webp"].some((extension) => fileName.endsWith(extension))) {
+    return isPng || isJpeg || isWebp ? "" : "That image file type is not supported yet.";
+  }
+
+  const textStart = ascii.trimStart().slice(0, 160).toLowerCase();
+  if (fileName.endsWith(".svg")) return textStart.startsWith("<svg") || textStart.includes("<svg") ? "" : "That SVG file does not look valid.";
+  if (fileName.endsWith(".html") || fileName.endsWith(".htm")) {
+    return textStart.startsWith("<!doctype html") || textStart.startsWith("<html") || textStart.includes("<body")
+      ? ""
+      : "That HTML file does not look valid.";
+  }
+  if (fileName.endsWith(".xml")) return textStart.startsWith("<?xml") || textStart.startsWith("<") ? "" : "That XML file does not look valid.";
+  if (fileName.endsWith(".csv")) return looksTextLike(ascii) ? "" : "That CSV file does not look valid.";
+
+  const isZipContainer = bytes[0] === 0x50 && bytes[1] === 0x4b;
+  const isCompoundOffice =
+    bytes[0] === 0xd0 &&
+    bytes[1] === 0xcf &&
+    bytes[2] === 0x11 &&
+    bytes[3] === 0xe0 &&
+    bytes[4] === 0xa1 &&
+    bytes[5] === 0xb1 &&
+    bytes[6] === 0x1a &&
+    bytes[7] === 0xe1;
+  if ([".docx", ".xlsx", ".xlsm", ".xlsb", ".et", ".ods", ".odt", ".numbers"].some((extension) => fileName.endsWith(extension))) {
+    return isZipContainer ? "" : "That document file does not look valid.";
+  }
+  if (fileName.endsWith(".xls")) return isCompoundOffice || isZipContainer ? "" : "That Excel file does not look valid.";
+
+  return "";
+}
+
+function looksTextLike(text) {
+  const sample = String(text || "").slice(0, 512);
+  if (!sample.trim()) return false;
+  const controlCount = [...sample].filter((char) => {
+    const code = char.charCodeAt(0);
+    return code < 32 && ![9, 10, 13].includes(code);
+  }).length;
+  return controlCount / sample.length < 0.05;
 }
 
 export function sourceObjectKey(jobId, fileName, converterId = "bank") {
@@ -479,7 +640,11 @@ export function parseCsvPreview(csv, limit = 5) {
 }
 
 export function parseStoredPreview(content, resultKey = "", limit = 5) {
-  if (outputFormatFromResultKey(resultKey) !== "json") return parseCsvPreview(content, limit);
+  const format = outputFormatFromResultKey(resultKey);
+  if (format === "csv") return parseCsvPreview(content, limit);
+  if (["txt", "md", "html"].includes(format)) {
+    return [{ preview: String(content || "").replace(/\s+/g, " ").trim().slice(0, 240) }];
+  }
   try {
     const parsed = JSON.parse(content);
     if (Array.isArray(parsed)) return parsed.slice(0, limit);

@@ -2,12 +2,12 @@ import { withSecurityHeaders } from "./lib/http.js";
 
 const markdown = `---
 title: AI Converter - Useful file conversion
-description: Convert bank statement PDFs, receipts, invoices, screenshots, and common images into useful CSV, JSON, spreadsheet, or image outputs with preview-first AI routes and local image conversion.
+description: Convert bank statement PDFs, receipts, invoices, screenshots, documents, audio, and common images into useful CSV, JSON, Markdown, transcript, HTML, SVG, or image outputs with preview-first AI routes and local conversion.
 ---
 
 # AI Converter
 
-AI Converter converts sensitive files into useful CSV, JSON, spreadsheet, or image outputs. Bank statements are the first live AI module. Receipts, invoices, and screenshot tables are beta AI modules. Common image-format conversion is browser-local.
+AI Converter converts sensitive files into useful CSV, JSON, Markdown, transcript, HTML, SVG, or image outputs. Bank statements are the first live AI module. Receipts, invoices, screenshot tables, audio transcripts, document Markdown, and screenshot-to-HTML are beta AI modules. Common image-format and raster-to-SVG conversion is browser-local.
 
 ## Live and beta modules
 
@@ -25,12 +25,16 @@ Live:
 - Low-confidence conversions fail closed with no charge.
 - Free-preview reuse, payment reuse, and redo abuse are rate-limited.
 - PNG/JPG/WEBP to PNG/JPG/WEBP conversion runs locally in the browser and does not upload the image.
+- PNG/JPG/WEBP to SVG posterized conversion runs locally in the browser and does not upload the image.
 
 Beta:
 
 - Receipt image or PDF to expense CSV with vendor, date, category, total, tax, payment method, and notes when safely detected.
 - Invoice or bill image/PDF to CSV or JSON with invoice fields and line items when safely detected.
 - Screenshot PNG, JPG, WEBP, or image PDF to spreadsheet CSV with table/header inference when safely detected.
+- Audio transcript from MP3, WAV, M4A, AAC, OGG, or WEBM to TXT or JSON when Workers AI is configured.
+- Document Markdown conversion for Cloudflare-supported rich document formats when Workers AI Markdown Conversion is configured.
+- Screenshot to HTML starter from detected screenshot content. This does not claim pixel-perfect screenshot cloning.
 - Beta modules use OCR and fail closed when confidence is too low.
 
 ## Pricing
@@ -43,11 +47,11 @@ Beta:
 ## Upcoming modules
 
 - AI-monitored email intake after the direct upload workflow is stable.
-- Broader generic document, audio, video, and archive conversion is not live unless a future page says otherwise.
+- Generic 200+ format conversion, video conversion, archive conversion, and pixel-perfect image-to-code are not live unless a future page says otherwise.
 
 ## Security posture
 
-The AI workflow is designed for private storage, 24-hour source retention, 7-day CSV/JSON retention, random job tokens, no public object URLs, no emailed bank PDFs, and minimal job metadata. Browser-local image conversion does not create server-side files.
+The AI workflow is designed for private storage, 24-hour source retention, 7-day generated-file retention, random job tokens, no public object URLs, no emailed bank PDFs, and minimal job metadata. Browser-local image and SVG conversion does not create server-side files.
 
 ## Request access
 
@@ -61,21 +65,21 @@ Use the upload flow at https://aiconverter.app.
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
   "url": "https://aiconverter.app",
-  "description": "AI Converter converts bank statement PDFs, receipts, invoices, screenshot tables, and common images into useful CSV, JSON, spreadsheet, or image outputs."
+  "description": "AI Converter converts bank statement PDFs, receipts, invoices, screenshot tables, documents, audio, and common images into useful CSV, JSON, Markdown, transcript, HTML, SVG, or image outputs."
 }
 \`\`\`
 `;
 
 const aboutMarkdown = `---
 title: About AI Converter
-description: AI Converter is a preview-first AI document workflow with bank statement PDFs live first, beta receipt, invoice, and screenshot converters, local image conversion, short retention, and no human review queue.
+description: AI Converter is a preview-first AI conversion workflow with bank statement PDFs live first, beta receipt, invoice, screenshot, audio, document Markdown, and screenshot-to-HTML converters, local image/SVG conversion, short retention, and no human review queue.
 ---
 
 # About AI Converter
 
-AI Converter is a focused web converter for sensitive files that need spreadsheet-ready CSV, structured JSON, or browser-local image output.
+AI Converter is a focused web converter for sensitive files that need spreadsheet-ready CSV, structured JSON, Markdown, transcript, HTML, SVG, or browser-local image output.
 
-The production AI workflow converts bank statement PDFs to CSV through direct upload, automated preview, paid full extraction, and download. Receipt, invoice, and screenshot-table converters are beta modules on the same workflow. PNG/JPG/WEBP image conversion runs locally in the browser.
+The production AI workflow converts bank statement PDFs to CSV through direct upload, automated preview, paid full extraction, and download. Receipt, invoice, screenshot-table, audio transcript, document Markdown, and screenshot-to-HTML converters are beta modules on the same workflow. PNG/JPG/WEBP image conversion and raster-to-SVG conversion run locally in the browser.
 
 ## What is live
 
@@ -88,17 +92,21 @@ The production AI workflow converts bank statement PDFs to CSV through direct up
 - No human review queue.
 - Source files use a short private lifecycle.
 - PNG/JPG/WEBP to PNG/JPG/WEBP browser-local conversion.
+- PNG/JPG/WEBP to SVG browser-local posterized conversion.
 
 ## What is beta
 
 - Receipt image or PDF to expense CSV with vendor, date, category, total, tax, payment method, and notes when safely detected.
 - Invoice or bill image/PDF to CSV or JSON with invoice fields and line items when safely detected.
 - Screenshot PNG, JPG, WEBP, or image PDF to spreadsheet CSV with table/header inference when safely detected.
-- Beta modules use OCR and can fail closed when the extracted structure is not reliable.
+- Audio transcript to TXT or JSON when Workers AI is configured.
+- Document Markdown for Cloudflare-supported rich document formats when Workers AI Markdown Conversion is configured.
+- Screenshot to HTML starter from detected screenshot content. This does not claim pixel-perfect screenshot cloning.
+- Beta modules use configured AI providers and can fail closed when the extracted structure or content is not reliable.
 
 ## What is not claimed
 
-AI Converter does not claim support for every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every image format, every file type, certified compliance, or guaranteed accuracy. Exports should be reviewed before important use.
+AI Converter does not claim support for every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every audio file, every document, every image format, every file type, certified compliance, pixel-perfect image-to-code, or guaranteed accuracy. Exports should be reviewed before important use.
 `;
 
 const bankStatementMarkdown = `---
@@ -165,7 +173,7 @@ Columns: date, description, money_in, money_out, balance.
 
 const privacyMarkdown = `---
 title: Privacy Policy - AI Converter
-description: How AI Converter handles uploaded source files, generated CSV and JSON files, local image conversion, payment status, and short retention.
+description: How AI Converter handles uploaded source files, generated files, local image/SVG conversion, payment status, and short retention.
 ---
 
 # Privacy Policy
@@ -177,7 +185,7 @@ AI Converter handles sensitive source files only for the conversion workflow you
 ## Information collected
 
 - Uploaded source file.
-- Generated preview rows and CSV or JSON output.
+- Generated preview rows and CSV, JSON, TXT, Markdown, or HTML output.
 - Optional email for payment receipt and job recovery.
 - Payment status, payment ID, selected plan, timestamps, and job status.
 - Security metadata such as hashed IP, hashed user agent, file hash, and abuse-limit events.
@@ -186,13 +194,13 @@ AI Converter does not ask for bank login credentials.
 
 ## Processing
 
-Digital bank statement PDFs are parsed directly first. Mistral OCR may be used for scanned, image-heavy, receipt, invoice, screenshot, or messy files when configured. Azure Document Intelligence may be used as an optional paid-job fallback when configured. PNG/JPG/WEBP image-format conversion runs locally in the browser and does not upload the image to AI Converter for that route.
+Digital bank statement PDFs are parsed directly first. Mistral OCR may be used for scanned, image-heavy, receipt, invoice, screenshot, or messy files when configured. Cloudflare Workers AI may be used for audio transcript, document Markdown, and screenshot-to-HTML beta modules when configured. Azure Document Intelligence may be used as an optional paid-job fallback when configured. PNG/JPG/WEBP image-format and raster-to-SVG conversion run locally in the browser and do not upload the image to AI Converter for those routes.
 
 Low-confidence files fail closed instead of being sent to a human review queue.
 
 ## Retention
 
-Source files are kept only for preview, paid unlock, and the automatic redo window. Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle. Generated CSV and JSON files expire after 7 days. Browser-local image conversions do not create server-side source files.
+Source files are kept only for preview, paid unlock, and the automatic redo window. Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle. Generated CSV, JSON, TXT, Markdown, and HTML files expire after 7 days. Browser-local image/SVG conversions do not create server-side source files.
 
 ## Requests
 
@@ -201,22 +209,22 @@ Use https://aiconverter.app/support for deletion, privacy, or payment-related re
 
 const termsMarkdown = `---
 title: Terms of Service - AI Converter
-description: Terms for using AI Converter's automated document conversion and local image conversion service.
+description: Terms for using AI Converter's automated conversion and local image/SVG conversion service.
 ---
 
 # Terms of Service
 
 Last updated May 12, 2026.
 
-AI Converter provides automated document conversion and local image conversion. It is a data conversion tool, not accounting, tax, legal, lending, compliance, or financial advice.
+AI Converter provides automated conversion and local image/SVG conversion. It is a data conversion tool, not accounting, tax, legal, lending, compliance, or financial advice.
 
 ## Supported workflow
 
-The first production AI workflow is bank statement PDF to CSV. Receipt, invoice, and screenshot-table converters are beta. Upload a supported file, review a free sample preview, then pay once to generate and download the full CSV or JSON. PNG/JPG/WEBP image-format conversion runs locally in the browser.
+The first production AI workflow is bank statement PDF to CSV. Receipt, invoice, screenshot-table, audio transcript, document Markdown, and screenshot-to-HTML converters are beta. Upload a supported file, review a free sample preview, then pay once to generate and download the full CSV, JSON, TXT, Markdown, or HTML output. PNG/JPG/WEBP image-format and raster-to-SVG conversion run locally in the browser.
 
 ## User responsibility
 
-You are responsible for checking exported CSV or JSON files before using them for bookkeeping, taxes, lending, legal, compliance, or decision-making work. Automated extraction can be wrong, especially on unusual, scanned, damaged, password-protected, or low-quality files.
+You are responsible for checking exported CSV, JSON, TXT, Markdown, or HTML files before using them for bookkeeping, taxes, lending, legal, compliance, or decision-making work. Automated extraction can be wrong, especially on unusual, scanned, damaged, password-protected, noisy, or low-quality files.
 
 ## Payment and access
 
@@ -224,7 +232,7 @@ A sample preview is free. Paid access unlocks the full extraction for the select
 
 ## Redo and refund
 
-Paid jobs include one automatic stronger redo. If the stronger redo still cannot produce a usable CSV or JSON file, the job is marked for refund or credit review under the refund policy.
+Paid jobs include one automatic stronger redo. If the stronger redo still cannot produce a usable generated file, the job is marked for refund or credit review under the refund policy.
 
 ## Prohibited use
 
@@ -233,7 +241,7 @@ Do not upload files you do not have the right to process. Do not upload malware,
 
 const refundMarkdown = `---
 title: Refund Policy - AI Converter
-description: AI Converter refund, redo, and anti-abuse policy for paid CSV and JSON exports.
+description: AI Converter refund, redo, and anti-abuse policy for paid generated exports.
 ---
 
 # Refund Policy
@@ -248,11 +256,11 @@ If AI Converter cannot safely produce a sample preview, there is no charge.
 
 ## Paid export retry
 
-Paid jobs include one stronger automatic redo. Use it when the full CSV or JSON file is incomplete, badly formatted, missing rows or fields, or otherwise not usable.
+Paid jobs include one stronger automatic redo. Use it when the full generated file is incomplete, badly formatted, missing rows or fields, or otherwise not usable.
 
 ## Refund or credit
 
-If a paid job still cannot produce a usable CSV or JSON file after the stronger redo, AI Converter records refund or credit due. If a usable file has already been delivered and downloaded, support may offer credit instead of a cash refund depending on the issue and abuse signals.
+If a paid job still cannot produce a usable generated file after the stronger redo, AI Converter records refund or credit due. If a usable file has already been delivered and downloaded, support may offer credit instead of a cash refund depending on the issue and abuse signals.
 
 ## Anti-abuse limits
 
@@ -274,18 +282,18 @@ AI Converter is built for sensitive source files: private storage, short retenti
 
 ## Upload and storage controls
 
-- Uploaded files and generated CSV or JSON files are stored in private object storage.
+- Uploaded files and generated CSV, JSON, TXT, Markdown, or HTML files are stored in private object storage.
 - Files are not exposed through public object URLs.
 - Job access requires a job ID and random token.
 - API responses are marked no-store.
 
 ## Processing controls
 
-Digital bank statement PDFs use the native parser first. OCR fallback is reserved for scanned, photo-based, receipt, invoice, screenshot, or messy files when configured. Browser-local image-format conversion does not upload files to AI Converter. Low-confidence AI extraction files fail closed.
+Digital bank statement PDFs use the native parser first. OCR fallback is reserved for scanned, photo-based, receipt, invoice, screenshot, or messy files when configured. Workers AI is used for audio transcript, document Markdown, and screenshot-to-HTML beta modules when configured. Browser-local image-format and raster-to-SVG conversion do not upload files to AI Converter. Low-confidence AI extraction files fail closed.
 
 ## Retention controls
 
-Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle. Generated CSV and JSON files expire after 7 days.
+Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle. Generated CSV, JSON, TXT, Markdown, and HTML files expire after 7 days.
 
 ## Anti-abuse controls
 
@@ -293,12 +301,12 @@ Server-side file validation, upload rate limits, same-file free preview limits, 
 
 ## Limits
 
-AI Converter currently accepts files up to 50 MB and PDFs up to 500 pages. Password-protected, corrupted, unusual, or low-quality files may fail.
+AI Converter currently accepts files up to 50 MB, audio files up to 25 MB, and PDFs up to 500 pages. Password-protected, corrupted, unusual, noisy, or low-quality files may fail.
 `;
 
 const dataRetentionMarkdown = `---
 title: Data Retention - AI Converter
-description: How long AI Converter keeps source files, generated CSV and JSON files, job metadata, and abuse-prevention records.
+description: How long AI Converter keeps source files, generated files, job metadata, and abuse-prevention records.
 ---
 
 # Data retention
@@ -309,13 +317,13 @@ AI Converter keeps sensitive files only as long as needed for preview, paid unlo
 
 Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle.
 
-## Generated CSV and JSON files
+## Generated files
 
-Generated CSV and JSON files expire after 7 days.
+Generated CSV, JSON, TXT, Markdown, and HTML files expire after 7 days.
 
 ## Local image conversions
 
-PNG/JPG/WEBP image-format conversions run in the browser and do not create source files, generated files, jobs, or payment records on AI Converter.
+PNG/JPG/WEBP image-format and raster-to-SVG conversions run in the browser and do not create source files, generated files, jobs, or payment records on AI Converter.
 
 ## Job metadata
 

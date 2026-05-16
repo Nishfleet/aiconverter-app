@@ -90,6 +90,22 @@ export const CONVERTER_COLUMNS = {
     { key: "tax", label: "Tax" },
     { key: "payment_terms", label: "Payment terms" },
     { key: "notes", label: "Notes" }
+  ],
+  "audio-transcript": [
+    { key: "transcript", label: "Transcript" },
+    { key: "word_count", label: "Words" },
+    { key: "format", label: "Format" }
+  ],
+  "document-markdown": [
+    { key: "name", label: "File" },
+    { key: "type", label: "Type" },
+    { key: "tokens", label: "Tokens" },
+    { key: "preview", label: "Preview" }
+  ],
+  "screenshot-code": [
+    { key: "component", label: "Component" },
+    { key: "source", label: "Source" },
+    { key: "preview", label: "Preview" }
   ]
 };
 
@@ -103,6 +119,15 @@ export async function convertFileToCsv(env, converterId, fileName, contentType, 
   }
   if (normalized === "invoice") {
     return convertInvoiceToStructuredFile(env, fileName, contentType, arrayBuffer, options);
+  }
+  if (normalized === "audio-transcript") {
+    return convertAudioToTranscript(env, fileName, contentType, arrayBuffer, options);
+  }
+  if (normalized === "document-markdown") {
+    return convertDocumentToMarkdown(env, fileName, contentType, arrayBuffer, options);
+  }
+  if (normalized === "screenshot-code") {
+    return convertScreenshotToHtml(env, fileName, contentType, arrayBuffer, options);
   }
   return convertPdfToCsv(env, fileName, arrayBuffer, options);
 }
@@ -267,6 +292,233 @@ async function convertInvoiceToStructuredFile(env, fileName, contentType, arrayB
     warnings: ocr.warnings,
     provider: "mistral-ocr-invoice"
   };
+}
+
+async function convertAudioToTranscript(env, fileName, contentType, arrayBuffer, options = {}) {
+  if (!env?.AI?.run) {
+    return failConversion("Audio transcription needs the Cloudflare Workers AI binding before it can run.", "workers-ai-whisper");
+  }
+
+  const response = await env.AI.run(env.WHISPER_MODEL || "@cf/openai/whisper", {
+    audio: [...new Uint8Array(arrayBuffer)]
+  });
+  const transcript = String(response?.text || response?.transcription || response?.result?.text || "").trim();
+  if (!transcript) {
+    return failConversion("The audio converter could not safely transcribe this file.", "workers-ai-whisper");
+  }
+
+  const wordCount = Number(response?.word_count || countWords(transcript));
+  const outputFormat = options.outputFormat === "json" ? "json" : "txt";
+  const json = JSON.stringify(
+    {
+      transcript,
+      word_count: wordCount,
+      vtt: response?.vtt || "",
+      words: Array.isArray(response?.words) ? response.words.slice(0, 2000) : []
+    },
+    null,
+    2
+  );
+  const content = outputFormat === "json" ? json : `${transcript}\n`;
+  const row = {
+    transcript: transcript.replace(/\s+/g, " ").slice(0, 260),
+    word_count: wordCount,
+    format: outputFormat.toUpperCase()
+  };
+
+  return {
+    ok: true,
+    csv: rowsToCsv([row], CONVERTER_COLUMNS["audio-transcript"]),
+    content,
+    contentType: outputFormat === "json" ? "application/json; charset=utf-8" : "text/plain; charset=utf-8",
+    fileExtension: outputFormat,
+    outputFormat,
+    previewRows: [row],
+    columns: CONVERTER_COLUMNS["audio-transcript"],
+    confidence: 0.88,
+    trustScore: 0.88,
+    rowCount: wordCount,
+    warnings: [],
+    provider: "workers-ai-whisper"
+  };
+}
+
+async function convertDocumentToMarkdown(env, fileName, contentType, arrayBuffer) {
+  const markdown = await documentToMarkdown(env, fileName, contentType, arrayBuffer);
+  if (!markdown.ok) return markdown;
+
+  const row = {
+    name: fileName,
+    type: markdown.mimeType || contentType || "document",
+    tokens: markdown.tokens || "",
+    preview: markdown.content.replace(/\s+/g, " ").slice(0, 260)
+  };
+
+  return {
+    ok: true,
+    csv: rowsToCsv([row], CONVERTER_COLUMNS["document-markdown"]),
+    content: `${markdown.content.trim()}\n`,
+    contentType: "text/markdown; charset=utf-8",
+    fileExtension: "md",
+    outputFormat: "md",
+    previewRows: [row],
+    columns: CONVERTER_COLUMNS["document-markdown"],
+    confidence: markdown.content.trim().length > 80 ? 0.9 : 0.68,
+    trustScore: markdown.content.trim().length > 80 ? 0.9 : 0.68,
+    rowCount: Math.max(1, countWords(markdown.content)),
+    warnings: markdown.warnings,
+    provider: "workers-ai-markdown"
+  };
+}
+
+async function convertScreenshotToHtml(env, fileName, contentType, arrayBuffer) {
+  const markdown = await documentToMarkdown(env, fileName, contentType, arrayBuffer);
+  if (!markdown.ok) return markdown;
+
+  const html = htmlStarterFromMarkdown(markdown.content, fileName);
+  const row = {
+    component: "HTML starter",
+    source: markdown.mimeType || contentType || "screenshot",
+    preview: markdown.content.replace(/\s+/g, " ").slice(0, 260)
+  };
+
+  return {
+    ok: true,
+    csv: rowsToCsv([row], CONVERTER_COLUMNS["screenshot-code"]),
+    content: html,
+    contentType: "text/html; charset=utf-8",
+    fileExtension: "html",
+    outputFormat: "html",
+    previewRows: [row],
+    columns: CONVERTER_COLUMNS["screenshot-code"],
+    confidence: markdown.content.trim().length > 80 ? 0.78 : 0.6,
+    trustScore: markdown.content.trim().length > 80 ? 0.78 : 0.6,
+    rowCount: 1,
+    warnings: [
+      "HTML output is a clean starter based on detected content and structure, not a pixel-perfect clone.",
+      ...(markdown.warnings || [])
+    ],
+    provider: "workers-ai-markdown-html"
+  };
+}
+
+async function documentToMarkdown(env, fileName, contentType, arrayBuffer) {
+  if (!env?.AI?.toMarkdown) {
+    return failConversion("Document Markdown conversion needs the Cloudflare Workers AI binding before it can run.", "workers-ai-markdown");
+  }
+
+  const result = await env.AI.toMarkdown({
+    name: fileName || "document",
+    blob: new Blob([arrayBuffer], {
+      type: contentType || mimeTypeFromFileName(fileName)
+    })
+  });
+  const converted = Array.isArray(result) ? result[0] : Array.isArray(result?.results) ? result.results[0] : result;
+  if (!converted || converted.format === "error") {
+    return failConversion(converted?.error || "The document converter could not safely convert this file to Markdown.", "workers-ai-markdown");
+  }
+
+  const content = String(converted.data || "").trim();
+  if (content.length < 12) {
+    return failConversion("The document converter found too little content to export.", "workers-ai-markdown");
+  }
+
+  return {
+    ok: true,
+    content,
+    mimeType: converted.mimetype || contentType || "",
+    tokens: converted.tokens || "",
+    warnings: []
+  };
+}
+
+function htmlStarterFromMarkdown(markdown, fileName) {
+  const title = titleFromMarkdown(markdown) || "Converted screen";
+  const lines = String(markdown || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 80);
+  const blocks = lines
+    .map((line) => {
+      if (/^#{1,3}\s+/.test(line)) return `<h2>${escapeHtml(line.replace(/^#{1,3}\s+/, ""))}</h2>`;
+      if (/^[-*]\s+/.test(line)) return `<li>${escapeHtml(line.replace(/^[-*]\s+/, ""))}</li>`;
+      if (line.includes("|")) return `<p class="detected-table">${escapeHtml(line)}</p>`;
+      return `<p>${escapeHtml(line)}</p>`;
+    })
+    .join("\n        ");
+  const listNormalized = blocks.replace(/(<li>[\s\S]*?<\/li>)(\n\s*<li>[\s\S]*?<\/li>)*/g, (match) => `<ul>${match}</ul>`);
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>${escapeHtml(title)}</title>
+    <style>
+      :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      body { margin: 0; background: #f6f8f5; color: #111512; }
+      main { width: min(920px, calc(100% - 32px)); margin: 40px auto; display: grid; gap: 18px; }
+      section { background: #fff; border: 1px solid #dce4dc; border-radius: 8px; padding: 24px; box-shadow: 0 18px 48px rgba(28, 38, 30, 0.1); }
+      h1 { margin: 0; font-size: clamp(34px, 6vw, 64px); line-height: 0.98; }
+      h2 { margin: 24px 0 8px; font-size: 22px; }
+      p, li { color: #465148; font-size: 16px; line-height: 1.55; }
+      ul { margin: 10px 0 0; padding-left: 20px; }
+      .detected-table { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-x: auto; white-space: pre; background: #f2f6f2; padding: 10px; border-radius: 8px; }
+      .source { color: #68716a; font-size: 13px; font-weight: 760; text-transform: uppercase; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="source">Generated from ${escapeHtml(fileName || "uploaded screenshot")}</div>
+        <h1>${escapeHtml(title)}</h1>
+      </header>
+      <section>
+        ${listNormalized || "<p>No readable content was detected.</p>"}
+      </section>
+    </main>
+  </body>
+</html>
+`;
+}
+
+function titleFromMarkdown(markdown) {
+  const heading = String(markdown || "").match(/^#{1,2}\s+(.+)$/m)?.[1];
+  if (heading) return cleanMarkdownText(heading).slice(0, 80);
+  const first = String(markdown || "")
+    .split(/\r?\n/)
+    .map((line) => cleanMarkdownText(line))
+    .find((line) => line.length >= 4 && line.length <= 80);
+  return first || "";
+}
+
+function mimeTypeFromFileName(fileName = "") {
+  const lower = String(fileName).toLowerCase();
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  if (lower.endsWith(".webp")) return "image/webp";
+  if (lower.endsWith(".svg")) return "image/svg+xml";
+  if (lower.endsWith(".html") || lower.endsWith(".htm")) return "text/html";
+  if (lower.endsWith(".xml")) return "application/xml";
+  if (lower.endsWith(".csv")) return "text/csv";
+  if (lower.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  if (lower.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  return "application/octet-stream";
+}
+
+function countWords(value) {
+  return String(value || "").trim().split(/\s+/).filter(Boolean).length;
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 export async function detectPdfPageCount(arrayBuffer) {

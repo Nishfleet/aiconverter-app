@@ -1,17 +1,21 @@
 # AI Converter
 
-AI Converter is a Cloudflare Pages app for preview-first AI document conversion plus local browser image conversion.
+AI Converter is a Cloudflare Pages app for preview-first AI conversion plus local browser image/SVG conversion.
 
-Current production module:
+Current production AI module:
 - Bank statement PDF to CSV.
 
 Current beta modules:
 - Receipt image/PDF to expense CSV.
 - Screenshot/table image/PDF to spreadsheet CSV.
 - Invoice/bill image/PDF to CSV or JSON.
+- Audio file to TXT or JSON transcript.
+- Rich document/image to Markdown.
+- Screenshot/image to HTML starter.
 
 Current local module:
 - PNG/JPG/WEBP to PNG/JPG/WEBP in the browser with no upload.
+- PNG/JPG/WEBP to posterized SVG in the browser with no upload.
 
 ## Live Infrastructure
 
@@ -21,6 +25,7 @@ Current local module:
 - R2 bucket: `aiconverter-private`
 - Payment provider: Dodo Payments
 - OCR and document extraction fallback: Mistral OCR
+- Speech recognition and Markdown conversion: Cloudflare Workers AI
 
 ## Local Commands
 
@@ -28,6 +33,7 @@ Current local module:
 npm ci
 npm run check:pricing
 node --test tests/*.test.mjs
+npm run stress:converters
 npm run build
 ```
 
@@ -48,4 +54,5 @@ Use the safe-deploy wrapper on Nish's machine before live commands.
 - Paid unlock is currently blocked until Dodo activates live merchant payments.
 - Source files are private and short-retention.
 - No human review queue.
-- Do not claim universal support for every bank, receipt, invoice, screenshot, image, file type, or compliance regime.
+- Broad generic 200+ format conversion, video conversion, archive conversion, and pixel-perfect screenshot-to-code are not live unless a future page says otherwise.
+- Do not claim universal support for every bank, receipt, invoice, screenshot, document, audio file, image, file type, or compliance regime.

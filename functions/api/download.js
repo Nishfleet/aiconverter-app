@@ -51,21 +51,23 @@ async function handleDownload({ request, env }) {
 
 function downloadFileName(job) {
   const extension = outputFormatFromResultKey(job.result_key);
-  const prefix =
-    job.converter_id === "invoice"
-      ? "invoice"
-      : job.converter_id === "receipt"
-      ? "receipt-expense"
-      : job.converter_id === "screenshot"
-        ? "screenshot-table"
-        : "bank-statement";
+  let prefix = "bank-statement";
+  if (job.converter_id === "audio-transcript") prefix = "audio-transcript";
+  if (job.converter_id === "document-markdown") prefix = "document-markdown";
+  if (job.converter_id === "screenshot-code") prefix = "screenshot-html";
+  if (job.converter_id === "invoice") prefix = "invoice";
+  if (job.converter_id === "receipt") prefix = "receipt-expense";
+  if (job.converter_id === "screenshot") prefix = "screenshot-table";
   return `aiconverter-${prefix}.${extension}`;
 }
 
 function contentTypeForJob(job) {
-  return outputFormatFromResultKey(job.result_key) === "json"
-    ? "application/json; charset=utf-8"
-    : "text/csv; charset=utf-8";
+  const format = outputFormatFromResultKey(job.result_key);
+  if (format === "json") return "application/json; charset=utf-8";
+  if (format === "txt") return "text/plain; charset=utf-8";
+  if (format === "md") return "text/markdown; charset=utf-8";
+  if (format === "html") return "text/html; charset=utf-8";
+  return "text/csv; charset=utf-8";
 }
 
 async function downloadCredentials(request) {

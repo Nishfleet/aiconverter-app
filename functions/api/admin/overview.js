@@ -101,7 +101,10 @@ function runtimeHealth(env) {
       nativePdf: true,
       mistral: hasMistralConfig(env),
       azureFallback: hasAzureConfig(env),
-      cloudflareFallback: Boolean(env.ALLOW_CLOUDFLARE_FALLBACK === "true" && env.AI)
+      cloudflareFallback: Boolean(env.ALLOW_CLOUDFLARE_FALLBACK === "true" && env.AI),
+      workersAi: Boolean(env.AI),
+      markdownConversion: Boolean(env.AI?.toMarkdown),
+      whisper: Boolean(env.AI?.run)
     },
     protection: {
       turnstile: Boolean(env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET_KEY),

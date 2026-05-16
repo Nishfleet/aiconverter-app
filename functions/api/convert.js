@@ -195,7 +195,7 @@ export async function onRequestPost({ request, env }) {
       previewRows: converted.previewRows,
       confidence: converted.confidence,
       rowCount: converted.rowCount,
-      message: `Preview ready. Pay once to run the full extraction and download the ${outputFormat === "json" ? "JSON" : "CSV"}.`
+      message: `Preview ready. Pay once to run the full extraction and download the ${outputFormatLabel(outputFormat)}.`
     });
   } catch (error) {
     await env.AICONVERTER_BUCKET.delete(sourceKey).catch(() => {});
@@ -218,4 +218,15 @@ export async function onRequestPost({ request, env }) {
       { status: 200 }
     );
   }
+}
+
+function outputFormatLabel(format) {
+  const labels = {
+    csv: "CSV",
+    json: "JSON",
+    txt: "TXT transcript",
+    md: "Markdown",
+    html: "HTML"
+  };
+  return labels[format] || "converted file";
 }

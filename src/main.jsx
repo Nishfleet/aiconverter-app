@@ -50,7 +50,7 @@ function isLiveConverter(converter) {
 }
 
 function isLocalConverter(converter) {
-  return converter?.mode === "local-image";
+  return ["local-image", "local-svg"].includes(converter?.mode);
 }
 
 function allAcceptedTypes() {
@@ -100,6 +100,39 @@ function formatCell(value, key) {
   return String(value);
 }
 
+function resultFormatLabel(format) {
+  const labels = {
+    csv: "full CSV",
+    json: "JSON",
+    txt: "TXT transcript",
+    md: "Markdown",
+    html: "HTML",
+    png: "PNG",
+    jpeg: "JPG",
+    webp: "WEBP",
+    svg: "SVG"
+  };
+  return labels[format] || "converted file";
+}
+
+function downloadNameForResult(result) {
+  const extension = result?.outputFormat || "csv";
+  const names = {
+    json: "aiconverter-export.json",
+    txt: "aiconverter-transcript.txt",
+    md: "aiconverter-document.md",
+    html: "aiconverter-screen.html",
+    csv: "aiconverter-export.csv"
+  };
+  return names[extension] || `aiconverter-export.${extension}`;
+}
+
+function previewMetricLabel(converterId, result) {
+  if (converterId === "audio-transcript") return `${result.rowCount || 0} words`;
+  if (["document-markdown", "screenshot-code"].includes(converterId)) return "1 generated file";
+  return `${result.rowCount || 0} rows`;
+}
+
 function App() {
   const [selectedId, setSelectedId] = useState("bank");
   const [outputFormat, setOutputFormat] = useState("csv");
@@ -128,6 +161,7 @@ function App() {
   );
   const selectedPlan = useMemo(() => planForPages(pageCount), [pageCount]);
   const isLocalImageConverter = isLocalConverter(selected);
+  const selectedMaxSizeMb = selectedId === "audio-transcript" ? 25 : MAX_SIZE_MB;
   const fileSizeLabel = file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : "";
   const needsTurnstile = Boolean(turnstileSiteKey);
   const previewColumns = result?.columns?.length ? result.columns : selected?.columns || data.converters[0].columns;
@@ -135,14 +169,14 @@ function App() {
   const previewCountLabel = result?.localDownloadUrl
     ? "1 converted file"
     : result
-      ? `${result.rowCount || 0} rows`
+      ? previewMetricLabel(selectedId, result)
       : `${previewRows.length} sample rows`;
   const isPdfFirstConverter = selectedId === "bank";
   const selectedOutputLabel = outputLabel(selected, outputFormat);
   const canConvert =
     file &&
     !converting &&
-    file.size <= MAX_SIZE_MB * 1024 * 1024 &&
+    file.size <= selectedMaxSizeMb * 1024 * 1024 &&
     pageCount <= MAX_PAGES &&
     (isLocalImageConverter || !needsTurnstile || Boolean(turnstileToken));
 
@@ -282,8 +316,8 @@ function App() {
       return;
     }
 
-    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      setError(`This service accepts files up to ${MAX_SIZE_MB} MB.`);
+    if (file.size > selectedMaxSizeMb * 1024 * 1024) {
+      setError(`This converter accepts files up to ${selectedMaxSizeMb} MB.`);
       return;
     }
 
@@ -293,7 +327,7 @@ function App() {
     }
 
     if (isLocalImageConverter) {
-      await handleLocalImageConversion();
+      await handleLocalConversion();
       return;
     }
 
@@ -330,13 +364,16 @@ function App() {
     }
   }
 
-  async function handleLocalImageConversion() {
+  async function handleLocalConversion() {
     setConverting(true);
     setError("");
     setResult(null);
 
     try {
-      const converted = await convertImageInBrowser(file, outputFormat);
+      const converted =
+        selected?.mode === "local-svg"
+          ? await convertRasterToSvgInBrowser(file)
+          : await convertImageInBrowser(file, outputFormat);
       setResult({
         status: "complete",
         localDownloadUrl: converted.url,
@@ -434,7 +471,7 @@ function App() {
       const href = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = href;
-      link.download = result?.outputFormat === "json" ? "aiconverter-export.json" : "aiconverter-export.csv";
+      link.download = downloadNameForResult(result);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -504,9 +541,9 @@ function App() {
     if (result?.localDownloadUrl) return `Download ${selectedOutputLabel}`;
     if (result?.status === "converting_full") return "Generating full file...";
     if (unlocking) return result?.status === "preview_ready" && result?.paid ? "Generating full file..." : "Preparing...";
-    if (result?.status === "complete") return `Download ${result?.outputFormat === "json" ? "JSON" : "full CSV"}`;
-    if (result?.paid) return `Generate ${outputFormat === "json" ? "JSON" : "full CSV"}`;
-    return `Unlock ${outputFormat === "json" ? "JSON" : "full CSV"} · ${result?.plan?.price || selectedPlan.price}`;
+    if (result?.status === "complete") return `Download ${resultFormatLabel(result?.outputFormat)}`;
+    if (result?.paid) return `Generate ${resultFormatLabel(outputFormat)}`;
+    return `Unlock ${resultFormatLabel(outputFormat)} · ${result?.plan?.price || selectedPlan.price}`;
   }
 
   return (
@@ -534,9 +571,10 @@ function App() {
         <div className="hero-copy">
           <h1>AI Converter for useful files. Preview first.</h1>
           <p>
-            Convert bank statements, receipts, invoices, screenshots, and common
-            images into useful CSV, JSON, spreadsheet, or image outputs. AI routes
-            handle messy documents; simple image swaps stay local in your browser.
+            Convert bank statements, receipts, invoices, screenshots, documents,
+            audio, and common images into useful CSV, JSON, Markdown, transcript,
+            HTML, SVG, or image outputs. AI routes handle messy files; simple image
+            swaps stay local in your browser.
           </p>
           <div className="hero-price-strip" aria-label="Pricing summary">
             <strong>Free preview</strong>
@@ -558,9 +596,9 @@ function App() {
               <ShieldCheck size={16} />
               Free preview
             </span>
-            <span>
-              <Database size={16} />
-              AI extraction only after preview
+                  <span>
+                    <Database size={16} />
+                    AI conversion only after preview
             </span>
             <span>
               <Lock size={16} />
@@ -615,10 +653,10 @@ function App() {
                   <strong>{file?.name || `Choose ${selected.input.toLowerCase()}`}</strong>
                   <small>
                     {file
-                      ? `${fileSizeLabel} selected. Max ${MAX_SIZE_MB} MB${isPdfFile(file) ? ` and ${MAX_PAGES} pages` : ""}.`
+                      ? `${fileSizeLabel} selected. Max ${selectedMaxSizeMb} MB${isPdfFile(file) ? ` and ${MAX_PAGES} pages` : ""}.`
                       : isLocalImageConverter
                         ? `Local file. ${selected.input} to ${selected.output}. No upload.`
-                        : `Private upload. ${selected.input} to ${selected.output}. Max ${MAX_SIZE_MB} MB${isPdfFirstConverter ? ` and ${MAX_PAGES} pages` : ""}.`}
+                        : `Private upload. ${selected.input} to ${selected.output}. Max ${selectedMaxSizeMb} MB${isPdfFirstConverter ? ` and ${MAX_PAGES} pages` : ""}.`}
                   </small>
                 </span>
                 <input
@@ -788,7 +826,7 @@ function App() {
                   {["preview_ready", "complete", "converting_full"].includes(result?.status) && (
                     <div className="result-card">
                       <div>
-                        <span>{result.status === "complete" ? "Full CSV" : "Preview confidence"}</span>
+                        <span>{result.status === "complete" ? resultFormatLabel(result.outputFormat) : "Preview confidence"}</span>
                         <strong>{Math.round((result.confidence || 0) * 100)}%</strong>
                       </div>
                       <div className="result-actions">
@@ -877,7 +915,7 @@ function App() {
       <section id="pricing" className="pricing-section">
         <div className="section-heading compact">
           <h2>Lower pricing for an automated workflow.</h2>
-          <p>Sample preview is free. Pay once to generate and download the full AI export. Image-format swaps are free and local.</p>
+              <p>Sample preview is free. Pay once to generate and download the full AI export. Image and SVG swaps are free and local.</p>
         </div>
         <div className="pricing-grid">
           {data.pricing.map((plan) => (
@@ -918,7 +956,7 @@ function App() {
       <footer className="footer">
         <div className="footer-brand">
           <strong>AI Converter</strong>
-          <span>Automated document conversion with browser-local image swaps.</span>
+          <span>Automated conversion with browser-local image and SVG swaps.</span>
         </div>
         <nav className="footer-links" aria-label="Footer navigation">
           <a href="/privacy">Privacy</a>
@@ -1009,6 +1047,83 @@ function convertImageInBrowser(file, format) {
     };
     image.src = imageUrl;
   });
+}
+
+function convertRasterToSvgInBrowser(file) {
+  return new Promise((resolve, reject) => {
+    if (!file?.type?.startsWith("image/")) {
+      reject(new Error("Choose a PNG, JPG, or WEBP image."));
+      return;
+    }
+
+    const imageUrl = URL.createObjectURL(file);
+    const image = new window.Image();
+    image.onload = () => {
+      try {
+        const maxSide = 128;
+        const scale = Math.min(1, maxSide / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+        const width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+        const height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        if (!context) throw new Error("The browser could not read this image.");
+
+        context.drawImage(image, 0, 0, width, height);
+        const pixels = context.getImageData(0, 0, width, height).data;
+        const block = Math.max(1, Math.round(Math.max(width, height) / 72));
+        const rects = [];
+        for (let y = 0; y < height; y += block) {
+          for (let x = 0; x < width; x += block) {
+            const color = averageBlockColor(pixels, width, height, x, y, block);
+            if (color.a < 18) continue;
+            rects.push(`<rect x="${x}" y="${y}" width="${Math.min(block, width - x)}" height="${Math.min(block, height - y)}" fill="rgba(${color.r},${color.g},${color.b},${(color.a / 255).toFixed(3)})"/>`);
+          }
+        }
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" shape-rendering="crispEdges">\n${rects.join("\n")}\n</svg>\n`;
+        URL.revokeObjectURL(imageUrl);
+        const blob = new Blob([svg], { type: "image/svg+xml" });
+        const baseName = file.name.replace(/\.[^.]+$/, "") || "image";
+        resolve({
+          url: URL.createObjectURL(blob),
+          fileName: `${baseName}.svg`
+        });
+      } catch (error) {
+        URL.revokeObjectURL(imageUrl);
+        reject(error);
+      }
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(imageUrl);
+      reject(new Error("This browser could not decode the image."));
+    };
+    image.src = imageUrl;
+  });
+}
+
+function averageBlockColor(pixels, width, height, startX, startY, block) {
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let a = 0;
+  let count = 0;
+  for (let y = startY; y < Math.min(height, startY + block); y += 1) {
+    for (let x = startX; x < Math.min(width, startX + block); x += 1) {
+      const offset = (y * width + x) * 4;
+      r += pixels[offset];
+      g += pixels[offset + 1];
+      b += pixels[offset + 2];
+      a += pixels[offset + 3];
+      count += 1;
+    }
+  }
+  return {
+    r: Math.round(r / count),
+    g: Math.round(g / count),
+    b: Math.round(b / count),
+    a: Math.round(a / count)
+  };
 }
 
 createRoot(document.getElementById("root")).render(<App />);

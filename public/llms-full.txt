@@ -1,10 +1,10 @@
 # AI Converter full context
 
-AI Converter is a web app for automated AI document conversion and browser-local image conversion. Bank statement PDF to CSV is the first production AI module.
+AI Converter is a web app for automated AI conversion and browser-local image/SVG conversion. Bank statement PDF to CSV is the first production AI module.
 
 ## Current product wedge
 
-The production AI module is bank statement PDF to CSV. Receipt, invoice, and screenshot-table converters are beta modules on the same preview-first workflow. PNG/JPG/WEBP image format conversion is a browser-local module and does not upload files. It is not a general document, audio, video, archive, or CloudConvert-style universal converter yet.
+The production AI module is bank statement PDF to CSV. Receipt, invoice, screenshot-table, audio transcript, document-to-Markdown, and screenshot-to-HTML converters are beta modules on the same preview-first workflow. PNG/JPG/WEBP image format conversion and raster-to-SVG conversion are browser-local modules and do not upload files. It is not a video, archive, pixel-perfect image-to-code, or CloudConvert-style universal converter yet.
 
 Live behavior:
 - Direct browser upload for bank statement PDFs.
@@ -22,6 +22,10 @@ Live behavior:
 - Invoice or bill image/PDF to CSV or JSON is beta. It can export vendor, invoice number, invoice date, due date, subtotal, tax, total, payment terms, notes, and JSON line items when safely detected.
 - Screenshot PNG, JPG, WEBP, or image PDF to spreadsheet CSV is beta. It can infer table rows and headers when safely detected.
 - Image format conversion from PNG, JPG, JPEG, or WEBP to PNG, JPG, or WEBP is live as a browser-local route. It does not use the server upload, D1, R2, Mistral, or Dodo workflow.
+- Raster-to-SVG conversion from PNG, JPG, JPEG, or WEBP to SVG is live as a browser-local posterized route. It does not use the server upload, D1, R2, Mistral, or Dodo workflow.
+- Audio transcript from MP3, WAV, M4A, AAC, OGG, or WEBM to TXT or JSON is beta and uses Cloudflare Workers AI speech recognition when configured.
+- Document Markdown conversion for Cloudflare-supported rich document formats is beta and uses Cloudflare Workers AI Markdown Conversion when configured.
+- Screenshot to HTML starter is beta. It creates a clean HTML starter from detected content and does not claim pixel-perfect screenshot cloning.
 - Beta modules use OCR and can fail closed when structure confidence is too low.
 
 ## Pricing
@@ -36,7 +40,7 @@ Live behavior:
 - Source files are private.
 - Source files are kept for preview, paid unlock, and the redo window.
 - Source files are deleted after failed extraction, completed redo, or the 24-hour source lifecycle.
-- Generated CSV and JSON files expire after 7 days.
+- Generated CSV, JSON, TXT, Markdown, and HTML files expire after 7 days.
 - API responses for sensitive routes are marked no-store.
 - Job access uses a job ID and random token.
 
@@ -76,6 +80,10 @@ Beta invoice CSV columns:
 
 Beta invoice JSON includes the invoice summary, line_items when safely detected, warnings, and confidence.
 
+Beta audio TXT contains the transcript. Beta audio JSON contains transcript, word count, optional VTT, and words when returned by the provider.
+
+Beta document Markdown exports `.md`. Screenshot-to-HTML exports `.html` based on detected readable content and structure.
+
 Fake sample CSV:
 - https://aiconverter.app/sample-bank-statement.csv
 
@@ -99,4 +107,4 @@ Fake sample CSV:
 
 ## Claims to avoid
 
-Do not claim AI Converter supports every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every image format, every file type, certified compliance, human review, guaranteed accuracy, accounting or tax advice, instant AI processing, audio/video conversion, archive conversion, or customer-volume proof. Exports should be reviewed before important use.
+Do not claim AI Converter supports every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every audio file, every document, every image format, every file type, certified compliance, human review, guaranteed accuracy, accounting or tax advice, instant AI processing, video conversion, archive conversion, pixel-perfect screenshot-to-code, or customer-volume proof. Exports should be reviewed before important use.

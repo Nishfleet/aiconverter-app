@@ -97,6 +97,76 @@
       "checks": ["Browser-local", "No server upload", "Instant download"]
     },
     {
+      "id": "raster-vector",
+      "title": "Raster to SVG",
+      "input": "PNG / JPG / WEBP",
+      "output": "SVG",
+      "state": "Local",
+      "mode": "local-svg",
+      "accept": "image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp",
+      "description": "Create a lightweight posterized SVG from a common image inside the browser. The file does not upload to AI Converter.",
+      "outputFormats": [
+        { "id": "svg", "label": "SVG" }
+      ],
+      "checks": ["Browser-local", "No server upload", "SVG download"]
+    },
+    {
+      "id": "audio-transcript",
+      "title": "Audio transcript",
+      "input": "MP3 / WAV / M4A",
+      "output": "Transcript",
+      "state": "Beta",
+      "accept": "audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/ogg,audio/webm,.mp3,.wav,.m4a,.aac,.ogg,.webm",
+      "description": "Transcribe common audio files into a TXT transcript or structured JSON using Workers AI speech recognition.",
+      "outputFormats": [
+        { "id": "txt", "label": "TXT" },
+        { "id": "json", "label": "JSON" }
+      ],
+      "columns": [
+        { "key": "transcript", "label": "Transcript" },
+        { "key": "word_count", "label": "Words" },
+        { "key": "format", "label": "Format" }
+      ],
+      "checks": ["Speech-to-text", "TXT or JSON", "25 MB audio limit"]
+    },
+    {
+      "id": "document-markdown",
+      "title": "Document Markdown",
+      "input": "PDF / DOCX / XLSX / HTML",
+      "output": "Markdown",
+      "state": "Beta",
+      "accept": "application/pdf,image/png,image/jpeg,image/webp,image/svg+xml,text/html,application/xml,text/xml,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.ms-excel.sheet.macroenabled.12,application/vnd.ms-excel.sheet.binary.macroenabled.12,application/vnd.oasis.opendocument.spreadsheet,application/vnd.oasis.opendocument.text,application/vnd.apple.numbers,.pdf,.png,.jpg,.jpeg,.webp,.svg,.html,.htm,.xml,.csv,.docx,.xlsx,.xlsm,.xlsb,.xls,.et,.ods,.odt,.numbers",
+      "description": "Convert rich documents and images into clean Markdown using Cloudflare Markdown Conversion.",
+      "outputFormats": [
+        { "id": "md", "label": "MD" }
+      ],
+      "columns": [
+        { "key": "name", "label": "File" },
+        { "key": "type", "label": "Type" },
+        { "key": "tokens", "label": "Tokens" },
+        { "key": "preview", "label": "Preview" }
+      ],
+      "checks": ["Document to Markdown", "Rich-format parser", "Private download"]
+    },
+    {
+      "id": "screenshot-code",
+      "title": "Screenshot to HTML",
+      "input": "PNG / JPG / WEBP / PDF",
+      "output": "HTML starter",
+      "state": "Beta",
+      "accept": "application/pdf,image/png,image/jpeg,image/webp,.pdf,.png,.jpg,.jpeg,.webp",
+      "description": "Turn readable screenshot content into a clean HTML starter. This is not a pixel-perfect clone.",
+      "outputFormats": [
+        { "id": "html", "label": "HTML" }
+      ],
+      "columns": [
+        { "key": "component", "label": "Component" },
+        { "key": "source", "label": "Source" },
+        { "key": "preview", "label": "Preview" }
+      ],
+      "checks": ["Screenshot to Markdown", "HTML starter", "Truthful non-pixel-perfect output"]
+    },
+    {
       "id": "email",
       "title": "Email monitor",
       "input": "Inbox",
@@ -188,6 +258,28 @@
         "tax": 22,
         "payment_terms": "Net 14",
         "notes": "Hosting plan; usage overage"
+      }
+    ],
+    "audio-transcript": [
+      {
+        "transcript": "The weekly close is ready. Please review the bank statement rows and attach the missing receipt before Friday.",
+        "word_count": 18,
+        "format": "TXT"
+      }
+    ],
+    "document-markdown": [
+      {
+        "name": "operating-plan.docx",
+        "type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "tokens": 1240,
+        "preview": "# Operating plan\n\n## Priorities\n- Close books\n- Export clean records"
+      }
+    ],
+    "screenshot-code": [
+      {
+        "component": "HTML starter",
+        "source": "image/png",
+        "preview": "Readable text and sections from the screenshot are converted into a clean HTML starting point."
       }
     ]
   },
