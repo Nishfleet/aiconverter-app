@@ -323,8 +323,11 @@ function App() {
 
   useEffect(() => {
     const nextFormat = selectedOutputFormats[0]?.id || defaultOutputFormat(selected);
-    if (!selectedOutputFormats.some((format) => format.id === outputFormat)) setOutputFormat(nextFormat);
-  }, [selected, selectedOutputFormats, outputFormat]);
+    if (!selectedOutputFormats.some((format) => format.id === outputFormat)) {
+      setOutputFormat(nextFormat);
+      updateActiveFileSettings({ outputFormat: nextFormat });
+    }
+  }, [selected, selectedOutputFormats, outputFormat, activeFileId]);
 
   useEffect(() => {
     return () => {
@@ -400,25 +403,57 @@ function App() {
     restoreJob();
   }, [selectedPlan]);
 
-  function applyFileDefaults(nextFile, preferredSelectedId = selectedId) {
+  function initialSettingsForFile(nextFile, preferredSelectedId = selectedId) {
     if (!nextFile) {
-      setPageCount(25);
-      return;
+      return {
+        selectedId: selectedId || "bank",
+        outputFormat: outputFormat || "csv",
+        pageCount: 25
+      };
     }
     const matches = selectableConverters.filter((converter) => converterAcceptsFile(converter, nextFile));
-    const nextSelected = preferredConverterForFile(matches, preferredSelectedId);
-    if (nextSelected) {
-      setSelectedId(nextSelected.id);
-      setOutputFormat(capableOutputFormats(nextSelected, nextFile)[0]?.id || defaultOutputFormat(nextSelected));
-    }
-    setPageCount(isPdfFile(nextFile) ? estimatePages(nextFile) : 1);
+    const nextSelected = preferredConverterForFile(matches, preferredSelectedId) || selected;
+    const outputFormats = capableOutputFormats(nextSelected, nextFile);
+    const nextOutputFormat = outputFormats.some((format) => format.id === outputFormat)
+      ? outputFormat
+      : outputFormats[0]?.id || defaultOutputFormat(nextSelected);
+    return {
+      selectedId: nextSelected?.id || selectedId,
+      outputFormat: nextOutputFormat,
+      pageCount: isPdfFile(nextFile) ? estimatePages(nextFile) : 1
+    };
+  }
+
+  function applyEntrySettings(entry) {
+    setSelectedId(entry.selectedId);
+    setOutputFormat(entry.outputFormat);
+    setPageCount(entry.pageCount);
+  }
+
+  function updateActiveFileSettings(updates) {
+    if (!activeFileId) return;
+    setFileQueue((currentQueue) =>
+      currentQueue.map((entry) => (entry.id === activeFileId ? { ...entry, ...updates } : entry))
+    );
+  }
+
+  function handleOutputFormatChange(nextFormat) {
+    setOutputFormat(nextFormat);
+    updateActiveFileSettings({ outputFormat: nextFormat });
+    setResult(null);
+  }
+
+  function handlePageCountChange(nextPageCount) {
+    setPageCount(nextPageCount);
+    updateActiveFileSettings({ pageCount: nextPageCount });
+    setResult(null);
   }
 
   function activateFileEntry(entry) {
     setError("");
     setResult(null);
     setActiveFileId(entry.id);
-    applyFileDefaults(entry.file);
+    applyEntrySettings(entry);
   }
 
   function handleFileChange(event) {
@@ -426,14 +461,15 @@ function App() {
     if (!incomingFiles.length) return;
     const nextEntries = incomingFiles.map((nextFile) => ({
       id: fileEntryId(nextFile),
-      file: nextFile
+      file: nextFile,
+      ...initialSettingsForFile(nextFile)
     }));
     setError("");
     setResult(null);
     setFileQueue((currentQueue) => [...currentQueue, ...nextEntries]);
     const nextActive = nextEntries[0];
     setActiveFileId(nextActive.id);
-    applyFileDefaults(nextActive.file);
+    applyEntrySettings(nextActive);
     event.target.value = "";
   }
 
@@ -834,7 +870,13 @@ function App() {
                           <FileText size={16} />
                           <span>
                             <strong>{entry.file.name}</strong>
-                            <small>{fileKindLabel(entry.file)}</small>
+                            <small>
+                              {fileKindLabel(entry.file)} · Output:{" "}
+                              {outputLabel(
+                                data.converters.find((converter) => converter.id === entry.selectedId),
+                                entry.outputFormat
+                              )}
+                            </small>
                           </span>
                         </button>
                       ))}
@@ -857,7 +899,7 @@ function App() {
                             type="button"
                             key={format.id}
                             className={classNames("format-option", outputFormat === format.id && "is-selected")}
-                            onClick={() => setOutputFormat(format.id)}
+                            onClick={() => handleOutputFormatChange(format.id)}
                           >
                             {format.label}
                           </button>
@@ -877,7 +919,7 @@ function App() {
                         max="500"
                         type="number"
                         value={pageCount}
-                        onChange={(event) => setPageCount(Number(event.target.value || 1))}
+                        onChange={(event) => handlePageCountChange(Number(event.target.value || 1))}
                         disabled={isLocalImageConverter}
                       />
                     </label>
