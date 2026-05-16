@@ -1184,7 +1184,6 @@ function App() {
       <footer className="footer">
         <div className="footer-brand">
           <strong>AI Converter</strong>
-          <span>Automated conversion with browser-local image and SVG swaps.</span>
         </div>
         <nav className="footer-links" aria-label="Footer navigation">
           <a href="/privacy">Privacy</a>
