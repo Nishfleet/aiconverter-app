@@ -106,6 +106,7 @@ function healthCard(label, value) {
 function renderCloudConvert(provider) {
   const usage = provider.usageToday || {};
   const account = provider.account || {};
+  const backup = provider.backup || {};
   const accountLabel = account.ok ? "Connected" : provider.configured ? "Check failed" : "Missing";
   const credits = account.ok && account.credits !== null && account.credits !== undefined ? account.credits : "Unknown";
   const remaining = usage.remaining === null || usage.remaining === undefined ? "Unlimited" : usage.remaining;
@@ -128,6 +129,8 @@ function renderCloudConvert(provider) {
         ${metricCard("Failed today", usage.failed || 0)}
         ${metricCard("Still converting", usage.converting || 0)}
         ${metricCard("Credit guard", provider.requireCreditCheck ? "Required" : "Advisory")}
+        ${metricCard("Backup provider", backup.configured ? "Zamzar on" : "Zamzar off")}
+        ${metricCard("Backup daily cap", backup.dailyLimit ?? "-")}
       </div>
       ${
         account.message
@@ -153,9 +156,11 @@ function renderUsage(usage) {
         ${metricCard("Complete", usage.complete || 0)}
         ${metricCard("Failed", usage.failed || 0)}
         ${metricCard("Converting", usage.converting || 0)}
-        ${metricCard("Provider jobs", usage.cloudconvert_total || 0)}
-        ${metricCard("Provider complete", usage.cloudconvert_complete || 0)}
-        ${metricCard("Provider failed", usage.cloudconvert_failed || 0)}
+        ${metricCard("Provider jobs", usage.provider_total || 0)}
+        ${metricCard("Provider complete", usage.provider_complete || 0)}
+        ${metricCard("Provider failed", usage.provider_failed || 0)}
+        ${metricCard("CloudConvert jobs", usage.cloudconvert_total || 0)}
+        ${metricCard("Zamzar jobs", usage.zamzar_total || 0)}
       </div>
     </section>
   `;

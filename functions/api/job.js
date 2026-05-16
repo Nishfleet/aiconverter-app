@@ -1,5 +1,5 @@
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
-import { refreshCloudConvertConversion } from "../lib/cloudconvert.js";
+import { refreshUniversalProviderConversion } from "../lib/universal-providers.js";
 import { verifyDodoPayment } from "../lib/dodo.js";
 import { CONVERTER_COLUMNS } from "../lib/extract.js";
 import { getAuthorizedJob, hasRequiredBindings, outputFormatFromResultKey, parseStoredPreview, sourceAvailableForRedo, tokenFromBodyOrCookie } from "../lib/jobs.js";
@@ -36,7 +36,7 @@ export async function onRequestPost({ request, env }) {
 
   let providerResult = null;
   if (job.status === "converting_full" && isUniversalConverter(job.converter_id)) {
-    providerResult = await refreshCloudConvertConversion(env, job);
+    providerResult = await refreshUniversalProviderConversion(env, job);
     job = await getAuthorizedJob(env, jobId, token);
   }
 

@@ -239,13 +239,13 @@ export function isBinaryOutputFormat(format = "") {
   return !["csv", "json", "txt", "md", "html"].includes(String(format || "").toLowerCase());
 }
 
-export function universalPreviewRow(fileName, contentType, outputFormat) {
+export function universalPreviewRow(fileName, contentType, outputFormat, route = "CloudConvert") {
   const input = cloudConvertInputFormat(fileName) || universalFileKind(fileName, contentType);
   return {
     file: fileName,
     input: input.toUpperCase(),
     output: universalOutputLabel(outputFormat),
-    route: "CloudConvert",
+    route,
     status: "Ready to unlock"
   };
 }

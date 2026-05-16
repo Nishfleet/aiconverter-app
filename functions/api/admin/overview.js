@@ -9,6 +9,7 @@ import {
 } from "../../lib/cloudconvert.js";
 import { dodoProductIdForPlan, hasDodoApi, hasDodoWebhookSecret } from "../../lib/dodo.js";
 import { hasAzureConfig, hasExtractorBinding, hasMistralConfig, hasRequiredBindings, PLANS, rateLimitSaltStatus } from "../../lib/jobs.js";
+import { hasZamzarConfig, zamzarDailyJobLimit } from "../../lib/zamzar.js";
 
 export function onRequestPost() {
   return methodNotAllowed("GET");
@@ -89,10 +90,18 @@ export async function onRequestGet({ request, env }) {
          COALESCE(SUM(CASE WHEN status = 'complete' THEN 1 ELSE 0 END), 0) AS complete,
          COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0) AS failed,
          COALESCE(SUM(CASE WHEN status = 'converting_full' THEN 1 ELSE 0 END), 0) AS converting,
+         COALESCE(SUM(CASE WHEN COALESCE(external_provider, '') != '' THEN 1 ELSE 0 END), 0) AS provider_total,
+         COALESCE(SUM(CASE WHEN COALESCE(external_provider, '') != '' AND status = 'complete' THEN 1 ELSE 0 END), 0) AS provider_complete,
+         COALESCE(SUM(CASE WHEN COALESCE(external_provider, '') != '' AND status = 'failed' THEN 1 ELSE 0 END), 0) AS provider_failed,
+         COALESCE(SUM(CASE WHEN COALESCE(external_provider, '') != '' AND status = 'converting_full' THEN 1 ELSE 0 END), 0) AS provider_converting,
          COALESCE(SUM(CASE WHEN external_provider = 'cloudconvert' THEN 1 ELSE 0 END), 0) AS cloudconvert_total,
          COALESCE(SUM(CASE WHEN external_provider = 'cloudconvert' AND status = 'complete' THEN 1 ELSE 0 END), 0) AS cloudconvert_complete,
          COALESCE(SUM(CASE WHEN external_provider = 'cloudconvert' AND status = 'failed' THEN 1 ELSE 0 END), 0) AS cloudconvert_failed,
-         COALESCE(SUM(CASE WHEN external_provider = 'cloudconvert' AND status = 'converting_full' THEN 1 ELSE 0 END), 0) AS cloudconvert_converting
+         COALESCE(SUM(CASE WHEN external_provider = 'cloudconvert' AND status = 'converting_full' THEN 1 ELSE 0 END), 0) AS cloudconvert_converting,
+         COALESCE(SUM(CASE WHEN external_provider = 'zamzar' THEN 1 ELSE 0 END), 0) AS zamzar_total,
+         COALESCE(SUM(CASE WHEN external_provider = 'zamzar' AND status = 'complete' THEN 1 ELSE 0 END), 0) AS zamzar_complete,
+         COALESCE(SUM(CASE WHEN external_provider = 'zamzar' AND status = 'failed' THEN 1 ELSE 0 END), 0) AS zamzar_failed,
+         COALESCE(SUM(CASE WHEN external_provider = 'zamzar' AND status = 'converting_full' THEN 1 ELSE 0 END), 0) AS zamzar_converting
        FROM jobs
        WHERE created_at >= ?`,
       [since24h]
@@ -101,7 +110,7 @@ export async function onRequestGet({ request, env }) {
       env,
       `SELECT id, status, converter_id, plan_id, external_provider, external_status, substr(error, 1, 240) AS error, updated_at
        FROM jobs
-       WHERE (external_provider = 'cloudconvert' OR extractor LIKE 'cloudconvert%')
+       WHERE (external_provider IN ('cloudconvert', 'zamzar') OR extractor IN ('cloudconvert', 'zamzar'))
          AND (status = 'failed' OR COALESCE(external_status, '') IN ('error', 'failed'))
        ORDER BY updated_at DESC
        LIMIT 25`
@@ -110,7 +119,7 @@ export async function onRequestGet({ request, env }) {
       env,
       `SELECT id, status, converter_id, plan_id, external_provider, external_status, updated_at
        FROM jobs
-       WHERE external_provider = 'cloudconvert'
+       WHERE external_provider IN ('cloudconvert', 'zamzar')
          AND status = 'converting_full'
          AND updated_at < ?
        ORDER BY updated_at ASC
@@ -197,7 +206,7 @@ function runtimeHealth(env) {
   });
   if (!hasExtractorBinding(env)) missing.push("OCR fallback provider");
   if (!env.TURNSTILE_SITE_KEY || !env.TURNSTILE_SECRET_KEY) missing.push("Turnstile keys");
-  if (!hasCloudConvertConfig(env)) missing.push("CloudConvert API key");
+  if (!hasCloudConvertConfig(env) && !hasZamzarConfig(env)) missing.push("universal conversion provider");
   if (!rateLimitSaltStatus(env).ok) missing.push("strong rate-limit salt");
 
   return {
@@ -222,7 +231,8 @@ function runtimeHealth(env) {
       markdownConversion: Boolean(env.AI?.toMarkdown),
       whisper: Boolean(env.AI?.run),
       screenshotVision: Boolean(env.AI?.run),
-      cloudConvert: hasCloudConvertConfig(env)
+      cloudConvert: hasCloudConvertConfig(env),
+      zamzarBackup: hasZamzarConfig(env)
     },
     protection: {
       turnstile: Boolean(env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET_KEY),
@@ -241,6 +251,11 @@ async function buildCloudConvertOverview(env) {
   const [usageToday, account] = await Promise.all([cloudConvertUsageToday(env), getCloudConvertAccount(env)]);
   return {
     configured,
+    backup: {
+      provider: "zamzar",
+      configured: hasZamzarConfig(env),
+      dailyLimit: zamzarDailyJobLimit(env)
+    },
     dailyLimit,
     minCredits,
     requireCreditCheck,
@@ -262,20 +277,24 @@ function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckPr
     });
   }
 
-  if (!cloudConvert.configured) {
-    alerts.push({ severity: "critical", title: "CloudConvert is not configured", detail: "Provider conversions are blocked." });
+  const backup = cloudConvert.backup || {};
+  if (!cloudConvert.configured && !backup.configured) {
+    alerts.push({ severity: "critical", title: "No universal provider is configured", detail: "Provider-backed universal conversions are blocked." });
+  } else if (!cloudConvert.configured && backup.configured) {
+    alerts.push({ severity: "warning", title: "CloudConvert is offline", detail: "Zamzar backup is configured and will be used for provider conversions." });
   } else {
     const usage = cloudConvert.usageToday || {};
+    const primaryIssueSeverity = backup.configured ? "warning" : "critical";
     if (usage.error) {
       alerts.push({
-        severity: "critical",
+        severity: primaryIssueSeverity,
         title: "CloudConvert usage check failed",
         detail: usage.error
       });
     }
     if (cloudConvert.dailyLimit > 0 && Number(usage.started || 0) >= cloudConvert.dailyLimit) {
       alerts.push({
-        severity: "critical",
+        severity: primaryIssueSeverity,
         title: "CloudConvert daily cap reached",
         detail: `${usage.started}/${cloudConvert.dailyLimit} provider jobs have started today.`
       });
@@ -291,7 +310,7 @@ function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckPr
     if (account.ok && account.credits !== null && account.credits !== undefined) {
       if (Number(account.credits) <= cloudConvert.minCredits) {
         alerts.push({
-          severity: "critical",
+          severity: primaryIssueSeverity,
           title: "CloudConvert credits are low",
           detail: `${account.credits} credits available; reserve is ${cloudConvert.minCredits}.`
         });
@@ -304,13 +323,13 @@ function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckPr
       }
     } else if (account.ok && cloudConvert.requireCreditCheck) {
       alerts.push({
-        severity: "critical",
+        severity: primaryIssueSeverity,
         title: "CloudConvert credit balance missing",
         detail: "CloudConvert account responded without a credit balance."
       });
     } else if (cloudConvert.requireCreditCheck) {
       alerts.push({
-        severity: "critical",
+        severity: primaryIssueSeverity,
         title: "CloudConvert credit check failed",
         detail: account.message || "Could not read CloudConvert account credits."
       });
@@ -326,7 +345,7 @@ function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckPr
     });
   }
 
-  const providerFailed = numberOrZero(usage24h?.cloudconvert_failed);
+  const providerFailed = numberOrZero(usage24h?.provider_failed);
   if (providerFailed > 0) {
     alerts.push({
       severity: "warning",

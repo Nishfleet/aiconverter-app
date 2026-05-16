@@ -1,5 +1,6 @@
 import { json, methodNotAllowed } from "../lib/http.js";
 import { hasCloudConvertConfig } from "../lib/cloudconvert.js";
+import { hasZamzarConfig } from "../lib/zamzar.js";
 import { dodoProductIdForPlan, hasDodoApi, hasDodoWebhookSecret } from "../lib/dodo.js";
 import { hasExtractorBinding, hasMistralConfig, hasRequiredBindings, PLANS, rateLimitSaltStatus } from "../lib/jobs.js";
 
@@ -23,7 +24,7 @@ export async function onRequestGet({ env }) {
   if (!hasExtractorBinding(env)) missing.push("AI/OCR provider");
   if (!env.AI) missing.push("Workers AI binding");
   if (!env.TURNSTILE_SITE_KEY || !env.TURNSTILE_SECRET_KEY) missing.push("Turnstile keys");
-  if (!hasCloudConvertConfig(env)) missing.push("CloudConvert API key");
+  if (!hasCloudConvertConfig(env) && !hasZamzarConfig(env)) missing.push("universal conversion provider");
   if (!rateLimitSaltStatus(env).ok) missing.push("strong rate-limit salt");
 
   let database = "unchecked";
@@ -57,7 +58,8 @@ export async function onRequestGet({ env }) {
         whisper: Boolean(env.AI?.run),
         screenshotVision: Boolean(env.AI?.run),
         mistralOcr: hasMistralConfig(env),
-        cloudConvert: hasCloudConvertConfig(env)
+        cloudConvert: hasCloudConvertConfig(env),
+        zamzarBackup: hasZamzarConfig(env)
       },
       protection: {
         uploadRateLimit: true,

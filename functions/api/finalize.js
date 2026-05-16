@@ -1,5 +1,5 @@
 import { runFullConversion } from "../lib/conversion.js";
-import { refreshCloudConvertConversion } from "../lib/cloudconvert.js";
+import { refreshUniversalProviderConversion } from "../lib/universal-providers.js";
 import { verifyDodoPayment } from "../lib/dodo.js";
 import { CONVERTER_COLUMNS } from "../lib/extract.js";
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
@@ -60,7 +60,7 @@ export async function onRequestPost({ request, env }) {
 
   if (job.status !== "preview_ready") {
     if (job.status === "converting_full" && isUniversalConverter(job.converter_id)) {
-      const refreshed = await refreshCloudConvertConversion(env, job);
+      const refreshed = await refreshUniversalProviderConversion(env, job);
       return json(responseForConversion(job, token, bodyToken, refreshed));
     }
     return badRequest("The conversion is not ready to finalize.");

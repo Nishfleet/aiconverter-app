@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { startCloudConvertConversion, refreshCloudConvertConversion } from "../functions/lib/cloudconvert.js";
+import { refreshUniversalProviderConversion, startUniversalProviderConversion } from "../functions/lib/universal-providers.js";
 import { convertFileToCsv } from "../functions/lib/extract.js";
 import { assertSupportedUpload, normalizeOutputFormat } from "../functions/lib/jobs.js";
 
@@ -551,6 +552,74 @@ test("CloudConvert credit reserve blocks new provider jobs before conversion spe
   assert.match(result.message, /credits are at or below/i);
   assert.equal(fetchCalls.length, 1);
   assert.equal(env.updates.length, 0);
+  restoreFetch();
+});
+
+test("universal provider route falls back to Zamzar when CloudConvert cap is reached", async () => {
+  const fetchCalls = mockCloudConvertFetch([
+    {
+      match: "https://api.cloudconvert.com/v2/users/me",
+      response: {
+        data: { id: "user-1", credits: 20 }
+      }
+    },
+    {
+      match: "https://api.zamzar.com/v1/jobs",
+      response: {
+        id: 77,
+        status: "initialising",
+        source_file: { id: 2, name: "deck.pptx" },
+        target_files: [],
+        target_format: "pdf"
+      }
+    }
+  ]);
+  const env = mockJobEnv({
+    cloudConvertUsage: { started: 10, complete: 8, failed: 1, converting: 1 },
+    vars: {
+      CLOUDCONVERT_DAILY_JOB_LIMIT: "10",
+      ZAMZAR_API_KEY: "zamzar-test-key",
+      ZAMZAR_DAILY_JOB_LIMIT: "5"
+    }
+  });
+  const result = await startUniversalProviderConversion(env, mockUniversalJob(), new Uint8Array([1, 2, 3]).buffer);
+
+  assert.equal(result.pending, true);
+  assert.equal(result.provider, "zamzar");
+  assert.equal(result.previewRows[0].route, "Zamzar");
+  assert.equal(fetchCalls.length, 2);
+  assert.equal(fetchCalls[1].body instanceof FormData, true);
+  assert.equal(env.updates.at(-1).fields.external_provider, "zamzar");
+  restoreFetch();
+});
+
+test("Zamzar backup refresh downloads the exported file into private result storage", async () => {
+  const fetchCalls = mockCloudConvertFetch([
+    {
+      match: "https://api.zamzar.com/v1/jobs/77",
+      response: {
+        id: 77,
+        status: "successful",
+        target_files: [{ id: 3, name: "deck.pdf", size: 4 }]
+      }
+    },
+    {
+      match: "https://api.zamzar.com/v1/files/3/content",
+      response: new Uint8Array([0x25, 0x50, 0x44, 0x46]).buffer,
+      contentType: "application/pdf"
+    }
+  ]);
+  const env = mockJobEnv({ vars: { ZAMZAR_API_KEY: "zamzar-test-key" } });
+  const job = { ...mockUniversalJob(), status: "converting_full", external_provider: "zamzar", external_job_id: "77" };
+  const result = await refreshUniversalProviderConversion(env, job);
+
+  assert.equal(result.ok, true);
+  assert.equal(result.status, "complete");
+  assert.equal(result.provider, "zamzar");
+  assert.equal(fetchCalls.length, 2);
+  assert.equal(env.bucketPuts[0].key, "jobs/job_test/result.pdf");
+  assert.equal(env.bucketPuts[0].metadata.httpMetadata.contentType, "application/pdf");
+  assert.equal(env.updates.at(-1).fields.status, "complete");
   restoreFetch();
 });
 

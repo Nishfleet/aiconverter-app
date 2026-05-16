@@ -1,7 +1,7 @@
 import { convertFileToCsv } from "./extract.js";
 import { outputFormatFromResultKey, updateJob } from "./jobs.js";
 import { requestDodoRefund } from "./dodo.js";
-import { startCloudConvertConversion } from "./cloudconvert.js";
+import { startUniversalProviderConversion } from "./universal-providers.js";
 import { isUniversalConverter } from "./universal.js";
 
 export async function runFullConversion(env, job, options = {}) {
@@ -20,7 +20,7 @@ export async function runFullConversion(env, job, options = {}) {
   try {
     const arrayBuffer = await source.arrayBuffer();
     if (isUniversalConverter(job.converter_id)) {
-      const started = await startCloudConvertConversion(env, job, arrayBuffer);
+      const started = await startUniversalProviderConversion(env, job, arrayBuffer);
       if (!started.ok) {
         await env.AICONVERTER_BUCKET.delete(job.source_key).catch(() => {});
         const refund = job.paid_at
