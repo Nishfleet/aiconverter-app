@@ -43,6 +43,10 @@ function planForPages(pages) {
   return data.pricing.find((plan) => plan.id === "pro");
 }
 
+function planById(planId) {
+  return data.pricing.find((plan) => plan.id === planId) || null;
+}
+
 function isLiveConverter(converter) {
   return converter.id !== "email";
 }
@@ -251,6 +255,11 @@ function selectedRouteDescription(converter, candidate) {
   return converter?.description || "";
 }
 
+function displayPriceForPlan(plan, pricingPreview) {
+  const planId = typeof plan === "string" ? plan : plan?.id;
+  return pricingPreview?.prices?.[planId]?.display || planById(planId)?.price || plan?.price || "$3";
+}
+
 function App() {
   const [selectedId, setSelectedId] = useState("bank");
   const [outputFormat, setOutputFormat] = useState("csv");
@@ -266,6 +275,7 @@ function App() {
   const [turnstileSiteKey, setTurnstileSiteKey] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [capabilities, setCapabilities] = useState({});
+  const [pricingPreview, setPricingPreview] = useState(null);
   const fileInputRef = useRef(null);
   const turnstileRef = useRef(null);
   const turnstileWidgetIdRef = useRef(null);
@@ -288,6 +298,7 @@ function App() {
   );
   const selectedOutputFormats = useMemo(() => capableOutputFormats(selected, file), [selected, file]);
   const selectedPlan = useMemo(() => planForPages(pageCount), [pageCount]);
+  const selectedPlanPrice = displayPriceForPlan(selectedPlan, pricingPreview);
   const isLocalImageConverter = isLocalConverter(selected);
   const selectedEnabled = converterIsEnabled(selected);
   const selectedMaxSizeMb = selectedId === "audio-transcript" ? 25 : selectedId === "screenshot-code" ? 8 : MAX_SIZE_MB;
@@ -317,6 +328,15 @@ function App() {
       .then((payload) => {
         setTurnstileSiteKey(payload.turnstileSiteKey || "");
         setCapabilities(payload.capabilities || {});
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/pricing-preview")
+      .then((response) => response.json())
+      .then((payload) => {
+        if (payload?.available) setPricingPreview(payload);
       })
       .catch(() => {});
   }, []);
@@ -754,7 +774,7 @@ function App() {
     if (unlocking) return result?.status === "preview_ready" && result?.paid ? "Generating full file..." : "Preparing...";
     if (result?.status === "complete") return `Download ${resultFormatLabel(result?.outputFormat)}`;
     if (result?.paid) return `Generate ${resultFormatLabel(outputFormat)}`;
-    return `Unlock ${resultFormatLabel(outputFormat)} · ${result?.plan?.price || selectedPlan.price}`;
+    return `Unlock ${resultFormatLabel(outputFormat)} · ${displayPriceForPlan(result?.plan || selectedPlan, pricingPreview)}`;
   }
 
   return (
@@ -924,9 +944,9 @@ function App() {
                       />
                     </label>
                     <div>
-                      <span>{isLocalImageConverter ? "Cost" : "Unlock price"}</span>
+                      <span>{isLocalImageConverter ? "Cost" : "All-in total"}</span>
                       <strong>
-                        {isLocalImageConverter ? "Free · browser local" : `${selectedPlan.price} · ${selectedPlan.detail}`}
+                        {isLocalImageConverter ? "Free · browser local" : `${selectedPlanPrice} · ${selectedPlan.detail}`}
                       </strong>
                     </div>
                   </div>
@@ -1128,7 +1148,7 @@ function App() {
           {data.pricing.map((plan) => (
             <article className="price-card" key={plan.name}>
               <h3>{plan.name}</h3>
-              <strong>{plan.price}</strong>
+              <strong>{displayPriceForPlan(plan, pricingPreview)}</strong>
               <p>{plan.detail}</p>
               <span>{plan.note}</span>
               <button

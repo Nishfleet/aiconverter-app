@@ -2,6 +2,7 @@ import { PLANS, randomId, recordJobAttempt, updateJob } from "./jobs.js";
 
 const DODO_LIVE_URL = "https://live.dodopayments.com";
 const DODO_TEST_URL = "https://test.dodopayments.com";
+const PRICE_PREVIEW_CACHE_MS = 5 * 60 * 1000;
 const PAYMENT_SUCCESS_EVENTS = new Set(["payment.succeeded", "payment.completed", "payment.paid"]);
 const PAYMENT_EVENTS = new Set([
   "payment.succeeded",
@@ -13,6 +14,7 @@ const PAYMENT_EVENTS = new Set([
 ]);
 const REFUND_EVENTS = new Set(["refund.succeeded", "refund.failed", "refund.pending", "refund.review"]);
 const PAID_STATUSES = new Set(["succeeded", "paid", "completed"]);
+const pricePreviewCache = new Map();
 
 export function hasDodoApi(env) {
   return Boolean(dodoApiKey(env));
@@ -31,6 +33,49 @@ export function dodoProductIdForPlan(env, planId) {
   return ids[planId] || "";
 }
 
+export async function previewDodoPlanPrices({ env, request }) {
+  const apiKey = dodoApiKey(env);
+  if (!apiKey) return { available: false, reason: "missing_api_key", prices: {} };
+
+  const country = countryFromRequest(request);
+  const cacheKey = [
+    dodoBaseUrl(env),
+    country || "auto",
+    dodoAdaptiveCurrencyFeesInclusive(env) ? "inclusive" : "merchant-default",
+    Object.keys(PLANS)
+      .map((planId) => `${planId}:${dodoProductIdForPlan(env, planId)}`)
+      .join("|")
+  ].join(":");
+  const cached = pricePreviewCache.get(cacheKey);
+  if (cached && Date.now() - cached.createdAt < PRICE_PREVIEW_CACHE_MS) return cached.value;
+
+  const entries = await Promise.all(
+    Object.values(PLANS).map(async (plan) => {
+      const productId = dodoProductIdForPlan(env, plan.id);
+      if (!productId) return [plan.id, null];
+      try {
+        const preview = await requestDodoCheckoutPreview(env, apiKey, productId, country);
+        return [plan.id, normalizeDodoPricePreview(preview, plan)];
+      } catch {
+        return [plan.id, null];
+      }
+    })
+  );
+
+  const prices = Object.fromEntries(entries.filter(([, value]) => value?.display));
+  const value = {
+    available: Object.keys(prices).length > 0,
+    provider: "dodo",
+    source: "dodo_checkout_preview",
+    country,
+    adaptiveCurrency: dodoAdaptiveCurrencyEnabled(env),
+    feesInclusive: dodoAdaptiveCurrencyFeesInclusive(env),
+    prices
+  };
+  pricePreviewCache.set(cacheKey, { createdAt: Date.now(), value });
+  return value;
+}
+
 export async function createDodoCheckout({ env, request, job, plan, email }) {
   const apiKey = dodoApiKey(env);
   const productId = dodoProductIdForPlan(env, plan.id);
@@ -43,9 +88,11 @@ export async function createDodoCheckout({ env, request, job, plan, email }) {
   returnUrl.searchParams.set("plan", plan.id);
 
   const currency = expectedDodoCurrency(env);
+  const country = countryFromRequest(request);
   const body = {
     product_cart: [{ product_id: productId, quantity: 1 }],
     return_url: returnUrl.toString(),
+    adaptive_currency_fees_inclusive: dodoAdaptiveCurrencyFeesInclusive(env),
     metadata: {
       job_id: job.id,
       plan_id: plan.id,
@@ -53,6 +100,7 @@ export async function createDodoCheckout({ env, request, job, plan, email }) {
       ...(currency ? { expected_currency: currency } : {})
     }
   };
+  if (country) body.billing_address = { country };
   if (email) body.customer = { email };
 
   const response = await fetch(`${dodoBaseUrl(env)}/checkouts`, {
@@ -412,12 +460,12 @@ async function matchJobForDodoPayment(env, payment, explicitJob) {
     return { ok: false, reason: "product_mismatch", job, matchedBy: "product_id" };
   }
 
-  if (payment.amount > 0 && payment.amount < Number(plan.amount || 0)) {
+  if (isDodoPaymentAmountTooLow(env, payment, plan)) {
     return { ok: false, reason: "amount_too_low", job, matchedBy: "amount" };
   }
 
   const expectedCurrency = expectedDodoCurrency(env);
-  if (expectedCurrency && payment.currency && payment.currency !== expectedCurrency) {
+  if (!dodoAdaptiveCurrencyEnabled(env) && expectedCurrency && payment.currency && payment.currency !== expectedCurrency) {
     return { ok: false, reason: "currency_mismatch", job, matchedBy: "currency" };
   }
 
@@ -646,6 +694,98 @@ function dodoBaseUrl(env) {
 
 function expectedDodoCurrency(env) {
   return normalizeCurrency(env.DODO_CURRENCY || env.PAYMENT_CURRENCY || env.CHECKOUT_CURRENCY || "");
+}
+
+function dodoBaseCurrency(env) {
+  return expectedDodoCurrency(env) || "USD";
+}
+
+function dodoAdaptiveCurrencyEnabled(env) {
+  return String(env.DODO_ADAPTIVE_CURRENCY || env.DODO_ADAPTIVE_PRICING || "true").toLowerCase() !== "false";
+}
+
+function dodoAdaptiveCurrencyFeesInclusive(env) {
+  return String(env.DODO_ADAPTIVE_CURRENCY_FEES_INCLUSIVE || "true").toLowerCase() !== "false";
+}
+
+export function isDodoPaymentAmountTooLow(env, payment, plan) {
+  if (!payment?.amount || payment.amount <= 0) return false;
+  const currency = normalizeCurrency(payment.currency);
+  if (dodoAdaptiveCurrencyEnabled(env) && currency && currency !== dodoBaseCurrency(env)) return false;
+  return payment.amount < Number(plan?.amount || 0);
+}
+
+async function requestDodoCheckoutPreview(env, apiKey, productId, country) {
+  const body = {
+    product_cart: [{ product_id: productId, quantity: 1 }]
+  };
+  if (country) body.billing_address = { country };
+
+  const response = await fetch(`${dodoBaseUrl(env)}/checkouts/preview`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify(body)
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(payload?.message || "Dodo pricing preview could not be created.");
+    error.status = response.status;
+    throw error;
+  }
+  return payload;
+}
+
+function normalizeDodoPricePreview(payload, plan) {
+  const currency = normalizeCurrency(payload?.currency || payload?.current_breakup?.currency);
+  const amount = numberOrNull(
+    payload?.current_breakup?.total_amount ??
+      payload?.total_price ??
+      payload?.total_amount ??
+      payload?.product_cart?.[0]?.discounted_price
+  );
+  const display = formatDodoAmount(amount, currency);
+  if (!display) return null;
+  return {
+    planId: plan.id,
+    display,
+    amount,
+    currency,
+    billingCountry: String(payload?.billing_country || "").toUpperCase(),
+    taxInclusive: Boolean(payload?.product_cart?.[0]?.tax_inclusive),
+    totalTax: numberOrNull(payload?.total_tax)
+  };
+}
+
+function formatDodoAmount(minorAmount, currency) {
+  if (!Number.isFinite(minorAmount) || !currency) return "";
+  try {
+    const decimals = new Intl.NumberFormat("en", {
+      style: "currency",
+      currency
+    }).resolvedOptions().maximumFractionDigits;
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+      currencyDisplay: "narrowSymbol"
+    }).format(minorAmount / 10 ** decimals);
+  } catch {
+    return `${currency} ${(minorAmount / 100).toFixed(2)}`;
+  }
+}
+
+function numberOrNull(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function countryFromRequest(request) {
+  const cloudflareCountry = String(request?.cf?.country || "").toUpperCase();
+  const headerCountry = String(request?.headers?.get?.("cf-ipcountry") || request?.headers?.get?.("x-country") || "").toUpperCase();
+  const country = cloudflareCountry || headerCountry;
+  return /^[A-Z]{2}$/.test(country) && country !== "XX" ? country : "";
 }
 
 function decodeWebhookSecret(secret) {

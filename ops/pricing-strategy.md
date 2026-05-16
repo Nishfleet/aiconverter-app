@@ -8,6 +8,8 @@ Launch with simple one-time packs:
 - Standard: $5 for 100 pages.
 - Bulk: $9 for 500 pages.
 
+Customer-facing paid sessions use adaptive currency with fees inclusive where supported. The app should display the payment provider's checkout-preview total when available, and keep the USD pack price as the base fallback. Do not advertise the provider in the customer-facing pricing line.
+
 The 500-page pack is intentionally aggressive. It only works because the default path is our own digital-PDF parser, with paid OCR reserved for scanned or messy files.
 
 ## Unit Economics
