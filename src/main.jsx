@@ -655,7 +655,6 @@ function App() {
           <a href="#workflow">Workflow</a>
           <a href="#pricing">Pricing</a>
           <a href="#security">Security</a>
-          <a href="/sample-csv">Samples</a>
         </nav>
         <button className="header-action" onClick={() => fileInputRef.current?.click()}>
           Upload file
@@ -1020,7 +1019,7 @@ function App() {
       <section id="pricing" className="pricing-section">
         <div className="section-heading compact">
           <h2>Higher-trust conversion. Lower one-off pricing.</h2>
-          <p>Preview is free. Pay once only when the sample looks right. Browser-local image and SVG tools stay free and never upload the source file.</p>
+          <p>Preview is free. Pay once only when the sample looks right.</p>
         </div>
         <div className="pricing-grid">
           {data.pricing.map((plan) => (
