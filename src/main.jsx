@@ -155,6 +155,34 @@ function previewMetricLabel(converterId, result) {
   return `${result.rowCount || 0} rows`;
 }
 
+function routeKindLabel(converter) {
+  if (isLocalConverter(converter)) return "Local";
+  if (isProviderConverter(converter)) return "Provider";
+  return "AI";
+}
+
+function fileKindLabel(candidate) {
+  if (!candidate) return "No file selected";
+  const extension = candidate.name.split(".").pop()?.toUpperCase() || "FILE";
+  return `${extension} · ${(candidate.size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function routeRank(converter) {
+  const rank = {
+    bank: 1,
+    receipt: 2,
+    invoice: 3,
+    screenshot: 4,
+    "document-markdown": 5,
+    "audio-transcript": 6,
+    "screenshot-code": 7,
+    "local-image": 8,
+    "local-svg": 9,
+    "universal-file": 10
+  };
+  return rank[converter?.id] || 99;
+}
+
 function App() {
   const [selectedId, setSelectedId] = useState("bank");
   const [outputFormat, setOutputFormat] = useState("csv");
@@ -188,6 +216,10 @@ function App() {
     () => (file ? selectableConverters.filter((converter) => converterAcceptsFile(converter, file)) : []),
     [file, selectableConverters]
   );
+  const suggestedConverters = useMemo(
+    () => [...compatibleConverters].sort((a, b) => routeRank(a) - routeRank(b)),
+    [compatibleConverters]
+  );
   const selectedPlan = useMemo(() => planForPages(pageCount), [pageCount]);
   const isLocalImageConverter = isLocalConverter(selected);
   const selectedEnabled = converterIsEnabled(selected);
@@ -210,6 +242,7 @@ function App() {
     pageCount <= MAX_PAGES &&
     selectedEnabled &&
     (isLocalImageConverter || !needsTurnstile || Boolean(turnstileToken));
+  const flowStep = !file ? 1 : result ? (result.status === "complete" ? 4 : 3) : 2;
 
   useEffect(() => {
     fetch("/api/config")
@@ -630,307 +663,308 @@ function App() {
         </button>
       </header>
 
-      <section id="top" className="hero-section">
-        <div className="hero-copy">
-          <h1>AI Converter for useful files. Preview first.</h1>
-          <p>
-            Convert bank statements, receipts, invoices, screenshots, documents,
-            audio, provider-backed file routes, and common images into useful
-            outputs. AI routes handle messy files; provider routes activate when
-            connected; simple image swaps stay local in your browser.
-          </p>
-          <div className="hero-price-strip" aria-label="Pricing summary">
-            <strong>Free preview</strong>
-            <span>AI extraction unlocks at {data.pricing[0].price}</span>
-            <a href="#pricing">See all prices</a>
-          </div>
-          <div className="hero-actions">
-            <button className="primary-button" onClick={() => fileInputRef.current?.click()}>
-              Upload file
-              <Upload size={18} />
-            </button>
-            <a className="secondary-button" href="/sample-csv">
-              View sample CSV
-              <ArrowRight size={16} />
-            </a>
-          </div>
-          <div className="trust-strip" aria-label="Product guardrails">
-            <span>
-              <ShieldCheck size={16} />
-              Free preview
-            </span>
-                  <span>
-                    <Database size={16} />
-                    AI conversion only after preview
-            </span>
-            <span>
-              <Lock size={16} />
-              Local image swaps upload nothing
-            </span>
-          </div>
+      <section id="top" className="conversion-stage">
+        <div className="conversion-heading">
+          <h1>What would you like to convert?</h1>
+          <p>Drop a file and AI Converter will suggest the cleanest outputs.</p>
         </div>
 
-        <section className="converter-workspace" aria-label="AI conversion workspace">
-          <div className="workspace-topbar">
-            <div>
-              <span className="status-dot" />
-              Hybrid conversion engine
-            </div>
-            <strong>{selected.title} to {selectedOutputLabel || selected.output}</strong>
-          </div>
-
-          <div className="workspace-grid">
-            <div className="converter-list" aria-label="Converter choices">
-              {liveConverters.map((converter) => (
-                <button
+        <section className={classNames("converter-workspace", file && "has-file")} aria-label="AI conversion workspace">
+          <form className="conversion-flow" id="start" onSubmit={handleConvert}>
+            <div className="flow-rail" aria-label="Conversion steps">
+              {["Upload", "Choose output", "Preview", "Unlock"].map((step, index) => (
+                <span
+                  key={step}
                   className={classNames(
-                    "converter-choice",
-                    selectedId === converter.id && "is-selected",
-                    file && !converterAcceptsFile(converter, file) && "is-muted",
-                    !converterIsEnabled(converter) && "is-disabled"
+                    "flow-step",
+                    flowStep === index + 1 && "is-active",
+                    flowStep > index + 1 && "is-done"
                   )}
-                  key={converter.id}
-                  onClick={() => handleConverterSelect(converter)}
-                  disabled={!converterIsEnabled(converter)}
-                  type="button"
                 >
-                  <span className="choice-icon">
-                    {converter.mode === "local-image" ? (
-                      <ImageIcon size={18} />
-                    ) : converter.id === "invoice" ? (
-                      <FileJson size={18} />
-                    ) : (
-                      <FileText size={18} />
-                    )}
-                  </span>
-                  <span>
-                    <strong>{converter.title}</strong>
-                    <small>{!converterIsEnabled(converter) ? "Provider key needed" : converter.state}</small>
-                  </span>
-                </button>
+                  <i>{index + 1}</i>
+                  {step}
+                </span>
               ))}
             </div>
 
-            <form className="upload-panel" id="start" onSubmit={handleConvert}>
-              <label className="upload-target">
-                <Upload size={24} />
-                <span>
-                  <strong>{file?.name || `Choose ${selected.input.toLowerCase()}`}</strong>
-                  <small>
-                    {file
-                      ? `${fileSizeLabel} selected. Max ${selectedMaxSizeMb} MB${isPdfFile(file) ? ` and ${MAX_PAGES} pages` : ""}.`
-                      : isLocalImageConverter
-                        ? `Local file. ${selected.input} to ${selected.output}. No upload.`
-                        : `Private upload. ${selected.input} to ${selected.output}. Max ${selectedMaxSizeMb} MB${isPdfFirstConverter ? ` and ${MAX_PAGES} pages` : ""}.`}
-                  </small>
-                </span>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept={allAcceptedTypes(selectableConverters)}
-                  onChange={handleFileChange}
-                />
-              </label>
+            <label className={classNames("upload-target", file && "has-file")}>
+              <span className="upload-symbol">
+                <Upload size={26} />
+              </span>
+              <span>
+                <strong>{file ? "File selected" : "Drop a file here or click to upload"}</strong>
+                <small>{file ? `${file.name} · ${fileKindLabel(file)}` : "PDF, images, audio, documents, and provider-backed routes"}</small>
+              </span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={allAcceptedTypes(selectableConverters)}
+                onChange={handleFileChange}
+              />
+            </label>
 
-              {file && (
-                <div className="route-options" aria-label="Available conversions">
-                  <span>Available for this file</span>
+            {!file && (
+              <div className="quiet-benefits" aria-label="Conversion guardrails">
+                <span>
+                  <ShieldCheck size={15} />
+                  Free preview first
+                </span>
+                <span>
+                  <Lock size={15} />
+                  Local image routes upload nothing
+                </span>
+                <span>
+                  <Database size={15} />
+                  Private short retention
+                </span>
+              </div>
+            )}
+
+            {file && (
+              <>
+                <div className="detected-file">
                   <div>
-                    {compatibleConverters.map((converter) => (
+                    <FileText size={18} />
+                    <span>
+                      <strong>{file.name}</strong>
+                      <small>{fileKindLabel(file)}</small>
+                    </span>
+                  </div>
+                  <button type="button" onClick={() => fileInputRef.current?.click()}>
+                    Replace
+                  </button>
+                </div>
+
+                <div className="suggested-routes" aria-label="Suggested outputs">
+                  <div className="mini-section-heading">
+                    <span>Suggested outputs</span>
+                    <strong>{suggestedConverters.length ? "Pick one route" : "No route found"}</strong>
+                  </div>
+                  <div className="route-card-grid">
+                    {suggestedConverters.map((converter) => (
                       <button
                         type="button"
                         key={converter.id}
-                        className={classNames("route-option", selectedId === converter.id && "is-selected")}
+                        className={classNames("route-card", selectedId === converter.id && "is-selected")}
                         onClick={() => handleConverterSelect(converter)}
                       >
-                        {converter.title}
+                        <span className="choice-icon">
+                          {converter.mode === "local-image" || converter.mode === "local-svg" ? (
+                            <ImageIcon size={18} />
+                          ) : converter.id === "invoice" ? (
+                            <FileJson size={18} />
+                          ) : converter.id === "bank" || converter.id === "screenshot" ? (
+                            <FileSpreadsheet size={18} />
+                          ) : (
+                            <FileText size={18} />
+                          )}
+                        </span>
+                        <strong>{converter.title} to {outputLabel(converter, defaultOutputFormat(converter))}</strong>
+                        <small>{converter.state === "Live" ? "Best match" : converter.state}</small>
+                        <em className={classNames("route-badge", routeKindLabel(converter).toLowerCase())}>
+                          {routeKindLabel(converter)}
+                        </em>
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
 
-              <div className="conversion-route">
-                <span>{selected.input}</span>
-                <ArrowRight size={16} />
-                <span>{selectedOutputLabel || selected.output}</span>
-              </div>
-
-              <p>{selected.description}</p>
-
-              {selected.outputFormats?.length > 1 && (
-                <div className="format-picker" aria-label="Output format">
-                  <span>Output</span>
+                <div className="selected-route-panel">
                   <div>
-                    {selected.outputFormats.map((format) => (
-                      <button
-                        type="button"
-                        key={format.id}
-                        className={classNames("format-option", outputFormat === format.id && "is-selected")}
-                        onClick={() => setOutputFormat(format.id)}
-                      >
-                        {format.label}
-                      </button>
-                    ))}
+                    <span className={classNames("route-badge", routeKindLabel(selected).toLowerCase())}>
+                      {routeKindLabel(selected)}
+                    </span>
+                    <h2>{selected.title} to {selectedOutputLabel || selected.output}</h2>
+                    <p>{selected.description}</p>
                   </div>
-                </div>
-              )}
 
-              <div className="order-summary" aria-label="Estimated order">
-                <label>
-                  <span>
-                    <Clock size={15} />
-                    {isLocalImageConverter ? "Files" : selectedId === "bank" ? "Estimated pages" : "Pages / images"}
-                  </span>
-                  <input
-                    min="1"
-                    max="500"
-                    type="number"
-                    value={pageCount}
-                    onChange={(event) => setPageCount(Number(event.target.value || 1))}
-                    disabled={isLocalImageConverter}
-                  />
-                </label>
+                  {selected.outputFormats?.length > 1 && (
+                    <div className="format-picker" aria-label="Output format">
+                      <span>Output</span>
+                      <div>
+                        {selected.outputFormats.map((format) => (
+                          <button
+                            type="button"
+                            key={format.id}
+                            className={classNames("format-option", outputFormat === format.id && "is-selected")}
+                            onClick={() => setOutputFormat(format.id)}
+                          >
+                            {format.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="order-summary" aria-label="Estimated order">
+                    <label>
+                      <span>
+                        <Clock size={15} />
+                        {isLocalImageConverter ? "Files" : selectedId === "bank" ? "Estimated pages" : "Pages / images"}
+                      </span>
+                      <input
+                        min="1"
+                        max="500"
+                        type="number"
+                        value={pageCount}
+                        onChange={(event) => setPageCount(Number(event.target.value || 1))}
+                        disabled={isLocalImageConverter}
+                      />
+                    </label>
+                    <div>
+                      <span>{isLocalImageConverter ? "Cost" : "Unlock price"}</span>
+                      <strong>
+                        {isLocalImageConverter ? "Free · browser local" : `${selectedPlan.price} · ${selectedPlan.detail}`}
+                      </strong>
+                    </div>
+                  </div>
+
+                  {!isLocalImageConverter && (
+                    <label className="email-field">
+                      <span>Email for payment receipt</span>
+                      <input
+                        type="email"
+                        inputMode="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                      />
+                    </label>
+                  )}
+
+                  {turnstileSiteKey && !isLocalImageConverter && (
+                    <div className="turnstile-wrap" ref={turnstileRef} aria-label="Human check" />
+                  )}
+
+                  <button className="primary-button full-width" disabled={!canConvert} type="submit">
+                    {converting ? "Checking file..." : isLocalImageConverter ? `Convert to ${selectedOutputLabel}` : "Generate free preview"}
+                    {converting ? <LoaderCircle className="spin" size={18} /> : <Wand2 size={18} />}
+                  </button>
+
+                  {!selectedEnabled && (
+                    <div className="inline-note">
+                      Provider conversion is built but waiting on a production provider key.
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {error && (
+              <div className="inline-alert" role="alert">
+                <AlertCircle size={17} />
+                <span>{error}</span>
+              </div>
+            )}
+          </form>
+
+          <aside className="preview-panel">
+            <div className="preview-header">
+              <div>
+                <FileSpreadsheet size={18} />
+                <strong>{result ? "Preview" : "Next step"}</strong>
+              </div>
+              <span>{result ? previewCountLabel : file ? "Ready when you are" : "Waiting for file"}</span>
+            </div>
+
+            {!file ? (
+              <div className="empty-preview">
+                <Lock size={22} />
+                <strong>Ready for a file.</strong>
+                <p>Preview is free. Unlock only when the result looks right.</p>
+              </div>
+            ) : result?.localDownloadUrl ? (
+              <div className="local-result">
+                <img src={result.localPreviewUrl} alt="Converted image preview" />
                 <div>
-                  <span>{isLocalImageConverter ? "Cost" : "Unlock price"}</span>
-                  <strong>
-                    {isLocalImageConverter ? "Free · browser local" : `${selectedPlan.price} · ${selectedPlan.detail}`}
-                  </strong>
+                  <strong>{result.localFileName}</strong>
+                  <p>This conversion happened in your browser. The image was not uploaded to AI Converter.</p>
+                  <button className="primary-button" onClick={handleUnlock} type="button">
+                    {resultButtonLabel()}
+                    <Download size={17} />
+                  </button>
                 </div>
               </div>
-
-              {!isLocalImageConverter && (
-                <label className="email-field">
-                  <span>Email for payment receipt</span>
-                  <input
-                    type="email"
-                    inputMode="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                  />
-                </label>
-              )}
-
-              {turnstileSiteKey && !isLocalImageConverter && (
-                <div className="turnstile-wrap" ref={turnstileRef} aria-label="Human check" />
-              )}
-
-              <button className="primary-button full-width" disabled={!canConvert} type="submit">
-                {converting ? "Checking file..." : isLocalImageConverter ? `Convert to ${selectedOutputLabel}` : "Generate free preview"}
-                {converting ? <LoaderCircle className="spin" size={18} /> : <Wand2 size={18} />}
-              </button>
-
-              {!selectedEnabled && (
-                <div className="inline-note">
-                  Provider conversion is built but waiting on a production provider key.
-                </div>
-              )}
-
-              {error && (
-                <div className="inline-alert" role="alert">
-                  <AlertCircle size={17} />
-                  <span>{error}</span>
-                </div>
-              )}
-            </form>
-
-            <div className="preview-panel">
-              <div className="preview-header">
-                <div>
-                  <FileSpreadsheet size={18} />
-                  <strong>Sample preview</strong>
-                </div>
-                <span>{previewCountLabel}</span>
+            ) : result?.status === "failed" ? (
+              <div className="failed-state">
+                <AlertCircle size={24} />
+                <strong>No charge.</strong>
+                <p>{result.message || "The converter could not safely extract this file."}</p>
               </div>
-
-              {result?.localDownloadUrl ? (
-                <div className="local-result">
-                  <img src={result.localPreviewUrl} alt="Converted image preview" />
-                  <div>
-                    <strong>{result.localFileName}</strong>
-                    <p>This conversion happened in your browser. The image was not uploaded to AI Converter.</p>
-                    <button className="primary-button" onClick={handleUnlock} type="button">
-                      {resultButtonLabel()}
-                      <Download size={17} />
-                    </button>
-                  </div>
-                </div>
-              ) : result?.status === "failed" ? (
-                <div className="failed-state">
-                  <AlertCircle size={24} />
-                  <strong>No charge.</strong>
-                  <p>{result.message || "The converter could not safely extract this file."}</p>
-                </div>
-              ) : (
-                <>
-                  <div className="table-wrap">
-                    <table>
-                      <thead>
-                        <tr>
+            ) : result ? (
+              <>
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        {previewColumns.slice(0, 5).map((column) => (
+                          <th key={column.key}>{column.label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewRows.map((row, index) => (
+                        <tr key={`${row.date || row.invoice_number || row.description || row.vendor || row.column_1 || "row"}-${index}`}>
                           {previewColumns.slice(0, 5).map((column) => (
-                            <th key={column.key}>{column.label}</th>
+                            <td key={column.key}>{formatCell(row[column.key] ?? row[camelKey(column.key)], column.key)}</td>
                           ))}
                         </tr>
-                      </thead>
-                      <tbody>
-                        {previewRows.map((row, index) => (
-                          <tr key={`${row.date || row.invoice_number || row.description || row.vendor || row.column_1 || "row"}-${index}`}>
-                            {previewColumns.slice(0, 5).map((column) => (
-                              <td key={column.key}>{formatCell(row[column.key] ?? row[camelKey(column.key)], column.key)}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-                  <div className="checks">
-                    {(selected.checks || data.converters[0].checks).map((check) => (
-                      <span key={check}>
-                        <Check size={15} />
-                        {check}
-                      </span>
-                    ))}
-                  </div>
+                <div className="checks">
+                  {(selected.checks || data.converters[0].checks).map((check) => (
+                    <span key={check}>
+                      <Check size={15} />
+                      {check}
+                    </span>
+                  ))}
+                </div>
 
-                  {["preview_ready", "complete", "converting_full"].includes(result?.status) && (
-                    <div className="result-card">
-                      <div>
-                        <span>{result.status === "complete" ? resultFormatLabel(result.outputFormat) : "Preview confidence"}</span>
-                        <strong>{Math.round((result.confidence || 0) * 100)}%</strong>
-                      </div>
-                      <div className="result-actions">
-                        <button className="primary-button" onClick={handleUnlock} disabled={unlocking || result.status === "converting_full"}>
-                          {resultButtonLabel()}
-                          {unlocking ? (
-                            <LoaderCircle className="spin" size={17} />
-                          ) : result.status === "complete" ? (
-                            <Download size={17} />
-                          ) : (
-                            <CreditCard size={17} />
-                          )}
-                        </button>
-                        {result.status === "complete" && result.redoAvailable && (
-                          <button className="secondary-button" onClick={handleRedo} disabled={redoing}>
-                            {redoing ? "Redoing..." : "Stronger redo"}
-                            {redoing ? <LoaderCircle className="spin" size={16} /> : <RefreshCw size={16} />}
-                          </button>
+                {["preview_ready", "complete", "converting_full"].includes(result?.status) && (
+                  <div className="result-card">
+                    <div>
+                      <span>{result.status === "complete" ? resultFormatLabel(result.outputFormat) : "Preview confidence"}</span>
+                      <strong>{Math.round((result.confidence || 0) * 100)}%</strong>
+                    </div>
+                    <div className="result-actions">
+                      <button className="primary-button" onClick={handleUnlock} disabled={unlocking || result.status === "converting_full"}>
+                        {resultButtonLabel()}
+                        {unlocking ? (
+                          <LoaderCircle className="spin" size={17} />
+                        ) : result.status === "complete" ? (
+                          <Download size={17} />
+                        ) : (
+                          <CreditCard size={17} />
                         )}
-                      </div>
+                      </button>
+                      {result.status === "complete" && result.redoAvailable && (
+                        <button className="secondary-button" onClick={handleRedo} disabled={redoing}>
+                          {redoing ? "Redoing..." : "Stronger redo"}
+                          {redoing ? <LoaderCircle className="spin" size={16} /> : <RefreshCw size={16} />}
+                        </button>
+                      )}
                     </div>
-                  )}
-                  {result?.refundStatus && (
-                    <div className="inline-note">
-                      {result.refundStatus === "credit_due"
-                        ? "Credit review is queued because a full CSV was already delivered."
-                        : "Refund review is queued for this failed paid export."}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
+                  </div>
+                )}
+                {result?.refundStatus && (
+                  <div className="inline-note">
+                    {result.refundStatus === "credit_due"
+                      ? "Credit review is queued because a full CSV was already delivered."
+                      : "Refund review is queued for this failed paid export."}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="empty-preview">
+                <Wand2 size={22} />
+                <strong>{selected.title} to {selectedOutputLabel || selected.output}</strong>
+                <p>Generate a free preview before paying for the full file.</p>
+              </div>
+            )}
+          </aside>
         </section>
       </section>
 
