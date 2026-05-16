@@ -21,6 +21,9 @@
   ],
   "vars": {
     "AUTO_REFUNDS_ENABLED": "true",
+    "CLOUDCONVERT_DAILY_JOB_LIMIT": "10",
+    "CLOUDCONVERT_MIN_CREDITS": "1",
+    "CLOUDCONVERT_REQUIRE_CREDIT_CHECK": "true",
     "ENABLE_AZURE_FALLBACK": "false",
     "FREE_DOWNLOADS_ENABLED": "false",
     // Set RATE_LIMIT_SALT as a secret, not a committed var:

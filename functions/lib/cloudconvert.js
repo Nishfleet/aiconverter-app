@@ -11,6 +11,8 @@ import {
 
 const CLOUDCONVERT_API_BASE = "https://api.cloudconvert.com/v2";
 const DEFAULT_TASK_TIMEOUT_SECONDS = 900;
+const DEFAULT_DAILY_JOB_LIMIT = 10;
+const DEFAULT_MIN_CREDITS = 1;
 
 export function hasCloudConvertConfig(env) {
   return Boolean(String(env.CLOUDCONVERT_API_KEY || "").trim());
@@ -29,6 +31,18 @@ export async function startCloudConvertConversion(env, job, arrayBuffer) {
 
   if (job.external_job_id) {
     return pendingResult(job);
+  }
+
+  const guardrails = await assertCloudConvertGuardrails(env);
+  if (!guardrails.ok) {
+    return {
+      ok: false,
+      message: guardrails.message,
+      confidence: 0,
+      rowCount: 0,
+      provider: "cloudconvert",
+      guardrails
+    };
   }
 
   const outputFormat = outputFormatFromResultKey(job.result_key);
@@ -185,6 +199,224 @@ export async function failCloudConvertJob(env, job, message) {
   };
 }
 
+export function cloudConvertDailyJobLimit(env) {
+  return boundedNumber(env.CLOUDCONVERT_DAILY_JOB_LIMIT, DEFAULT_DAILY_JOB_LIMIT, 0, 10000);
+}
+
+export function cloudConvertMinimumCredits(env) {
+  return boundedNumber(env.CLOUDCONVERT_MIN_CREDITS, DEFAULT_MIN_CREDITS, 0, 1000000);
+}
+
+export function cloudConvertRequiresCreditCheck(env) {
+  return String(env.CLOUDCONVERT_REQUIRE_CREDIT_CHECK || "true").toLowerCase() !== "false";
+}
+
+export async function cloudConvertUsageToday(env) {
+  const startedAt = startOfUtcDay();
+  const empty = { started: 0, complete: 0, failed: 0, converting: 0, startedAt };
+  if (!env.AICONVERTER_DB?.prepare) return empty;
+
+  try {
+    const row = await env.AICONVERTER_DB.prepare(
+      `SELECT
+         COUNT(*) AS started,
+         COALESCE(SUM(CASE WHEN status = 'complete' THEN 1 ELSE 0 END), 0) AS complete,
+         COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0) AS failed,
+         COALESCE(SUM(CASE WHEN status = 'converting_full' THEN 1 ELSE 0 END), 0) AS converting
+       FROM jobs
+       WHERE external_provider = 'cloudconvert'
+         AND COALESCE(external_job_id, '') != ''
+         AND created_at >= ?`
+    )
+      .bind(startedAt)
+      .first();
+
+    const counter = await env.AICONVERTER_DB.prepare("SELECT count FROM rate_limits WHERE id = ?")
+      .bind(cloudConvertDailyCounterId(startedAt))
+      .first();
+    const jobsStarted = numberOrZero(row?.started);
+    const reserved = numberOrZero(counter?.count);
+
+    return {
+      started: Math.max(jobsStarted, reserved),
+      jobsStarted,
+      reserved,
+      complete: numberOrZero(row?.complete),
+      failed: numberOrZero(row?.failed),
+      converting: numberOrZero(row?.converting),
+      startedAt
+    };
+  } catch (error) {
+    return { ...empty, error: error?.message || "CloudConvert usage query failed." };
+  }
+}
+
+export async function getCloudConvertAccount(env) {
+  if (!hasCloudConvertConfig(env)) return { ok: false, configured: false, message: "CloudConvert API key is missing." };
+
+  try {
+    const account = await cloudConvertRequest(env, "/users/me");
+    return {
+      ok: true,
+      configured: true,
+      id: String(account.id || ""),
+      credits: numericOrNull(account.credits),
+      creditsUsed: numericOrNull(account.credits_used),
+      username: account.username ? String(account.username) : "",
+      emailDomain: emailDomain(account.email)
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      configured: true,
+      message: error?.message || "CloudConvert account check failed."
+    };
+  }
+}
+
+export async function assertCloudConvertGuardrails(env) {
+  if (!hasCloudConvertConfig(env)) {
+    return { ok: false, message: "CloudConvert API key is missing." };
+  }
+
+  const limit = cloudConvertDailyJobLimit(env);
+  const minimumCredits = cloudConvertMinimumCredits(env);
+  const requireCreditCheck = cloudConvertRequiresCreditCheck(env);
+  const [usage, account] = await Promise.all([cloudConvertUsageToday(env), getCloudConvertAccount(env)]);
+  const remainingToday = limit > 0 ? Math.max(0, limit - usage.started) : null;
+
+  if (usage.error) {
+    return {
+      ok: false,
+      message: `CloudConvert usage check failed: ${usage.error}`,
+      limit,
+      remainingToday,
+      minimumCredits,
+      requireCreditCheck,
+      usage,
+      account
+    };
+  }
+
+  if (limit > 0 && usage.started >= limit) {
+    return {
+      ok: false,
+      message: `CloudConvert daily cap reached (${usage.started}/${limit}).`,
+      limit,
+      remainingToday,
+      minimumCredits,
+      requireCreditCheck,
+      usage,
+      account
+    };
+  }
+
+  if (account.ok && account.credits !== null && account.credits <= minimumCredits) {
+    return {
+      ok: false,
+      message: `CloudConvert credits are at or below the reserve (${account.credits}/${minimumCredits}).`,
+      limit,
+      remainingToday,
+      minimumCredits,
+      requireCreditCheck,
+      usage,
+      account
+    };
+  }
+
+  if (account.ok && account.credits === null && requireCreditCheck) {
+    return {
+      ok: false,
+      message: "CloudConvert credit check did not return a credit balance.",
+      limit,
+      remainingToday,
+      minimumCredits,
+      requireCreditCheck,
+      usage,
+      account
+    };
+  }
+
+  if (!account.ok && requireCreditCheck) {
+    return {
+      ok: false,
+      message: `CloudConvert credit check failed: ${account.message || "unknown error"}`,
+      limit,
+      remainingToday,
+      minimumCredits,
+      requireCreditCheck,
+      usage,
+      account
+    };
+  }
+
+  const reservation = await reserveCloudConvertDailySlot(env, limit);
+  if (!reservation.ok) {
+    return {
+      ok: false,
+      message: reservation.message,
+      limit,
+      remainingToday: reservation.remainingToday,
+      minimumCredits,
+      requireCreditCheck,
+      usage: { ...usage, started: Math.max(usage.started, reservation.count || 0) },
+      account
+    };
+  }
+
+  return {
+    ok: true,
+    message: "",
+    limit,
+    remainingToday: reservation.remainingToday,
+    minimumCredits,
+    requireCreditCheck,
+    usage: { ...usage, started: Math.max(usage.started, reservation.count || 0), reserved: reservation.count || usage.reserved || 0 },
+    account
+  };
+}
+
+async function reserveCloudConvertDailySlot(env, limit) {
+  if (limit <= 0) return { ok: true, count: 0, remainingToday: null };
+  const windowStart = startOfUtcDay();
+  const now = new Date().toISOString();
+  const expiresAt = new Date(Date.parse(windowStart) + 48 * 60 * 60 * 1000).toISOString();
+  const id = cloudConvertDailyCounterId(windowStart);
+
+  try {
+    const row = await env.AICONVERTER_DB.prepare(
+      `INSERT INTO rate_limits (id, window_start, count, expires_at, updated_at)
+       VALUES (?, ?, 1, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET count = count + 1, expires_at = ?, updated_at = ?
+       WHERE count < ?
+       RETURNING count`
+    )
+      .bind(id, windowStart, expiresAt, now, expiresAt, now, limit)
+      .first();
+
+    if (row?.count) {
+      const count = numberOrZero(row.count);
+      return { ok: true, count, remainingToday: Math.max(0, limit - count) };
+    }
+
+    const current = await env.AICONVERTER_DB.prepare("SELECT count FROM rate_limits WHERE id = ?").bind(id).first();
+    const count = numberOrZero(current?.count);
+    return {
+      ok: false,
+      count,
+      remainingToday: 0,
+      message: `CloudConvert daily cap reached (${count}/${limit}).`
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      count: 0,
+      remainingToday: 0,
+      message: `CloudConvert daily cap reservation failed: ${error?.message || "unknown error"}`
+    };
+  }
+}
+
 function pendingResult(job, status = "processing") {
   const outputFormat = outputFormatFromResultKey(job.result_key);
   return {
@@ -248,4 +480,33 @@ function findTask(job, operation) {
 function cloudConvertErrorMessage(job) {
   const failed = (job.tasks || []).find((task) => task.status === "error" || task.message || task.code);
   return failed?.message || failed?.code || "CloudConvert could not complete this conversion.";
+}
+
+function boundedNumber(value, fallback, min, max) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(max, Math.floor(parsed)));
+}
+
+function numberOrZero(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function numericOrNull(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function emailDomain(email) {
+  const parts = String(email || "").split("@");
+  return parts.length === 2 ? parts[1] : "";
+}
+
+function startOfUtcDay(date = new Date()) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())).toISOString();
+}
+
+function cloudConvertDailyCounterId(windowStart) {
+  return `cloudconvert:daily:${String(windowStart || "").slice(0, 10)}`;
 }

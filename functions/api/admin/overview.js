@@ -1,7 +1,14 @@
 import { json, methodNotAllowed, serverError } from "../../lib/http.js";
-import { hasCloudConvertConfig } from "../../lib/cloudconvert.js";
+import {
+  cloudConvertDailyJobLimit,
+  cloudConvertMinimumCredits,
+  cloudConvertRequiresCreditCheck,
+  cloudConvertUsageToday,
+  getCloudConvertAccount,
+  hasCloudConvertConfig
+} from "../../lib/cloudconvert.js";
 import { dodoProductIdForPlan, hasDodoApi, hasDodoWebhookSecret } from "../../lib/dodo.js";
-import { hasAzureConfig, hasExtractorBinding, hasMistralConfig, hasRequiredBindings, PLANS } from "../../lib/jobs.js";
+import { hasAzureConfig, hasExtractorBinding, hasMistralConfig, hasRequiredBindings, PLANS, rateLimitSaltStatus } from "../../lib/jobs.js";
 
 export function onRequestPost() {
   return methodNotAllowed("GET");
@@ -15,7 +22,26 @@ export async function onRequestGet({ request, env }) {
   const auth = authorizeAdmin(request, env);
   if (!auth.ok) return json({ error: auth.message }, { status: auth.status });
 
-  const [jobStatus, watchlist, support, payments, refunds, webhooks] = await Promise.all([
+  const health = runtimeHealth(env);
+  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const stuckBefore = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+
+  const [
+    jobStatus,
+    watchlist,
+    support,
+    payments,
+    refunds,
+    webhooks,
+    usage24h,
+    providerFailures,
+    stuckProvider,
+    webhookFailures,
+    webhookErrorCount,
+    unmatchedPayments,
+    refundDue,
+    cloudConvert
+  ] = await Promise.all([
     queryAll(env, "SELECT status, COUNT(*) AS count FROM jobs GROUP BY status ORDER BY count DESC"),
     queryAll(
       env,
@@ -54,18 +80,105 @@ export async function onRequestGet({ request, env }) {
        FROM dodo_webhook_events
        ORDER BY updated_at DESC
        LIMIT 25`
-    )
+    ),
+    queryFirst(
+      env,
+      `SELECT
+         COUNT(*) AS total,
+         COALESCE(SUM(CASE WHEN status = 'preview_ready' THEN 1 ELSE 0 END), 0) AS preview_ready,
+         COALESCE(SUM(CASE WHEN status = 'complete' THEN 1 ELSE 0 END), 0) AS complete,
+         COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0) AS failed,
+         COALESCE(SUM(CASE WHEN status = 'converting_full' THEN 1 ELSE 0 END), 0) AS converting,
+         COALESCE(SUM(CASE WHEN external_provider = 'cloudconvert' THEN 1 ELSE 0 END), 0) AS cloudconvert_total,
+         COALESCE(SUM(CASE WHEN external_provider = 'cloudconvert' AND status = 'complete' THEN 1 ELSE 0 END), 0) AS cloudconvert_complete,
+         COALESCE(SUM(CASE WHEN external_provider = 'cloudconvert' AND status = 'failed' THEN 1 ELSE 0 END), 0) AS cloudconvert_failed,
+         COALESCE(SUM(CASE WHEN external_provider = 'cloudconvert' AND status = 'converting_full' THEN 1 ELSE 0 END), 0) AS cloudconvert_converting
+       FROM jobs
+       WHERE created_at >= ?`,
+      [since24h]
+    ),
+    queryAll(
+      env,
+      `SELECT id, status, converter_id, plan_id, external_provider, external_status, substr(error, 1, 240) AS error, updated_at
+       FROM jobs
+       WHERE (external_provider = 'cloudconvert' OR extractor LIKE 'cloudconvert%')
+         AND (status = 'failed' OR COALESCE(external_status, '') IN ('error', 'failed'))
+       ORDER BY updated_at DESC
+       LIMIT 25`
+    ),
+    queryAll(
+      env,
+      `SELECT id, status, converter_id, plan_id, external_provider, external_status, updated_at
+       FROM jobs
+       WHERE external_provider = 'cloudconvert'
+         AND status = 'converting_full'
+         AND updated_at < ?
+       ORDER BY updated_at ASC
+       LIMIT 25`,
+      [stuckBefore]
+    ),
+    queryAll(
+      env,
+      `SELECT webhook_id, event_type, status, received_count, error, updated_at
+       FROM dodo_webhook_events
+       WHERE status = 'error' OR COALESCE(error, '') != ''
+       ORDER BY updated_at DESC
+       LIMIT 25`
+    ),
+    queryFirst(
+      env,
+      `SELECT COUNT(*) AS count
+       FROM dodo_webhook_events
+       WHERE (status = 'error' OR COALESCE(error, '') != '')
+         AND updated_at >= ?`,
+      [since24h]
+    ),
+    queryAll(
+      env,
+      `SELECT event_type, job_id, payment_id, checkout_session_id, plan_id, status, match_status, created_at
+       FROM dodo_payment_events
+       WHERE COALESCE(match_status, '') NOT IN ('', 'matched')
+       ORDER BY created_at DESC
+       LIMIT 25`
+    ),
+    queryAll(
+      env,
+      `SELECT id, payment_id, refund_status, refund_id, error, updated_at
+       FROM jobs
+       WHERE COALESCE(refund_status, '') IN ('refund_due', 'credit_due', 'requesting')
+       ORDER BY updated_at DESC
+       LIMIT 25`
+    ),
+    buildCloudConvertOverview(env)
   ]);
+  const alerts = buildAlerts({
+    health,
+    cloudConvert,
+    usage24h,
+    providerFailures,
+    stuckProvider,
+    webhookErrorCount,
+    unmatchedPayments,
+    refundDue
+  });
 
   return json({
     ok: true,
     generatedAt: new Date().toISOString(),
-    health: runtimeHealth(env),
+    health,
+    alerts,
+    cloudConvert,
+    usage24h,
     jobStatus,
     watchlist,
+    providerFailures,
+    stuckProvider,
     support,
     payments,
+    unmatchedPayments,
     refunds,
+    refundDue,
+    webhookFailures,
     webhooks
   });
 }
@@ -85,6 +198,7 @@ function runtimeHealth(env) {
   if (!hasExtractorBinding(env)) missing.push("OCR fallback provider");
   if (!env.TURNSTILE_SITE_KEY || !env.TURNSTILE_SECRET_KEY) missing.push("Turnstile keys");
   if (!hasCloudConvertConfig(env)) missing.push("CloudConvert API key");
+  if (!rateLimitSaltStatus(env).ok) missing.push("strong rate-limit salt");
 
   return {
     status: missing.length ? "attention" : "ready",
@@ -119,12 +233,158 @@ function runtimeHealth(env) {
   };
 }
 
-async function queryAll(env, sql) {
+async function buildCloudConvertOverview(env) {
+  const configured = hasCloudConvertConfig(env);
+  const dailyLimit = cloudConvertDailyJobLimit(env);
+  const minCredits = cloudConvertMinimumCredits(env);
+  const requireCreditCheck = cloudConvertRequiresCreditCheck(env);
+  const [usageToday, account] = await Promise.all([cloudConvertUsageToday(env), getCloudConvertAccount(env)]);
+  return {
+    configured,
+    dailyLimit,
+    minCredits,
+    requireCreditCheck,
+    usageToday: {
+      ...usageToday,
+      remaining: dailyLimit > 0 ? Math.max(0, dailyLimit - Number(usageToday.started || 0)) : null
+    },
+    account
+  };
+}
+
+function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckProvider, webhookErrorCount, unmatchedPayments, refundDue }) {
+  const alerts = [];
+  if (health.status !== "ready") {
+    alerts.push({
+      severity: "critical",
+      title: "Health is not green",
+      detail: (health.missing || []).join(", ") || "Runtime health needs attention."
+    });
+  }
+
+  if (!cloudConvert.configured) {
+    alerts.push({ severity: "critical", title: "CloudConvert is not configured", detail: "Provider conversions are blocked." });
+  } else {
+    const usage = cloudConvert.usageToday || {};
+    if (usage.error) {
+      alerts.push({
+        severity: "critical",
+        title: "CloudConvert usage check failed",
+        detail: usage.error
+      });
+    }
+    if (cloudConvert.dailyLimit > 0 && Number(usage.started || 0) >= cloudConvert.dailyLimit) {
+      alerts.push({
+        severity: "critical",
+        title: "CloudConvert daily cap reached",
+        detail: `${usage.started}/${cloudConvert.dailyLimit} provider jobs have started today.`
+      });
+    } else if (cloudConvert.dailyLimit > 0 && Number(usage.remaining || 0) <= 2) {
+      alerts.push({
+        severity: "warning",
+        title: "CloudConvert daily cap nearly used",
+        detail: `${usage.remaining} provider job${Number(usage.remaining) === 1 ? "" : "s"} left today.`
+      });
+    }
+
+    const account = cloudConvert.account || {};
+    if (account.ok && account.credits !== null && account.credits !== undefined) {
+      if (Number(account.credits) <= cloudConvert.minCredits) {
+        alerts.push({
+          severity: "critical",
+          title: "CloudConvert credits are low",
+          detail: `${account.credits} credits available; reserve is ${cloudConvert.minCredits}.`
+        });
+      } else if (Number(account.credits) <= cloudConvert.minCredits + 5) {
+        alerts.push({
+          severity: "warning",
+          title: "CloudConvert credits are near reserve",
+          detail: `${account.credits} credits available.`
+        });
+      }
+    } else if (account.ok && cloudConvert.requireCreditCheck) {
+      alerts.push({
+        severity: "critical",
+        title: "CloudConvert credit balance missing",
+        detail: "CloudConvert account responded without a credit balance."
+      });
+    } else if (cloudConvert.requireCreditCheck) {
+      alerts.push({
+        severity: "critical",
+        title: "CloudConvert credit check failed",
+        detail: account.message || "Could not read CloudConvert account credits."
+      });
+    }
+  }
+
+  const webhookErrors = numberOrZero(webhookErrorCount?.count);
+  if (webhookErrors > 0) {
+    alerts.push({
+      severity: "critical",
+      title: "Dodo webhook failures",
+      detail: `${webhookErrors} failed webhook event${webhookErrors === 1 ? "" : "s"} in the last 24 hours.`
+    });
+  }
+
+  const providerFailed = numberOrZero(usage24h?.cloudconvert_failed);
+  if (providerFailed > 0) {
+    alerts.push({
+      severity: "warning",
+      title: "Provider conversion failures",
+      detail: `${providerFailed} CloudConvert failure${providerFailed === 1 ? "" : "s"} need review.`
+    });
+  }
+
+  if ((stuckProvider || []).length > 0) {
+    alerts.push({
+      severity: "warning",
+      title: "Provider jobs are stuck",
+      detail: `${stuckProvider.length} CloudConvert job${stuckProvider.length === 1 ? "" : "s"} have been converting for more than 15 minutes.`
+    });
+  }
+
+  if ((unmatchedPayments || []).length > 0) {
+    alerts.push({
+      severity: "warning",
+      title: "Unmatched Dodo payments",
+      detail: `${unmatchedPayments.length} payment event${unmatchedPayments.length === 1 ? "" : "s"} did not match cleanly.`
+    });
+  }
+
+  if ((refundDue || []).length > 0) {
+    alerts.push({
+      severity: "warning",
+      title: "Refund or credit due",
+      detail: `${refundDue.length} job${refundDue.length === 1 ? "" : "s"} need refund/credit follow-up.`
+    });
+  }
+
+  return alerts.length
+    ? alerts
+    : [{ severity: "ready", title: "No active alerts", detail: "Health, provider, payment, and refund checks are clear." }];
+}
+
+function numberOrZero(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+async function queryAll(env, sql, binds = []) {
   try {
-    const result = await env.AICONVERTER_DB.prepare(sql).all();
+    const statement = env.AICONVERTER_DB.prepare(sql);
+    const result = await (binds.length ? statement.bind(...binds) : statement).all();
     return result.results || [];
   } catch (error) {
     return [{ error: error?.message || "Query failed." }];
+  }
+}
+
+async function queryFirst(env, sql, binds = []) {
+  try {
+    const statement = env.AICONVERTER_DB.prepare(sql);
+    return (await (binds.length ? statement.bind(...binds) : statement).first()) || {};
+  } catch (error) {
+    return { error: error?.message || "Query failed." };
   }
 }
 

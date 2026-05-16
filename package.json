@@ -10,6 +10,7 @@
     "stress:converters": "node scripts/stress-converters.mjs",
     "stress:checkout": "node scripts/stress-checkout-live.mjs",
     "stress:live": "node scripts/stress-live.mjs",
+    "monitor:live": "node scripts/monitor-live.mjs",
     "readiness:live": "node scripts/readiness-live.mjs",
     "stress:all": "npm run stress:converters && npm run stress:live && npm run stress:checkout && npm run readiness:live",
     "preview": "vite preview --host 0.0.0.0",

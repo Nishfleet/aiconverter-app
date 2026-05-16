@@ -23,14 +23,47 @@ form?.addEventListener("submit", async (event) => {
 function renderOverview(payload) {
   const health = payload.health || {};
   return [
+    renderAlerts(payload.alerts || []),
     renderHealth(health, payload.generatedAt),
+    renderCloudConvert(payload.cloudConvert || {}),
+    renderUsage(payload.usage24h || {}),
     renderStatusCounts(payload.jobStatus || []),
     renderTable("Watchlist", payload.watchlist || [], ["id", "status", "converter_id", "plan_id", "row_count", "confidence", "refund_status", "error", "updated_at"]),
+    renderTable("Provider failures", payload.providerFailures || [], ["id", "status", "converter_id", "plan_id", "external_provider", "external_status", "error", "updated_at"]),
+    renderTable("Stuck provider jobs", payload.stuckProvider || [], ["id", "status", "converter_id", "plan_id", "external_provider", "external_status", "updated_at"]),
     renderTable("Open support", payload.support || [], ["id", "job_id", "email", "category", "status", "message_excerpt", "created_at"]),
     renderTable("Dodo payments", payload.payments || [], ["event_type", "job_id", "payment_id", "plan_id", "status", "amount", "currency", "match_status", "created_at"]),
+    renderTable("Unmatched Dodo payments", payload.unmatchedPayments || [], ["event_type", "job_id", "payment_id", "checkout_session_id", "plan_id", "status", "match_status", "created_at"]),
     renderTable("Refunds", payload.refunds || [], ["job_id", "payment_id", "refund_id", "status", "reason", "created_at"]),
+    renderTable("Refund or credit due", payload.refundDue || [], ["id", "payment_id", "refund_status", "refund_id", "error", "updated_at"]),
+    renderTable("Webhook failures", payload.webhookFailures || [], ["webhook_id", "event_type", "status", "received_count", "error", "updated_at"]),
     renderTable("Webhooks", payload.webhooks || [], ["webhook_id", "event_type", "status", "received_count", "error", "updated_at"])
   ].join("");
+}
+
+function renderAlerts(alerts) {
+  return `
+    <section class="admin-panel">
+      <div class="admin-panel-head">
+        <div>
+          <h2>Alerts</h2>
+          <p>Health, spend, provider, and payment checks</p>
+        </div>
+      </div>
+      <div class="admin-alert-list">
+        ${
+          alerts.length
+            ? alerts.map((alert) => `
+                <article class="admin-alert ${severityClass(alert.severity)}">
+                  <strong>${escapeHtml(alert.title || "Alert")}</strong>
+                  <span>${escapeHtml(alert.detail || "")}</span>
+                </article>
+              `).join("")
+            : '<div class="admin-empty">No alerts returned.</div>'
+        }
+      </div>
+    </section>
+  `;
 }
 
 function renderHealth(health, generatedAt) {
@@ -66,6 +99,73 @@ function healthCard(label, value) {
     <div class="admin-health-card">
       <span>${escapeHtml(label)}</span>
       <strong>${escapeHtml(value)}</strong>
+    </div>
+  `;
+}
+
+function renderCloudConvert(provider) {
+  const usage = provider.usageToday || {};
+  const account = provider.account || {};
+  const accountLabel = account.ok ? "Connected" : provider.configured ? "Check failed" : "Missing";
+  const credits = account.ok && account.credits !== null && account.credits !== undefined ? account.credits : "Unknown";
+  const remaining = usage.remaining === null || usage.remaining === undefined ? "Unlimited" : usage.remaining;
+
+  return `
+    <section class="admin-panel">
+      <div class="admin-panel-head">
+        <div>
+          <h2>CloudConvert guardrails</h2>
+          <p>Daily cap, credit reserve, and account status</p>
+        </div>
+        <span class="admin-badge ${account.ok && provider.configured ? "is-ready" : "is-attention"}">${escapeHtml(accountLabel)}</span>
+      </div>
+      <div class="admin-metric-grid">
+        ${metricCard("Credits", credits)}
+        ${metricCard("Minimum reserve", provider.minCredits ?? "-")}
+        ${metricCard("Started today", `${usage.started || 0}/${provider.dailyLimit || "off"}`)}
+        ${metricCard("Remaining today", remaining)}
+        ${metricCard("Completed today", usage.complete || 0)}
+        ${metricCard("Failed today", usage.failed || 0)}
+        ${metricCard("Still converting", usage.converting || 0)}
+        ${metricCard("Credit guard", provider.requireCreditCheck ? "Required" : "Advisory")}
+      </div>
+      ${
+        account.message
+          ? `<div class="admin-missing"><strong>Provider note:</strong> ${escapeHtml(account.message)}</div>`
+          : ""
+      }
+    </section>
+  `;
+}
+
+function renderUsage(usage) {
+  return `
+    <section class="admin-panel">
+      <div class="admin-panel-head">
+        <div>
+          <h2>Usage dashboard</h2>
+          <p>Last 24 hours</p>
+        </div>
+      </div>
+      <div class="admin-metric-grid">
+        ${metricCard("All jobs", usage.total || 0)}
+        ${metricCard("Preview ready", usage.preview_ready || 0)}
+        ${metricCard("Complete", usage.complete || 0)}
+        ${metricCard("Failed", usage.failed || 0)}
+        ${metricCard("Converting", usage.converting || 0)}
+        ${metricCard("Provider jobs", usage.cloudconvert_total || 0)}
+        ${metricCard("Provider complete", usage.cloudconvert_complete || 0)}
+        ${metricCard("Provider failed", usage.cloudconvert_failed || 0)}
+      </div>
+    </section>
+  `;
+}
+
+function metricCard(label, value) {
+  return `
+    <div class="admin-metric-card">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(String(value))}</strong>
     </div>
   `;
 }
@@ -123,6 +223,12 @@ function formatCell(value, column) {
   if (column === "confidence") return `${Math.round(Number(value || 0) * 100)}%`;
   if (column === "amount") return Number(value || 0) ? `$${(Number(value) / 100).toFixed(2)}` : "-";
   return escapeHtml(String(value));
+}
+
+function severityClass(severity) {
+  if (severity === "critical") return "is-critical";
+  if (severity === "warning") return "is-warning";
+  return "is-ready";
 }
 
 function labelFor(value) {

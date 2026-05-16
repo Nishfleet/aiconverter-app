@@ -466,6 +466,12 @@ test("universal upload validation accepts provider document, media, and archive 
 test("CloudConvert start uses import/upload and records an async provider job", async () => {
   const fetchCalls = mockCloudConvertFetch([
     {
+      match: "https://api.cloudconvert.com/v2/users/me",
+      response: {
+        data: { id: "user-1", credits: 20 }
+      }
+    },
+    {
       match: "https://api.cloudconvert.com/v2/jobs",
       response: {
         data: {
@@ -496,11 +502,55 @@ test("CloudConvert start uses import/upload and records an async provider job", 
 
   assert.equal(result.pending, true);
   assert.equal(result.status, "converting_full");
-  assert.equal(fetchCalls.length, 2);
-  assert.deepEqual(fetchCalls[0].body.tasks["convert-file"].output_format, "pdf");
-  assert.equal(fetchCalls[0].body.tasks["convert-file"].input, "upload-source");
-  assert.equal(fetchCalls[1].body instanceof FormData, true);
+  assert.equal(fetchCalls.length, 3);
+  assert.deepEqual(fetchCalls[1].body.tasks["convert-file"].output_format, "pdf");
+  assert.equal(fetchCalls[1].body.tasks["convert-file"].input, "upload-source");
+  assert.equal(fetchCalls[2].body instanceof FormData, true);
   assert.equal(env.updates.at(-1).fields.external_job_id, "cc-job-1");
+  restoreFetch();
+});
+
+test("CloudConvert daily cap blocks new provider jobs before conversion spend", async () => {
+  const fetchCalls = mockCloudConvertFetch([
+    {
+      match: "https://api.cloudconvert.com/v2/users/me",
+      response: {
+        data: { id: "user-1", credits: 20 }
+      }
+    }
+  ]);
+  const env = mockJobEnv({
+    cloudConvertUsage: { started: 10, complete: 8, failed: 1, converting: 1 },
+    vars: { CLOUDCONVERT_DAILY_JOB_LIMIT: "10" }
+  });
+  const result = await startCloudConvertConversion(env, mockUniversalJob(), new Uint8Array([1, 2, 3]).buffer);
+
+  assert.equal(result.ok, false);
+  assert.match(result.message, /daily cap reached/i);
+  assert.equal(fetchCalls.length, 1);
+  assert.equal(fetchCalls[0].url, "https://api.cloudconvert.com/v2/users/me");
+  assert.equal(env.updates.length, 0);
+  restoreFetch();
+});
+
+test("CloudConvert credit reserve blocks new provider jobs before conversion spend", async () => {
+  const fetchCalls = mockCloudConvertFetch([
+    {
+      match: "https://api.cloudconvert.com/v2/users/me",
+      response: {
+        data: { id: "user-1", credits: 1 }
+      }
+    }
+  ]);
+  const env = mockJobEnv({
+    vars: { CLOUDCONVERT_MIN_CREDITS: "1", CLOUDCONVERT_DAILY_JOB_LIMIT: "10" }
+  });
+  const result = await startCloudConvertConversion(env, mockUniversalJob(), new Uint8Array([1, 2, 3]).buffer);
+
+  assert.equal(result.ok, false);
+  assert.match(result.message, /credits are at or below/i);
+  assert.equal(fetchCalls.length, 1);
+  assert.equal(env.updates.length, 0);
   restoreFetch();
 });
 
@@ -591,16 +641,41 @@ function mockCloudConvertFetch(sequence) {
   return calls;
 }
 
-function mockJobEnv() {
+function mockJobEnv(options = {}) {
+  let dailyCounter = options.cloudConvertReserved || 0;
   const env = {
     CLOUDCONVERT_API_KEY: "test-key",
+    ...(options.vars || {}),
     updates: [],
     bucketPuts: [],
     AICONVERTER_DB: {
-      prepare() {
+      prepare(sql) {
         return {
           bind(...values) {
             return {
+              async first() {
+                const text = String(sql);
+                if (text.includes("COUNT(*) AS started")) {
+                  return {
+                    started: options.cloudConvertUsage?.started || 0,
+                    complete: options.cloudConvertUsage?.complete || 0,
+                    failed: options.cloudConvertUsage?.failed || 0,
+                    converting: options.cloudConvertUsage?.converting || 0
+                  };
+                }
+                if (text.includes("RETURNING count")) {
+                  const limit = Number(values.at(-1));
+                  if (dailyCounter < limit) {
+                    dailyCounter += 1;
+                    return { count: dailyCounter };
+                  }
+                  return null;
+                }
+                if (text.includes("SELECT count FROM rate_limits")) {
+                  return { count: dailyCounter };
+                }
+                return {};
+              },
               async run() {
                 env.updates.push({ values, fields: extractUpdateFields(values) });
               }
