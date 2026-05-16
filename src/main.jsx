@@ -177,12 +177,12 @@ function App() {
     () => data.converters.find((converter) => converter.id === selectedId),
     [selectedId]
   );
-  const cloudConvertReady = Boolean(capabilities.cloudConvert);
-  const converterIsEnabled = (converter) => !isProviderConverter(converter) || cloudConvertReady;
+  const universalProviderReady = Boolean(capabilities.universalProvider || capabilities.cloudConvert || capabilities.convertioBackup);
+  const converterIsEnabled = (converter) => !isProviderConverter(converter) || universalProviderReady;
   const liveConverters = useMemo(() => data.converters.filter(isLiveConverter), []);
   const selectableConverters = useMemo(
     () => liveConverters.filter(converterIsEnabled),
-    [liveConverters, cloudConvertReady]
+    [liveConverters, universalProviderReady]
   );
   const compatibleConverters = useMemo(
     () => (file ? selectableConverters.filter((converter) => converterAcceptsFile(converter, file)) : []),
@@ -823,7 +823,7 @@ function App() {
 
               {!selectedEnabled && (
                 <div className="inline-note">
-                  Provider conversion is built but waiting on the production CloudConvert key.
+                  Provider conversion is built but waiting on a production provider key.
                 </div>
               )}
 

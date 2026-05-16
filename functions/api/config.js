@@ -1,5 +1,6 @@
 import { json } from "../lib/http.js";
 import { hasCloudConvertConfig } from "../lib/cloudconvert.js";
+import { hasConvertioConfig } from "../lib/convertio.js";
 
 export function onRequestPost() {
   return json({ error: "Method not allowed. Use GET." }, { status: 405, headers: { Allow: "GET" } });
@@ -15,7 +16,9 @@ export function onRequestGet({ env }) {
         : "live"
     },
     capabilities: {
-      cloudConvert: hasCloudConvertConfig(env)
+      cloudConvert: hasCloudConvertConfig(env),
+      convertioBackup: hasConvertioConfig(env),
+      universalProvider: hasCloudConvertConfig(env) || hasConvertioConfig(env)
     }
   });
 }

@@ -62,8 +62,8 @@ Use the safe-deploy wrapper on Nish's machine before live commands.
 - Dodo checkout creation is live; a real paid card/webhook/download drill must pass before scaling paid traffic.
 - Source files are private and short-retention.
 - No human review queue.
-- CloudConvert-backed universal conversion is implemented and activates only when the production `CLOUDCONVERT_API_KEY` secret is configured.
-- CloudConvert-backed universal conversion is implemented when the production `CLOUDCONVERT_API_KEY` secret is configured.
+- Provider-backed universal conversion is implemented and activates when the production `CLOUDCONVERT_API_KEY` or `CONVERTIO_API_KEY` secret is configured.
+- CloudConvert is the primary universal provider route when the production `CLOUDCONVERT_API_KEY` secret is configured.
 - Convertio backup conversion is implemented when the production `CONVERTIO_API_KEY` secret is configured.
 - CloudConvert daily cap/credit reserve and Convertio daily cap guardrails are enforced before new provider jobs start.
 - Pixel-perfect screenshot-to-code is not live.

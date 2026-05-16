@@ -3,4 +3,5 @@ dist/
 .wrangler/
 .dev.vars
 .env
+.monitor.env
 .DS_Store

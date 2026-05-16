@@ -170,11 +170,11 @@
       "id": "universal-file",
       "title": "Universal file",
       "input": "Docs / media / archives",
-      "output": "200+ formats",
+      "output": "Provider formats",
       "state": "Provider",
       "mode": "provider-cloudconvert",
       "accept": "application/pdf,application/msword,application/rtf,text/plain,text/markdown,text/html,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/vnd.ms-powerpoint,application/vnd.oasis.opendocument.text,application/vnd.oasis.opendocument.spreadsheet,application/vnd.oasis.opendocument.presentation,image/png,image/jpeg,image/webp,image/gif,image/bmp,image/tiff,image/heic,image/heif,image/svg+xml,audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/ogg,audio/flac,audio/webm,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/x-ms-wmv,video/webm,application/zip,application/x-7z-compressed,application/x-tar,application/gzip,application/vnd.rar,application/x-rar-compressed,.pdf,.doc,.docx,.rtf,.txt,.md,.html,.htm,.csv,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.png,.jpg,.jpeg,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,.svg,.mp3,.wav,.m4a,.aac,.ogg,.flac,.webm,.mp4,.mov,.avi,.mkv,.wmv,.zip,.7z,.tar,.gz,.rar",
-      "description": "Convert documents, images, audio, video, and archives through CloudConvert after a free route preview. Long media jobs run in the background and update automatically.",
+      "description": "Convert documents, images, audio, video, and archives through CloudConvert first, with Convertio as a configured backup route. Long media jobs run in the background and update automatically.",
       "outputFormats": [
         { "id": "pdf", "label": "PDF" },
         { "id": "docx", "label": "DOCX" },

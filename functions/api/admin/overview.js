@@ -1,4 +1,5 @@
 import { json, methodNotAllowed, serverError } from "../../lib/http.js";
+import { authorizeAdmin } from "../../lib/admin-auth.js";
 import {
   cloudConvertDailyJobLimit,
   cloudConvertMinimumCredits,
@@ -350,7 +351,7 @@ function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckPr
     alerts.push({
       severity: "warning",
       title: "Provider conversion failures",
-      detail: `${providerFailed} CloudConvert failure${providerFailed === 1 ? "" : "s"} need review.`
+      detail: `${providerFailed} provider failure${providerFailed === 1 ? "" : "s"} need review.`
     });
   }
 
@@ -358,7 +359,7 @@ function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckPr
     alerts.push({
       severity: "warning",
       title: "Provider jobs are stuck",
-      detail: `${stuckProvider.length} CloudConvert job${stuckProvider.length === 1 ? "" : "s"} have been converting for more than 15 minutes.`
+      detail: `${stuckProvider.length} provider job${stuckProvider.length === 1 ? "" : "s"} have been converting for more than 15 minutes.`
     });
   }
 
@@ -405,28 +406,4 @@ async function queryFirst(env, sql, binds = []) {
   } catch (error) {
     return { error: error?.message || "Query failed." };
   }
-}
-
-function authorizeAdmin(request, env) {
-  const expected = String(env.ADMIN_TOKEN || "").trim();
-  if (expected.length < 24) {
-    return { ok: false, status: 503, message: "Admin token is not configured." };
-  }
-
-  const authorization = request.headers.get("Authorization") || "";
-  const bearer = authorization.match(/^Bearer\s+(.+)$/i)?.[1] || "";
-  const supplied = String(bearer || request.headers.get("X-Admin-Token") || "").trim();
-
-  return timingSafeEqual(supplied, expected)
-    ? { ok: true, status: 200, message: "" }
-    : { ok: false, status: 401, message: "Unauthorized." };
-}
-
-function timingSafeEqual(a, b) {
-  if (!a || !b || a.length !== b.length) return false;
-  let result = 0;
-  for (let index = 0; index < a.length; index += 1) {
-    result |= a.charCodeAt(index) ^ b.charCodeAt(index);
-  }
-  return result === 0;
 }

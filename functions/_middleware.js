@@ -7,7 +7,7 @@ description: Convert bank statement PDFs, receipts, invoices, screenshots, docum
 
 # AI Converter
 
-AI Converter converts sensitive files into useful CSV, JSON, Markdown, transcript, HTML, SVG, image, document, media, or archive outputs. Bank statements are the first live AI module. Receipts, invoices, screenshot tables, audio transcripts, document Markdown, and screenshot-to-HTML are beta AI modules. Common image-format and raster-to-SVG conversion is browser-local. Universal provider conversion activates only when CloudConvert is configured.
+AI Converter converts sensitive files into useful CSV, JSON, Markdown, transcript, HTML, SVG, image, document, media, or archive outputs. Bank statements are the first live AI module. Receipts, invoices, screenshot tables, audio transcripts, document Markdown, and screenshot-to-HTML are beta AI modules. Common image-format and raster-to-SVG conversion is browser-local. Universal provider conversion activates when CloudConvert or the Convertio backup route is configured.
 
 ## Live and beta modules
 
@@ -26,7 +26,7 @@ Live:
 - Free-preview reuse, payment reuse, and redo abuse are rate-limited.
 - PNG/JPG/WEBP to PNG/JPG/WEBP conversion runs locally in the browser and does not upload the image.
 - PNG/JPG/WEBP to SVG posterized conversion runs locally in the browser and does not upload the image.
-- Universal provider conversion for documents, images, audio, video, and archives runs through CloudConvert when configured. Long provider jobs run in the background and update automatically.
+- Universal provider conversion for documents, images, audio, video, and archives runs through CloudConvert first, with Convertio as a configured backup route. Long provider jobs run in the background and update automatically.
 
 Beta:
 
@@ -48,7 +48,7 @@ Beta:
 ## Upcoming modules
 
 - AI-monitored email intake after the direct upload workflow is stable.
-- Pixel-perfect image-to-code is not claimed. Universal provider conversion is available only when CloudConvert is configured and the route preview accepts the file.
+- Pixel-perfect image-to-code is not claimed. Universal provider conversion is available only when a provider route is configured and the route preview accepts the file.
 
 ## Security posture
 
@@ -80,7 +80,7 @@ description: AI Converter is a preview-first AI conversion workflow with bank st
 
 AI Converter is a focused web converter for sensitive files that need spreadsheet-ready CSV, structured JSON, Markdown, transcript, HTML, SVG, or browser-local image output.
 
-The production AI workflow converts bank statement PDFs to CSV through direct upload, automated preview, paid full extraction, and download. Receipt, invoice, screenshot-table, audio transcript, document Markdown, screenshot-to-HTML, and CloudConvert-backed universal file conversion are beta/provider modules on the same workflow when configured. PNG/JPG/WEBP image conversion and raster-to-SVG conversion run locally in the browser.
+The production AI workflow converts bank statement PDFs to CSV through direct upload, automated preview, paid full extraction, and download. Receipt, invoice, screenshot-table, audio transcript, document Markdown, screenshot-to-HTML, and provider-backed universal file conversion are beta/provider modules on the same workflow when configured. PNG/JPG/WEBP image conversion and raster-to-SVG conversion run locally in the browser.
 
 ## What is live
 
@@ -103,12 +103,12 @@ The production AI workflow converts bank statement PDFs to CSV through direct up
 - Audio transcript to TXT or JSON when Workers AI is configured.
 - Document Markdown for Cloudflare-supported rich document formats when Workers AI Markdown Conversion is configured.
 - Screenshot to HTML provides a clean starter preview and uses Workers AI vision for paid image exports when configured. This does not claim pixel-perfect screenshot cloning.
-- Universal provider conversion for documents, images, audio, video, and archives when CloudConvert is configured.
+- Universal provider conversion for documents, images, audio, video, and archives when CloudConvert or Convertio backup is configured.
 - Beta modules use configured AI providers and can fail closed when the extracted structure or content is not reliable.
 
 ## What is not claimed
 
-AI Converter does not claim support for every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every audio file, every document, every image format, every file type, certified compliance, pixel-perfect image-to-code, or guaranteed accuracy. CloudConvert-backed formats depend on CloudConvert being configured and accepting that specific input/output pair. Exports should be reviewed before important use.
+AI Converter does not claim support for every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every audio file, every document, every image format, every file type, certified compliance, pixel-perfect image-to-code, or guaranteed accuracy. Provider-backed formats depend on a configured provider accepting that specific input/output pair. Exports should be reviewed before important use.
 `;
 
 const bankStatementMarkdown = `---
@@ -291,7 +291,7 @@ AI Converter is built for sensitive source files: private storage, short retenti
 
 ## Processing controls
 
-Digital bank statement PDFs use the native parser first. OCR fallback is reserved for scanned, photo-based, receipt, invoice, screenshot, or messy files when configured. Workers AI is used for audio transcript, document Markdown, and screenshot-to-HTML beta modules when configured. CloudConvert is used for universal provider conversion when configured. Browser-local image-format and raster-to-SVG conversion do not upload files to AI Converter. Low-confidence AI extraction files fail closed.
+Digital bank statement PDFs use the native parser first. OCR fallback is reserved for scanned, photo-based, receipt, invoice, screenshot, or messy files when configured. Workers AI is used for audio transcript, document Markdown, and screenshot-to-HTML beta modules when configured. CloudConvert is the primary universal provider route, with Convertio as the configured backup route. Browser-local image-format and raster-to-SVG conversion do not upload files to AI Converter. Low-confidence AI extraction files fail closed.
 
 ## Retention controls
 

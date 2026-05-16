@@ -1,6 +1,12 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+loadLocalMonitorEnv();
+
 const baseUrl = process.env.AICONVERTER_MONITOR_URL || process.env.AICONVERTER_STRESS_URL || "https://aiconverter.app";
 const adminToken =
   process.env.AICONVERTER_MONITOR_ADMIN_TOKEN || process.env.AICONVERTER_ADMIN_TOKEN || process.env.ADMIN_TOKEN || "";
+const publicOnly = process.env.AICONVERTER_MONITOR_PUBLIC_ONLY === "true";
 
 const failures = [];
 const warnings = [];
@@ -8,7 +14,11 @@ const started = Date.now();
 
 const health = await checkHealth();
 const overview = adminToken ? await checkAdminOverview(adminToken) : null;
-if (!adminToken) warnings.push({ check: "admin-overview", status: "skipped", reason: "admin token not configured" });
+if (!adminToken) {
+  const missingAdmin = { check: "admin-overview", status: "skipped", reason: "admin token not configured" };
+  if (publicOnly) warnings.push(missingAdmin);
+  else failures.push(missingAdmin);
+}
 
 console.log(
   JSON.stringify(
@@ -27,6 +37,20 @@ console.log(
 );
 
 if (failures.length) process.exit(1);
+
+function loadLocalMonitorEnv() {
+  const envPath = resolve(process.cwd(), ".monitor.env");
+  if (!existsSync(envPath)) return;
+  const content = readFileSync(envPath, "utf8");
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+    const [key, ...valueParts] = trimmed.split("=");
+    const name = key.trim();
+    if (!name || process.env[name]) continue;
+    process.env[name] = valueParts.join("=").trim().replace(/^["']|["']$/g, "");
+  }
+}
 
 async function checkHealth() {
   const response = await fetch(new URL("/api/health", baseUrl));

@@ -24,7 +24,7 @@ Live and beta modules:
 - Audio transcript from MP3, WAV, M4A, AAC, OGG, or WEBM to TXT or JSON is beta and uses Cloudflare Workers AI speech recognition when configured.
 - Document Markdown conversion for Cloudflare-supported rich document formats is beta and uses Cloudflare Workers AI Markdown Conversion when configured.
 - Screenshot to HTML is beta. It creates a clean starter preview and uses Workers AI vision for paid image exports when configured. It does not claim pixel-perfect screenshot cloning.
-- Universal file conversion for documents, images, audio, video, and archives is provider-backed through CloudConvert when configured.
+- Universal file conversion for documents, images, audio, video, and archives is provider-backed through CloudConvert first, with Convertio as a configured backup route.
 - Beta modules use OCR and fail closed when structure confidence is too low.
 
 Opening pricing:

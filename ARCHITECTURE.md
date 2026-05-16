@@ -5,7 +5,7 @@
 1. Browser uploads one supported file to `/api/convert` with a converter ID.
 2. The API validates converter, type, size, and file signature before processing.
 3. The source file is written to private R2 under a random job key.
-4. Bank statement PDFs use the built-in PDF parser first for a free sample preview. Receipt, invoice, and screenshot-table beta modules use Mistral OCR when configured. Audio transcript, document-to-Markdown, and screenshot-to-HTML beta modules use Cloudflare Workers AI when configured. Universal file conversion uses CloudConvert when configured. Common image-format and raster-to-SVG conversion runs in the browser and does not upload to the backend.
+4. Bank statement PDFs use the built-in PDF parser first for a free sample preview. Receipt, invoice, and screenshot-table beta modules use Mistral OCR when configured. Audio transcript, document-to-Markdown, and screenshot-to-HTML beta modules use Cloudflare Workers AI when configured. Universal file conversion uses CloudConvert first, with Convertio as a configured backup route. Common image-format and raster-to-SVG conversion runs in the browser and does not upload to the backend.
 5. The API validates the preview rows and confidence score.
 6. If a bank PDF has too little selectable text or confidence is low, Mistral OCR is used as the configured fallback. Free OCR preview is capped to the first page by default.
 7. If validation passes, the source file stays in private R2 for the paid unlock and 24-hour redo window.
