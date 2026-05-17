@@ -968,8 +968,10 @@ tbody tr:last-child td {
   width: max-content;
   display: flex;
   gap: 0;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
   padding: 8px 0;
-  animation: ticker-scroll 46s linear infinite;
+  animation: ticker-scroll 48s linear infinite;
 }
 
 .ticker-group {
@@ -1019,8 +1021,12 @@ tbody tr:last-child td {
 }
 
 @keyframes ticker-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
   to {
-    transform: translate3d(-50%, 0, 0);
+    transform: translate3d(-25%, 0, 0);
   }
 }
 

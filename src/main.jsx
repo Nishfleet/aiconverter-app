@@ -37,6 +37,7 @@ const MAX_PAGES = 500;
 
 const classNames = (...values) => values.filter(Boolean).join(" ");
 let turnstileScriptPromise = null;
+const TICKER_COPY_COUNT = 4;
 
 function estimatePages(file) {
   if (!file) return 25;
@@ -1315,8 +1316,8 @@ function App() {
             <span className="popular-conversions-label">Popular requests</span>
             <div className="conversion-ticker" aria-hidden="true">
               <div className="conversion-ticker-track">
-                {[0, 1].map((copyIndex) => (
-                  <div className={classNames("ticker-group", copyIndex === 1 && "is-duplicate")} key={copyIndex}>
+                {Array.from({ length: TICKER_COPY_COUNT }, (_, copyIndex) => (
+                  <div className={classNames("ticker-group", copyIndex > 0 && "is-duplicate")} key={copyIndex}>
                     {popularConversions.map((item) => (
                       <span className="ticker-chip" key={`${copyIndex}-${item}`}>
                         {item}
