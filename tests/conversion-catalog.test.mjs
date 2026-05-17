@@ -22,8 +22,8 @@ test("conversion catalog gates provider-backed claims behind configured provider
   assert.ok(enabledAvailable.has("PDF to Word"));
   assert.ok(enabledAvailable.has("HEIC to JPG"));
   assert.ok(enabledAvailable.has("MP4 to MP3"));
-  assert.ok(availableConversionCount(data.converters, { universalProviderReady: true }) >= 100);
-  assert.match(availableConversionCountLabel(availableConversionCount(data.converters, { universalProviderReady: true })), /100\+|200\+/);
+  assert.ok(availableConversionCount(data.converters, { universalProviderReady: true }) >= 200);
+  assert.equal(availableConversionCountLabel(availableConversionCount(data.converters, { universalProviderReady: true })), "200+ conversion options available");
 });
 
 test("publicly highlighted top requests exist in the generated catalog", () => {
@@ -39,7 +39,9 @@ test("top provider conversion fixtures pass upload validation and preview routin
   const fixtures = [
     { label: "PDF to Word", name: "statement.pdf", type: "application/pdf", output: "docx", bytes: ascii("%PDF-1.7\n1 0 obj\n") },
     { label: "Word to PDF", name: "contract.docx", type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", output: "pdf", bytes: bytes([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00]) },
+    { label: "PDF to JPG", name: "flyer.pdf", type: "application/pdf", output: "jpg", bytes: ascii("%PDF-1.7\n1 0 obj\n") },
     { label: "HEIC to JPG", name: "photo.heic", type: "image/heic", output: "jpg", bytes: ascii("\x00\x00\x00\x18ftypheic\x00\x00\x00\x00") },
+    { label: "SVG to PNG", name: "logo.svg", type: "image/svg+xml", output: "png", bytes: ascii("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 1 1\"><rect width=\"1\" height=\"1\"/></svg>") },
     { label: "MP4 to MP3", name: "clip.mp4", type: "video/mp4", output: "mp3", bytes: ascii("\x00\x00\x00\x18ftypisom\x00\x00\x00\x00") },
     { label: "MOV to MP4", name: "capture.mov", type: "video/quicktime", output: "mp4", bytes: ascii("\x00\x00\x00\x18ftypqt  \x00\x00\x00\x00") },
     { label: "GIF to MP4", name: "loop.gif", type: "image/gif", output: "mp4", bytes: ascii("GIF89a\x01\x00\x01\x00") },
@@ -47,6 +49,10 @@ test("top provider conversion fixtures pass upload validation and preview routin
     { label: "XLSX to CSV", name: "sheet.xlsx", type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", output: "csv", bytes: bytes([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00]) },
     { label: "CSV to XLSX", name: "rows.csv", type: "text/csv", output: "xlsx", bytes: ascii("Name,Amount\nDemo,12.30\n") }
   ];
+  const fixtureLabels = new Set(fixtures.map((fixture) => fixture.label));
+  for (const request of TOP_CONVERSION_REQUESTS.filter((item) => item.qaPriority === "provider")) {
+    assert.ok(fixtureLabels.has(request.label), `${request.label} should have a provider QA fixture`);
+  }
 
   for (const fixture of fixtures) {
     const file = { name: fixture.name, type: fixture.type, size: fixture.bytes.byteLength };

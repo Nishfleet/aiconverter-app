@@ -404,7 +404,7 @@ test("paid screenshot to HTML uses Workers AI vision for standalone HTML", async
   assert.match(result.warnings.join(" "), /not guaranteed pixel-perfect/);
 });
 
-test("universal converter creates a provider-backed route preview only when CloudConvert is configured", async () => {
+test("universal converter creates a provider-backed route preview when CloudConvert is configured", async () => {
   const result = await convertFileToCsv(
     { CLOUDCONVERT_API_KEY: "test-key" },
     "universal-file",
@@ -422,7 +422,23 @@ test("universal converter creates a provider-backed route preview only when Clou
   assert.equal(normalizeOutputFormat("mp4", "universal-file"), "mp4");
 });
 
-test("universal converter fails closed without CloudConvert configuration", async () => {
+test("universal converter creates a provider-backed route preview when only Convertio is configured", async () => {
+  const result = await convertFileToCsv(
+    { CONVERTIO_API_KEY: "test-key" },
+    "universal-file",
+    "deck.pptx",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    new Uint8Array([0x50, 0x4b, 0x03, 0x04]).buffer,
+    { outputFormat: "pdf" }
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.provider, "convertio-preview");
+  assert.equal(result.previewRows[0].route, "Convertio");
+  assert.match(result.csv, /PDF/);
+});
+
+test("universal converter fails closed without a provider configuration", async () => {
   const result = await convertFileToCsv(
     {},
     "universal-file",
@@ -433,7 +449,7 @@ test("universal converter fails closed without CloudConvert configuration", asyn
   );
 
   assert.equal(result.ok, false);
-  assert.match(result.message, /CloudConvert/);
+  assert.match(result.message, /provider route/);
 });
 
 test("universal upload validation accepts provider document, media, and archive signatures", () => {

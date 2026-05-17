@@ -26,7 +26,7 @@ Live:
 - Free-preview reuse, payment reuse, and redo abuse are rate-limited.
 - PNG/JPG/WEBP to PNG/JPG/WEBP conversion runs locally in the browser and does not upload the image.
 - PNG/JPG/WEBP to SVG posterized conversion runs locally in the browser and does not upload the image.
-- Universal provider conversion for documents, images, audio, video, and archives runs through CloudConvert first, with Convertio as a configured backup route. Long provider jobs run in the background and update automatically.
+- Universal provider conversion for documents, images, audio, video, and archives runs through the configured provider route. CloudConvert is used when configured; Convertio can run as the backup or fallback route. Long provider jobs run in the background and update automatically.
 
 Beta:
 
@@ -121,7 +121,7 @@ The /formats page is generated from current converter metadata and live provider
 - Live AI extraction: bank statement PDF to CSV.
 - Beta AI routes: receipts, invoices, screenshot tables, audio transcript, document Markdown, and screenshot-to-HTML.
 - Browser-local image routes: PNG/JPG/WEBP to PNG/JPG/WEBP and PNG/JPG/WEBP to SVG without uploading the file to AI Converter.
-- Provider-backed universal route: documents, images, audio, video, and archives through CloudConvert first, with Convertio backup when configured.
+- Provider-backed universal route: documents, images, audio, video, and archives through the configured provider route. CloudConvert is used when configured; Convertio can run as the backup or fallback route.
 
 ## Popular requests covered when routes are configured
 
@@ -332,7 +332,7 @@ AI Converter is designed for files you would not put in a shared inbox: private 
 
 ## Processing controls
 
-Digital bank statement PDFs use the native parser first. OCR fallback is reserved for scanned, photo-based, receipt, invoice, screenshot, or messy files when configured. Workers AI is used for audio transcript, document Markdown, and screenshot-to-HTML beta modules when configured. CloudConvert is the primary universal provider route, with Convertio as the configured backup route. Browser-local image-format and raster-to-SVG conversion do not upload files to AI Converter. Low-confidence AI extraction files fail closed.
+Digital bank statement PDFs use the native parser first. OCR fallback is reserved for scanned, photo-based, receipt, invoice, screenshot, or messy files when configured. Workers AI is used for audio transcript, document Markdown, and screenshot-to-HTML beta modules when configured. Universal provider conversion runs through the configured provider route: CloudConvert when configured, with Convertio available as backup or fallback. Browser-local image-format and raster-to-SVG conversion do not upload files to AI Converter. Low-confidence AI extraction files fail closed.
 
 ## Retention controls
 

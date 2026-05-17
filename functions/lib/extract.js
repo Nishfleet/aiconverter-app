@@ -1,6 +1,7 @@
 import { extractText, getDocumentProxy } from "unpdf";
 import { hasAzureConfig, hasMistralConfig, MAX_PAGE_COUNT, normalizeConverterId, rowsToCsv } from "./jobs.js";
 import { hasCloudConvertConfig } from "./cloudconvert.js";
+import { hasConvertioConfig } from "./convertio.js";
 import {
   isUniversalConverter,
   normalizeUniversalOutputFormat,
@@ -477,12 +478,15 @@ function extractHtmlDocument(value) {
 }
 
 async function convertUniversalFile(env, fileName, contentType, arrayBuffer, options = {}) {
-  if (!hasCloudConvertConfig(env)) {
-    return failConversion("Universal file conversion needs CloudConvert configuration before it can run.", "cloudconvert");
+  const cloudConvertReady = hasCloudConvertConfig(env);
+  const convertioReady = hasConvertioConfig(env);
+  if (!cloudConvertReady && !convertioReady) {
+    return failConversion("Universal file conversion needs a configured provider route before it can run.", "provider");
   }
 
   const outputFormat = normalizeUniversalOutputFormat(options.outputFormat);
-  const row = universalPreviewRow(fileName, contentType, outputFormat);
+  const route = cloudConvertReady ? "CloudConvert" : "Convertio";
+  const row = universalPreviewRow(fileName, contentType, outputFormat, route);
   return {
     ok: true,
     csv: rowsToCsv([row], UNIVERSAL_COLUMNS),
@@ -494,7 +498,7 @@ async function convertUniversalFile(env, fileName, contentType, arrayBuffer, opt
     warnings: [
       "Preview confirms the conversion route. The provider-backed file is generated after unlock."
     ],
-    provider: "cloudconvert-preview"
+    provider: cloudConvertReady ? "cloudconvert-preview" : "convertio-preview"
   };
 }
 
