@@ -24,6 +24,7 @@ function renderOverview(payload) {
   const health = payload.health || {};
   return [
     renderAlerts(payload.alerts || []),
+    renderOperationalQueues(payload.operationalQueues || {}),
     renderHealth(health, payload.generatedAt),
     renderCloudConvert(payload.cloudConvert || {}),
     renderUsage(payload.usage24h || {}),
@@ -33,6 +34,7 @@ function renderOverview(payload) {
     renderTable("Stuck provider jobs", payload.stuckProvider || [], ["id", "status", "converter_id", "plan_id", "external_provider", "external_status", "updated_at"]),
     renderTable("Open support", payload.support || [], ["id", "job_id", "email", "category", "status", "message_excerpt", "created_at"]),
     renderTable("Dodo payments", payload.payments || [], ["event_type", "job_id", "payment_id", "plan_id", "status", "amount", "currency", "match_status", "created_at"]),
+    renderTable("Dodo checkout handoffs", payload.checkoutHandoffs || [], ["id", "status", "converter_id", "plan_id", "checkout_session_id", "payment_id", "email", "updated_at"]),
     renderTable("Unmatched Dodo payments", payload.unmatchedPayments || [], ["event_type", "job_id", "payment_id", "checkout_session_id", "plan_id", "status", "match_status", "created_at"]),
     renderTable("Refunds", payload.refunds || [], ["job_id", "payment_id", "refund_id", "status", "reason", "created_at"]),
     renderTable("Refund or credit due", payload.refundDue || [], ["id", "payment_id", "refund_status", "refund_id", "error", "updated_at"]),
@@ -61,6 +63,32 @@ function renderAlerts(alerts) {
               `).join("")
             : '<div class="admin-empty">No alerts returned.</div>'
         }
+      </div>
+    </section>
+  `;
+}
+
+function renderOperationalQueues(queues) {
+  const rows = [
+    ["Failed jobs", queues.failedJobs || 0],
+    ["Stuck provider", queues.stuckProvider || 0],
+    ["Payment handoffs", queues.paymentHandoffs || 0],
+    ["Stale handoffs", queues.stalePaymentHandoffs || 0],
+    ["Unmatched payments", queues.unmatchedPayments || 0],
+    ["Refund/credit due", queues.refundDue || 0],
+    ["Open support", queues.openSupport || 0],
+    ["Webhook failures", queues.webhookFailures || 0]
+  ];
+  return `
+    <section class="admin-panel">
+      <div class="admin-panel-head">
+        <div>
+          <h2>Action queues</h2>
+          <p>Fast scan for the work that can block customers or money</p>
+        </div>
+      </div>
+      <div class="admin-metric-grid">
+        ${rows.map(([label, value]) => metricCard(label, value)).join("")}
       </div>
     </section>
   `;

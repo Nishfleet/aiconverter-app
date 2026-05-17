@@ -52,6 +52,7 @@ Primary URL:
 - https://aiconverter.app
 
 Useful pages:
+- https://aiconverter.app/formats
 - https://aiconverter.app/about
 - https://aiconverter.app/bank-statement-pdf-to-csv
 - https://aiconverter.app/convert-bank-statement-to-csv

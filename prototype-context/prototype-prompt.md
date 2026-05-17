@@ -1,7 +1,7 @@
 # Build Prompt
 
-Build `aiconverter.app` as a polished React/Vite web app for a new AI converter hub. The first paid wedge is bank statement PDF to CSV/Excel, with broader converter requests collected from customers.
+Extend `aiconverter.app` with an 11/10 product-truth foundation.
 
-The first viewport should be an actual app workspace: converter selector, upload panel, selected file state, and clearly labeled sample preview. Avoid broad unsupported claims. Use precise copy: "Preview before paying" and "No charge when confidence is low." Include pricing and a converter request form.
+Build a generated `/formats` surface from the converter metadata and provider readiness state. Keep the homepage ticker, available-count copy, and top conversion QA tests aligned with the same conversion catalog. Add a compact confidence layer to the selected upload route that shows expected output, preview behavior, privacy, and file limits. Improve the admin overview with action-queue visibility for failed jobs, stuck provider jobs, payment handoffs, refunds, support, and webhooks.
 
-Use cool-white utility styling, black text, restrained borders, electric green action color, and a table-like preview. Keep the UI responsive and trustworthy.
+Use the current React/Vite app and existing visual system. Keep copy short, truthful, and provider-gated. Do not claim upcoming email intake, universal provider routes, or unsupported pairs as live unless the route is configured.

@@ -12,43 +12,28 @@ import {
   FileText,
   LoaderCircle,
   RefreshCw,
+  Search,
   ShieldCheck,
   Upload,
   Wand2
 } from "lucide-react";
 import data from "./data/converters.json";
+import {
+  TOP_CONVERSION_REQUESTS,
+  availableConversionCount,
+  availableConversionCountLabel,
+  buildConversionCatalog,
+  capableOutputFormats,
+  confidenceDetailsForConverter,
+  isLiveConverter,
+  isLocalConverter,
+  isProviderConverter
+} from "./conversion-catalog.js";
 import { convertImageInBrowser, convertRasterToSvgInBrowser } from "./local-converters.js";
 import "./styles.css";
 
 const MAX_SIZE_MB = 50;
 const MAX_PAGES = 500;
-const CORE_POPULAR_CONVERSIONS = [
-  "Bank statement PDF to CSV",
-  "Receipt image to expense CSV",
-  "Invoice PDF to JSON",
-  "Screenshot table to CSV",
-  "JPG to PNG",
-  "PNG to JPG",
-  "WEBP to PNG",
-  "Audio to transcript",
-  "Document to Markdown"
-];
-
-const PROVIDER_POPULAR_CONVERSIONS = [
-  "PDF to Word",
-  "Word to PDF",
-  "PDF to JPG",
-  "HEIC to JPG",
-  "SVG to PNG",
-  "MP4 to MP3",
-  "MOV to MP4",
-  "GIF to MP4",
-  "WAV to MP3",
-  "XLSX to CSV",
-  "CSV to XLSX",
-  "Docs, images, audio, video, archives",
-  "Many more formats available"
-];
 
 const classNames = (...values) => values.filter(Boolean).join(" ");
 let turnstileScriptPromise = null;
@@ -72,18 +57,6 @@ function planForPages(pages) {
 
 function planById(planId) {
   return data.pricing.find((plan) => plan.id === planId) || null;
-}
-
-function isLiveConverter(converter) {
-  return converter.id !== "email";
-}
-
-function isLocalConverter(converter) {
-  return ["local-image", "local-svg"].includes(converter?.mode);
-}
-
-function isProviderConverter(converter) {
-  return converter?.mode === "provider-cloudconvert";
 }
 
 function allAcceptedTypes(converters) {
@@ -194,71 +167,6 @@ function fileExtension(candidate) {
   return candidate.name.split(".").pop()?.toUpperCase() || "FILE";
 }
 
-function normalizedFormatId(candidate) {
-  const extension = fileExtension(candidate).toLowerCase();
-  const aliases = {
-    jpeg: "jpg",
-    htm: "html"
-  };
-  return aliases[extension] || extension;
-}
-
-function fileFamily(candidate) {
-  if (!candidate) return "file";
-  const extension = fileExtension(candidate).toLowerCase();
-  const type = String(candidate.type || "").toLowerCase();
-  if (["png", "jpg", "jpeg", "webp", "gif", "bmp", "tif", "tiff", "heic", "heif", "svg"].includes(extension) || type.startsWith("image/")) return "image";
-  if (type.startsWith("video/")) return "video";
-  if (type.startsWith("audio/")) return "audio";
-  if (["mp4", "mov", "avi", "mkv", "wmv", "webm"].includes(extension)) return "video";
-  if (["mp3", "wav", "m4a", "aac", "ogg", "flac"].includes(extension)) return "audio";
-  if (["zip", "7z", "tar", "gz", "rar"].includes(extension)) return "archive";
-  if (["xls", "xlsx", "xlsm", "csv", "ods", "numbers"].includes(extension)) return "spreadsheet";
-  if (["ppt", "pptx", "odp"].includes(extension)) return "presentation";
-  if (["pdf", "doc", "docx", "rtf", "txt", "md", "html", "htm", "odt"].includes(extension)) return "document";
-  return "file";
-}
-
-function universalOutputCapabilityIds(candidate) {
-  const extension = fileExtension(candidate).toLowerCase();
-  const type = String(candidate?.type || "").toLowerCase();
-
-  const groups = {
-    text: ["txt", "md", "html", "pdf", "docx"],
-    pdf: ["pdf", "docx", "txt", "html", "md", "png", "jpg"],
-    word: ["docx", "pdf", "txt", "html", "md"],
-    spreadsheet: ["xlsx", "csv", "pdf", "html"],
-    presentation: ["pptx", "pdf", "png", "jpg"],
-    image: ["png", "jpg", "webp", "gif", "svg", "pdf"],
-    svg: ["svg", "png", "jpg", "webp", "pdf"],
-    audio: ["mp3", "wav", "m4a", "ogg", "flac"],
-    video: ["mp4", "webm", "mov", "gif"],
-    archive: ["zip", "7z", "tar"]
-  };
-
-  if (["txt", "md", "html", "htm", "rtf"].includes(extension) || ["text/plain", "text/markdown", "text/html"].includes(type)) return groups.text;
-  if (extension === "pdf" || type === "application/pdf") return groups.pdf;
-  if (["doc", "docx", "odt"].includes(extension)) return groups.word;
-  if (["csv", "xls", "xlsx", "xlsm", "xlsb", "ods", "numbers"].includes(extension)) return groups.spreadsheet;
-  if (["ppt", "pptx", "odp"].includes(extension)) return groups.presentation;
-  if (extension === "svg" || type === "image/svg+xml") return groups.svg;
-  if (fileFamily(candidate) === "image") return groups.image;
-  if (fileFamily(candidate) === "audio") return groups.audio;
-  if (fileFamily(candidate) === "video") return groups.video;
-  if (fileFamily(candidate) === "archive") return groups.archive;
-  return groups.text;
-}
-
-function capableOutputFormats(converter, candidate) {
-  const formats = converter?.outputFormats || [];
-  if (!candidate) return formats;
-  const inputFormat = normalizedFormatId(candidate);
-  if (converter?.id === "image-format") return formats.filter((format) => format.id !== inputFormat);
-  if (converter?.id !== "universal-file") return formats;
-  const capableIds = universalOutputCapabilityIds(candidate);
-  return formats.filter((format) => capableIds.includes(format.id) && format.id !== inputFormat);
-}
-
 function fileEntryId(candidate) {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `${candidate.name}-${candidate.size}-${candidate.lastModified}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -287,6 +195,152 @@ function displayPriceForPlan(plan, pricingPreview) {
   return pricingPreview?.prices?.[planId]?.display || planById(planId)?.price || plan?.price || "$3";
 }
 
+function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("Available");
+  const categories = useMemo(
+    () => [
+      "Available",
+      "Provider-backed",
+      "Browser-local image",
+      "AI extraction",
+      "Beta AI route"
+    ],
+    []
+  );
+  const normalizedQuery = query.trim().toLowerCase();
+  const visiblePairs = useMemo(
+    () =>
+      catalog.filter((pair) => {
+        const categoryMatch =
+          category === "Available"
+            ? pair.available
+            : pair.category === category;
+        const searchMatch =
+          !normalizedQuery ||
+          [pair.label, pair.input, pair.output, pair.converterTitle, pair.route, pair.category]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(normalizedQuery));
+        return categoryMatch && searchMatch;
+      }),
+    [catalog, category, normalizedQuery]
+  );
+  const providerPairs = catalog.filter((pair) => pair.category === "Provider-backed");
+  const availableProviderPairs = providerPairs.filter((pair) => pair.available);
+  const upcomingConverters = data.converters.filter((converter) => !isLiveConverter(converter));
+
+  return (
+    <main className="page-shell formats-page">
+      <header className="site-header" aria-label="Site header">
+        <a className="brand" href="/" aria-label="AI Converter home">
+          <span className="brand-mark">
+            <Wand2 size={18} strokeWidth={2.4} />
+          </span>
+          <span>AI Converter</span>
+        </a>
+        <nav className="site-nav" aria-label="Primary navigation">
+          <a href="/">Open converter</a>
+          <a href="/support">Support</a>
+        </nav>
+      </header>
+
+      <section className="formats-hero">
+        <div>
+          <h1>All conversion options</h1>
+          <p>
+            A generated view of the routes AI Converter can actually offer from the current converter metadata and live provider config.
+          </p>
+        </div>
+        <div className="formats-stats" aria-label="Conversion coverage">
+          <div>
+            <span>Available now</span>
+            <strong>{availableConversionCountLabel(conversionCount)}</strong>
+          </div>
+          <div>
+            <span>Universal route</span>
+            <strong>{universalProviderReady ? "Configured" : "Waiting"}</strong>
+          </div>
+          <div>
+            <span>Provider pairs</span>
+            <strong>{availableProviderPairs.length}/{providerPairs.length}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section className="formats-toolbar" aria-label="Format filters">
+        <label className="formats-search">
+          <Search size={17} />
+          <input
+            type="search"
+            value={query}
+            placeholder="Search a format"
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+        <div className="formats-tabs">
+          {categories.map((item) => (
+            <button
+              type="button"
+              key={item}
+              className={classNames(category === item && "is-selected")}
+              onClick={() => setCategory(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="formats-grid" aria-label="Conversion options">
+        {visiblePairs.map((pair) => (
+          <article className={classNames("format-card", !pair.available && "is-disabled")} key={`${pair.converterId}-${pair.input}-${pair.output}-${pair.label}`}>
+            <div>
+              <span>{pair.category}</span>
+              <strong>{pair.label}</strong>
+              <p>{pair.route}</p>
+            </div>
+            <div className="format-card-meta">
+              <span>{pair.input}</span>
+              <ArrowRight size={14} />
+              <span>{pair.output}</span>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <section className="formats-confidence" aria-label="Conversion confidence rules">
+        <article>
+          <h2>Preview first</h2>
+          <p>Server-side routes show a free preview or route confirmation before payment. Browser-local image tools download immediately.</p>
+        </article>
+        <article>
+          <h2>Truth-gated providers</h2>
+          <p>Provider-backed pairs only count as available when CloudConvert or the Convertio backup route is configured.</p>
+        </article>
+        <article>
+          <h2>More coming soon</h2>
+          <p>{upcomingConverters.length ? upcomingConverters.map((converter) => converter.title).join(", ") : "New routes will appear here when they are wired."}</p>
+        </article>
+      </section>
+
+      <footer className="footer">
+        <div className="footer-brand">
+          <strong>AI Converter</strong>
+        </div>
+        <nav className="footer-links" aria-label="Footer navigation">
+          <a href="/">Converter</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/refund">Refunds</a>
+          <a href="/security">Security</a>
+          <a href="/data-retention">Data retention</a>
+          <a href="/support">Support</a>
+        </nav>
+      </footer>
+    </main>
+  );
+}
+
 function App() {
   const [selectedId, setSelectedId] = useState("bank");
   const [outputFormat, setOutputFormat] = useState("csv");
@@ -306,6 +360,7 @@ function App() {
   const fileInputRef = useRef(null);
   const turnstileRef = useRef(null);
   const turnstileWidgetIdRef = useRef(null);
+  const routePath = window.location.pathname.replace(/\/+$/, "") || "/";
 
   const selected = useMemo(
     () => data.converters.find((converter) => converter.id === selectedId),
@@ -317,14 +372,27 @@ function App() {
   );
   const file = activeFileEntry?.file || null;
   const universalProviderReady = Boolean(capabilities.universalProvider || capabilities.cloudConvert || capabilities.convertioBackup);
+  const conversionCatalog = useMemo(
+    () => buildConversionCatalog(data.converters, { universalProviderReady }),
+    [universalProviderReady]
+  );
+  const conversionCount = useMemo(
+    () => availableConversionCount(data.converters, { universalProviderReady }),
+    [universalProviderReady]
+  );
   const popularConversions = useMemo(
-    () => (universalProviderReady ? [...CORE_POPULAR_CONVERSIONS, ...PROVIDER_POPULAR_CONVERSIONS] : CORE_POPULAR_CONVERSIONS),
+    () => [
+      ...TOP_CONVERSION_REQUESTS
+        .filter((request) => request.qaPriority === "core" || universalProviderReady)
+        .map((request) => request.label),
+      ...(universalProviderReady ? ["Docs, images, audio, video, archives", "Many more formats available"] : [])
+    ],
     [universalProviderReady]
   );
   const popularConversionsSummary = universalProviderReady
     ? {
-        title: "200+ conversion options available",
-        detail: "More coming soon."
+        title: availableConversionCountLabel(conversionCount),
+        detail: "Generated from routes configured today. More coming soon."
       }
     : {
         title: "More conversion options coming soon",
@@ -342,7 +410,10 @@ function App() {
   const isLocalImageConverter = isLocalConverter(selected);
   const selectedEnabled = converterIsEnabled(selected);
   const selectedMaxSizeMb = selectedId === "audio-transcript" ? 25 : selectedId === "screenshot-code" ? 8 : MAX_SIZE_MB;
-  const fileSizeLabel = file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : "";
+  const selectedConfidence = useMemo(
+    () => confidenceDetailsForConverter(selected, outputFormat, { universalProviderReady }),
+    [selected, outputFormat, universalProviderReady]
+  );
   const needsTurnstile = Boolean(turnstileSiteKey);
   const previewColumns = result?.columns?.length ? result.columns : selected?.columns || data.converters[0].columns;
   const previewRows = result?.previewRows || data.sampleRowsByConverter?.[selectedId] || data.sampleRows;
@@ -817,6 +888,16 @@ function App() {
     return `Unlock ${resultFormatLabel(outputFormat)} · ${displayPriceForPlan(result?.plan || selectedPlan, pricingPreview)}`;
   }
 
+  if (routePath === "/formats") {
+    return (
+      <FormatsPage
+        catalog={conversionCatalog}
+        conversionCount={conversionCount}
+        universalProviderReady={universalProviderReady}
+      />
+    );
+  }
+
   return (
     <main className="page-shell">
       <header className="site-header" aria-label="Site header">
@@ -826,6 +907,10 @@ function App() {
           </span>
           <span>AI Converter</span>
         </a>
+        <nav className="site-nav" aria-label="Primary navigation">
+          <a href="/formats">All formats</a>
+          <a href="/support">Support</a>
+        </nav>
       </header>
 
       <section id="top" className="conversion-stage">
@@ -988,6 +1073,25 @@ function App() {
                       <strong>
                         {isLocalImageConverter ? "Free · browser local" : `${selectedPlanPrice} · ${selectedPlan.detail}`}
                       </strong>
+                    </div>
+                  </div>
+
+                  <div className="confidence-panel" aria-label="Selected conversion details">
+                    <div>
+                      <span>Output</span>
+                      <strong>{selectedConfidence.output}</strong>
+                    </div>
+                    <div>
+                      <span>Preview</span>
+                      <strong>{selectedConfidence.preview}</strong>
+                    </div>
+                    <div>
+                      <span>Privacy</span>
+                      <strong>{selectedConfidence.privacy}</strong>
+                    </div>
+                    <div>
+                      <span>Limit</span>
+                      <strong>{selectedConfidence.limit}</strong>
                     </div>
                   </div>
 
@@ -1256,6 +1360,8 @@ function App() {
         </div>
         <nav className="footer-links" aria-label="Footer navigation">
           <a href="/privacy">Privacy</a>
+          <a href="/formats">Formats</a>
+          <a href="/about">About</a>
           <a href="/terms">Terms</a>
           <a href="/refund">Refunds</a>
           <a href="/security">Security</a>

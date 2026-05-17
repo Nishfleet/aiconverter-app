@@ -1,27 +1,29 @@
-# AI Converter Visual Context
+# AI Converter 11/10 Visual Context
 
-## Direction
+## Source
 
-Quiet, precise SaaS/tool surface. It should feel like a practical file utility that handles sensitive documents, not a hype AI landing page.
+Use the current live AI Converter visual system as the spec: quiet utility surface, near-white background, white panels, restrained blue action color, compact rounded controls, and dense but readable product information.
 
-## Palette
+## Format Surface
 
-- Background: near-white with cool gray panels.
-- Text: almost black.
-- Accent: electric green for conversion/action, restrained blue for selected state.
-- Avoid purple-heavy AI gradients and generic neon effects.
+- No marketing hero.
+- Start with the actual artifact: search, filters, generated count, and conversion option list.
+- Cards are allowed only as repeated conversion rows/options.
+- Keep cards at 10px radius or less.
+- Show provider-gated state with subdued styling, not fake excitement.
 
-## Layout
+## Upload Confidence Layer
 
-First viewport is the product: a converter workspace with upload controls and a structured preview. Downstream sections continue as open bands, not nested card stacks.
+- Compact grid inside the selected-route panel.
+- Match existing order summary and format picker geometry.
+- Labels are short utility labels, not marketing copy.
 
-## Typography
+## Admin Ops
 
-System sans. Tight, clear, product-led. No oversized decorative hero type inside compact panels.
+- Dense operational dashboard.
+- Emphasize action queues and alerts above raw tables.
+- Tables remain scrollable and compact.
 
-## Motifs
+## Mobile
 
-- File routes.
-- Clean table previews.
-- Confidence checks.
-- Request-driven converter queue.
+Single-column collapse, no horizontal overflow, no clipped long format names.

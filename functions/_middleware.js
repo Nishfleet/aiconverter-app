@@ -40,7 +40,7 @@ Beta:
 
 ## Popular conversion examples
 
-The homepage ticker suggests common requests that fit the current product surface. Core examples include bank statement PDF to CSV, receipt image to expense CSV, invoice PDF to JSON, screenshot table to CSV, JPG to PNG, PNG to JPG, WEBP to PNG, audio to transcript, and document to Markdown. When universal provider conversion is configured, the homepage can truthfully say 200+ conversion options are available across the current accepted input formats and output choices, with more coming soon. Examples include PDF to Word, Word to PDF, PDF to JPG, HEIC to JPG, SVG to PNG, MP4 to MP3, MOV to MP4, GIF to MP4, WAV to MP3, XLSX to CSV, CSV to XLSX, docs/images/audio/video/archive categories, and many more provider-backed formats.
+The homepage ticker and /formats page suggest common requests that fit the current product surface. Core examples include bank statement PDF to CSV, receipt image to expense CSV, invoice PDF to JSON, screenshot table to CSV, JPG to PNG, PNG to JPG, WEBP to PNG, audio to transcript, and document to Markdown. When universal provider conversion is configured, the generated format catalog can truthfully say 200+ conversion options are available across the current accepted input formats and output choices, with more coming soon. Examples include PDF to Word, Word to PDF, PDF to JPG, HEIC to JPG, SVG to PNG, MP4 to MP3, MOV to MP4, GIF to MP4, WAV to MP3, XLSX to CSV, CSV to XLSX, docs/images/audio/video/archive categories, and many more provider-backed formats.
 
 ## Pricing
 
@@ -105,6 +105,45 @@ Source files are stored privately for preview, unlock, and the redo window. Gene
 ## Boundaries
 
 AI Converter does not claim every bank, receipt, invoice, screenshot, audio file, document, image format, provider pair, certified compliance status, pixel-perfect image-to-code, or guaranteed accuracy. Review exports before important use.
+`;
+
+const formatsMarkdown = `---
+title: AI Converter formats
+description: Generated list of conversion options available through live, beta, local, and provider-backed AI Converter routes.
+---
+
+# AI Converter formats
+
+The /formats page is generated from current converter metadata and live provider readiness. It is the truth surface behind the homepage ticker and available-format count.
+
+## Available route types
+
+- Live AI extraction: bank statement PDF to CSV.
+- Beta AI routes: receipts, invoices, screenshot tables, audio transcript, document Markdown, and screenshot-to-HTML.
+- Browser-local image routes: PNG/JPG/WEBP to PNG/JPG/WEBP and PNG/JPG/WEBP to SVG without uploading the file to AI Converter.
+- Provider-backed universal route: documents, images, audio, video, and archives through CloudConvert first, with Convertio backup when configured.
+
+## Popular requests covered when routes are configured
+
+- Bank statement PDF to CSV.
+- Receipt image to expense CSV.
+- Invoice PDF to JSON.
+- Screenshot table to CSV.
+- JPG to PNG.
+- PNG to JPG.
+- WEBP to PNG.
+- Audio to transcript.
+- Document to Markdown.
+- PDF to Word.
+- Word to PDF.
+- HEIC to JPG.
+- MP4 to MP3.
+- MOV to MP4.
+- GIF to MP4.
+- WAV to MP3.
+- XLSX to CSV.
+
+Provider-backed pairs count as available only when the universal provider route is configured. More formats can be added as routes are proven.
 `;
 
 const bankStatementMarkdown = `---
@@ -368,6 +407,7 @@ Support requests are recorded for review. Security reports and payment, deletion
 const markdownByRoute = new Map([
   ["/", markdown],
   ["/index.html", markdown],
+  ["/formats", formatsMarkdown],
   ["/about", aboutMarkdown],
   ["/bank-statement-pdf-to-csv", bankStatementMarkdown],
   ["/convert-bank-statement-to-csv", convertMarkdown],

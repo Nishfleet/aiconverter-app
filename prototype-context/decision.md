@@ -1,23 +1,22 @@
-# AI Converter Decision Context
+# AI Converter 11/10 Foundation Context
 
 ## Decision
 
-Ship a public first version for `aiconverter.app` that can validate whether people want an AI-native converter brand before the fully automated backend is ready.
+Ship a product-truth foundation that makes AI Converter feel complete without claiming unsupported formats.
 
-## What This Prototype Proves
+## What This Proves
 
-- Whether the broad "AI Converter" name can still feel specific and credible.
-- Whether bank statement conversion is clear enough as the first paid wedge.
-- Whether visitors understand that new converters are customer-request driven.
-- Whether the upload/request flow feels trustworthy for sensitive files.
+- Visitors can inspect available conversion options before uploading.
+- Popular format claims come from the same catalog used by the UI and tests.
+- A selected conversion explains output, preview behavior, privacy, limits, and provider readiness.
+- Operators can see failed jobs, stuck provider work, payment handoffs, refunds, and webhook problems quickly.
 
-## What This Prototype Does Not Prove
+## What This Does Not Prove
 
-- Real extraction accuracy.
-- Payment conversion.
-- Backend OCR reliability.
-- Production security/compliance posture.
+- A paid Dodo webhook has settled every possible real payment state.
+- Every provider pair succeeds on every real-world file.
+- Upcoming routes are live.
 
 ## Product Truth Rule
 
-The public site must not claim "works on anything", exact accuracy, compliance certifications, or supported-file breadth before the backend proves it.
+Any public claim about formats, provider routes, retention, preview, payment, or support must be generated from current app behavior or clearly marked as provider-gated, beta, local, or upcoming.

@@ -1,82 +1,42 @@
 {
-  "brand": "AI Converter",
-  "domain": "aiconverter.app",
-  "firstConverter": {
-    "name": "Bank statement PDF to CSV",
-    "status": "First module",
-    "outputs": ["CSV", "Excel"],
-    "promise": "Preview before paying. No charge when the system is not confident."
-  },
-  "converterQueue": [
-    {
-      "name": "Bank statement PDF to CSV",
-      "status": "Building now",
-      "audience": "Bookkeepers and accountants"
-    },
-    {
-      "name": "Receipt to expense CSV",
-      "status": "Next if requested",
-      "audience": "Operators and small teams"
-    },
-    {
-      "name": "Screenshot to spreadsheet",
-      "status": "Next if requested",
-      "audience": "Founders and analysts"
-    },
-    {
-      "name": "Audio to notes",
-      "status": "Next if requested",
-      "audience": "Meetings and research"
-    }
+  "sourceOfTruth": [
+    "src/data/converters.json",
+    "src/conversion-catalog.js",
+    "functions/lib/universal.js",
+    "functions/api/admin/overview.js"
   ],
-  "sampleRows": [
-    {
-      "date": "2026-04-02",
-      "description": "Stripe payout",
-      "moneyIn": "$8,420.12",
-      "moneyOut": "",
-      "balance": "$62,104.09"
-    },
-    {
-      "date": "2026-04-07",
-      "description": "Amazon Web Services",
-      "moneyIn": "",
-      "moneyOut": "$1,284.33",
-      "balance": "$60,819.76"
-    },
-    {
-      "date": "2026-04-14",
-      "description": "Payroll transfer",
-      "moneyIn": "",
-      "moneyOut": "$14,300.00",
-      "balance": "$46,519.76"
-    },
-    {
-      "date": "2026-04-22",
-      "description": "Client ACH",
-      "moneyIn": "$22,000.00",
-      "moneyOut": "",
-      "balance": "$68,519.76"
-    }
+  "popularRequests": [
+    "Bank statement PDF to CSV",
+    "Receipt image to expense CSV",
+    "Invoice PDF to JSON",
+    "Screenshot table to CSV",
+    "JPG to PNG",
+    "PNG to JPG",
+    "WEBP to PNG",
+    "Audio to transcript",
+    "Document to Markdown",
+    "PDF to Word",
+    "Word to PDF",
+    "HEIC to JPG",
+    "MP4 to MP3",
+    "MOV to MP4",
+    "GIF to MP4",
+    "WAV to MP3",
+    "XLSX to CSV"
   ],
-  "pricing": [
-    {
-      "name": "Starter credits",
-      "price": "$5",
-      "detail": "25 pages",
-      "note": "For one-off cleanups"
-    },
-    {
-      "name": "Batch credits",
-      "price": "$12",
-      "detail": "100 pages",
-      "note": "For monthly bookkeeping work"
-    },
-    {
-      "name": "Pro beta",
-      "price": "$19/mo",
-      "detail": "1,000 pages",
-      "note": "For recurring firms"
-    }
+  "confidenceFields": [
+    "Output",
+    "Preview",
+    "Privacy",
+    "Limit"
+  ],
+  "opsQueues": [
+    "Failed jobs",
+    "Stuck provider jobs",
+    "Dodo payment handoffs",
+    "Unmatched payments",
+    "Refund or credit due",
+    "Open support",
+    "Webhook failures"
   ]
 }

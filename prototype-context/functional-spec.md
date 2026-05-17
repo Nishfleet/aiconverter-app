@@ -1,32 +1,28 @@
-# AI Converter Functional Spec
+# AI Converter 11/10 Functional Spec
 
 ## Primary Audience
 
-Bookkeepers, accountants, founders, operators, and small teams who need painful files turned into usable spreadsheets or structured outputs.
+People with real files to convert: operators, founders, bookkeepers, accountants, creators, and small teams.
 
-## First Live Offer
+## Required Surfaces
 
-AI Converter starts with bank statement PDF to CSV/Excel. The broader product is a request-driven converter hub.
-
-## Required Sections
-
-- First-screen app workspace with converter selection and upload panel.
-- Sample conversion preview for bank statements.
-- Demand-led converter roadmap.
-- Pricing starter offers.
-- Request form/modal for early access and converter requests.
+- `/formats`: generated list of actual conversion options, with provider-gated routes shown honestly.
+- Homepage ticker: same source of truth as `/formats`, not separate hand-written claims.
+- Upload workflow: per-selected-conversion confidence details for output, preview, privacy, and limits.
+- Admin overview: concise action queues for failures, stuck provider jobs, payment handoff, refunds, support, and webhooks.
+- Tests: top conversion QA pack for the popular requests we publicly highlight.
 
 ## Required States
 
-- Default no-file state.
-- File selected state.
-- Early-access request modal.
-- Submission acknowledgement.
-- Mobile layout.
+- Provider route configured: provider-backed pairs count as available.
+- Provider route not configured: provider-backed pairs are visible as gated, not counted as available.
+- Local image route: copy must say no upload.
+- Server route: copy must say preview first and private short retention.
+- Mobile layout: no horizontal overflow.
 
 ## Constraints
 
-- No fake conversion result from user-uploaded files.
-- Sample preview must be clearly marked as sample data.
-- No unsupported compliance/security claims.
-- Keep page immediately usable, not a generic marketing-only page.
+- Do not claim exact provider success for every file.
+- Do not list upcoming email intake as live.
+- Do not weaken Turnstile or payment guards for testing.
+- Do not hand-maintain a format claim in one place when it can drift from app metadata.

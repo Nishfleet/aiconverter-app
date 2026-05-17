@@ -27,6 +27,7 @@ export async function onRequestGet({ request, env }) {
   const health = runtimeHealth(env);
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const stuckBefore = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+  const staleCheckoutBefore = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
   const [
     jobStatus,
@@ -42,6 +43,8 @@ export async function onRequestGet({ request, env }) {
     webhookErrorCount,
     unmatchedPayments,
     refundDue,
+    checkoutHandoffs,
+    staleCheckoutHandoffs,
     cloudConvert
   ] = await Promise.all([
     queryAll(env, "SELECT status, COUNT(*) AS count FROM jobs GROUP BY status ORDER BY count DESC"),
@@ -159,6 +162,26 @@ export async function onRequestGet({ request, env }) {
        ORDER BY updated_at DESC
        LIMIT 25`
     ),
+    queryAll(
+      env,
+      `SELECT id, status, converter_id, plan_id, checkout_session_id, payment_id, email, updated_at
+       FROM jobs
+       WHERE COALESCE(checkout_session_id, '') != ''
+         AND paid_at IS NULL
+       ORDER BY updated_at DESC
+       LIMIT 25`
+    ),
+    queryAll(
+      env,
+      `SELECT id, status, converter_id, plan_id, checkout_session_id, payment_id, email, updated_at
+       FROM jobs
+       WHERE COALESCE(checkout_session_id, '') != ''
+         AND paid_at IS NULL
+         AND updated_at < ?
+       ORDER BY updated_at ASC
+       LIMIT 25`,
+      [staleCheckoutBefore]
+    ),
     buildCloudConvertOverview(env)
   ]);
   const alerts = buildAlerts({
@@ -169,14 +192,26 @@ export async function onRequestGet({ request, env }) {
     stuckProvider,
     webhookErrorCount,
     unmatchedPayments,
-    refundDue
+    refundDue,
+    staleCheckoutHandoffs
   });
+  const operationalQueues = {
+    failedJobs: (watchlist || []).filter((row) => row.status === "failed").length,
+    stuckProvider: (stuckProvider || []).length,
+    paymentHandoffs: (checkoutHandoffs || []).length,
+    stalePaymentHandoffs: (staleCheckoutHandoffs || []).length,
+    unmatchedPayments: (unmatchedPayments || []).length,
+    refundDue: (refundDue || []).length,
+    openSupport: (support || []).length,
+    webhookFailures: (webhookFailures || []).length
+  };
 
   return json({
     ok: true,
     generatedAt: new Date().toISOString(),
     health,
     alerts,
+    operationalQueues,
     cloudConvert,
     usage24h,
     jobStatus,
@@ -186,6 +221,8 @@ export async function onRequestGet({ request, env }) {
     support,
     payments,
     unmatchedPayments,
+    checkoutHandoffs,
+    staleCheckoutHandoffs,
     refunds,
     refundDue,
     webhookFailures,
@@ -268,7 +305,7 @@ async function buildCloudConvertOverview(env) {
   };
 }
 
-function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckProvider, webhookErrorCount, unmatchedPayments, refundDue }) {
+function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckProvider, webhookErrorCount, unmatchedPayments, refundDue, staleCheckoutHandoffs }) {
   const alerts = [];
   if (health.status !== "ready") {
     alerts.push({
@@ -368,6 +405,14 @@ function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckPr
       severity: "warning",
       title: "Unmatched Dodo payments",
       detail: `${unmatchedPayments.length} payment event${unmatchedPayments.length === 1 ? "" : "s"} did not match cleanly.`
+    });
+  }
+
+  if ((staleCheckoutHandoffs || []).length > 0) {
+    alerts.push({
+      severity: "warning",
+      title: "Open Dodo checkout handoffs",
+      detail: `${staleCheckoutHandoffs.length} checkout handoff${staleCheckoutHandoffs.length === 1 ? "" : "s"} are still unpaid after 60 minutes.`
     });
   }
 
