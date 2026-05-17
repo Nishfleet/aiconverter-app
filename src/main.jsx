@@ -59,6 +59,10 @@ function planById(planId) {
   return data.pricing.find((plan) => plan.id === planId) || null;
 }
 
+function converterById(converterId) {
+  return data.converters.find((converter) => converter.id === converterId) || null;
+}
+
 function allAcceptedTypes(converters) {
   return [...new Set(converters.filter(isLiveConverter).flatMap((converter) => String(converter.accept || "").split(",")))]
     .filter(Boolean)
@@ -192,7 +196,56 @@ function selectedRouteDescription(converter, candidate) {
 
 function displayPriceForPlan(plan, pricingPreview) {
   const planId = typeof plan === "string" ? plan : plan?.id;
-  return pricingPreview?.prices?.[planId]?.display || planById(planId)?.price || plan?.price || "$3";
+  return pricingPreview?.prices?.[planId]?.display || planById(planId)?.price || plan?.price || "₹299";
+}
+
+function priceInfoForPlan(plan, pricingPreview) {
+  const resolvedPlan = typeof plan === "string" ? planById(plan) : plan;
+  const preview = pricingPreview?.prices?.[resolvedPlan?.id];
+  return {
+    display: displayPriceForPlan(resolvedPlan, pricingPreview),
+    amount: Number(preview?.amount ?? resolvedPlan?.amount ?? 0),
+    currency: String(preview?.currency || resolvedPlan?.currency || "INR").toUpperCase()
+  };
+}
+
+function formatMinorCurrency(amount, currency = "INR") {
+  if (!Number.isFinite(amount)) return "";
+  const normalizedCurrency = String(currency || "INR").toUpperCase();
+  try {
+    const decimals = new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: normalizedCurrency
+    }).resolvedOptions().maximumFractionDigits;
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: normalizedCurrency,
+      currencyDisplay: "narrowSymbol",
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0
+    }).format(amount / 10 ** decimals);
+  } catch {
+    return `${normalizedCurrency} ${Math.round(amount / 100)}`;
+  }
+}
+
+function entryPriceInfo(entry, pricingPreview) {
+  if (!entry) return { display: "", amount: 0, currency: "INR", free: false };
+  const converter = converterById(entry.selectedId);
+  if (isLocalConverter(converter)) return { display: "Free", amount: 0, currency: "INR", free: true };
+  return priceInfoForPlan(planForPages(entry.pageCount), pricingPreview);
+}
+
+function queuePriceSummary(entries, pricingPreview) {
+  const pricedEntries = entries.map((entry) => entryPriceInfo(entry, pricingPreview));
+  const paidEntries = pricedEntries.filter((entry) => !entry.free);
+  if (!entries.length) return "";
+  if (!paidEntries.length) return "All selected files are free";
+  const currency = paidEntries[0]?.currency || "INR";
+  const canSum = paidEntries.every((entry) => entry.currency === currency && Number.isFinite(entry.amount));
+  if (!canSum) return `${paidEntries.length} paid checkout${paidEntries.length === 1 ? "" : "s"}`;
+  const total = paidEntries.reduce((sum, entry) => sum + entry.amount, 0);
+  return `${formatMinorCurrency(total, currency)} if unlocked one by one`;
 }
 
 function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
@@ -917,7 +970,10 @@ function App() {
 
       <section id="top" className="conversion-stage">
         <div className="conversion-heading">
-          <h1>What would you like to convert?</h1>
+          <h1>
+            <span>What would you like to</span>
+            <strong>convert?</strong>
+          </h1>
           <p>Drop a file and AI Converter will suggest the cleanest outputs.</p>
         </div>
 
@@ -1022,7 +1078,7 @@ function App() {
                               {outputLabel(
                                 data.converters.find((converter) => converter.id === entry.selectedId),
                                 entry.outputFormat
-                              )}
+                              )} · {entryPriceInfo(entry, pricingPreview).display}
                             </small>
                           </span>
                         </button>
@@ -1055,6 +1111,25 @@ function App() {
                     </div>
                   )}
 
+                  <div className="instant-price-panel" aria-label="Instant price estimate">
+                    <div>
+                      <span>Price for this file</span>
+                      <strong>{entryPriceInfo(activeFileEntry, pricingPreview).display}</strong>
+                      <small>
+                        {isLocalImageConverter
+                          ? `${selectedOutputLabel} · no checkout needed`
+                          : `${selectedOutputLabel} · ${selectedPlan.detail} · pay after preview`}
+                      </small>
+                    </div>
+                    {fileQueue.length > 1 && (
+                      <div>
+                        <span>Queued files</span>
+                        <strong>{queuePriceSummary(fileQueue, pricingPreview)}</strong>
+                        <small>{fileQueue.length} uploaded files priced from their selected outputs</small>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="order-summary" aria-label="Estimated order">
                     <label>
                       <span>
@@ -1071,9 +1146,9 @@ function App() {
                       />
                     </label>
                     <div>
-                      <span>{isLocalImageConverter ? "Cost" : "All-in total"}</span>
+                      <span>{isLocalImageConverter ? "Cost" : "Checkout amount"}</span>
                       <strong>
-                        {isLocalImageConverter ? "Free · browser local" : `${selectedPlanPrice} · ${selectedPlan.detail}`}
+                        {isLocalImageConverter ? "Free" : `${selectedPlanPrice} · ${selectedPlan.detail}`}
                       </strong>
                     </div>
                   </div>

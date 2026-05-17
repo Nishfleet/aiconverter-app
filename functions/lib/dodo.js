@@ -128,6 +128,62 @@ export async function createDodoCheckout({ env, request, job, plan, email }) {
   return payload.checkout_url || payload.payment_link || "";
 }
 
+export async function syncDodoProductPrices(env, { dryRun = false } = {}) {
+  const apiKey = dodoApiKey(env);
+  const updates = Object.values(PLANS).map((plan) => ({
+    planId: plan.id,
+    productId: dodoProductIdForPlan(env, plan.id),
+    body: {
+      price: dodoOneTimePriceBody(plan)
+    }
+  }));
+  const missing = [];
+  if (!apiKey && !dryRun) missing.push("DODO_PAYMENTS_API_KEY");
+  updates.forEach((update) => {
+    if (!update.productId && !dryRun) missing.push(`DODO_PRODUCT_${update.planId.toUpperCase()}_ID`);
+  });
+
+  if (missing.length) {
+    return { ok: false, dryRun, missing, results: [] };
+  }
+
+  if (dryRun) {
+    return { ok: true, dryRun: true, baseUrl: dodoBaseUrl(env), updates };
+  }
+
+  const results = [];
+  for (const update of updates) {
+    const response = await fetch(`${dodoBaseUrl(env)}/products/${encodeURIComponent(update.productId)}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(update.body)
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      results.push({
+        planId: update.planId,
+        productId: update.productId,
+        ok: false,
+        status: response.status,
+        message: payload?.message || "Dodo product update failed."
+      });
+      continue;
+    }
+    results.push({
+      planId: update.planId,
+      productId: update.productId,
+      ok: true,
+      price: payload?.price || update.body.price
+    });
+  }
+
+  const failed = results.filter((result) => !result.ok);
+  return { ok: failed.length === 0, dryRun: false, baseUrl: dodoBaseUrl(env), results };
+}
+
 export async function verifyDodoPayment(env, paymentId, job) {
   const apiKey = dodoApiKey(env);
   if (!apiKey || !paymentId || !job) return false;
@@ -706,6 +762,17 @@ function dodoAdaptiveCurrencyEnabled(env) {
 
 function dodoAdaptiveCurrencyFeesInclusive(env) {
   return String(env.DODO_ADAPTIVE_CURRENCY_FEES_INCLUSIVE || "true").toLowerCase() !== "false";
+}
+
+function dodoOneTimePriceBody(plan) {
+  return {
+    currency: plan.currency || "INR",
+    discount: 0,
+    price: Number(plan.amount || 0),
+    purchasing_power_parity: false,
+    tax_inclusive: true,
+    type: "one_time_price"
+  };
 }
 
 export function isDodoPaymentAmountTooLow(env, payment, plan) {

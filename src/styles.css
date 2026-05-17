@@ -884,6 +884,20 @@ tbody tr:last-child td {
   font-size: clamp(34px, 5vw, 56px);
   line-height: 1.04;
   letter-spacing: 0;
+  font-weight: 520;
+}
+
+.conversion-heading h1 span,
+.conversion-heading h1 strong {
+  display: block;
+}
+
+.conversion-heading h1 span {
+  font-weight: 520;
+}
+
+.conversion-heading h1 strong {
+  font-weight: 880;
 }
 
 .conversion-heading p {
@@ -956,10 +970,6 @@ tbody tr:last-child td {
   gap: 0;
   padding: 8px 0;
   animation: ticker-scroll 46s linear infinite;
-}
-
-.popular-conversions:hover .conversion-ticker-track {
-  animation-play-state: paused;
 }
 
 .ticker-group {
@@ -1330,6 +1340,44 @@ tbody tr:last-child td {
   color: #ffffff;
   background: var(--ink);
   border-color: var(--ink);
+}
+
+.instant-price-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.instant-price-panel > div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.08), rgba(37, 99, 235, 0.03)), #ffffff;
+}
+
+.instant-price-panel span {
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 840;
+  text-transform: uppercase;
+}
+
+.instant-price-panel strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.instant-price-panel small {
+  color: #475467;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .order-summary {

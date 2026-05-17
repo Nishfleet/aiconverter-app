@@ -7,6 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "check:pricing": "node scripts/check-pricing.mjs",
+    "dodo:sync-prices": "node scripts/sync-dodo-prices.mjs",
     "stress:converters": "node scripts/stress-converters.mjs",
     "stress:checkout": "node scripts/stress-checkout-live.mjs",
     "stress:live": "node scripts/stress-live.mjs",

@@ -340,8 +340,9 @@
     {
       "id": "starter",
       "name": "Starter",
-      "price": "$3",
-      "amount": 300,
+      "price": "₹299",
+      "amount": 29900,
+      "currency": "INR",
       "detail": "25 pages/images",
       "pages": 25,
       "note": "Free preview first"
@@ -349,8 +350,9 @@
     {
       "id": "batch",
       "name": "Standard",
-      "price": "$5",
-      "amount": 500,
+      "price": "₹599",
+      "amount": 59900,
+      "currency": "INR",
       "detail": "100 pages/images",
       "pages": 100,
       "note": "Most one-off jobs"
@@ -358,8 +360,9 @@
     {
       "id": "pro",
       "name": "Bulk",
-      "price": "$9",
-      "amount": 900,
+      "price": "₹1,099",
+      "amount": 109900,
+      "currency": "INR",
       "detail": "500 pages/images",
       "pages": 500,
       "note": "Best value"

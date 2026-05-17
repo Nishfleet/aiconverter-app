@@ -33,9 +33,9 @@ Homepage ticker examples:
 
 Opening pricing:
 - Free preview.
-- Starter: $3 for 25 pages or images.
-- Standard: $5 for 100 pages or images.
-- Bulk: $9 for 500 pages or images.
+- Starter: ₹299 for 25 pages or images.
+- Standard: ₹599 for 100 pages or images.
+- Bulk: ₹1,099 for 500 pages or images.
 
 Upcoming module:
 - AI-monitored email intake after the secure direct upload workflow is stable.
