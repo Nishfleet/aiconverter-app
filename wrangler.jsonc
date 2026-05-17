@@ -27,7 +27,6 @@
     "ENABLE_AZURE_FALLBACK": "false",
     "FREE_DOWNLOADS_ENABLED": "false",
     "CONVERTIO_DAILY_JOB_LIMIT": "10",
-    "DODO_CURRENCY": "INR",
     // Set RATE_LIMIT_SALT as a secret, not a committed var:
     // wrangler pages secret put RATE_LIMIT_SALT
     "RATE_LIMIT_MAX_PER_HOUR": "8"
