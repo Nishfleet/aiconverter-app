@@ -995,9 +995,10 @@ tbody tr:last-child td {
 }
 
 .flow-rail {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   margin-bottom: 22px;
 }
 
@@ -1006,6 +1007,7 @@ tbody tr:last-child td {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  flex: 0 0 auto;
   color: var(--muted);
   font-size: 12px;
   font-weight: 760;
@@ -1015,7 +1017,8 @@ tbody tr:last-child td {
 .flow-step::after {
   content: "";
   height: 1px;
-  flex: 1 1 auto;
+  width: clamp(48px, 8vw, 118px);
+  flex: 0 0 auto;
   background: var(--line);
 }
 
@@ -1808,10 +1811,16 @@ tbody tr:last-child td {
 
   .flow-rail {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: grid;
+    gap: 12px 10px;
   }
 
   .flow-step::after {
     display: none;
+  }
+
+  .flow-step {
+    justify-content: center;
   }
 
   .popular-conversions {
