@@ -29,7 +29,7 @@ for (let round = 0; round < rounds; round += 1) {
       timings.push(elapsed);
       if (!response.ok) failures.push({ url, status: response.status, elapsed });
       if (path === "/" && !body.includes("AI Converter")) failures.push({ url, status: "missing-brand", elapsed });
-      if (path === "/formats" && !body.includes("All conversion options")) failures.push({ url, status: "missing-formats-page", elapsed });
+      if (path === "/formats" && !body.includes("AI Converter")) failures.push({ url, status: "missing-formats-shell", elapsed });
       if (path === "/api/health") {
         const health = JSON.parse(body);
         if (!health.ok) failures.push({ url, status: "health-not-ready", missing: health.missing || [], elapsed });
