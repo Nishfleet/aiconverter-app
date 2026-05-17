@@ -769,7 +769,7 @@ function dodoOneTimePriceBody(plan) {
     currency: plan.currency || "INR",
     discount: 0,
     price: Number(plan.amount || 0),
-    purchasing_power_parity: false,
+    purchasing_power_parity: true,
     tax_inclusive: true,
     type: "one_time_price"
   };

@@ -135,6 +135,7 @@ test("Dodo product price sync patches INR one-time prices", async () => {
     assert.equal(calls[0].headers.Authorization, "Bearer dodo_test");
     assert.deepEqual(calls.map((call) => call.body.price.price), [29900, 59900, 109900]);
     assert.deepEqual(calls.map((call) => call.body.price.currency), ["INR", "INR", "INR"]);
+    assert.deepEqual(calls.map((call) => call.body.price.purchasing_power_parity), [true, true, true]);
     assert.deepEqual(calls.map((call) => call.body.price.type), ["one_time_price", "one_time_price", "one_time_price"]);
   } finally {
     globalThis.fetch = originalFetch;
