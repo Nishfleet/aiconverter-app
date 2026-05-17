@@ -71,6 +71,10 @@ a {
   font-weight: 760;
 }
 
+.brand-name {
+  font-weight: 900;
+}
+
 .brand-mark {
   width: 34px;
   height: 34px;
@@ -946,14 +950,14 @@ tbody tr:last-child td {
   width: 100%;
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   flex: 0 0 auto;
   padding: 0 16px;
   color: var(--ink);
   background: rgba(37, 99, 235, 0.07);
   border-bottom: 1px solid var(--line);
   font-size: 11px;
-  font-weight: 840;
+  font-weight: 900;
   letter-spacing: 0;
   text-transform: uppercase;
   white-space: nowrap;
@@ -967,8 +971,8 @@ tbody tr:last-child td {
   display: flex;
   align-items: center;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 42px, #000 calc(100% - 42px), transparent);
-  mask-image: linear-gradient(to right, transparent, #000 42px, #000 calc(100% - 42px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 86px, #000 calc(100% - 86px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 86px, #000 calc(100% - 86px), transparent);
 }
 
 .conversion-ticker-track {
@@ -978,7 +982,7 @@ tbody tr:last-child td {
   transform: translate3d(0, 0, 0);
   will-change: transform;
   padding: 0;
-  animation: ticker-scroll 48s linear infinite;
+  animation: ticker-scroll var(--ticker-duration, 48s) linear infinite;
 }
 
 .ticker-group {
@@ -1043,7 +1047,7 @@ tbody tr:last-child td {
   }
 
   to {
-    transform: translate3d(-25%, 0, 0);
+    transform: translate3d(var(--ticker-distance, -25%), 0, 0);
   }
 }
 

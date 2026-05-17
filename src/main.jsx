@@ -37,7 +37,23 @@ const MAX_PAGES = 500;
 
 const classNames = (...values) => values.filter(Boolean).join(" ");
 let turnstileScriptPromise = null;
-const TICKER_COPY_COUNT = 4;
+const TICKER_MIN_COPY_COUNT = 8;
+const BRAND_NAME = "AI Converter";
+
+function BrandName({ className = "" }) {
+  return <strong className={classNames("brand-name", className)}>{BRAND_NAME}</strong>;
+}
+
+function renderBrandText(value) {
+  const text = String(value || "");
+  if (!text.includes(BRAND_NAME)) return text;
+  return text.split(BRAND_NAME).map((part, index) => (
+    <React.Fragment key={`${part}-${index}`}>
+      {index > 0 && <BrandName />}
+      {part}
+    </React.Fragment>
+  ));
+}
 
 function estimatePages(file) {
   if (!file) return 25;
@@ -292,7 +308,7 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
           <span className="brand-mark">
             <Wand2 size={18} strokeWidth={2.4} />
           </span>
-          <span>AI Converter</span>
+          <span className="brand-name">AI Converter</span>
         </a>
         <nav className="site-nav" aria-label="Primary navigation">
           <a href="/">Open converter</a>
@@ -304,7 +320,7 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
         <div>
           <h1>All conversion options</h1>
           <p>
-            A plain list of what AI Converter can convert today, generated from the same capability map the app uses.
+            A plain list of what <BrandName /> can convert today, generated from the same capability map the app uses.
           </p>
         </div>
         <div className="formats-stats" aria-label="Conversion coverage">
@@ -381,7 +397,7 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
 
       <footer className="footer">
         <div className="footer-brand">
-          <strong>AI Converter</strong>
+          <BrandName />
         </div>
         <nav className="footer-links" aria-label="Footer navigation">
           <a href="/">Converter</a>
@@ -413,7 +429,14 @@ function App() {
   const [turnstileToken, setTurnstileToken] = useState("");
   const [capabilities, setCapabilities] = useState({});
   const [pricingPreview, setPricingPreview] = useState(null);
+  const [tickerCopyCount, setTickerCopyCount] = useState(TICKER_MIN_COPY_COUNT);
+  const [tickerStyle, setTickerStyle] = useState({
+    "--ticker-distance": "-25%",
+    "--ticker-duration": "48s"
+  });
   const fileInputRef = useRef(null);
+  const tickerViewportRef = useRef(null);
+  const tickerGroupRef = useRef(null);
   const turnstileRef = useRef(null);
   const turnstileWidgetIdRef = useRef(null);
   const routePath = window.location.pathname.replace(/\/+$/, "") || "/";
@@ -507,6 +530,49 @@ function App() {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const viewport = tickerViewportRef.current;
+    const group = tickerGroupRef.current;
+    if (!viewport || !group) return undefined;
+
+    let frameId = 0;
+    const updateTicker = () => {
+      const groupWidth = Math.ceil(group.scrollWidth || group.getBoundingClientRect().width);
+      const viewportWidth = Math.ceil(viewport.clientWidth || viewport.getBoundingClientRect().width);
+      if (!groupWidth || !viewportWidth) return;
+
+      const nextCopyCount = Math.max(TICKER_MIN_COPY_COUNT, Math.ceil(viewportWidth / groupWidth) + 3);
+      setTickerCopyCount((current) => (current === nextCopyCount ? current : nextCopyCount));
+      setTickerStyle((current) => {
+        const nextStyle = {
+          "--ticker-distance": `-${groupWidth}px`,
+          "--ticker-duration": `${Math.max(28, Math.round(groupWidth / 34))}s`
+        };
+        return current["--ticker-distance"] === nextStyle["--ticker-distance"] &&
+          current["--ticker-duration"] === nextStyle["--ticker-duration"]
+          ? current
+          : nextStyle;
+      });
+    };
+
+    const scheduleUpdate = () => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(updateTicker);
+    };
+
+    scheduleUpdate();
+    const resizeObserver = new ResizeObserver(scheduleUpdate);
+    resizeObserver.observe(viewport);
+    resizeObserver.observe(group);
+    window.addEventListener("resize", scheduleUpdate);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", scheduleUpdate);
+    };
+  }, [popularConversions]);
 
   useEffect(() => {
     const nextFormat = selectedOutputFormats[0]?.id || defaultOutputFormat(selected);
@@ -961,7 +1027,7 @@ function App() {
           <span className="brand-mark">
             <Wand2 size={18} strokeWidth={2.4} />
           </span>
-          <span>AI Converter</span>
+          <span className="brand-name">AI Converter</span>
         </a>
         <nav className="site-nav" aria-label="Primary navigation">
           <a href="/formats">All formats</a>
@@ -975,7 +1041,7 @@ function App() {
             <span>What would you like to</span>
             <strong>convert?</strong>
           </h1>
-          <p>Drop a file and AI Converter will suggest the cleanest outputs.</p>
+          <p>Drop a file and <BrandName /> will suggest the cleanest outputs.</p>
         </div>
 
         <section className={classNames("converter-workspace", file && "has-file", result && "has-result")} aria-label="AI conversion workspace">
@@ -1091,7 +1157,7 @@ function App() {
                 <div className="selected-route-panel">
                   <div>
                     <h2>{selectedRouteTitle(selected, file)}</h2>
-                    <p>{selectedRouteDescription(selected, file)}</p>
+                    <p>{renderBrandText(selectedRouteDescription(selected, file))}</p>
                   </div>
 
                   {selectedOutputFormats.length > 1 && (
@@ -1227,7 +1293,7 @@ function App() {
                   <img src={result.localPreviewUrl} alt="Converted image preview" />
                   <div>
                     <strong>{result.localFileName}</strong>
-                    <p>This conversion happened in your browser. The image was not uploaded to AI Converter.</p>
+                    <p>This conversion happened in your browser. The image was not uploaded to <BrandName />.</p>
                     <button className="primary-button" onClick={handleUnlock} type="button">
                       {resultButtonLabel()}
                       <Download size={17} />
@@ -1314,10 +1380,14 @@ function App() {
         <section className="popular-conversions" aria-label="Popular conversion suggestions">
           <div className="popular-conversions-row">
             <span className="popular-conversions-label">Popular requests</span>
-            <div className="conversion-ticker" aria-hidden="true">
-              <div className="conversion-ticker-track">
-                {Array.from({ length: TICKER_COPY_COUNT }, (_, copyIndex) => (
-                  <div className={classNames("ticker-group", copyIndex > 0 && "is-duplicate")} key={copyIndex}>
+            <div className="conversion-ticker" aria-hidden="true" ref={tickerViewportRef}>
+              <div className="conversion-ticker-track" style={tickerStyle}>
+                {Array.from({ length: tickerCopyCount }, (_, copyIndex) => (
+                  <div
+                    className={classNames("ticker-group", copyIndex > 0 && "is-duplicate")}
+                    key={copyIndex}
+                    ref={copyIndex === 0 ? tickerGroupRef : null}
+                  >
                     {popularConversions.map((item) => (
                       <span className="ticker-chip" key={`${copyIndex}-${item}`}>
                         {item}
@@ -1434,7 +1504,7 @@ function App() {
 
       <footer className="footer">
         <div className="footer-brand">
-          <strong>AI Converter</strong>
+          <BrandName />
         </div>
         <nav className="footer-links" aria-label="Footer navigation">
           <a href="/privacy">Privacy</a>
