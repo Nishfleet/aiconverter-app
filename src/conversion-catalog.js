@@ -4,7 +4,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "bank",
     input: "PDF",
     output: "CSV",
-    category: "AI extraction",
+    category: "Data extraction",
     qaPriority: "core"
   },
   {
@@ -12,7 +12,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "receipt",
     input: "Image / PDF",
     output: "Expense CSV",
-    category: "AI extraction",
+    category: "Data extraction",
     qaPriority: "core"
   },
   {
@@ -20,7 +20,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "invoice",
     input: "PDF",
     output: "JSON",
-    category: "AI extraction",
+    category: "Data extraction",
     qaPriority: "core"
   },
   {
@@ -28,7 +28,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "screenshot",
     input: "PNG / JPG",
     output: "CSV",
-    category: "AI extraction",
+    category: "Data extraction",
     qaPriority: "core"
   },
   {
@@ -36,7 +36,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "image-format",
     input: "JPG",
     output: "PNG",
-    category: "Browser-local image",
+    category: "Images",
     qaPriority: "core"
   },
   {
@@ -44,7 +44,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "image-format",
     input: "PNG",
     output: "JPG",
-    category: "Browser-local image",
+    category: "Images",
     qaPriority: "core"
   },
   {
@@ -52,7 +52,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "image-format",
     input: "WEBP",
     output: "PNG",
-    category: "Browser-local image",
+    category: "Images",
     qaPriority: "core"
   },
   {
@@ -60,7 +60,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "audio-transcript",
     input: "MP3 / WAV / M4A",
     output: "TXT",
-    category: "AI transcript",
+    category: "Audio",
     qaPriority: "core"
   },
   {
@@ -68,7 +68,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "document-markdown",
     input: "PDF / DOCX / XLSX / HTML",
     output: "MD",
-    category: "Document Markdown",
+    category: "Documents",
     qaPriority: "core"
   },
   {
@@ -76,7 +76,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "PDF",
     output: "DOCX",
-    category: "Provider-backed",
+    category: "Documents",
     qaPriority: "provider"
   },
   {
@@ -84,7 +84,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "DOCX",
     output: "PDF",
-    category: "Provider-backed",
+    category: "Documents",
     qaPriority: "provider"
   },
   {
@@ -92,7 +92,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "PDF",
     output: "JPG",
-    category: "Provider-backed",
+    category: "Documents",
     qaPriority: "provider"
   },
   {
@@ -100,7 +100,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "HEIC",
     output: "JPG",
-    category: "Provider-backed",
+    category: "Images",
     qaPriority: "provider"
   },
   {
@@ -108,7 +108,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "SVG",
     output: "PNG",
-    category: "Provider-backed",
+    category: "Images",
     qaPriority: "provider"
   },
   {
@@ -116,7 +116,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "MP4",
     output: "MP3",
-    category: "Provider-backed",
+    category: "Audio",
     qaPriority: "provider"
   },
   {
@@ -124,7 +124,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "MOV",
     output: "MP4",
-    category: "Provider-backed",
+    category: "Video",
     qaPriority: "provider"
   },
   {
@@ -132,7 +132,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "GIF",
     output: "MP4",
-    category: "Provider-backed",
+    category: "Video",
     qaPriority: "provider"
   },
   {
@@ -140,7 +140,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "WAV",
     output: "MP3",
-    category: "Provider-backed",
+    category: "Audio",
     qaPriority: "provider"
   },
   {
@@ -148,7 +148,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "XLSX",
     output: "CSV",
-    category: "Provider-backed",
+    category: "Spreadsheets",
     qaPriority: "provider"
   },
   {
@@ -156,7 +156,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "CSV",
     output: "XLSX",
-    category: "Provider-backed",
+    category: "Spreadsheets",
     qaPriority: "provider"
   }
 ];
@@ -293,6 +293,17 @@ export function familyForFormat(format = "") {
   return "file";
 }
 
+export function customerCategoryForPair(input = "", output = "") {
+  const inputFamily = familyForFormat(input);
+  const outputFamily = familyForFormat(output);
+  if (inputFamily === "spreadsheet" || outputFamily === "spreadsheet") return "Spreadsheets";
+  if (inputFamily === "video" || outputFamily === "video") return "Video";
+  if (inputFamily === "audio" || outputFamily === "audio") return "Audio";
+  if (inputFamily === "image" || outputFamily === "image") return "Images";
+  if (inputFamily === "archive" || outputFamily === "archive") return "Archives";
+  return "Documents";
+}
+
 export function universalOutputCapabilityIds(format = "") {
   const normalized = normalizeFormatId(format);
   const groups = {
@@ -350,9 +361,9 @@ export function buildConversionCatalog(converters, options = {}) {
             input: inputLabel,
             output: outputLabel,
             label: displayLabelForPair(converter.id, inputLabel, outputLabel),
-            category: "Provider-backed",
+            category: customerCategoryForPair(input, output),
             available: universalProviderReady,
-            route: universalProviderReady ? "Configured universal provider route" : "Provider route required"
+            detail: universalProviderReady ? "Preview first, full file after unlock" : "Coming soon"
           }));
         }
       }
@@ -368,9 +379,9 @@ export function buildConversionCatalog(converters, options = {}) {
             input: formatLabel(input),
             output: formatLabel(output),
             label: `${formatLabel(input)} to ${formatLabel(output)}`,
-            category: "Browser-local image",
+            category: "Images",
             available: true,
-            route: "Browser-local"
+            detail: "Private image conversion"
           }));
         }
       }
@@ -383,9 +394,9 @@ export function buildConversionCatalog(converters, options = {}) {
           input: formatLabel(input),
           output: "SVG",
           label: `${formatLabel(input)} to SVG`,
-          category: "Browser-local image",
+          category: "Images",
           available: true,
-          route: "Browser-local"
+          detail: "Private image conversion"
         }));
       }
       continue;
@@ -394,9 +405,9 @@ export function buildConversionCatalog(converters, options = {}) {
     for (const pair of DIRECT_CONVERSION_PAIRS[converter.id] || []) {
       pairs.push(pairForConverter(converter, {
         ...pair,
-        category: pair.category || (converter.state === "Live" ? "AI extraction" : "Beta AI route"),
+        category: pair.category || (converter.id === "audio-transcript" ? "Audio" : converter.id === "document-markdown" ? "Documents" : "Data extraction"),
         available: true,
-        route: converter.state === "Live" ? "Live AI route" : "Beta AI route"
+        detail: converter.state === "Live" ? "Preview before full export" : "Preview first"
       }));
     }
   }
@@ -435,14 +446,14 @@ export function confidenceDetailsForConverter(converter, outputFormat, options =
 
   return {
     output: provider
-      ? `${output} file through the configured provider route`
+      ? `${output} file`
       : local
-        ? `${output} file generated in your browser`
+        ? `${output} file generated privately`
         : `${output} preview before full export`,
-    preview: local ? "Instant local download" : provider ? "Route preview first, full provider file after unlock" : "Free sample preview before payment",
-    privacy: local ? "No upload for this route" : "Private storage, tokened job access, short retention",
+    preview: local ? "Instant download" : provider ? "Preview first, full file after unlock" : "Free sample preview before payment",
+    privacy: local ? "No upload needed" : "Private storage, tokened job access, short retention",
     limit: `${maxSizeMb} MB max${converter?.id === "bank" ? ", 500 pages max" : ""}`,
-    state: provider ? (providerReady ? "Available now" : "Waiting on provider route") : converter?.state || "Live"
+    state: provider ? (providerReady ? "Available now" : "Coming soon") : converter?.state || "Live"
   };
 }
 

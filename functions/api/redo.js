@@ -27,7 +27,7 @@ export async function onRequestPost({ request, env }) {
   let job = await getAuthorizedJob(env, jobId, token);
   if (!job) return badRequest("Unknown or expired conversion.");
   if (!job.paid_at) return json({ error: "Redo is available only after payment." }, { status: 402 });
-  if (isUniversalConverter(job.converter_id)) return json({ error: "Provider file conversions do not use the AI redo path." }, { status: 400 });
+  if (isUniversalConverter(job.converter_id)) return json({ error: "File-format conversions do not use the AI redo path." }, { status: 400 });
   if (Number(job.redo_count || 0) >= 1) {
     return json({ error: "This job already used its automatic redo." }, { status: 429 });
   }

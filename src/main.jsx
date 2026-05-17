@@ -201,10 +201,13 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
   const categories = useMemo(
     () => [
       "Available",
-      "Provider-backed",
-      "Browser-local image",
-      "AI extraction",
-      "Beta AI route"
+      "Documents",
+      "Images",
+      "Audio",
+      "Video",
+      "Spreadsheets",
+      "Archives",
+      "Data extraction"
     ],
     []
   );
@@ -218,16 +221,15 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
             : pair.category === category;
         const searchMatch =
           !normalizedQuery ||
-          [pair.label, pair.input, pair.output, pair.converterTitle, pair.route, pair.category]
+          [pair.label, pair.input, pair.output, pair.converterTitle, pair.detail, pair.category]
             .filter(Boolean)
             .some((value) => String(value).toLowerCase().includes(normalizedQuery));
         return categoryMatch && searchMatch;
       }),
     [catalog, category, normalizedQuery]
   );
-  const providerPairs = catalog.filter((pair) => pair.category === "Provider-backed");
-  const availableProviderPairs = providerPairs.filter((pair) => pair.available);
   const upcomingConverters = data.converters.filter((converter) => !isLiveConverter(converter));
+  const coveredFamilies = ["Documents", "Images", "Audio", "Video", "Archives"];
 
   return (
     <main className="page-shell formats-page">
@@ -248,7 +250,7 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
         <div>
           <h1>All conversion options</h1>
           <p>
-            A generated view of the routes AI Converter can actually offer from the current converter metadata and live provider config.
+            A plain list of what AI Converter can convert today, generated from the same capability map the app uses.
           </p>
         </div>
         <div className="formats-stats" aria-label="Conversion coverage">
@@ -257,12 +259,12 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
             <strong>{availableConversionCountLabel(conversionCount)}</strong>
           </div>
           <div>
-            <span>Universal route</span>
-            <strong>{universalProviderReady ? "Configured" : "Waiting"}</strong>
+            <span>Format families</span>
+            <strong>{coveredFamilies.join(", ")}</strong>
           </div>
           <div>
-            <span>Provider pairs</span>
-            <strong>{availableProviderPairs.length}/{providerPairs.length}</strong>
+            <span>More formats</span>
+            <strong>{universalProviderReady ? "Coming soon" : "In progress"}</strong>
           </div>
         </div>
       </section>
@@ -297,7 +299,7 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
             <div>
               <span>{pair.category}</span>
               <strong>{pair.label}</strong>
-              <p>{pair.route}</p>
+              <p>{pair.detail}</p>
             </div>
             <div className="format-card-meta">
               <span>{pair.input}</span>
@@ -311,11 +313,11 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
       <section className="formats-confidence" aria-label="Conversion confidence rules">
         <article>
           <h2>Preview first</h2>
-          <p>Server-side routes show a free preview or route confirmation before payment. Browser-local image tools download immediately.</p>
+          <p>Most conversions show a free preview before payment. Simple image conversions download immediately.</p>
         </article>
         <article>
-          <h2>Truth-gated providers</h2>
-          <p>Provider-backed pairs only count as available when CloudConvert or the Convertio backup route is configured.</p>
+          <h2>Honest availability</h2>
+          <p>Formats only count as available when the live app is ready to accept that input and output.</p>
         </article>
         <article>
           <h2>More coming soon</h2>
@@ -392,11 +394,11 @@ function App() {
   const popularConversionsSummary = universalProviderReady
     ? {
         title: availableConversionCountLabel(conversionCount),
-        detail: "Generated from routes configured today. More coming soon."
+        detail: "Generated from conversion options available today. More coming soon."
       }
     : {
         title: "More conversion options coming soon",
-        detail: "Provider-backed formats appear when the universal route is configured."
+        detail: "New format groups appear here after they pass QA."
       };
   const converterIsEnabled = (converter) => !isProviderConverter(converter) || universalProviderReady;
   const liveConverters = useMemo(() => data.converters.filter(isLiveConverter), []);

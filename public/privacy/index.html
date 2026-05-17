@@ -7,7 +7,7 @@
     <title>Privacy Policy - AI Converter</title>
     <meta
       name="description"
-      content="How AI Converter handles uploaded source files, generated files, local image/SVG conversion, payment status, and short retention."
+      content="How AI Converter handles uploaded source files, generated files, private image/SVG conversion, payment status, and short retention."
     />
     <link rel="canonical" href="https://aiconverter.app/privacy" />
     <link rel="stylesheet" href="/legal.css" />
@@ -66,13 +66,9 @@
           <p>
             Digital bank statement PDFs are parsed directly first. If a file is scanned,
             image-heavy, a receipt, an invoice, a screenshot, or too messy for the
-            native parser, Mistral OCR may be used when configured. Cloudflare
-            Workers AI may be used for audio transcript, document Markdown, and
-            screenshot-to-HTML beta modules when configured. CloudConvert may be
-            used for universal provider conversion when configured.
-            Azure Document Intelligence may be used as an optional paid-job fallback
-            when configured. Provider use is limited to extracting transaction data
-            for the conversion you requested.
+            native parser, OCR and AI processing may be used when configured.
+            Audio transcript, document Markdown, screenshot-to-HTML, and common
+            file-format conversion run only to produce the conversion you requested.
           </p>
           <p>
             Low-confidence files fail closed instead of being sent to a human review queue.
@@ -98,7 +94,7 @@
             redo window. Source files are deleted after a failed preview, failed full
             extraction, completed redo, or the 24-hour private source lifecycle.
             Generated files expire after 7 days.
-            Browser-local image/SVG conversions do not create source files or
+            Private image/SVG conversions do not create source files or
             generated files on AI Converter.
           </p>
           <p>

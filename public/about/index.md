@@ -1,6 +1,6 @@
 ---
 title: About AI Converter
-description: AI Converter is a private, preview-first converter for sensitive files, with bank statement PDF to CSV live first, beta AI routes, provider-backed conversion, local image tools, and short retention.
+description: AI Converter is a private, preview-first converter for sensitive files, with bank statement PDF to CSV live first, common file conversion, private image tools, and short retention.
 ---
 
 # About AI Converter
@@ -15,11 +15,11 @@ It is built for short retention, private storage, and clear failure states.
 - Sample preview before payment.
 - Paid full export and download.
 - One stronger automatic redo for paid jobs.
-- Browser-local image format and raster-to-SVG tools.
+- Private image format and raster-to-SVG tools.
 
-## Beta and provider-backed
+## More conversion options
 
-Receipts, invoices, screenshot tables, audio transcripts, document Markdown, screenshot-to-HTML, and universal file conversion run through configured AI or conversion providers. If a route cannot produce a reliable preview or provider result, it fails closed instead of pretending.
+Receipts, invoices, screenshot tables, audio transcripts, document Markdown, screenshot-to-HTML, and common file conversion use the same preview-first flow. If a route cannot produce a reliable preview or result, it fails closed instead of pretending.
 
 ## Privacy posture
 
@@ -27,4 +27,4 @@ Source files are stored privately for preview, unlock, and the redo window. Gene
 
 ## Boundaries
 
-AI Converter does not claim every bank, receipt, invoice, screenshot, audio file, document, image format, provider pair, certified compliance status, pixel-perfect image-to-code, or guaranteed accuracy. Review exports before important use.
+AI Converter does not claim every bank, receipt, invoice, screenshot, audio file, document, image format, certified compliance status, pixel-perfect image-to-code, or guaranteed accuracy. Review exports before important use.

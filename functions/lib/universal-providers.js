@@ -16,8 +16,8 @@ export async function startUniversalProviderConversion(env, job, arrayBuffer) {
 
   const meaningful = attempts.filter(Boolean);
   const message = meaningful.length
-    ? `All provider routes failed: ${meaningful.map((attempt) => `${attempt.provider}: ${attempt.message}`).join("; ")}`
-    : "No provider conversion route is configured.";
+    ? "This conversion option is temporarily unavailable."
+    : "This conversion option is not ready yet.";
 
   return {
     ok: false,
@@ -42,7 +42,7 @@ async function attemptProvider(provider, run) {
       result,
       failure: {
         provider,
-        message: result?.message || "Provider route was unavailable."
+        message: result?.message || "Conversion route was unavailable."
       }
     };
   } catch (error) {
@@ -50,7 +50,7 @@ async function attemptProvider(provider, run) {
       result: null,
       failure: {
         provider,
-        message: error?.message || "Provider route failed."
+        message: error?.message || "Conversion route failed."
       }
     };
   }

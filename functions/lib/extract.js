@@ -310,7 +310,7 @@ async function convertInvoiceToStructuredFile(env, fileName, contentType, arrayB
 
 async function convertAudioToTranscript(env, fileName, contentType, arrayBuffer, options = {}) {
   if (!env?.AI?.run) {
-    return failConversion("Audio transcription needs the Cloudflare Workers AI binding before it can run.", "workers-ai-whisper");
+    return failConversion("Audio transcription is not ready yet.", "workers-ai-whisper");
   }
 
   const model = env.WHISPER_MODEL || DEFAULT_WHISPER_MODEL;
@@ -481,12 +481,11 @@ async function convertUniversalFile(env, fileName, contentType, arrayBuffer, opt
   const cloudConvertReady = hasCloudConvertConfig(env);
   const convertioReady = hasConvertioConfig(env);
   if (!cloudConvertReady && !convertioReady) {
-    return failConversion("Universal file conversion needs a configured provider route before it can run.", "provider");
+    return failConversion("This conversion option is not ready yet.", "provider");
   }
 
   const outputFormat = normalizeUniversalOutputFormat(options.outputFormat);
-  const route = cloudConvertReady ? "CloudConvert" : "Convertio";
-  const row = universalPreviewRow(fileName, contentType, outputFormat, route);
+  const row = universalPreviewRow(fileName, contentType, outputFormat, "Preview ready");
   return {
     ok: true,
     csv: rowsToCsv([row], UNIVERSAL_COLUMNS),
@@ -496,7 +495,7 @@ async function convertUniversalFile(env, fileName, contentType, arrayBuffer, opt
     trustScore: 0.9,
     rowCount: 1,
     warnings: [
-      "Preview confirms the conversion route. The provider-backed file is generated after unlock."
+      "Preview confirms this file can be converted. The full file is generated after unlock."
     ],
     provider: cloudConvertReady ? "cloudconvert-preview" : "convertio-preview"
   };
@@ -504,7 +503,7 @@ async function convertUniversalFile(env, fileName, contentType, arrayBuffer, opt
 
 async function documentToMarkdown(env, fileName, contentType, arrayBuffer) {
   if (!env?.AI?.toMarkdown) {
-    return failConversion("Document Markdown conversion needs the Cloudflare Workers AI binding before it can run.", "workers-ai-markdown");
+    return failConversion("Document Markdown conversion is not ready yet.", "workers-ai-markdown");
   }
 
   const result = await env.AI.toMarkdown({
@@ -700,16 +699,16 @@ function providerOrder(env, options = {}) {
   const providers = [];
 
   if (options.forceProvider === "mistral") {
-    if (hasMistralConfig(env)) providers.push({ id: "mistral-ocr", label: "Mistral OCR", run: extractWithMistralOcr });
-    if (paidFallbackAllowed && hasAzureConfig(env)) providers.push({ id: "azure", label: "Azure fallback", run: extractWithAzure });
-    if (cloudflareFallback) providers.push({ id: "cloudflare-ai", label: "Cloudflare fallback", run: extractWithCloudflareAi });
+    if (hasMistralConfig(env)) providers.push({ id: "mistral-ocr", label: "OCR fallback", run: extractWithMistralOcr });
+    if (paidFallbackAllowed && hasAzureConfig(env)) providers.push({ id: "azure", label: "Paid fallback", run: extractWithAzure });
+    if (cloudflareFallback) providers.push({ id: "cloudflare-ai", label: "AI fallback", run: extractWithCloudflareAi });
     return providers;
   }
 
   providers.push({ id: "native-pdf", label: "Built-in PDF parser", run: extractWithNativePdf });
-  if (hasMistralConfig(env)) providers.push({ id: "mistral-ocr", label: "Mistral OCR", run: extractWithMistralOcr });
-  if (paidFallbackAllowed && hasAzureConfig(env)) providers.push({ id: "azure", label: "Azure fallback", run: extractWithAzure });
-  if (cloudflareFallback) providers.push({ id: "cloudflare-ai", label: "Cloudflare fallback", run: extractWithCloudflareAi });
+  if (hasMistralConfig(env)) providers.push({ id: "mistral-ocr", label: "OCR fallback", run: extractWithMistralOcr });
+  if (paidFallbackAllowed && hasAzureConfig(env)) providers.push({ id: "azure", label: "Paid fallback", run: extractWithAzure });
+  if (cloudflareFallback) providers.push({ id: "cloudflare-ai", label: "AI fallback", run: extractWithCloudflareAi });
   return providers;
 }
 
@@ -763,7 +762,7 @@ async function extractWithMistralOcr(env, fileName, arrayBuffer, options = {}) {
     confidence: ocr.confidence || scoreParserConfidence(transactions, ocr.pages, ocr.pages.length),
     pagesParsed: ocr.pages.length,
     totalPages: ocr.pages.length,
-    warnings: transactions.length ? [] : ["Mistral OCR returned text but no transaction rows matched the parser."],
+    warnings: transactions.length ? [] : ["OCR returned text but no transaction rows matched the parser."],
     transactions
   };
 }
@@ -806,7 +805,7 @@ async function runMistralOcr(env, contentType, arrayBuffer, options = {}) {
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload?.message || `Mistral OCR failed (${response.status}).`);
+    throw new Error(payload?.message || `OCR failed (${response.status}).`);
   }
 
   const pages = (payload.pages || []).map((page) => ocrPageText(page));
@@ -1391,11 +1390,11 @@ async function extractWithAzure(env, fileName, arrayBuffer, options = {}) {
   });
 
   if (!start.ok) {
-    throw new Error(`Azure extraction failed to start (${start.status}).`);
+    throw new Error(`Fallback extraction failed to start (${start.status}).`);
   }
 
   const operationUrl = start.headers.get("operation-location");
-  if (!operationUrl) throw new Error("Azure extraction did not return an operation URL.");
+  if (!operationUrl) throw new Error("Fallback extraction did not return an operation URL.");
 
   const result = await pollAzure(env, operationUrl);
   const transactions = extractAzureRows(result.analyzeResult || result);
@@ -1406,7 +1405,7 @@ async function extractWithAzure(env, fileName, arrayBuffer, options = {}) {
     confidence,
     pagesParsed: result.analyzeResult?.pages?.length || result.pages?.length || 0,
     totalPages: result.analyzeResult?.pages?.length || result.pages?.length || 0,
-    warnings: transactions.length ? [] : ["Azure did not return transaction rows."],
+    warnings: transactions.length ? [] : ["Fallback parser did not return transaction rows."],
     transactions
   };
 }
@@ -1418,10 +1417,10 @@ async function pollAzure(env, operationUrl) {
     const response = await fetch(operationUrl, {
       headers: { "Ocp-Apim-Subscription-Key": env.AZURE_DOCUMENT_INTELLIGENCE_KEY }
     });
-    if (!response.ok) throw new Error(`Azure extraction status failed (${response.status}).`);
+    if (!response.ok) throw new Error(`Fallback extraction status failed (${response.status}).`);
     last = await response.json();
     if (last.status === "succeeded") return last;
-    if (last.status === "failed") throw new Error(last.error?.message || "Azure extraction failed.");
+    if (last.status === "failed") throw new Error(last.error?.message || "Fallback extraction failed.");
   }
   throw new Error("The bank statement extractor timed out. Try a smaller file.");
 }

@@ -1,12 +1,12 @@
 # AI Converter
 
-AI Converter is a web app for automated AI conversion and browser-local image/SVG conversion. Bank statement PDF to CSV is the first production AI module.
+AI Converter is a web app for automated AI conversion, private image/SVG conversion, and common file-format conversion. Bank statement PDF to CSV is the first production AI module.
 
 Live and beta modules:
 - Bank statement PDF to CSV.
 - Direct browser upload.
 - Built-in parser first for digital PDFs.
-- Mistral OCR fallback for scanned or messy PDFs when configured.
+- OCR fallback for scanned or messy PDFs when configured.
 - Free sample preview before payment.
 - Paid full extraction and CSV download.
 - One automatic stronger redo for paid jobs.
@@ -19,17 +19,17 @@ Live and beta modules:
 - Receipt image or PDF to expense CSV is beta. It can export vendor, date, category, total, tax, payment method, and notes when safely detected.
 - Invoice or bill image/PDF to CSV or JSON is beta. It can export vendor, invoice number, dates, total, subtotal, tax, payment terms, notes, and JSON line items when safely detected.
 - Screenshot PNG, JPG, WEBP, or image PDF to spreadsheet CSV is beta. It can infer table rows and headers when safely detected.
-- Image format conversion from PNG, JPG, JPEG, or WEBP to PNG, JPG, or WEBP is live as a browser-local module. The image does not upload to AI Converter for that route.
-- Raster-to-SVG conversion from PNG, JPG, JPEG, or WEBP to SVG is live as a browser-local posterized module. The image does not upload to AI Converter for that route.
-- Audio transcript from MP3, WAV, M4A, AAC, OGG, or WEBM to TXT or JSON is beta and uses Cloudflare Workers AI speech recognition when configured.
-- Document Markdown conversion for Cloudflare-supported rich document formats is beta and uses Cloudflare Workers AI Markdown Conversion when configured.
-- Screenshot to HTML is beta. It creates a clean starter preview and uses Workers AI vision for paid image exports when configured. It does not claim pixel-perfect screenshot cloning.
-- Universal file conversion for documents, images, audio, video, and archives is provider-backed through the configured provider route. CloudConvert is used when configured; Convertio can run as backup or fallback.
+- Image format conversion from PNG, JPG, JPEG, or WEBP to PNG, JPG, or WEBP is live. The image does not upload to AI Converter for that route.
+- Raster-to-SVG conversion from PNG, JPG, JPEG, or WEBP to SVG is live. The image does not upload to AI Converter for that route.
+- Audio transcript from MP3, WAV, M4A, AAC, OGG, or WEBM to TXT or JSON is beta.
+- Document Markdown conversion for supported rich document formats is beta.
+- Screenshot to HTML is beta. It creates a clean starter preview and uses image understanding for paid image exports when configured. It does not claim pixel-perfect screenshot cloning.
+- Common file conversion supports documents, images, audio, video, and archives when the selected input and output are available.
 - Beta modules use OCR and fail closed when structure confidence is too low.
 
 Homepage ticker examples:
 - Core examples: bank statement PDF to CSV, receipt image to expense CSV, invoice PDF to JSON, screenshot table to CSV, JPG to PNG, PNG to JPG, WEBP to PNG, audio to transcript, document to Markdown.
-- When universal provider conversion is configured: 200+ conversion options are available across the current accepted input formats and output choices, with more coming soon. Examples include PDF to Word, Word to PDF, PDF to JPG, HEIC to JPG, SVG to PNG, MP4 to MP3, MOV to MP4, GIF to MP4, WAV to MP3, XLSX to CSV, CSV to XLSX, docs/images/audio/video/archive categories, and many more provider-backed formats.
+- 200+ conversion options are available across the current accepted input formats and output choices, with more coming soon. Examples include PDF to Word, Word to PDF, PDF to JPG, HEIC to JPG, SVG to PNG, MP4 to MP3, MOV to MP4, GIF to MP4, WAV to MP3, XLSX to CSV, CSV to XLSX, docs/images/audio/video/archive categories, and many more formats.
 
 Opening pricing:
 - Free preview.
@@ -46,7 +46,7 @@ Important product truth:
 - Accuracy, security, compliance, and supported-format claims should stay limited to what the live product can prove.
 - Email monitoring is not the primary intake for bank PDFs.
 - Human file review is not part of the automated workflow.
-- Source files use a 24-hour private retention window. Generated files expire after 7 days. Browser-local image/SVG conversions do not create server-side source files.
+- Source files use a 24-hour private retention window. Generated files expire after 7 days. Private image/SVG conversions do not create server-side source files.
 
 Primary URL:
 - https://aiconverter.app

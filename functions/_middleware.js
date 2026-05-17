@@ -2,12 +2,12 @@ import { withSecurityHeaders } from "./lib/http.js";
 
 const markdown = `---
 title: AI Converter - Useful file conversion
-description: Convert bank statement PDFs, receipts, invoices, screenshots, documents, audio, common images, and provider-backed file formats into useful outputs with preview-first AI routes and local conversion.
+description: Convert bank statement PDFs, receipts, invoices, screenshots, documents, audio, images, video, archives, and common file formats into useful outputs with preview-first conversion.
 ---
 
 # AI Converter
 
-AI Converter converts sensitive files into useful CSV, JSON, Markdown, transcript, HTML, SVG, image, document, media, or archive outputs. Bank statements are the first live AI module. Receipts, invoices, screenshot tables, audio transcripts, document Markdown, and screenshot-to-HTML are beta AI modules. Common image-format and raster-to-SVG conversion is browser-local. Universal provider conversion activates when CloudConvert or the Convertio backup route is configured.
+AI Converter converts sensitive files into useful CSV, JSON, Markdown, transcript, HTML, SVG, image, document, media, or archive outputs. Bank statements are the first live AI module. Receipts, invoices, screenshot tables, audio transcripts, document Markdown, screenshot-to-HTML, image conversion, and common file-format conversion use the same preview-first product surface.
 
 ## Live and beta modules
 
@@ -15,7 +15,7 @@ Live:
 
 - Direct browser upload.
 - Built-in parser first for digital PDFs.
-- Mistral OCR fallback for scanned or messy PDFs when configured.
+- OCR fallback for scanned or messy PDFs when configured.
 - Free sample preview before payment.
 - Full extraction and CSV download after payment.
 - One automatic stronger redo for paid jobs.
@@ -24,23 +24,23 @@ Live:
 - Source files are stored privately and deleted after failed extraction, completed redo, or the 24-hour source lifecycle.
 - Low-confidence conversions fail closed with no charge.
 - Free-preview reuse, payment reuse, and redo abuse are rate-limited.
-- PNG/JPG/WEBP to PNG/JPG/WEBP conversion runs locally in the browser and does not upload the image.
-- PNG/JPG/WEBP to SVG posterized conversion runs locally in the browser and does not upload the image.
-- Universal provider conversion for documents, images, audio, video, and archives runs through the configured provider route. CloudConvert is used when configured; Convertio can run as the backup or fallback route. Long provider jobs run in the background and update automatically.
+- PNG/JPG/WEBP to PNG/JPG/WEBP conversion keeps the image on the device.
+- PNG/JPG/WEBP to SVG posterized conversion keeps the image on the device.
+- Documents, images, audio, video, and archives can convert into popular output formats. Long media jobs run in the background and update automatically.
 
 Beta:
 
 - Receipt image or PDF to expense CSV with vendor, date, category, total, tax, payment method, and notes when safely detected.
 - Invoice or bill image/PDF to CSV or JSON with invoice fields and line items when safely detected.
 - Screenshot PNG, JPG, WEBP, or image PDF to spreadsheet CSV with table/header inference when safely detected.
-- Audio transcript from MP3, WAV, M4A, AAC, OGG, or WEBM to TXT or JSON when Workers AI is configured.
-- Document Markdown conversion for Cloudflare-supported rich document formats when Workers AI Markdown Conversion is configured.
-- Screenshot to HTML provides a clean starter preview and uses Workers AI vision for paid image exports when configured. This does not claim pixel-perfect screenshot cloning.
+- Audio transcript from MP3, WAV, M4A, AAC, OGG, or WEBM to TXT or JSON.
+- Document Markdown conversion for supported rich document formats.
+- Screenshot to HTML provides a clean starter preview and uses image understanding for paid image exports when configured. This does not claim pixel-perfect screenshot cloning.
 - Beta modules use OCR and fail closed when confidence is too low.
 
 ## Popular conversion examples
 
-The homepage ticker and /formats page suggest common requests that fit the current product surface. Core examples include bank statement PDF to CSV, receipt image to expense CSV, invoice PDF to JSON, screenshot table to CSV, JPG to PNG, PNG to JPG, WEBP to PNG, audio to transcript, and document to Markdown. When universal provider conversion is configured, the generated format catalog can truthfully say 200+ conversion options are available across the current accepted input formats and output choices, with more coming soon. Examples include PDF to Word, Word to PDF, PDF to JPG, HEIC to JPG, SVG to PNG, MP4 to MP3, MOV to MP4, GIF to MP4, WAV to MP3, XLSX to CSV, CSV to XLSX, docs/images/audio/video/archive categories, and many more provider-backed formats.
+The homepage ticker and /formats page suggest common requests that fit the current product surface. Core examples include bank statement PDF to CSV, receipt image to expense CSV, invoice PDF to JSON, screenshot table to CSV, JPG to PNG, PNG to JPG, WEBP to PNG, audio to transcript, and document to Markdown. The generated format catalog can truthfully say 200+ conversion options are available across the current accepted input formats and output choices, with more coming soon. Examples include PDF to Word, Word to PDF, PDF to JPG, HEIC to JPG, SVG to PNG, MP4 to MP3, MOV to MP4, GIF to MP4, WAV to MP3, XLSX to CSV, CSV to XLSX, docs/images/audio/video/archive categories, and many more formats.
 
 ## Pricing
 
@@ -52,11 +52,11 @@ The homepage ticker and /formats page suggest common requests that fit the curre
 ## Upcoming modules
 
 - AI-monitored email intake after the direct upload workflow is stable.
-- Pixel-perfect image-to-code is not claimed. Universal provider conversion is available only when a provider route is configured and the route preview accepts the file.
+- Pixel-perfect image-to-code is not claimed. Format conversion is available only when the live app accepts that input and output pair.
 
 ## Security posture
 
-The AI workflow is designed for private storage, 24-hour source retention, 7-day generated-file retention, random job tokens, no public object URLs, no emailed bank PDFs, and minimal job metadata. Browser-local image and SVG conversion does not create server-side files.
+The AI workflow is designed for private storage, 24-hour source retention, 7-day generated-file retention, random job tokens, no public object URLs, no emailed bank PDFs, and minimal job metadata. Private image and SVG conversion does not create server-side files.
 
 ## Request access
 
@@ -70,14 +70,14 @@ Use the upload flow at https://aiconverter.app.
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
   "url": "https://aiconverter.app",
-  "description": "AI Converter converts bank statement PDFs, receipts, invoices, screenshot tables, documents, audio, common images, and provider-backed file formats into useful outputs."
+  "description": "AI Converter converts bank statement PDFs, receipts, invoices, screenshot tables, documents, audio, images, video, archives, and common file formats into useful outputs."
 }
 \`\`\`
 `;
 
 const aboutMarkdown = `---
 title: About AI Converter
-description: AI Converter is a private, preview-first converter for sensitive files, with bank statement PDF to CSV live first, beta AI routes, provider-backed conversion, local image tools, and short retention.
+description: AI Converter is a private, preview-first converter for sensitive files, with bank statement PDF to CSV live first, format conversion, image tools, and short retention.
 ---
 
 # About AI Converter
@@ -92,11 +92,11 @@ It is built for short retention, private storage, and clear failure states.
 - Sample preview before payment.
 - Paid full export and download.
 - One stronger automatic redo for paid jobs.
-- Browser-local image format and raster-to-SVG tools.
+- Private image format and raster-to-SVG tools.
 
-## Beta and provider-backed
+## More conversion routes
 
-Receipts, invoices, screenshot tables, audio transcripts, document Markdown, screenshot-to-HTML, and universal file conversion run through configured AI or conversion providers. If a route cannot produce a reliable preview or provider result, it fails closed instead of pretending.
+Receipts, invoices, screenshot tables, audio transcripts, document Markdown, screenshot-to-HTML, and common file conversion use the same preview-first flow. If a route cannot produce a reliable preview or result, it fails closed instead of pretending.
 
 ## Privacy posture
 
@@ -104,26 +104,26 @@ Source files are stored privately for preview, unlock, and the redo window. Gene
 
 ## Boundaries
 
-AI Converter does not claim every bank, receipt, invoice, screenshot, audio file, document, image format, provider pair, certified compliance status, pixel-perfect image-to-code, or guaranteed accuracy. Review exports before important use.
+AI Converter does not claim every bank, receipt, invoice, screenshot, audio file, document, image format, certified compliance status, pixel-perfect image-to-code, or guaranteed accuracy. Review exports before important use.
 `;
 
 const formatsMarkdown = `---
 title: AI Converter formats
-description: Generated list of conversion options available through live, beta, local, and provider-backed AI Converter routes.
+description: Generated list of conversion options available through AI Converter.
 ---
 
 # AI Converter formats
 
-The /formats page is generated from current converter metadata and live provider readiness. It is the truth surface behind the homepage ticker and available-format count.
+The /formats page is generated from the same capability map the app uses. It is the truth surface behind the homepage ticker and available-format count.
 
-## Available route types
+## Available format groups
 
-- Live AI extraction: bank statement PDF to CSV.
-- Beta AI routes: receipts, invoices, screenshot tables, audio transcript, document Markdown, and screenshot-to-HTML.
-- Browser-local image routes: PNG/JPG/WEBP to PNG/JPG/WEBP and PNG/JPG/WEBP to SVG without uploading the file to AI Converter.
-- Provider-backed universal route: documents, images, audio, video, and archives through the configured provider route. CloudConvert is used when configured; Convertio can run as the backup or fallback route.
+- Bank statement PDF to CSV.
+- Receipts, invoices, screenshot tables, audio transcript, document Markdown, and screenshot-to-HTML.
+- PNG/JPG/WEBP to PNG/JPG/WEBP and PNG/JPG/WEBP to SVG without uploading the image to AI Converter.
+- Documents, images, audio, video, and archives into popular output formats.
 
-## Popular requests covered when routes are configured
+## Popular requests covered today
 
 - Bank statement PDF to CSV.
 - Receipt image to expense CSV.
@@ -143,7 +143,7 @@ The /formats page is generated from current converter metadata and live provider
 - WAV to MP3.
 - XLSX to CSV.
 
-Provider-backed pairs count as available only when the universal provider route is configured. More formats can be added as routes are proven.
+Formats count as available only when the live app accepts that input and output pair. More formats can be added as they are proven.
 `;
 
 const bankStatementMarkdown = `---
@@ -237,13 +237,13 @@ AI Converter does not ask for bank login credentials.
 
 ## Processing
 
-Files are used to produce the output you requested. Digital bank statement PDFs are parsed directly first. Mistral OCR may be used for scanned, image-heavy, receipt, invoice, screenshot, or messy files when configured. Cloudflare Workers AI may be used for audio transcript, document Markdown, and screenshot-to-HTML beta modules when configured. CloudConvert may be used for universal provider conversion when configured. Azure Document Intelligence may be used as an optional paid-job fallback when configured. PNG/JPG/WEBP image-format and raster-to-SVG conversion run locally in the browser and do not upload the image to AI Converter for those routes.
+Files are used to produce the output you requested. Digital bank statement PDFs are parsed directly first. OCR and AI processing may be used for scanned, image-heavy, receipt, invoice, screenshot, audio, document, or messy files when configured. Common file-format conversion may use secure automated processing services when configured. PNG/JPG/WEBP image-format and raster-to-SVG conversion keep the image on the device and do not upload it to AI Converter for those routes.
 
 Low-confidence files fail closed instead of being sent to a human review queue.
 
 ## Retention
 
-Source files are kept only for preview, paid unlock, and the automatic redo window. Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle. Generated files expire after 7 days. Browser-local image/SVG conversions do not create server-side source files.
+Source files are kept only for preview, paid unlock, and the automatic redo window. Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle. Generated files expire after 7 days. Private image/SVG conversions do not create server-side source files.
 
 ## Requests
 
@@ -259,15 +259,15 @@ description: Terms for using AI Converter's automated conversion and local image
 
 Last updated May 17, 2026.
 
-AI Converter provides automated file conversion and browser-local image tools. It is a data conversion tool, not accounting, tax, legal, lending, compliance, or financial advice.
+AI Converter provides automated file conversion and private image tools. It is a data conversion tool, not accounting, tax, legal, lending, compliance, or financial advice.
 
 ## Workflow
 
-The first production AI workflow is bank statement PDF to CSV. Receipt, invoice, screenshot-table, audio transcript, document Markdown, screenshot-to-HTML, and universal provider conversion are beta/provider routes when configured. Upload a supported file, review a free sample preview, then pay once to generate and download the selected output. PNG/JPG/WEBP image-format and raster-to-SVG conversion run locally in the browser.
+The first production AI workflow is bank statement PDF to CSV. Receipt, invoice, screenshot-table, audio transcript, document Markdown, screenshot-to-HTML, and common file-format conversion are available when configured. Upload a supported file, review a free sample preview, then pay once to generate and download the selected output. PNG/JPG/WEBP image-format and raster-to-SVG conversion keep the image on the device.
 
 ## User responsibility
 
-You are responsible for checking exported files before using them for bookkeeping, taxes, lending, legal, compliance, or decision-making work. Automated extraction and provider conversion can be wrong, especially on unusual, scanned, damaged, password-protected, noisy, or low-quality files.
+You are responsible for checking exported files before using them for bookkeeping, taxes, lending, legal, compliance, or decision-making work. Automated extraction and conversion can be wrong, especially on unusual, scanned, damaged, password-protected, noisy, or low-quality files.
 
 ## Payment and access
 
@@ -332,7 +332,7 @@ AI Converter is designed for files you would not put in a shared inbox: private 
 
 ## Processing controls
 
-Digital bank statement PDFs use the native parser first. OCR fallback is reserved for scanned, photo-based, receipt, invoice, screenshot, or messy files when configured. Workers AI is used for audio transcript, document Markdown, and screenshot-to-HTML beta modules when configured. Universal provider conversion runs through the configured provider route: CloudConvert when configured, with Convertio available as backup or fallback. Browser-local image-format and raster-to-SVG conversion do not upload files to AI Converter. Low-confidence AI extraction files fail closed.
+Digital bank statement PDFs use the native parser first. OCR fallback is reserved for scanned, photo-based, receipt, invoice, screenshot, or messy files when configured. Audio transcript, document Markdown, screenshot-to-HTML, and common file-format conversion run only when the selected conversion is available. Private image-format and raster-to-SVG conversion do not upload files to AI Converter. Low-confidence AI extraction files fail closed.
 
 ## Retention controls
 
@@ -344,7 +344,7 @@ Server-side file validation, upload rate limits, same-file free preview limits, 
 
 ## Limits
 
-AI Converter currently accepts files up to 50 MB, audio-transcript files up to 25 MB, and PDFs up to 500 pages. Password-protected, corrupted, unusual, noisy, unsupported provider pairs, or low-quality files may fail.
+AI Converter currently accepts files up to 50 MB, audio-transcript files up to 25 MB, and PDFs up to 500 pages. Password-protected, corrupted, unusual, noisy, unsupported format pairs, or low-quality files may fail.
 `;
 
 const dataRetentionMarkdown = `---

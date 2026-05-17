@@ -7,7 +7,7 @@
     <title>Security - AI Converter</title>
     <meta
       name="description"
-      content="Security controls for AI Converter uploads, job access, retention, abuse prevention, OCR fallback, Workers AI routes, and browser-local conversion."
+      content="Security controls for AI Converter uploads, job access, retention, abuse prevention, OCR fallback, and private conversion."
     />
     <link rel="canonical" href="https://aiconverter.app/security" />
     <link rel="stylesheet" href="/legal.css" />
@@ -55,12 +55,10 @@
           <p>
             Digital bank statement PDFs use the native parser first. OCR fallback is
             reserved for scanned, photo-based, receipt, invoice, screenshot, or
-            messy files when configured. Workers AI is used for audio transcript,
-            document Markdown, and screenshot-to-HTML beta modules when configured.
-            Universal provider conversion runs through the configured provider
-            route: CloudConvert when configured, with Convertio available as
-            backup or fallback.
-            Browser-local image-format and raster-to-SVG conversion do not upload
+            messy files when configured. Audio transcript, document Markdown,
+            screenshot-to-HTML, and common file-format conversion run only when
+            the selected conversion is available. Private image-format and
+            raster-to-SVG conversion do not upload
             files to AI Converter. Low-confidence AI extraction files fail closed
             instead of being routed to human file review.
           </p>
@@ -94,7 +92,7 @@
           <p>
             AI Converter currently accepts files up to 50 MB, audio-transcript files up to
             25 MB, and PDFs up to 500 pages. Password-protected, corrupted,
-            unusual, noisy, unsupported provider pairs, or low-quality files may fail. The export should always
+            unusual, noisy, unsupported format pairs, or low-quality files may fail. The export should always
             be reviewed before important use.
           </p>
         </article>

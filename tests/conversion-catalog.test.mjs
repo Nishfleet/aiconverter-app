@@ -5,7 +5,8 @@ import {
   TOP_CONVERSION_REQUESTS,
   availableConversionCount,
   availableConversionCountLabel,
-  buildConversionCatalog
+  buildConversionCatalog,
+  confidenceDetailsForConverter
 } from "../src/conversion-catalog.js";
 import { assertSupportedUpload } from "../functions/lib/jobs.js";
 import { universalPreviewRow } from "../functions/lib/universal.js";
@@ -33,6 +34,21 @@ test("publicly highlighted top requests exist in the generated catalog", () => {
   for (const request of TOP_CONVERSION_REQUESTS) {
     assert.ok(availableLabels.has(request.label), `${request.label} should be available in generated catalog`);
   }
+});
+
+test("customer-facing conversion catalog does not expose routing vendors", () => {
+  const catalog = buildConversionCatalog(data.converters, { universalProviderReady: true });
+  const universal = data.converters.find((converter) => converter.id === "universal-file");
+  const confidence = confidenceDetailsForConverter(universal, "docx", { universalProviderReady: true });
+  const customerText = [
+    ...catalog.flatMap((pair) => [pair.category, pair.detail, pair.label]),
+    confidence.output,
+    confidence.preview,
+    confidence.privacy,
+    confidence.state
+  ].join(" ");
+
+  assert.doesNotMatch(customerText, /provider|CloudConvert|Convertio|universal route|browser-local/i);
 });
 
 test("top provider conversion fixtures pass upload validation and preview routing", () => {

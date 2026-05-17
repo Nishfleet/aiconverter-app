@@ -61,7 +61,7 @@ export async function startConvertioConversion(env, job, arrayBuffer) {
   if (!hasConvertioConfig(env)) {
     return {
       ok: false,
-      message: "Convertio backup conversion needs the CONVERTIO_API_KEY secret before it can run.",
+      message: "This conversion option is not ready yet.",
       confidence: 0,
       rowCount: 0,
       provider: "convertio"
@@ -92,7 +92,7 @@ export async function startConvertioConversion(env, job, arrayBuffer) {
     })
   });
   const conversionId = conversion?.data?.id || conversion?.id;
-  if (!conversionId) throw new Error("Convertio did not return a conversion ID.");
+  if (!conversionId) throw new Error("Conversion did not start cleanly.");
 
   const upload = await fetch(`${CONVERTIO_API_BASE}/convert/${encodeURIComponent(conversionId)}/${encodeURIComponent(fileName)}`, {
     method: "PUT",
@@ -103,7 +103,7 @@ export async function startConvertioConversion(env, job, arrayBuffer) {
   });
   const uploadPayload = await upload.json().catch(() => ({}));
   if (!upload.ok || uploadPayload.status === "error") {
-    throw new Error(uploadPayload?.error || `Convertio upload failed (${upload.status}).`);
+    throw new Error(uploadPayload?.error || `Conversion upload failed (${upload.status}).`);
   }
 
   await updateJob(env, job.id, {
@@ -125,9 +125,9 @@ export async function startConvertioConversion(env, job, arrayBuffer) {
 }
 
 export async function refreshConvertioConversion(env, job) {
-  if (!job?.external_job_id) return { ok: false, message: "No backup provider job is attached to this conversion." };
+  if (!job?.external_job_id) return { ok: false, message: "No conversion job is attached." };
   if (!hasConvertioConfig(env)) {
-    return failConvertioJob(env, job, "Convertio API key is missing while a backup conversion is pending.");
+    return failConvertioJob(env, job, "This conversion option is temporarily unavailable.");
   }
 
   const status = await convertioRequest(`/convert/${encodeURIComponent(job.external_job_id)}/status`);
@@ -156,7 +156,7 @@ export async function refreshConvertioConversion(env, job) {
   });
 
   const row = {
-    ...universalPreviewRow(job.original_file_name || "source", job.input_mime_type || "", outputFormat, "Convertio"),
+    ...universalPreviewRow(job.original_file_name || "source", job.input_mime_type || "", outputFormat, "Complete"),
     status: "Ready to download"
   };
 
@@ -194,7 +194,7 @@ async function downloadConvertioResult(env, job, outputUrl) {
 
   const payload = await convertioRequest(`/convert/${encodeURIComponent(job.external_job_id)}/dl/base64`);
   const content = payload?.data?.content || "";
-  if (!content) throw new Error("Convertio finished without a downloadable file.");
+  if (!content) throw new Error("Conversion finished without a downloadable file.");
   return base64ToArrayBuffer(content);
 }
 
@@ -233,7 +233,8 @@ function pendingResult(job, status = "convert") {
     status: "converting_full",
     previewRows: [
       {
-        ...universalPreviewRow(job.original_file_name || "source", job.input_mime_type || "", outputFormat, "Convertio"),
+        ...universalPreviewRow(job.original_file_name || "source", job.input_mime_type || "", outputFormat, "Converting"),
+        route: "Converting",
         status: status === "wait" || status === "upload" ? "Queued" : "Converting"
       }
     ],
@@ -242,7 +243,7 @@ function pendingResult(job, status = "convert") {
     rowCount: 1,
     outputFormat,
     provider: "convertio",
-    message: `${universalOutputLabel(outputFormat)} conversion is running on the backup route. This page will update automatically.`
+    message: `${universalOutputLabel(outputFormat)} conversion is running. This page will update automatically.`
   };
 }
 
@@ -275,14 +276,14 @@ async function reserveConvertioDailySlot(env, limit) {
       ok: false,
       count,
       remainingToday: 0,
-      message: `Convertio daily backup cap reached (${count}/${limit}).`
+      message: `Conversion daily cap reached (${count}/${limit}).`
     };
   } catch (error) {
     return {
       ok: false,
       count: 0,
       remainingToday: 0,
-      message: `Convertio daily backup cap reservation failed: ${error?.message || "unknown error"}`
+      message: `Conversion daily cap reservation failed: ${error?.message || "unknown error"}`
     };
   }
 }
@@ -304,7 +305,7 @@ async function convertioRequest(path, init = {}) {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || payload.status === "error") {
-    throw new Error(payload?.error || `Convertio request failed (${response.status}).`);
+    throw new Error(payload?.error || `Conversion request failed (${response.status}).`);
   }
   return payload;
 }

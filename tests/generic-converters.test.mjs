@@ -434,7 +434,7 @@ test("universal converter creates a provider-backed route preview when only Conv
 
   assert.equal(result.ok, true);
   assert.equal(result.provider, "convertio-preview");
-  assert.equal(result.previewRows[0].route, "Convertio");
+  assert.equal(result.previewRows[0].route, "Preview ready");
   assert.match(result.csv, /PDF/);
 });
 
@@ -449,7 +449,7 @@ test("universal converter fails closed without a provider configuration", async 
   );
 
   assert.equal(result.ok, false);
-  assert.match(result.message, /provider route/);
+  assert.match(result.message, /not ready/);
 });
 
 test("universal upload validation accepts provider document, media, and archive signatures", () => {
@@ -606,7 +606,7 @@ test("universal provider route falls back to Convertio when CloudConvert cap is 
 
   assert.equal(result.pending, true);
   assert.equal(result.provider, "convertio");
-  assert.equal(result.previewRows[0].route, "Convertio");
+  assert.equal(result.previewRows[0].route, "Converting");
   assert.equal(fetchCalls.length, 3);
   assert.equal(fetchCalls[1].body.outputformat, "pdf");
   assert.equal(fetchCalls[2].body instanceof ArrayBuffer, true);
