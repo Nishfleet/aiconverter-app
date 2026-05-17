@@ -321,6 +321,15 @@ function App() {
     () => (universalProviderReady ? [...CORE_POPULAR_CONVERSIONS, ...PROVIDER_POPULAR_CONVERSIONS] : CORE_POPULAR_CONVERSIONS),
     [universalProviderReady]
   );
+  const popularConversionsSummary = universalProviderReady
+    ? {
+        title: "200+ conversion options available",
+        detail: "More coming soon."
+      }
+    : {
+        title: "More conversion options coming soon",
+        detail: "Provider-backed formats appear when the universal route is configured."
+      };
   const converterIsEnabled = (converter) => !isProviderConverter(converter) || universalProviderReady;
   const liveConverters = useMemo(() => data.converters.filter(isLiveConverter), []);
   const selectableConverters = useMemo(
@@ -1121,24 +1130,31 @@ function App() {
         </section>
 
         <section className="popular-conversions" aria-label="Popular conversion suggestions">
-          <span className="popular-conversions-label">Popular requests</span>
-          <div className="conversion-ticker" aria-hidden="true">
-            <div className="conversion-ticker-track">
-              {[0, 1].map((copyIndex) => (
-                <div className={classNames("ticker-group", copyIndex === 1 && "is-duplicate")} key={copyIndex}>
-                  {popularConversions.map((item) => (
-                    <span className={classNames("ticker-chip", item.startsWith("Many more") && "is-more")} key={`${copyIndex}-${item}`}>
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              ))}
+          <div className="popular-conversions-row">
+            <span className="popular-conversions-label">Popular requests</span>
+            <div className="conversion-ticker" aria-hidden="true">
+              <div className="conversion-ticker-track">
+                {[0, 1].map((copyIndex) => (
+                  <div className={classNames("ticker-group", copyIndex === 1 && "is-duplicate")} key={copyIndex}>
+                    {popularConversions.map((item) => (
+                      <span className="ticker-chip" key={`${copyIndex}-${item}`}>
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
+          </div>
+          <div className="popular-conversions-more">
+            <strong>{popularConversionsSummary.title}</strong>
+            <span>{popularConversionsSummary.detail}</span>
           </div>
           <ul className="sr-only">
             {popularConversions.map((item) => (
               <li key={item}>{item}</li>
             ))}
+            <li>{popularConversionsSummary.title}. {popularConversionsSummary.detail}</li>
           </ul>
         </section>
       </section>

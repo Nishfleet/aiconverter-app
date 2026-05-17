@@ -886,16 +886,19 @@ tbody tr:last-child td {
 
 .popular-conversions {
   width: min(100%, 900px);
-  min-height: 46px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
   margin: 14px auto 0;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.76);
   box-shadow: 0 14px 38px rgba(15, 23, 42, 0.05);
   overflow: hidden;
+}
+
+.popular-conversions-row {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .popular-conversions-label {
@@ -955,10 +958,29 @@ tbody tr:last-child td {
   white-space: nowrap;
 }
 
-.ticker-chip.is-more {
+.popular-conversions-more {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 9px 14px;
   color: var(--blue);
   background: var(--blue-soft);
-  border-color: rgba(37, 99, 235, 0.16);
+  border-top: 1px solid rgba(37, 99, 235, 0.14);
+  text-align: center;
+}
+
+.popular-conversions-more strong {
+  font-size: 13px;
+  font-weight: 860;
+}
+
+.popular-conversions-more span {
+  color: #475467;
+  font-size: 12px;
+  font-weight: 720;
 }
 
 @keyframes ticker-scroll {
@@ -1793,6 +1815,10 @@ tbody tr:last-child td {
   }
 
   .popular-conversions {
+    display: block;
+  }
+
+  .popular-conversions-row {
     align-items: stretch;
     flex-direction: column;
     gap: 0;
