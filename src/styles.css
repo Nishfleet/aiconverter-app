@@ -936,19 +936,22 @@ tbody tr:last-child td {
 .popular-conversions-row {
   min-height: 46px;
   display: flex;
-  align-items: center;
+  align-items: stretch;
+  flex-direction: column;
   gap: 0;
 }
 
 .popular-conversions-label {
   min-height: 46px;
+  width: 100%;
   display: inline-flex;
   align-items: center;
+  justify-content: flex-start;
   flex: 0 0 auto;
-  padding: 0 13px;
+  padding: 0 16px;
   color: var(--ink);
   background: rgba(37, 99, 235, 0.07);
-  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
   font-size: 11px;
   font-weight: 840;
   letter-spacing: 0;
@@ -958,6 +961,7 @@ tbody tr:last-child td {
 
 .conversion-ticker {
   min-width: 0;
+  width: 100%;
   flex: 1;
   align-self: stretch;
   display: flex;
