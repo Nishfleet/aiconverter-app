@@ -27,6 +27,10 @@ Live and beta modules:
 - Universal file conversion for documents, images, audio, video, and archives is provider-backed through CloudConvert first, with Convertio as a configured backup route.
 - Beta modules use OCR and fail closed when structure confidence is too low.
 
+Homepage ticker examples:
+- Core examples: bank statement PDF to CSV, receipt image to expense CSV, invoice PDF to JSON, screenshot table to CSV, JPG to PNG, PNG to JPG, WEBP to PNG, audio to transcript, document to Markdown.
+- When universal provider conversion is configured: PDF to Word, Word to PDF, PDF to JPG, HEIC to JPG, SVG to PNG, MP4 to MP3, MOV to MP4, GIF to MP4, WAV to MP3, XLSX to CSV, CSV to XLSX, docs/images/audio/video/archive categories, and many more provider-backed formats.
+
 Opening pricing:
 - Free preview.
 - Starter: $3 for 25 pages or images.

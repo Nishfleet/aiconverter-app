@@ -22,6 +22,33 @@ import "./styles.css";
 
 const MAX_SIZE_MB = 50;
 const MAX_PAGES = 500;
+const CORE_POPULAR_CONVERSIONS = [
+  "Bank statement PDF to CSV",
+  "Receipt image to expense CSV",
+  "Invoice PDF to JSON",
+  "Screenshot table to CSV",
+  "JPG to PNG",
+  "PNG to JPG",
+  "WEBP to PNG",
+  "Audio to transcript",
+  "Document to Markdown"
+];
+
+const PROVIDER_POPULAR_CONVERSIONS = [
+  "PDF to Word",
+  "Word to PDF",
+  "PDF to JPG",
+  "HEIC to JPG",
+  "SVG to PNG",
+  "MP4 to MP3",
+  "MOV to MP4",
+  "GIF to MP4",
+  "WAV to MP3",
+  "XLSX to CSV",
+  "CSV to XLSX",
+  "Docs, images, audio, video, archives",
+  "Many more formats available"
+];
 
 const classNames = (...values) => values.filter(Boolean).join(" ");
 let turnstileScriptPromise = null;
@@ -290,6 +317,10 @@ function App() {
   );
   const file = activeFileEntry?.file || null;
   const universalProviderReady = Boolean(capabilities.universalProvider || capabilities.cloudConvert || capabilities.convertioBackup);
+  const popularConversions = useMemo(
+    () => (universalProviderReady ? [...CORE_POPULAR_CONVERSIONS, ...PROVIDER_POPULAR_CONVERSIONS] : CORE_POPULAR_CONVERSIONS),
+    [universalProviderReady]
+  );
   const converterIsEnabled = (converter) => !isProviderConverter(converter) || universalProviderReady;
   const liveConverters = useMemo(() => data.converters.filter(isLiveConverter), []);
   const selectableConverters = useMemo(
@@ -1087,6 +1118,28 @@ function App() {
               )}
             </aside>
           )}
+        </section>
+
+        <section className="popular-conversions" aria-label="Popular conversion suggestions">
+          <span className="popular-conversions-label">Popular requests</span>
+          <div className="conversion-ticker" aria-hidden="true">
+            <div className="conversion-ticker-track">
+              {[0, 1].map((copyIndex) => (
+                <div className={classNames("ticker-group", copyIndex === 1 && "is-duplicate")} key={copyIndex}>
+                  {popularConversions.map((item) => (
+                    <span className={classNames("ticker-chip", item.startsWith("Many more") && "is-more")} key={`${copyIndex}-${item}`}>
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+          <ul className="sr-only">
+            {popularConversions.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
         </section>
       </section>
 

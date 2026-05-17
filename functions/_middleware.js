@@ -38,6 +38,10 @@ Beta:
 - Screenshot to HTML provides a clean starter preview and uses Workers AI vision for paid image exports when configured. This does not claim pixel-perfect screenshot cloning.
 - Beta modules use OCR and fail closed when confidence is too low.
 
+## Popular conversion examples
+
+The homepage ticker suggests common requests that fit the current product surface. Core examples include bank statement PDF to CSV, receipt image to expense CSV, invoice PDF to JSON, screenshot table to CSV, JPG to PNG, PNG to JPG, WEBP to PNG, audio to transcript, and document to Markdown. When universal provider conversion is configured, it can also suggest examples such as PDF to Word, Word to PDF, PDF to JPG, HEIC to JPG, SVG to PNG, MP4 to MP3, MOV to MP4, GIF to MP4, WAV to MP3, XLSX to CSV, CSV to XLSX, docs/images/audio/video/archive categories, and many more provider-backed formats.
+
 ## Pricing
 
 - Free preview: first rows before payment.
