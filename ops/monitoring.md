@@ -36,6 +36,14 @@ npm run drill:failover
 
 The drill uses the admin-only `/api/admin/failover-drill` route. It creates a tiny synthetic provider job, disables CloudConvert only inside that admin drill, and verifies the live app routes to Convertio.
 
+Run the preview upload smoke when you have a solved Turnstile response token, or against a preview environment configured with Cloudflare's official dummy testing keys:
+
+```bash
+TURNSTILE_RESPONSE_TOKEN="..." npm run smoke:preview
+```
+
+This check proves upload, Turnstile verification, preview creation, and privacy-safe funnel logging without using a payment checkout.
+
 ## CloudConvert Guardrails
 
 Configured in `wrangler.jsonc`:
@@ -68,7 +76,7 @@ The private admin page flags:
 
 Repeat these after checkout, provider, upload, or Turnstile changes:
 
-- browser upload with a human-solved Turnstile challenge
+- browser upload with a human-solved Turnstile challenge, followed by visible `preview_ready`
 - real-card Dodo checkout return, webhook, paid finalize, download, and redo path
 - cash refund retry after the Dodo wallet has enough funds
 - private corpus run with `AICONVERTER_PRIVATE_CORPUS_REQUIRED=true` before paid traffic or serious ads

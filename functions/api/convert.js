@@ -1,6 +1,7 @@
 import { convertFileToCsv, detectPdfPageCount } from "../lib/extract.js";
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
 import { verifyTurnstile } from "../lib/turnstile.js";
+import { recordFunnelEvent } from "../lib/funnel-telemetry.js";
 import {
   bankOutputFileExtension,
   missingBankMetadata,
@@ -68,28 +69,68 @@ export async function onRequestPost({ request, env }) {
   const outputFormat = normalizeOutputFormat(form.get("outputFormat"), converterId);
   const file = form.get("file");
   if (!(file instanceof File)) return badRequest("Choose a file first.");
+  const funnelSessionId = String(form.get("funnelSessionId") || "").trim().slice(0, 80);
+  const baseFunnelEvent = {
+    sessionId: funnelSessionId,
+    converterId,
+    outputFormat,
+    inputKind: inputKindForUpload(file),
+    fileSizeBucket: fileSizeBucketForUpload(file),
+    pageBucket: pageBucketForEstimate(Number(form.get("estimatedPages") || 0)),
+    fileCount: 1
+  };
 
   const turnstile = await verifyTurnstile(
     env,
     request,
     form.get("cf-turnstile-response") || form.get("turnstileToken")
   );
-  if (!turnstile.ok) return json({ error: turnstile.message }, { status: 403 });
+  if (!turnstile.ok) {
+    await safeRecordFunnelEvent(env, request, {
+      ...baseFunnelEvent,
+      eventType: "turnstile_fail",
+      turnstileState: "error",
+      errorCode: form.get("cf-turnstile-response") || form.get("turnstileToken") ? "verify_failed" : "missing_token"
+    });
+    return json({ error: turnstile.message }, { status: 403 });
+  }
+  await safeRecordFunnelEvent(env, request, {
+    ...baseFunnelEvent,
+    eventType: "turnstile_pass",
+    turnstileState: "verified"
+  });
 
   const email = String(form.get("email") || "").trim().slice(0, 120);
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    await safeRecordFunnelEvent(env, request, {
+      ...baseFunnelEvent,
+      eventType: "preview_error",
+      errorCode: "http_400"
+    });
     return badRequest("Use a valid email address or leave it blank.");
   }
 
   const fileName = safeFileName(file.name);
   const arrayBuffer = await file.arrayBuffer();
   const uploadError = assertSupportedUpload(file, arrayBuffer, converterId);
-  if (uploadError) return badRequest(uploadError);
+  if (uploadError) {
+    await safeRecordFunnelEvent(env, request, {
+      ...baseFunnelEvent,
+      eventType: "preview_error",
+      errorCode: "http_400"
+    });
+    return badRequest(uploadError);
+  }
   const accountingMetadata =
     converterId === "bank" ? sanitizeBankMetadata(form.get("accountingMetadata") || {}) : {};
   const missingMetadata =
     converterId === "bank" ? missingBankMetadata(outputFormat, accountingMetadata) : [];
   if (missingMetadata.length) {
+    await safeRecordFunnelEvent(env, request, {
+      ...baseFunnelEvent,
+      eventType: "preview_error",
+      errorCode: "http_400"
+    });
     return badRequest(`${bankOutputLabel(outputFormat)} needs bank details before we can make that file.`);
   }
 
@@ -104,13 +145,27 @@ export async function onRequestPost({ request, env }) {
     ? Math.max(1, clientEstimatedPages, detectedPages, sizeEstimatedPages)
     : 1;
   if (estimatedPages > MAX_PAGE_COUNT) {
+    await safeRecordFunnelEvent(env, request, {
+      ...baseFunnelEvent,
+      eventType: "preview_error",
+      pageBucket: pageBucketForEstimate(estimatedPages),
+      errorCode: "http_400"
+    });
     return badRequest(`This service accepts PDFs up to ${MAX_PAGE_COUNT} pages. Split larger files before uploading.`);
   }
   const plan = planForPages(estimatedPages);
   const fileHash = await sha256Bytes(arrayBuffer);
   const fingerprint = await requestFingerprint(env, request);
   const uploadPolicy = await enforceUploadPolicy(env, { ...fingerprint, fileHash });
-  if (!uploadPolicy.ok) return json({ error: uploadPolicy.message }, { status: 429 });
+  if (!uploadPolicy.ok) {
+    await safeRecordFunnelEvent(env, request, {
+      ...baseFunnelEvent,
+      eventType: "preview_error",
+      pageBucket: pageBucketForEstimate(estimatedPages),
+      errorCode: "http_429"
+    });
+    return json({ error: uploadPolicy.message }, { status: 429 });
+  }
 
   const jobId = randomId("job");
   const token = randomToken();
@@ -172,6 +227,13 @@ export async function onRequestPost({ request, env }) {
         source_deleted_at: new Date().toISOString(),
         extractor: converted.provider || ""
       });
+      await safeRecordFunnelEvent(env, request, {
+        ...baseFunnelEvent,
+        eventType: "preview_error",
+        jobId,
+        pageBucket: pageBucketForEstimate(estimatedPages),
+        errorCode: "preview_failed"
+      });
 
       return json({
         status: "failed",
@@ -205,6 +267,12 @@ export async function onRequestPost({ request, env }) {
       row_count: converted.rowCount,
       extractor: converted.provider || ""
     });
+    await safeRecordFunnelEvent(env, request, {
+      ...baseFunnelEvent,
+      eventType: "preview_success",
+      jobId,
+      pageBucket: pageBucketForEstimate(estimatedPages)
+    });
 
     return json({
       status: "preview_ready",
@@ -227,6 +295,13 @@ export async function onRequestPost({ request, env }) {
       error: "The converter could not safely process this file.",
       source_deleted_at: new Date().toISOString()
     });
+    await safeRecordFunnelEvent(env, request, {
+      ...baseFunnelEvent,
+      eventType: "preview_error",
+      jobId,
+      pageBucket: pageBucketForEstimate(estimatedPages),
+      errorCode: "preview_failed"
+    });
 
     return json(
       {
@@ -243,6 +318,42 @@ export async function onRequestPost({ request, env }) {
       { status: 200 }
     );
   }
+}
+
+async function safeRecordFunnelEvent(env, request, event) {
+  await recordFunnelEvent(env, request, event).catch(() => {});
+}
+
+function inputKindForUpload(file) {
+  const type = String(file?.type || "").toLowerCase();
+  const name = String(file?.name || "").toLowerCase();
+  if (type.includes("pdf") || name.endsWith(".pdf")) return "pdf";
+  if (type.startsWith("image/") || /\.(png|jpe?g|webp|gif|svg|heic|avif)$/i.test(name)) return "image";
+  if (type.startsWith("audio/") || /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(name)) return "audio";
+  if (type.startsWith("video/") || /\.(mp4|mov|webm|avi|mkv)$/i.test(name)) return "video";
+  if (/\.(zip|7z|tar|rar)$/i.test(name)) return "archive";
+  if (/\.(docx?|xlsx?|pptx?|csv|txt|md|rtf|html?)$/i.test(name)) return "document";
+  return "other";
+}
+
+function fileSizeBucketForUpload(file) {
+  const size = Number(file?.size || 0);
+  if (!size) return "";
+  if (size < 1024 * 1024) return "under_1mb";
+  if (size < 5 * 1024 * 1024) return "1_5mb";
+  if (size < 25 * 1024 * 1024) return "5_25mb";
+  if (size <= 50 * 1024 * 1024) return "25_50mb";
+  return "over_50mb";
+}
+
+function pageBucketForEstimate(count) {
+  const value = Number(count || 0);
+  if (!value) return "";
+  if (value <= 5) return "1_5";
+  if (value <= 25) return "6_25";
+  if (value <= 100) return "26_100";
+  if (value <= 500) return "101_500";
+  return "over_500";
 }
 
 function outputFormatLabel(format) {

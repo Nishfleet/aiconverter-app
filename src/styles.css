@@ -1147,6 +1147,43 @@ tbody tr:last-child td {
   font-weight: 600;
 }
 
+.preview-blocker-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  color: #59410b;
+  background: #fff8dd;
+  border: 1px solid #ead994;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.preview-blocker-note svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.inline-text-button {
+  margin-left: auto;
+  padding: 0;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.inline-text-button:hover {
+  color: #275a12;
+}
+
 .spin {
   animation: spin 900ms linear infinite;
 }

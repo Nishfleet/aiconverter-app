@@ -13,6 +13,7 @@
     "stress:checkout": "node scripts/stress-checkout-live.mjs",
     "drill:paid": "node scripts/paid-drill-live.mjs",
     "stress:live": "node scripts/stress-live.mjs",
+    "smoke:preview": "node scripts/upload-preview-live.mjs",
     "monitor:live": "node scripts/monitor-live.mjs",
     "drill:failover": "node scripts/drill-failover-live.mjs",
     "readiness:live": "node scripts/readiness-live.mjs",

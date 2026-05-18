@@ -28,7 +28,10 @@ function renderOverview(payload) {
     renderHealth(health, payload.generatedAt),
     renderCloudConvert(payload.cloudConvert || {}),
     renderUsage(payload.usage24h || {}),
+    renderFunnel(payload.previewFunnel || []),
     renderStatusCounts(payload.jobStatus || []),
+    renderTable("Preview funnel by output", payload.previewFunnelByRoute || [], ["converter_id", "output_format", "event_type", "count"]),
+    renderTable("Preview funnel issues", payload.previewFunnelIssues || [], ["event_type", "converter_id", "output_format", "input_kind", "file_size_bucket", "page_bucket", "turnstile_state", "error_code", "route_path", "created_at"]),
     renderTable("Watchlist", payload.watchlist || [], ["id", "status", "converter_id", "plan_id", "row_count", "confidence", "refund_status", "error", "updated_at"]),
     renderTable("Provider failures", payload.providerFailures || [], ["id", "status", "converter_id", "plan_id", "external_provider", "external_status", "error", "updated_at"]),
     renderTable("Stuck provider jobs", payload.stuckProvider || [], ["id", "status", "converter_id", "plan_id", "external_provider", "external_status", "updated_at"]),
@@ -77,7 +80,9 @@ function renderOperationalQueues(queues) {
     ["Unmatched payments", queues.unmatchedPayments || 0],
     ["Refund/credit due", queues.refundDue || 0],
     ["Open support", queues.openSupport || 0],
-    ["Webhook failures", queues.webhookFailures || 0]
+    ["Webhook failures", queues.webhookFailures || 0],
+    ["Preview errors", queues.previewErrors || 0],
+    ["Human-check failures", queues.turnstileFailures || 0]
   ];
   return `
     <section class="admin-panel">
@@ -189,6 +194,30 @@ function renderUsage(usage) {
         ${metricCard("Provider failed", usage.provider_failed || 0)}
         ${metricCard("CloudConvert jobs", usage.cloudconvert_total || 0)}
         ${metricCard("Convertio jobs", usage.convertio_total || 0)}
+      </div>
+    </section>
+  `;
+}
+
+function renderFunnel(rows) {
+  const counts = Object.fromEntries((rows || []).map((row) => [row.event_type, row.count]));
+  return `
+    <section class="admin-panel">
+      <div class="admin-panel-head">
+        <div>
+          <h2>Preview funnel</h2>
+          <p>Last 24 hours, privacy-safe events only</p>
+        </div>
+      </div>
+      <div class="admin-metric-grid">
+        ${metricCard("Files selected", counts.file_selected || 0)}
+        ${metricCard("Outputs selected", counts.output_selected || 0)}
+        ${metricCard("Human check loaded", counts.turnstile_loaded || 0)}
+        ${metricCard("Human check passed", counts.turnstile_pass || 0)}
+        ${metricCard("Human check failed", counts.turnstile_fail || 0)}
+        ${metricCard("Preview clicks", counts.preview_click || 0)}
+        ${metricCard("Preview ready", counts.preview_success || 0)}
+        ${metricCard("Preview errors", counts.preview_error || 0)}
       </div>
     </section>
   `;

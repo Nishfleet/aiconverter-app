@@ -149,6 +149,63 @@ function camelKey(value) {
   return String(value || "").replace(/_([a-z])/g, (_, char) => char.toUpperCase());
 }
 
+function getFunnelSessionId() {
+  try {
+    const key = "aiconverter:funnel-session";
+    const existing = window.localStorage.getItem(key);
+    if (existing) return existing;
+    const next =
+      window.crypto?.randomUUID?.() ||
+      `session_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+    window.localStorage.setItem(key, next);
+    return next;
+  } catch {
+    return "";
+  }
+}
+
+function inputKindForFile(candidate) {
+  const type = String(candidate?.type || "").toLowerCase();
+  const name = String(candidate?.name || "").toLowerCase();
+  if (type.includes("pdf") || name.endsWith(".pdf")) return "pdf";
+  if (type.startsWith("image/") || /\.(png|jpe?g|webp|gif|svg|heic|avif)$/i.test(name)) return "image";
+  if (type.startsWith("audio/") || /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(name)) return "audio";
+  if (type.startsWith("video/") || /\.(mp4|mov|webm|avi|mkv)$/i.test(name)) return "video";
+  if (/\.(zip|7z|tar|rar)$/i.test(name)) return "archive";
+  if (/\.(docx?|xlsx?|pptx?|csv|txt|md|rtf|html?)$/i.test(name)) return "document";
+  return "other";
+}
+
+function fileSizeBucket(candidate) {
+  const size = Number(candidate?.size || 0);
+  if (!size) return "";
+  if (size < 1024 * 1024) return "under_1mb";
+  if (size < 5 * 1024 * 1024) return "1_5mb";
+  if (size < 25 * 1024 * 1024) return "5_25mb";
+  if (size <= 50 * 1024 * 1024) return "25_50mb";
+  return "over_50mb";
+}
+
+function pageBucket(count) {
+  const value = Number(count || 0);
+  if (!value) return "";
+  if (value <= 5) return "1_5";
+  if (value <= 25) return "6_25";
+  if (value <= 100) return "26_100";
+  if (value <= 500) return "101_500";
+  return "over_500";
+}
+
+function trackFunnelEvent(eventType, fields = {}) {
+  const payload = JSON.stringify({ eventType, ...fields });
+  fetch("/api/funnel-event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: payload,
+    keepalive: payload.length < 1200
+  }).catch(() => {});
+}
+
 function formatCell(value, key) {
   if (value === null || value === undefined || value === "") return "";
   if (["money_in", "money_out", "balance", "total", "subtotal", "tax"].includes(key) && typeof value === "number") return money(value);
@@ -512,6 +569,10 @@ function App() {
   const [error, setError] = useState("");
   const [turnstileSiteKey, setTurnstileSiteKey] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileStatus, setTurnstileStatus] = useState("idle");
+  const [turnstileRetryKey, setTurnstileRetryKey] = useState(0);
+  const [configLoaded, setConfigLoaded] = useState(false);
+  const [configError, setConfigError] = useState(false);
   const [capabilities, setCapabilities] = useState({});
   const [pricingPreview, setPricingPreview] = useState(null);
   const [tickerCopyCount, setTickerCopyCount] = useState(TICKER_MIN_COPY_COUNT);
@@ -526,6 +587,7 @@ function App() {
   const turnstileRef = useRef(null);
   const turnstileWidgetIdRef = useRef(null);
   const activeFileIdRef = useRef("");
+  const funnelSessionIdRef = useRef(getFunnelSessionId());
   const routePath = window.location.pathname.replace(/\/+$/, "") || "/";
 
   const selected = useMemo(
@@ -630,14 +692,37 @@ function App() {
         bankDetails.accountId.trim() &&
         (outputFormat !== "qbo" || bankDetails.intuitBankId.trim())
     );
-  const canConvert =
-    file &&
-    !converting &&
-    file.size <= selectedMaxSizeMb * 1024 * 1024 &&
-    pageCount <= MAX_PAGES &&
-    selectedEnabled &&
-    bankDetailsReady &&
-    (isLocalImageConverter || !needsTurnstile || Boolean(turnstileToken));
+  const fileTooLarge = Boolean(file && file.size > selectedMaxSizeMb * 1024 * 1024);
+  const pageCountTooHigh = pageCount > MAX_PAGES;
+  const previewBlockReason = !file
+    ? ""
+    : converting
+      ? "Preview is already running for this file."
+      : fileTooLarge
+        ? `This file is over the ${selectedMaxSizeMb} MB limit. Try a smaller file or split it first.`
+        : pageCountTooHigh
+          ? `This file is estimated over ${MAX_PAGES} pages. Split it into smaller files first.`
+          : !isLocalImageConverter && !configLoaded
+            ? "Loading secure upload checks..."
+            : !isLocalImageConverter && configError
+              ? "Secure upload settings could not load. Refresh and try again."
+              : !selectedEnabled
+                ? "This conversion is waiting on a production provider key. Try another output for now."
+                : !bankDetailsReady
+                  ? outputFormat === "qbo"
+                    ? "QBO needs routing / bank ID, account ID, and QuickBooks institution ID."
+                    : "OFX needs routing / bank ID and account ID."
+                  : shouldRenderTurnstile && !turnstileToken
+                    ? turnstileStatus === "loading"
+                      ? "Loading the human check..."
+                      : turnstileStatus === "expired"
+                        ? "Human check expired. Verify again to continue."
+                        : turnstileStatus === "error"
+                          ? "Human check failed to load. Retry the check or refresh the page."
+                          : "Complete the human check to generate your preview."
+                    : "";
+  const canConvert = Boolean(file && !previewBlockReason);
+  const canRetryTurnstile = shouldRenderTurnstile && ["expired", "error"].includes(turnstileStatus);
   const flowStep = !file ? 1 : result ? (result.status === "complete" ? 4 : 3) : 2;
   const canDeleteServerJob = Boolean(result?.jobId && ["preview_ready", "complete"].includes(result.status));
   const canReviewRows = isEditableBankCsvResult(result);
@@ -646,6 +731,25 @@ function App() {
     : formatRetentionCountdown(result?.sourceExpiresAt, retentionNow);
   const resultCountdown = formatRetentionCountdown(result?.resultExpiresAt, retentionNow);
   const paymentNotice = paymentNoticeForResult(result);
+
+  function trackPreviewEvent(eventType, overrides = {}) {
+    const targetFile = overrides.file || file;
+    const targetConverter = overrides.converterId || selectedId;
+    const targetOutput = overrides.outputFormat || outputFormat;
+    trackFunnelEvent(eventType, {
+      sessionId: funnelSessionIdRef.current,
+      converterId: targetConverter,
+      outputFormat: targetOutput,
+      inputKind: inputKindForFile(targetFile),
+      fileSizeBucket: fileSizeBucket(targetFile),
+      pageBucket: pageBucket(overrides.pageCount || pageCount),
+      fileCount: overrides.fileCount || fileQueue.length || (targetFile ? 1 : 0),
+      turnstileState: overrides.turnstileState || turnstileStatus,
+      errorCode: overrides.errorCode || "",
+      routePath,
+      jobId: overrides.jobId || ""
+    });
+  }
 
   useEffect(() => {
     activeFileIdRef.current = activeFileId;
@@ -657,8 +761,10 @@ function App() {
       .then((payload) => {
         setTurnstileSiteKey(payload.turnstileSiteKey || "");
         setCapabilities(payload.capabilities || {});
+        setConfigError(false);
       })
-      .catch(() => {});
+      .catch(() => setConfigError(true))
+      .finally(() => setConfigLoaded(true));
   }, []);
 
   useEffect(() => {
@@ -746,11 +852,14 @@ function App() {
   useEffect(() => {
     if (!shouldRenderTurnstile) {
       setTurnstileToken("");
+      setTurnstileStatus("idle");
       turnstileWidgetIdRef.current = null;
       return undefined;
     }
     if (!turnstileSiteKey || !turnstileRef.current) return undefined;
     let cancelled = false;
+    setTurnstileToken("");
+    setTurnstileStatus("loading");
 
     loadTurnstile()
       .then(() => {
@@ -764,12 +873,30 @@ function App() {
           sitekey: turnstileSiteKey,
           theme: "auto",
           size: "flexible",
-          callback: (token) => setTurnstileToken(token),
-          "expired-callback": () => setTurnstileToken(""),
-          "error-callback": () => setTurnstileToken("")
+          callback: (token) => {
+            setTurnstileToken(token);
+            setTurnstileStatus("verified");
+            trackPreviewEvent("turnstile_pass", { turnstileState: "verified" });
+          },
+          "expired-callback": () => {
+            setTurnstileToken("");
+            setTurnstileStatus("expired");
+            trackPreviewEvent("turnstile_fail", { turnstileState: "expired", errorCode: "expired" });
+          },
+          "error-callback": () => {
+            setTurnstileToken("");
+            setTurnstileStatus("error");
+            trackPreviewEvent("turnstile_fail", { turnstileState: "error", errorCode: "widget_error" });
+          }
         });
+        setTurnstileStatus("ready");
+        trackPreviewEvent("turnstile_loaded", { turnstileState: "ready" });
       })
-      .catch(() => setError("Human check could not load. Refresh and try again."));
+      .catch(() => {
+        setTurnstileStatus("error");
+        trackPreviewEvent("turnstile_fail", { turnstileState: "error", errorCode: "script_load" });
+        setError("Human check could not load. Retry the check or refresh and try again.");
+      });
 
     return () => {
       cancelled = true;
@@ -778,7 +905,7 @@ function App() {
         turnstileWidgetIdRef.current = null;
       }
     };
-  }, [turnstileSiteKey, shouldRenderTurnstile, activeFileId]);
+  }, [turnstileSiteKey, shouldRenderTurnstile, activeFileId, turnstileRetryKey]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -934,6 +1061,7 @@ function App() {
     if (selectedId === "bank" && isBankAdvancedFormat(nextFormat)) setShowBankDetails(true);
     updateActiveFileSettings({ outputFormat: nextFormat });
     clearActiveResult();
+    trackPreviewEvent("output_selected", { outputFormat: nextFormat });
   }
 
   function toggleBankDetails() {
@@ -985,6 +1113,14 @@ function App() {
     const nextActive = nextEntries[0];
     setActiveFileId(nextActive.id);
     applyEntrySettings(nextActive);
+    trackPreviewEvent("file_selected", {
+      file: nextActive.file,
+      converterId: nextActive.selectedId,
+      outputFormat: nextActive.outputFormat,
+      pageCount: nextActive.pageCount,
+      fileCount: incomingFiles.length,
+      turnstileState: "idle"
+    });
     event.target.value = "";
   }
 
@@ -999,7 +1135,20 @@ function App() {
     setTurnstileToken("");
     if (window.turnstile && turnstileWidgetIdRef.current) {
       window.turnstile.reset(turnstileWidgetIdRef.current);
+      setTurnstileStatus("ready");
     }
+  }
+
+  function retryTurnstile() {
+    setError("");
+    setTurnstileToken("");
+    if (window.turnstile && turnstileWidgetIdRef.current) {
+      window.turnstile.reset(turnstileWidgetIdRef.current);
+      setTurnstileStatus("ready");
+      return;
+    }
+    setTurnstileStatus("loading");
+    setTurnstileRetryKey((value) => value + 1);
   }
 
   async function handleConvert(event) {
@@ -1009,13 +1158,9 @@ function App() {
       return;
     }
 
-    if (file.size > selectedMaxSizeMb * 1024 * 1024) {
-      setError(`This converter accepts files up to ${selectedMaxSizeMb} MB.`);
-      return;
-    }
-
-    if (pageCount > MAX_PAGES) {
-      setError(`This service accepts up to ${MAX_PAGES} pages. Split larger PDFs into multiple files.`);
+    if (previewBlockReason) {
+      setError(previewBlockReason);
+      trackPreviewEvent("preview_error", { errorCode: "blocked" });
       return;
     }
 
@@ -1043,12 +1188,20 @@ function App() {
     form.append("planId", planToUse.id);
     form.append("estimatedPages", String(pageCountToUse));
     form.append("outputFormat", outputToUse);
+    form.append("funnelSessionId", funnelSessionIdRef.current);
     if (converterToUse === "bank" && BANK_ADVANCED_FORMATS.has(outputToUse)) {
       form.append("accountingMetadata", JSON.stringify(bankDetailsToUse));
     }
     if (turnstileToken) form.append("turnstileToken", turnstileToken);
 
+    let previewErrorTracked = false;
     try {
+      trackPreviewEvent("preview_click", {
+        converterId: converterToUse,
+        outputFormat: outputToUse,
+        pageCount: pageCountToUse,
+        turnstileState: turnstileToken ? "verified" : turnstileStatus
+      });
       const response = await fetch("/api/convert", {
         method: "POST",
         body: form
@@ -1056,11 +1209,16 @@ function App() {
       const payload = await response.json();
 
       if (!response.ok) {
+        if (response.status === 403) setTurnstileStatus("error");
+        trackPreviewEvent("preview_error", { errorCode: `http_${response.status}` });
+        previewErrorTracked = true;
         throw new Error(payload.error || "The AI converter could not process this file.");
       }
 
       setResultForFile(fileId, payload);
+      trackPreviewEvent("preview_success", { jobId: payload.jobId || "" });
     } catch (err) {
+      if (!previewErrorTracked) trackPreviewEvent("preview_error", { errorCode: "network_or_runtime" });
       setError(err.message || "The AI converter could not process this file.");
     } finally {
       setConverting(false);
@@ -1938,9 +2096,15 @@ function App() {
                     {converting ? <LoaderCircle className="spin" size={18} /> : <Wand2 size={18} />}
                   </button>
 
-                  {!selectedEnabled && (
-                    <div className="inline-note">
-                      This conversion is built but waiting on a production key.
+                  {previewBlockReason && (
+                    <div className="preview-blocker-note" role="status" aria-live="polite">
+                      <AlertCircle size={16} />
+                      <span>{previewBlockReason}</span>
+                      {canRetryTurnstile && (
+                        <button type="button" className="inline-text-button" onClick={retryTurnstile}>
+                          Retry human check
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -2316,7 +2480,10 @@ function loadTurnstile() {
     script.onerror = reject;
     document.head.appendChild(script);
   });
-  return turnstileScriptPromise;
+  return turnstileScriptPromise.catch((error) => {
+    turnstileScriptPromise = null;
+    throw error;
+  });
 }
 
 createRoot(document.getElementById("root")).render(<App />);

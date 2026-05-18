@@ -45,6 +45,9 @@ export async function onRequestGet({ request, env }) {
     refundDue,
     checkoutHandoffs,
     staleCheckoutHandoffs,
+    previewFunnel,
+    previewFunnelByRoute,
+    previewFunnelIssues,
     cloudConvert
   ] = await Promise.all([
     queryAll(env, "SELECT status, COUNT(*) AS count FROM jobs GROUP BY status ORDER BY count DESC"),
@@ -202,6 +205,36 @@ export async function onRequestGet({ request, env }) {
        LIMIT 25`,
       [staleCheckoutBefore, since24h]
     ),
+    queryAll(
+      env,
+      `SELECT event_type, COUNT(*) AS count
+       FROM preview_funnel_events
+       WHERE created_at >= ?
+       GROUP BY event_type
+       ORDER BY count DESC`,
+      [since24h]
+    ),
+    queryAll(
+      env,
+      `SELECT converter_id, output_format, event_type, COUNT(*) AS count
+       FROM preview_funnel_events
+       WHERE created_at >= ?
+       GROUP BY converter_id, output_format, event_type
+       ORDER BY count DESC
+       LIMIT 50`,
+      [since24h]
+    ),
+    queryAll(
+      env,
+      `SELECT event_type, converter_id, output_format, input_kind, file_size_bucket, page_bucket,
+              turnstile_state, error_code, route_path, created_at
+       FROM preview_funnel_events
+       WHERE event_type IN ('preview_error', 'turnstile_fail')
+         AND created_at >= ?
+       ORDER BY created_at DESC
+       LIMIT 50`,
+      [since24h]
+    ),
     buildCloudConvertOverview(env)
   ]);
   const alerts = buildAlerts({
@@ -223,7 +256,9 @@ export async function onRequestGet({ request, env }) {
     unmatchedPayments: (unmatchedPayments || []).length,
     refundDue: (refundDue || []).length,
     openSupport: (support || []).length,
-    webhookFailures: (webhookFailures || []).length
+    webhookFailures: (webhookFailures || []).length,
+    previewErrors: safeCountFromFunnel(previewFunnel, "preview_error"),
+    turnstileFailures: safeCountFromFunnel(previewFunnel, "turnstile_fail")
   };
 
   return json({
@@ -245,6 +280,9 @@ export async function onRequestGet({ request, env }) {
     staleCheckoutHandoffs,
     refunds,
     refundDue,
+    previewFunnel,
+    previewFunnelByRoute,
+    previewFunnelIssues,
     webhookFailures,
     webhooks
   });
@@ -453,6 +491,11 @@ function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckPr
 function numberOrZero(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function safeCountFromFunnel(rows, eventType) {
+  const row = (rows || []).find((item) => item.event_type === eventType);
+  return numberOrZero(row?.count);
 }
 
 async function queryAll(env, sql, binds = []) {
