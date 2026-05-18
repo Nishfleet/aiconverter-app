@@ -1,6 +1,6 @@
 # AI Converter
 
-AI Converter is a Cloudflare Pages app for preview-first AI conversion, common file conversion, and browser-only image conversion.
+AI Converter is a Cloudflare Pages app for preview-first AI conversion and common file conversion.
 
 Current production AI module:
 - Bank statement PDF to CSV.
@@ -14,9 +14,9 @@ Current beta modules:
 - Screenshot/image to HTML, with a free starter preview and paid Workers AI vision export when configured.
 - Universal file conversion through CloudConvert, with Convertio backup when `CONVERTIO_API_KEY` is configured.
 
-Current local module:
-- PNG/JPG/WEBP to PNG/JPG/WEBP in the browser with no upload.
-- PNG/JPG/WEBP to posterized SVG in the browser with no upload.
+Current image modules:
+- PNG/JPG/WEBP to PNG/JPG/WEBP.
+- PNG/JPG/WEBP to posterized SVG.
 
 ## Live Infrastructure
 
@@ -36,6 +36,7 @@ Current local module:
 npm ci
 npm run check:pricing
 node --test tests/*.test.mjs
+npm run corpus:private
 npm run stress:converters
 npm run build
 npm run monitor:live
@@ -46,6 +47,7 @@ npm run readiness:live
 
 Database notes: [ops/database.md](ops/database.md)
 Monitoring notes: [ops/monitoring.md](ops/monitoring.md)
+Private corpus notes: [ops/private-corpus.md](ops/private-corpus.md)
 
 Deploy:
 
@@ -59,9 +61,11 @@ Use the safe-deploy wrapper on Nish's machine before live commands.
 
 - Preview is free.
 - Full AI extraction unlock is paid.
-- Dodo checkout, webhook, paid finalize, download, and failed-payment handling are live-tested. Cash refund retry is implemented; current live refund proof is blocked until the Dodo wallet has enough funds.
+- Dodo checkout creation, signed webhook validation, paid finalize/download code paths, admin refund drills, and failed-payment handling are implemented and covered by automated checks.
+- One successful real-card drill through checkout, webhook, paid finalize, download, redo, and refund still needs operator proof before scaling paid traffic.
 - Source files are private and short-retention.
 - No human file review queue.
+- Multi-file preview is implemented. Batch checkout unlocks queued previews in one payment and downloads completed exports as one ZIP.
 - Provider-backed universal conversion is implemented and activates when the production `CLOUDCONVERT_API_KEY` or `CONVERTIO_API_KEY` secret is configured.
 - CloudConvert is the primary universal provider route when the production `CLOUDCONVERT_API_KEY` secret is configured.
 - Convertio backup conversion is implemented when the production `CONVERTIO_API_KEY` secret is configured.

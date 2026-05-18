@@ -1,10 +1,10 @@
 # AI Converter full context
 
-AI Converter is a web app for automated AI conversion, browser-only image conversion, and common file-format conversion. Bank statement PDF to CSV is the first production AI module.
+AI Converter is a web app for automated AI conversion and common file-format conversion. Bank statement PDF to CSV is the first production AI module.
 
 ## Current product wedge
 
-The production AI module is bank statement PDF to CSV. Receipt, invoice, screenshot-table, audio transcript, document-to-Markdown, screenshot-to-HTML, and common file-format conversion use the same preview-first path when configured. PNG/JPG/WEBP image format conversion and raster-to-SVG conversion do not upload files. Pixel-perfect image-to-code is not claimed.
+The production AI module is bank statement PDF to CSV. Receipt, invoice, screenshot-table, audio transcript, document-to-Markdown, screenshot-to-HTML, and common file-format conversion use the same preview-first path when configured. Pixel-perfect image-to-code is not claimed.
 
 Accounting SEO pages explain truthful CSV preparation use cases for QuickBooks, Xero, Wave, Excel, credit card statements, and bookkeepers. These pages must not claim official accounting-platform support, direct bank feeds, guaranteed imports, reconciliation, categorization, SOC 2, GDPR, accounting advice, or tax advice.
 
@@ -29,8 +29,8 @@ Live behavior:
 - Receipt image or PDF to expense CSV is beta. It can export vendor, date, category, total, tax, payment method, and notes when safely detected.
 - Invoice or bill image/PDF to CSV or JSON is beta. It can export vendor, invoice number, invoice date, due date, subtotal, tax, total, payment terms, notes, and JSON line items when safely detected.
 - Screenshot PNG, JPG, WEBP, or image PDF to spreadsheet CSV is beta. It can infer table rows and headers when safely detected.
-- Image format conversion from PNG, JPG, JPEG, or WEBP to PNG, JPG, or WEBP is live and does not upload files.
-- Raster-to-SVG conversion from PNG, JPG, JPEG, or WEBP to SVG is live and does not upload files.
+- Image format conversion from PNG, JPG, JPEG, or WEBP to PNG, JPG, or WEBP is live.
+- Raster-to-SVG conversion from PNG, JPG, JPEG, or WEBP to SVG is live.
 - Audio transcript from MP3, WAV, M4A, AAC, OGG, or WEBM to TXT or JSON is beta.
 - Document Markdown conversion for supported rich document formats is beta.
 - Screenshot to HTML is beta. It creates a clean starter preview and uses image understanding for paid image exports when configured. It does not claim pixel-perfect screenshot cloning.
@@ -39,7 +39,7 @@ Live behavior:
 
 Homepage ticker examples:
 - Core examples: bank statement PDF to CSV, receipt image to expense CSV, invoice PDF to JSON, screenshot table to CSV, JPG to PNG, PNG to JPG, WEBP to PNG, audio to transcript, document to Markdown.
-- 200+ conversion options are available across the current accepted input formats and output choices, with more coming soon. Examples include PDF to Word, Word to PDF, PDF to JPG, HEIC to JPG, SVG to PNG, MP4 to MP3, MOV to MP4, GIF to MP4, WAV to MP3, XLSX to CSV, CSV to XLSX, docs/images/audio/video/archive categories, and many more formats.
+- Provider-backed conversion options are available across the current accepted input formats and output choices, with more coming soon. Examples include PDF to Word, Word to PDF, PDF to JPG, HEIC to JPG, SVG to PNG, MP4 to MP3, MOV to MP4, GIF to MP4, WAV to MP3, XLSX to CSV, CSV to XLSX, and docs/images/audio/video/archive categories.
 
 ## Pricing
 
@@ -103,23 +103,24 @@ Fake sample CSV:
 ## Pages
 
 - Home: https://aiconverter.app
-- Formats: https://aiconverter.app/formats
-- About: https://aiconverter.app/about
-- Bank statement PDF to CSV: https://aiconverter.app/bank-statement-pdf-to-csv
-- Convert bank statement to CSV: https://aiconverter.app/convert-bank-statement-to-csv
-- PDF bank statement to QuickBooks CSV: https://aiconverter.app/pdf-bank-statement-to-quickbooks-csv
-- PDF bank statement to Xero CSV: https://aiconverter.app/pdf-bank-statement-to-xero-csv
-- PDF bank statement to Wave CSV: https://aiconverter.app/pdf-bank-statement-to-wave-csv
-- Scanned bank statement to Excel: https://aiconverter.app/scanned-bank-statement-to-excel
-- Credit card statement PDF to CSV: https://aiconverter.app/credit-card-statement-pdf-to-csv
-- Bank statement converter for bookkeepers: https://aiconverter.app/bank-statement-converter-for-bookkeepers
-- Sample CSV: https://aiconverter.app/sample-csv
-- Security: https://aiconverter.app/security
-- Privacy: https://aiconverter.app/privacy
-- Terms: https://aiconverter.app/terms
-- Refunds: https://aiconverter.app/refund
-- Data retention: https://aiconverter.app/data-retention
-- Support: https://aiconverter.app/support
+- Formats: https://aiconverter.app/formats/
+- About: https://aiconverter.app/about/
+- Bank statement PDF to CSV: https://aiconverter.app/bank-statement-pdf-to-csv/
+- Convert bank statement to CSV: https://aiconverter.app/convert-bank-statement-to-csv/
+- PDF bank statement to QuickBooks CSV: https://aiconverter.app/pdf-bank-statement-to-quickbooks-csv/
+- PDF bank statement to Xero CSV: https://aiconverter.app/pdf-bank-statement-to-xero-csv/
+- PDF bank statement to Wave CSV: https://aiconverter.app/pdf-bank-statement-to-wave-csv/
+- Scanned bank statement to Excel: https://aiconverter.app/scanned-bank-statement-to-excel/
+- Credit card statement PDF to CSV: https://aiconverter.app/credit-card-statement-pdf-to-csv/
+- Bank statement converter for bookkeepers: https://aiconverter.app/bank-statement-converter-for-bookkeepers/
+- Sample CSV: https://aiconverter.app/sample-csv/
+- Security: https://aiconverter.app/security/
+- Trust center: https://aiconverter.app/trust/
+- Privacy: https://aiconverter.app/privacy/
+- Terms: https://aiconverter.app/terms/
+- Refunds: https://aiconverter.app/refund/
+- Data retention: https://aiconverter.app/data-retention/
+- Support: https://aiconverter.app/support/
 
 ## Upcoming, not live as primary bank-statement intake
 

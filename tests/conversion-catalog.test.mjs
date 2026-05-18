@@ -24,7 +24,7 @@ test("conversion catalog gates provider-backed claims behind configured provider
   assert.ok(enabledAvailable.has("HEIC to JPG"));
   assert.ok(enabledAvailable.has("MP4 to MP3"));
   assert.ok(availableConversionCount(data.converters, { universalProviderReady: true }) >= 200);
-  assert.equal(availableConversionCountLabel(availableConversionCount(data.converters, { universalProviderReady: true })), "200+ conversion options available");
+  assert.equal(availableConversionCountLabel(availableConversionCount(data.converters, { universalProviderReady: true })), "Many conversion options available");
 });
 
 test("publicly highlighted top requests exist in the generated catalog", () => {

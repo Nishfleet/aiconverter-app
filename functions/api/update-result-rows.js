@@ -4,6 +4,7 @@ import {
   getAuthorizedJob,
   hasRequiredBindings,
   jobOutputFormat,
+  parseCsvContent,
   rowsToCsv,
   tokenFromBodyOrCookie,
   updateJob
@@ -45,10 +46,21 @@ export async function onRequestPost({ request, env }) {
     return badRequest(`${bankOutputLabel(outputFormat)} is a bank-feed file. Download and review it in your accounting app.`);
   }
 
+  const existing = await env.AICONVERTER_BUCKET.get(job.result_key);
+  if (!existing) return badRequest("The converted file has expired.");
+  const existingRows = parseCsvContent(await existing.text(), MAX_REVIEW_ROWS);
+  if (existingRows.truncated) {
+    return badRequest(
+      `This export has more than ${MAX_REVIEW_ROWS} rows. Download it and edit the full file locally so inline review cannot drop rows.`
+    );
+  }
+
   const columns = normalizeColumns(body.columns);
   const rows = normalizeRows(body.rows, columns);
   if (!columns.length) return badRequest("The edited export needs at least one column.");
   if (!rows.length) return badRequest("The edited export needs at least one row.");
+  const rowCheck = validateEditedRows(outputFormat, columns, rows);
+  if (!rowCheck.ok) return badRequest(rowCheck.message);
 
   const csv = rowsToCsv(rows, columns);
   await env.AICONVERTER_BUCKET.put(job.result_key, csv, {
@@ -61,7 +73,7 @@ export async function onRequestPost({ request, env }) {
   });
 
   const validationReportKey = job.validation_report_key || `jobs/${job.id}/validation-report.txt`;
-  await env.AICONVERTER_BUCKET.put(validationReportKey, editedValidationReport(job, outputFormat, rows.length), {
+  await env.AICONVERTER_BUCKET.put(validationReportKey, editedValidationReport(job, outputFormat, rows.length, rowCheck), {
     httpMetadata: { contentType: "text/plain; charset=utf-8" },
     customMetadata: {
       jobId: job.id,
@@ -117,13 +129,59 @@ function cleanCell(value) {
   return String(value ?? "").replace(/\r?\n/g, " ").trim().slice(0, MAX_CELL_LENGTH);
 }
 
-function editedValidationReport(job, outputFormat, rowCount) {
+function validateEditedRows(outputFormat, columns, rows) {
+  const keys = columns.map((column) => column.key);
+  const dateKey = keys.find((key) => /^date$/i.test(key));
+  const amountKey = keys.find((key) => /^amount$/i.test(key));
+  const depositKey = keys.find((key) => /^(deposit|money_in|money in)$/i.test(key));
+  const withdrawalKey = keys.find((key) => /^(withdrawal|money_out|money out)$/i.test(key));
+
+  if (!dateKey) return { ok: false, message: `${bankOutputLabel(outputFormat)} needs a Date column.` };
+
+  const validDates = rows.filter((row) => validDate(row[dateKey])).length;
+  if (validDates / rows.length < 0.8) {
+    return { ok: false, message: "Too many edited rows are missing valid dates." };
+  }
+
+  let validAmounts = 0;
+  if (amountKey) {
+    validAmounts = rows.filter((row) => validMoney(row[amountKey])).length;
+  } else if (depositKey || withdrawalKey) {
+    validAmounts = rows.filter((row) => validMoney(row[depositKey]) || validMoney(row[withdrawalKey])).length;
+  }
+
+  if (validAmounts / rows.length < 0.8) {
+    return { ok: false, message: "Too many edited rows are missing transaction amounts." };
+  }
+
+  return { ok: true, validDates, validAmounts };
+}
+
+function validDate(value) {
+  const text = String(value || "").trim();
+  if (!text) return false;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return true;
+  if (/^\d{4}\/\d{2}\/\d{2}$/.test(text)) return true;
+  if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(text)) return true;
+  return false;
+}
+
+function validMoney(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return false;
+  const normalized = text.replace(/[,$\s]/g, "").replace(/^\((.*)\)$/, "-$1");
+  return Number.isFinite(Number(normalized));
+}
+
+function editedValidationReport(job, outputFormat, rowCount, rowCheck) {
   return [
     "AI Converter validation report",
     "",
     `Source file: ${job.original_file_name || "uploaded bank statement"}`,
     `Output: ${bankOutputLabel(outputFormat)}`,
     `Rows saved: ${rowCount}`,
+    `Rows with valid dates: ${rowCheck.validDates}/${rowCount}`,
+    `Rows with amounts: ${rowCheck.validAmounts}/${rowCount}`,
     `Edited: ${new Date().toISOString()}`,
     "",
     "Review before import",

@@ -95,7 +95,7 @@ function supportHtml(title, message, status = 200) {
     <main class="legal-shell">
       <header class="legal-header">
         <a class="brand" href="/"><span class="brand-mark">AI</span><span class="brand-name">AI Converter</span></a>
-        <a class="top-link" href="/support">Back to support</a>
+        <a class="top-link" href="/support/">Back to support</a>
       </header>
       <section class="legal-hero">
         <p class="eyebrow">Support</p>

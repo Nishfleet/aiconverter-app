@@ -164,6 +164,10 @@ export function buildValidationReport(rows, options = {}) {
   const duplicateCount = countDuplicateRows(rows);
   const warnings = [...new Set([...(validation.warnings || []), ...(duplicateCount ? [`${duplicateCount} possible duplicate row${duplicateCount === 1 ? "" : "s"}.`] : [])])];
   const checks = validation.checks || {};
+  const dateCheck = checks.dateCoverage || {};
+  const amountCheck = checks.amountCoverage || {};
+  const balanceCheck = checks.runningBalance || {};
+  const pageCheck = checks.pageCoverage || {};
   const lines = [
     "AI Converter validation report",
     "",
@@ -171,13 +175,16 @@ export function buildValidationReport(rows, options = {}) {
     `Output: ${bankOutputLabel(options.format)}`,
     `Rows extracted: ${rows.length}`,
     `Date coverage: ${dates[0] || "unknown"} to ${dates[dates.length - 1] || "unknown"}`,
+    `Rows with valid dates: ${countCheck(dateCheck.valid, rows.length)}`,
+    `Rows with amounts: ${countCheck(amountCheck.valid, rows.length)}`,
     `Money in: ${formatAmount(deposits)}`,
     `Money out: ${formatAmount(withdrawals)}`,
     `Opening balance: ${balances.length ? formatAmount(balances[0]) : "not available"}`,
     `Closing balance: ${balances.length ? formatAmount(balances[balances.length - 1]) : "not available"}`,
     `Confidence score: ${Math.round(Number(validation.confidence || average(rows.map((row) => Number(row.confidence || 0))) || 0) * 100)}%`,
-    `Balance check: ${checks.balanceContinuity === false ? "needs review" : "no obvious issue found"}`,
+    `Balance check: ${balanceCheckSummary(balanceCheck)}`,
     `Duplicate check: ${duplicateCount ? "needs review" : "no obvious duplicate rows found"}`,
+    `Page coverage: ${pageCoverageSummary(pageCheck)}`,
     "",
     "Bank metadata used",
     `Bank: ${metadata.bankName}`,
@@ -565,6 +572,28 @@ function countDuplicateRows(rows) {
     seen.add(key);
   });
   return count;
+}
+
+function countCheck(value, total) {
+  if (!Number.isFinite(Number(value))) return "not checked";
+  return `${Number(value)}/${Number(total || 0)}`;
+}
+
+function balanceCheckSummary(check = {}) {
+  const checked = Number(check.checked || 0);
+  if (!checked) return "not available";
+  const matched = Number(check.matched || 0);
+  const ratio = checked ? matched / checked : 0;
+  const status = ratio >= 0.85 ? "no obvious issue found" : "needs review";
+  return `${status} (${matched}/${checked} checked rows matched)`;
+}
+
+function pageCoverageSummary(check = {}) {
+  const expected = Number(check.expectedPages || 0);
+  const covered = Number(check.coveredPages || 0);
+  if (!expected && !covered) return "not checked";
+  if (!expected) return `${covered} page${covered === 1 ? "" : "s"} detected`;
+  return `${covered}/${expected} expected page${expected === 1 ? "" : "s"}`;
 }
 
 function average(values) {

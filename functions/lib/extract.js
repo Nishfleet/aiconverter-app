@@ -188,6 +188,7 @@ export async function convertPdfToCsv(env, fileName, arrayBuffer, options = {}) 
     validation: {
       confidence: extracted.confidence,
       trustScore: extracted.trustScore || extracted.confidence,
+      checks: extracted.validationChecks || {},
       warnings: extracted.warnings || [],
       provider: extracted.provider || "unknown"
     }
@@ -684,6 +685,7 @@ async function extractWithBestProvider(env, fileName, arrayBuffer, options) {
           confidence: validation.confidence,
           trustScore: validation.trustScore,
           rowCount: validation.rowCount,
+          validationChecks: validation.checks,
           warnings: [
             ...(extracted.warnings || []),
             ...(validation.warnings || []),

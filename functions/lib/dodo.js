@@ -128,6 +128,65 @@ export async function createDodoCheckout({ env, request, job, plan, email }) {
   return payload.checkout_url || payload.payment_link || "";
 }
 
+export async function createDodoBatchCheckout({ env, request, batch, jobs, plan, email }) {
+  const apiKey = dodoApiKey(env);
+  const productId = dodoProductIdForPlan(env, plan.id);
+  if (!apiKey || !productId) return null;
+
+  const returnUrl = new URL(request.url);
+  returnUrl.pathname = "/";
+  returnUrl.search = "";
+  returnUrl.searchParams.set("batchId", batch.id);
+  returnUrl.searchParams.set("plan", plan.id);
+
+  const currency = expectedDodoCurrency(env);
+  const country = countryFromRequest(request);
+  const body = {
+    product_cart: [{ product_id: productId, quantity: 1 }],
+    return_url: returnUrl.toString(),
+    adaptive_currency_fees_inclusive: dodoAdaptiveCurrencyFeesInclusive(env),
+    metadata: {
+      batch_id: batch.id,
+      job_count: String(jobs.length),
+      job_ids: jobs.map((job) => job.id).join(",").slice(0, 900),
+      plan_id: plan.id,
+      expected_amount: String(plan.amount),
+      ...(currency ? { expected_currency: currency } : {})
+    }
+  };
+  if (country) body.billing_address = { country };
+  if (email) body.customer = { email };
+
+  const response = await fetch(`${dodoBaseUrl(env)}/checkouts`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify(body)
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(payload?.message || "Dodo checkout could not be created.");
+    error.code = payload?.code || "";
+    error.status = response.status;
+    throw error;
+  }
+
+  const checkoutSessionId = payload.session_id || payload.checkout_session_id || payload.id || "";
+  if (checkoutSessionId) {
+    await env.AICONVERTER_DB.prepare(
+      "UPDATE batch_checkouts SET checkout_session_id = ?, updated_at = ? WHERE id = ?"
+    )
+      .bind(checkoutSessionId, new Date().toISOString(), batch.id)
+      .run();
+    await Promise.all(jobs.map((job) => updateJob(env, job.id, { batch_id: batch.id, checkout_session_id: checkoutSessionId })));
+  }
+
+  return payload.checkout_url || payload.payment_link || "";
+}
+
 export async function syncDodoProductPrices(env, { dryRun = false } = {}) {
   const apiKey = dodoApiKey(env);
   const updates = Object.values(PLANS).map((plan) => ({
@@ -467,6 +526,10 @@ async function applyDodoPayment(env, payment, options = {}) {
     return { ok: false, ignored: true, reason: "payment_id_reused" };
   }
 
+  if (normalized.metadataBatchId) {
+    return applyDodoBatchPayment(env, normalized, options);
+  }
+
   const match = await matchJobForDodoPayment(env, normalized, options.explicitJob);
   await recordDodoPaymentEvent(env, normalized, {
     ...options,
@@ -490,6 +553,59 @@ async function applyDodoPayment(env, payment, options = {}) {
   await updateJob(env, match.job.id, updates);
 
   return { ok: true, jobId: match.job.id };
+}
+
+async function applyDodoBatchPayment(env, payment, options = {}) {
+  const batch = await env.AICONVERTER_DB.prepare("SELECT * FROM batch_checkouts WHERE id = ?")
+    .bind(payment.metadataBatchId)
+    .first();
+  if (!batch) {
+    await recordDodoPaymentEvent(env, payment, { ...options, matchStatus: "batch_not_found" });
+    return { ok: false, ignored: true, reason: "batch_not_found" };
+  }
+
+  await recordDodoPaymentEvent(env, payment, {
+    ...options,
+    job: { id: batch.id },
+    matchedBy: "batch_id",
+    matchStatus: "matched"
+  });
+
+  if (!PAID_STATUSES.has(payment.status)) {
+    return { ok: false, ignored: true, reason: "not_paid" };
+  }
+  if (batch.payment_id && batch.payment_id !== payment.paymentId) {
+    return { ok: false, ignored: true, reason: "batch_has_different_payment_id" };
+  }
+  if (batch.checkout_session_id && payment.checkoutSessionId && batch.checkout_session_id !== payment.checkoutSessionId) {
+    return { ok: false, ignored: true, reason: "checkout_session_mismatch" };
+  }
+
+  const plan = PLANS[batch.plan_id] || PLANS[payment.metadataPlanId] || PLANS.starter;
+  if (payment.metadataPlanId && payment.metadataPlanId !== plan.id) {
+    return { ok: false, ignored: true, reason: "metadata_plan_mismatch" };
+  }
+  const productId = dodoProductIdForPlan(env, plan.id);
+  if (productId && payment.productIds.length > 0 && !payment.productIds.includes(productId)) {
+    return { ok: false, ignored: true, reason: "product_mismatch" };
+  }
+  if (isDodoPaymentAmountTooLow(env, payment, plan)) {
+    return { ok: false, ignored: true, reason: "amount_too_low" };
+  }
+
+  const now = new Date().toISOString();
+  await env.AICONVERTER_DB.prepare(
+    "UPDATE batch_checkouts SET payment_id = ?, status = ?, paid_at = COALESCE(paid_at, ?), updated_at = ? WHERE id = ?"
+  )
+    .bind(payment.paymentId, payment.status, now, now, batch.id)
+    .run();
+  await env.AICONVERTER_DB.prepare(
+    "UPDATE jobs SET payment_id = ?, paid_at = COALESCE(paid_at, ?), updated_at = ? WHERE batch_id = ?"
+  )
+    .bind(payment.paymentId, now, now, batch.id)
+    .run();
+
+  return { ok: true, batchId: batch.id };
 }
 
 async function matchJobForDodoPayment(env, payment, explicitJob) {
@@ -710,6 +826,7 @@ function normalizeDodoPayment(payment = {}) {
     paymentId: firstText(payment.payment_id, payment.paymentId, payment.id),
     checkoutSessionId: firstText(payment.checkout_session_id, payment.checkoutSessionId, payment.session_id, payment.sessionId),
     metadataJobId: firstText(metadata.job_id, metadata.jobId, metadata.order_id, metadata.orderId),
+    metadataBatchId: firstText(metadata.batch_id, metadata.batchId),
     metadataPlanId: firstText(metadata.plan_id, metadata.planId),
     productIds,
     amount: numberOrZero(payment.total_amount ?? payment.amount_total ?? payment.amount),

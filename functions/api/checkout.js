@@ -33,6 +33,16 @@ export async function onRequestPost({ request, env }) {
 
   const plan = PLANS[job.plan_id] || PLANS[String(body.planId || "starter")] || PLANS.starter;
 
+  if (job.paid_at) {
+    return json({
+      mode: job.status === "complete" ? "download" : "finalize",
+      finalizeUrl: "/api/finalize",
+      plan
+    }, {
+      headers: { "Set-Cookie": jobAccessCookie(job.id, token) }
+    });
+  }
+
   if (env.FREE_DOWNLOADS_ENABLED === "true") {
     return json({
       mode: job.status === "complete" ? "download" : "finalize",

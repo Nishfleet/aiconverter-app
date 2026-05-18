@@ -395,7 +395,7 @@ export function buildConversionCatalog(converters, options = {}) {
             label: `${formatLabel(input)} to ${formatLabel(output)}`,
             category: "Images",
             available: true,
-            detail: "Browser-only image conversion"
+            detail: "Image format conversion"
           }));
         }
       }
@@ -410,7 +410,7 @@ export function buildConversionCatalog(converters, options = {}) {
           label: `${formatLabel(input)} to SVG`,
           category: "Images",
           available: true,
-          detail: "Browser-only image conversion"
+          detail: "Image to SVG conversion"
         }));
       }
       continue;
@@ -446,7 +446,7 @@ export function availableConversionCount(converters, options = {}) {
 }
 
 export function availableConversionCountLabel(count) {
-  if (count >= 200) return "200+ conversion options available";
+  if (count >= 200) return "Many conversion options available";
   if (count >= 100) return "100+ conversion options available";
   return `${count} conversion options available`;
 }

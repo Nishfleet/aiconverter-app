@@ -7,9 +7,9 @@
     <title>Privacy Policy - AI Converter</title>
     <meta
       name="description"
-      content="How AI Converter handles uploaded source files, generated files, browser-only image conversion, payment status, and short retention."
+      content="How AI Converter handles uploaded source files, generated files, processors, payment status, and short retention."
     />
-    <link rel="canonical" href="https://aiconverter.app/privacy" />
+    <link rel="canonical" href="https://aiconverter.app/privacy/" />
     <link rel="stylesheet" href="/legal.css" />
   </head>
   <body>
@@ -76,6 +76,22 @@
           </p>
         </article>
 
+        <article class="policy-card is-wide">
+          <p class="kicker">Processors</p>
+          <h2>Processing depends on the route you choose.</h2>
+          <p>
+            Cloudflare runs the app, private storage, database, Turnstile checks, and some
+            AI processing. OCR or AI routes may use Mistral or Cloudflare Workers AI.
+            Provider-backed file-format conversion may use CloudConvert first and Convertio
+            as a backup route. Dodo handles checkout and card processing.
+          </p>
+          <p>
+            AI Converter does not use uploaded files or generated outputs to train models.
+            External processors receive data only to perform the selected conversion,
+            security check, payment, or support workflow.
+          </p>
+        </article>
+
         <article class="policy-card">
           <p class="kicker">Payments</p>
           <h2>We store unlock status, not card numbers.</h2>
@@ -94,8 +110,6 @@
             redo window. Source files are deleted after a failed preview, failed full
             extraction, completed redo, or the 24-hour private source lifecycle.
             Generated files expire after 7 days.
-            Browser-only image conversions do not create source files or
-            generated files on <strong class="brand-name">AI Converter</strong>.
           </p>
           <p>
             Minimal job metadata may be kept longer for payment records, abuse
@@ -119,7 +133,8 @@
           <h2>Use support for privacy and deletion questions.</h2>
           <p>
             For deletion, privacy, or payment-related requests, use the
-            <a href="/support">support form</a>. Do not send source files
+            <a href="/support/">support form</a>. AI Converter is operated by the AI Converter team.
+            Do not send source files
             through support; use the upload flow only.
           </p>
         </article>
@@ -128,12 +143,13 @@
       <footer class="legal-footer">
         <span><strong class="brand-name">AI Converter</strong></span>
         <nav class="legal-links" aria-label="Legal links">
-          <a href="/terms">Terms</a>
-          <a href="/formats">Formats</a>
-          <a href="/refund">Refunds</a>
-          <a href="/security">Security</a>
-          <a href="/data-retention">Data retention</a>
-          <a href="/support">Support</a>
+          <a href="/terms/">Terms</a>
+          <a href="/formats/">Formats</a>
+          <a href="/refund/">Refunds</a>
+          <a href="/security/">Security</a>
+          <a href="/trust/">Trust center</a>
+          <a href="/data-retention/">Data retention</a>
+          <a href="/support/">Support</a>
         </nav>
       </footer>
     </main>

@@ -74,7 +74,7 @@ export async function onRequestGet({ request, env }) {
     ),
     queryAll(
       env,
-      `SELECT job_id, payment_id, refund_id, status, reason, amount, currency, created_at
+      `SELECT job_id, payment_id, refund_id, status, reason, amount, currency, error, created_at
        FROM dodo_refund_events
        ORDER BY created_at DESC
        LIMIT 25`
@@ -156,7 +156,20 @@ export async function onRequestGet({ request, env }) {
     ),
     queryAll(
       env,
-      `SELECT id, payment_id, refund_status, refund_id, error, updated_at
+      `SELECT
+         jobs.id,
+         jobs.payment_id,
+         jobs.refund_status,
+         jobs.refund_id,
+         jobs.error,
+         (
+           SELECT dodo_refund_events.error
+           FROM dodo_refund_events
+           WHERE dodo_refund_events.job_id = jobs.id
+           ORDER BY dodo_refund_events.created_at DESC
+           LIMIT 1
+         ) AS refund_error,
+         jobs.updated_at
        FROM jobs
        WHERE COALESCE(refund_status, '') IN ('refund_due', 'credit_due', 'requesting')
        ORDER BY updated_at DESC

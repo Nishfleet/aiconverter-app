@@ -1,21 +1,59 @@
+@font-face {
+  font-family: "HK Grotesk";
+  src: url("/fonts/hkgrotesk-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HK Grotesk";
+  src: url("/fonts/hkgrotesk-medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HK Grotesk";
+  src: url("/fonts/hkgrotesk-semibold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HK Grotesk";
+  src: url("/fonts/hkgrotesk-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HK Grotesk";
+  src: url("/fonts/hkgrotesk-extrabold.woff2") format("woff2");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   color-scheme: light;
-  --bg: #f7f8fb;
-  --surface: #ffffff;
-  --surface-2: #f1f4f8;
-  --ink: #111827;
-  --muted: #667085;
-  --line: #e3e8ef;
-  --line-strong: #cbd5e1;
-  --green: #35c878;
-  --green-dark: #12824a;
-  --blue: #2563eb;
-  --blue-soft: #eaf1ff;
-  --shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+  --bg: #f7f7f1;
+  --surface: #fffef8;
+  --surface-2: #ededdf;
+  --ink: #12120f;
+  --muted: #6e716a;
+  --line: #deded2;
+  --line-strong: #bdbfaf;
+  --green: #bbff2c;
+  --green-dark: #314d05;
+  --green-soft: rgba(187, 255, 44, 0.26);
+  --shadow: 0 24px 70px rgba(43, 43, 30, 0.1);
   --radius: 8px;
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+    "HK Grotesk", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 * {
@@ -29,8 +67,21 @@ html {
 body {
   margin: 0;
   color: var(--ink);
-  background: var(--bg);
+  background:
+    radial-gradient(circle at 50% 10%, rgba(187, 255, 44, 0.18), transparent 24rem),
+    linear-gradient(90deg, rgba(18, 18, 15, 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(18, 18, 15, 0.04) 1px, transparent 1px),
+    var(--bg);
+  background-size:
+    auto,
+    96px 96px,
+    96px 96px,
+    auto;
   line-height: 1.55;
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -57,11 +108,11 @@ a {
   align-items: center;
   gap: 10px;
   font-size: 17px;
-  font-weight: 760;
+  font-weight: 700;
 }
 
 .brand-name {
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .brand-mark {
@@ -70,10 +121,11 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
-  background: var(--ink);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: var(--green-dark);
+  background: var(--green);
+  border: 1px solid rgba(49, 77, 5, 0.16);
   border-radius: 8px;
+  box-shadow: 0 12px 34px rgba(187, 255, 44, 0.24);
 }
 
 .top-link {
@@ -84,10 +136,10 @@ a {
   padding: 0 16px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.76);
+  background: rgba(255, 254, 248, 0.82);
   color: var(--ink);
   font-size: 14px;
-  font-weight: 760;
+  font-weight: 700;
   transition:
     transform 160ms ease,
     border-color 160ms ease,
@@ -144,9 +196,9 @@ h1 {
   min-width: 0;
   padding: 28px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.035);
+  box-shadow: 0 18px 48px rgba(43, 43, 30, 0.035);
 }
 
 .policy-card.is-wide {
@@ -200,11 +252,11 @@ h1 {
   grid-column: 1 / -1;
   margin-top: 0;
   padding: 18px 20px;
-  border: 1px solid rgba(37, 99, 235, 0.2);
-  border-radius: 10px;
-  background: var(--blue-soft);
-  color: #1e3a8a;
-  font-weight: 680;
+  border: 1px solid rgba(49, 77, 5, 0.16);
+  border-radius: var(--radius);
+  background: var(--green-soft);
+  color: var(--green-dark);
+  font-weight: 700;
 }
 
 .policy-card pre {
@@ -256,16 +308,16 @@ h1 {
 .support-form input:focus,
 .support-form select:focus,
 .support-form textarea:focus {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 4px rgba(50, 104, 255, 0.12);
+  border-color: var(--green-dark);
+  box-shadow: 0 0 0 4px rgba(187, 255, 44, 0.26);
 }
 
 .support-form button {
   min-height: 44px;
-  border: 1px solid rgba(37, 99, 235, 0.22);
+  border: 1px solid rgba(49, 77, 5, 0.18);
   border-radius: 8px;
-  color: #ffffff;
-  background: var(--blue);
+  color: var(--green-dark);
+  background: var(--green);
   font: inherit;
   font-weight: 800;
   cursor: pointer;
@@ -282,7 +334,7 @@ h1 {
 
 .admin-panel {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface);
   overflow: hidden;
 }

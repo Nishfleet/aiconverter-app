@@ -98,7 +98,7 @@
       "state": "Local",
       "mode": "local-image",
       "accept": "image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp",
-      "description": "Convert common image formats inside the browser. The file does not upload to AI Converter.",
+      "description": "Convert common image formats.",
       "outputFormats": [
         { "id": "png", "label": "PNG" },
         { "id": "jpeg", "label": "JPG" },
@@ -114,7 +114,7 @@
       "state": "Local",
       "mode": "local-svg",
       "accept": "image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp",
-      "description": "Create a lightweight posterized SVG from a common image inside the browser. The file does not upload to AI Converter.",
+      "description": "Create a lightweight posterized SVG from a common image.",
       "outputFormats": [
         { "id": "svg", "label": "SVG" }
       ],
@@ -381,7 +381,7 @@
   "trustProof": [
     {
       "title": "See the sample first",
-      "detail": "Review real preview rows before you pay for the full export."
+      "detail": "Review a real sample output before you pay for the full export."
     },
     {
       "title": "Private, short-lived uploads",

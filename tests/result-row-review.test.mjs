@@ -83,6 +83,49 @@ test("bank-feed exports do not expose row editor", async () => {
   assert.match((await response.json()).error, /bank-feed file/);
 });
 
+test("inline row editor refuses to save truncated large exports", async () => {
+  const token = "tok_large_rows";
+  const tokenHash = await sha256(token);
+  const csv = [
+    "Date,Description,Amount",
+    ...Array.from({ length: 5001 }, (_, index) => `05/01/2026,Row ${index + 1},1.00`)
+  ].join("\n");
+  const objects = new Map([["jobs/job_large/result.csv", `${csv}\n`]]);
+  const job = {
+    id: "job_large",
+    token_hash: tokenHash,
+    status: "complete",
+    paid_at: "2026-05-18T00:00:00.000Z",
+    converter_id: "bank",
+    output_format: "quickbooks-csv",
+    result_key: "jobs/job_large/result.csv",
+    original_file_name: "large-statement.pdf",
+    expires_at: "2026-05-25T00:00:00.000Z"
+  };
+
+  const response = await saveRows({
+    env: fakeEnv(job, objects, []),
+    request: new Request("https://aiconverter.app/api/update-result-rows", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jobId: job.id,
+        token,
+        columns: [
+          { key: "Date", label: "Date" },
+          { key: "Description", label: "Description" },
+          { key: "Amount", label: "Amount" }
+        ],
+        rows: [{ Date: "05/01/2026", Description: "Only one row", Amount: "1.00" }]
+      })
+    })
+  });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /more than 5000 rows/);
+  assert.match(objects.get("jobs/job_large/result.csv"), /Row 5001/);
+});
+
 function fakeEnv(job, objects, updates) {
   return {
     AICONVERTER_BUCKET: {

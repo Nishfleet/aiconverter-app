@@ -9,7 +9,7 @@
       name="description"
       content="Security controls for AI Converter uploads, job access, retention, abuse prevention, OCR fallback, and private conversion."
     />
-    <link rel="canonical" href="https://aiconverter.app/security" />
+    <link rel="canonical" href="https://aiconverter.app/security/" />
     <link rel="stylesheet" href="/legal.css" />
   </head>
   <body>
@@ -57,10 +57,24 @@
             reserved for scanned, photo-based, receipt, invoice, screenshot, or
             messy files when configured. Audio transcript, document Markdown,
             screenshot-to-HTML, and common file-format conversion run only when
-            the selected conversion is available. Browser-only image-format and
-            raster-to-SVG conversion do not upload
-            files to <strong class="brand-name">AI Converter</strong>. Low-confidence AI extraction files fail closed
+            the selected conversion is available. Low-confidence AI extraction files fail closed
             instead of being routed to human file review.
+          </p>
+        </article>
+
+        <article class="policy-card is-wide">
+          <p class="kicker">Subprocessors</p>
+          <h2>The processor list is intentionally explicit.</h2>
+          <p>
+            Cloudflare runs hosting, Workers, private storage, database, Turnstile, and
+            some AI routes. Mistral may process OCR or document understanding jobs.
+            CloudConvert and Convertio may process provider-backed file-format conversions.
+            Dodo handles checkout and card processing.
+          </p>
+          <p>
+            AI Converter does not use uploaded files or generated outputs to train models.
+            Do not upload files unless you are comfortable with the selected route using
+            the processor needed to complete that conversion.
           </p>
         </article>
 
@@ -101,7 +115,7 @@
           <p class="kicker">Report</p>
           <h2>Send a short security report.</h2>
           <p>
-            Use the <a href="/support">support form</a> with a short description.
+            Use the <a href="/support/">support form</a> with a short description.
             Do not include full bank statement, receipt, screenshot, or source-file
             details in support messages.
           </p>
@@ -111,12 +125,13 @@
       <footer class="legal-footer">
         <span><strong class="brand-name">AI Converter</strong></span>
         <nav class="legal-links" aria-label="Legal links">
-          <a href="/privacy">Privacy</a>
-          <a href="/formats">Formats</a>
-          <a href="/terms">Terms</a>
-          <a href="/refund">Refunds</a>
-          <a href="/data-retention">Data retention</a>
-          <a href="/support">Support</a>
+          <a href="/privacy/">Privacy</a>
+          <a href="/formats/">Formats</a>
+          <a href="/terms/">Terms</a>
+          <a href="/refund/">Refunds</a>
+          <a href="/trust/">Trust center</a>
+          <a href="/data-retention/">Data retention</a>
+          <a href="/support/">Support</a>
         </nav>
       </footer>
     </main>

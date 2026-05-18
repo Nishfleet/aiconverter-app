@@ -7,6 +7,7 @@ const baseUrl = process.env.AICONVERTER_MONITOR_URL || process.env.AICONVERTER_S
 const adminToken =
   process.env.AICONVERTER_MONITOR_ADMIN_TOKEN || process.env.AICONVERTER_ADMIN_TOKEN || process.env.ADMIN_TOKEN || "";
 const publicOnly = process.env.AICONVERTER_MONITOR_PUBLIC_ONLY === "true";
+const strictWarnings = process.env.AICONVERTER_MONITOR_STRICT === "true" || process.argv.includes("--strict");
 
 const failures = [];
 const warnings = [];
@@ -19,11 +20,13 @@ if (!adminToken) {
   if (publicOnly) warnings.push(missingAdmin);
   else failures.push(missingAdmin);
 }
+const monitorOk = failures.length === 0 && !(strictWarnings && warnings.length);
 
 console.log(
   JSON.stringify(
     {
-      ok: failures.length === 0,
+      ok: monitorOk,
+      strictWarnings,
       baseUrl,
       elapsed_ms: Date.now() - started,
       health,
@@ -36,7 +39,7 @@ console.log(
   )
 );
 
-if (failures.length) process.exit(1);
+if (!monitorOk) process.exit(1);
 
 function loadLocalMonitorEnv() {
   const envPath = resolve(process.cwd(), ".monitor.env");

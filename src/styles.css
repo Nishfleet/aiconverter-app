@@ -3366,7 +3366,7 @@ tbody tr:last-child td {
     gap: 8px;
   }
 
-  .site-nav a[href="/support"],
+  .site-nav a[href="/support/"],
   .site-nav a[href="#pricing"],
   .site-nav .nav-proof {
     display: none;

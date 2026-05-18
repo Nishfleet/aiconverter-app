@@ -1,6 +1,6 @@
 ---
 title: About AI Converter
-description: AI Converter is a private, preview-first converter for sensitive files, with bank statement PDF to CSV live first, common file conversion, browser-only image tools, and short retention.
+description: AI Converter is a private, preview-first converter for sensitive files, with bank statement PDF to CSV live first, common file conversion, image tools, and short retention.
 ---
 
 # About AI Converter
@@ -15,7 +15,7 @@ It is built for short retention, private storage, and clear failure states.
 - Sample preview before payment.
 - Paid full export and download.
 - One stronger automatic redo for paid jobs.
-- Browser-only image format and raster-to-SVG tools.
+- Image format and raster-to-SVG tools.
 
 ## More conversion options
 

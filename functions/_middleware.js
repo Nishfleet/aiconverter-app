@@ -24,8 +24,8 @@ Live:
 - Source files are stored privately and deleted after failed extraction, completed redo, or the 24-hour source lifecycle.
 - Low-confidence conversions fail closed with no charge.
 - Free-preview reuse, payment reuse, and redo abuse are rate-limited.
-- PNG/JPG/WEBP to PNG/JPG/WEBP conversion keeps the image on the device.
-- PNG/JPG/WEBP to SVG posterized conversion keeps the image on the device.
+- PNG/JPG/WEBP to PNG/JPG/WEBP conversion.
+- PNG/JPG/WEBP to SVG posterized conversion.
 - Documents, images, audio, video, and archives can convert into popular output formats. Long media jobs run in the background and update automatically.
 
 Beta:
@@ -40,7 +40,7 @@ Beta:
 
 ## Popular conversion examples
 
-The homepage ticker and /formats page suggest common requests that fit the current product surface. Core examples include bank statement PDF to CSV, receipt image to expense CSV, invoice PDF to JSON, screenshot table to CSV, JPG to PNG, PNG to JPG, WEBP to PNG, audio to transcript, and document to Markdown. The generated format catalog can truthfully say 200+ conversion options are available across the current accepted input formats and output choices, with more coming soon. Examples include PDF to Word, Word to PDF, PDF to JPG, HEIC to JPG, SVG to PNG, MP4 to MP3, MOV to MP4, GIF to MP4, WAV to MP3, XLSX to CSV, CSV to XLSX, docs/images/audio/video/archive categories, and many more formats.
+The homepage ticker and /formats page suggest common requests that fit the current product surface. Core examples include bank statement PDF to CSV, receipt image to expense CSV, invoice PDF to JSON, screenshot table to CSV, JPG to PNG, PNG to JPG, WEBP to PNG, audio to transcript, and document to Markdown. Provider-backed conversion options are available across the current accepted input formats and output choices, with more coming soon. Examples include PDF to Word, Word to PDF, PDF to JPG, HEIC to JPG, SVG to PNG, MP4 to MP3, MOV to MP4, GIF to MP4, WAV to MP3, XLSX to CSV, CSV to XLSX, and docs/images/audio/video/archive categories.
 
 ## Pricing
 
@@ -56,7 +56,7 @@ The homepage ticker and /formats page suggest common requests that fit the curre
 
 ## Security posture
 
-The AI workflow is designed for private storage, 24-hour source retention, 7-day generated-file retention, random job tokens, no public object URLs, no emailed bank PDFs, and minimal job metadata. Browser-only image conversion does not create server-side files.
+The AI workflow is designed for private storage, 24-hour source retention, 7-day generated-file retention, random job tokens, no public object URLs, no emailed bank PDFs, and minimal job metadata.
 
 ## Request access
 
@@ -92,7 +92,7 @@ It is built for short retention, private storage, and clear failure states.
 - Sample preview before payment.
 - Paid full export and download.
 - One stronger automatic redo for paid jobs.
-- Browser-only image format and raster-to-SVG tools.
+- Image format and raster-to-SVG tools.
 
 ## More conversion routes
 
@@ -109,19 +109,22 @@ AI Converter does not claim every bank, receipt, invoice, screenshot, audio file
 
 const formatsMarkdown = `---
 title: AI Converter formats
-description: Generated list of conversion options available through AI Converter.
+description: Current AI Converter routes for private file conversion and extraction.
 ---
 
 # AI Converter formats
 
-The /formats page is generated from the same capability map the app uses. It is the truth surface behind the homepage ticker and available-format count.
+AI Converter lists only routes the live app is allowed to offer.
 
-## Available format groups
+## Current families
 
-- Bank statement PDF to CSV.
-- Receipts, invoices, screenshot tables, audio transcript, document Markdown, and screenshot-to-HTML.
-- PNG/JPG/WEBP to PNG/JPG/WEBP and PNG/JPG/WEBP to SVG without uploading the image to AI Converter.
-- Documents, images, audio, video, and archives into popular output formats.
+- Bank statement PDFs to Clean CSV, QuickBooks CSV, Xero CSV, Wave CSV, GnuCash CSV, QIF, OFX, or QBO. CSV is the default path. OFX and QBO require bank details.
+- Receipts to expense CSV.
+- Invoices to CSV or JSON.
+- Screenshot tables to CSV.
+- Supported documents to Markdown.
+- Supported audio files to transcript TXT or JSON.
+- Supported provider-backed document, image, audio, video, archive, and spreadsheet format swaps when the selected input/output pair is available.
 
 ## Popular requests covered today
 
@@ -143,7 +146,7 @@ The /formats page is generated from the same capability map the app uses. It is 
 - WAV to MP3.
 - XLSX to CSV.
 
-Formats count as available only when the live app accepts that input and output pair. More formats can be added as they are proven.
+Formats count as available only when the live app accepts that input and output pair. AI Converter does not claim every file, every bank, every statement, every receipt, every invoice, every screenshot, every document, every media file, or every archive will work.
 `;
 
 const bankStatementMarkdown = `---
@@ -368,7 +371,7 @@ Real exports depend on what can be safely extracted from your PDF.
 
 const privacyMarkdown = `---
 title: Privacy Policy - AI Converter
-description: How AI Converter handles uploaded source files, generated files, browser-only image conversion, payment status, and short retention.
+description: How AI Converter handles uploaded source files, generated files, processors, payment status, and short retention.
 ---
 
 # Privacy Policy
@@ -389,33 +392,39 @@ AI Converter does not ask for bank login credentials.
 
 ## Processing
 
-Files are used to produce the output you requested. Digital bank statement PDFs are parsed directly first. OCR and AI processing may be used for scanned, image-heavy, receipt, invoice, screenshot, audio, document, or messy files when configured. Common file-format conversion may use secure automated processing services when configured. PNG/JPG/WEBP image-format and raster-to-SVG conversion keep the image on the device and do not upload it to AI Converter for those routes.
+Files are used to produce the output you requested. Digital bank statement PDFs are parsed directly first. OCR and AI processing may be used for scanned, image-heavy, receipt, invoice, screenshot, audio, document, or messy files when configured. Common file-format conversion may use secure automated processing services when configured.
 
 Low-confidence files fail closed instead of being sent to a human review queue.
 
+## Processors
+
+Cloudflare runs the app, private storage, database, Turnstile checks, and some AI processing. OCR or AI routes may use Mistral or Cloudflare Workers AI. Provider-backed file-format conversion may use CloudConvert first and Convertio as a backup route. Dodo handles checkout and card processing.
+
+AI Converter does not use uploaded files or generated outputs to train models. External processors receive data only to perform the selected conversion, security check, payment, or support workflow.
+
 ## Retention
 
-Source files are kept only for preview, paid unlock, and the automatic redo window. Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle. Generated files expire after 7 days. Browser-only image conversions do not create server-side source files.
+Source files are kept only for preview, paid unlock, and the automatic redo window. Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle. Generated files expire after 7 days.
 
 ## Requests
 
-Use https://aiconverter.app/support for deletion, privacy, or payment-related requests. Do not send source files through support.
+Use https://aiconverter.app/support/ for deletion, privacy, or payment-related requests. AI Converter is operated by the AI Converter team. Do not send source files through support.
 `;
 
 const termsMarkdown = `---
 title: Terms of Service - AI Converter
-description: Terms for using AI Converter's automated conversion and browser-only image conversion service.
+description: Terms for using AI Converter's automated conversion service.
 ---
 
 # Terms of Service
 
 Last updated May 17, 2026.
 
-AI Converter provides automated file conversion and browser-only image tools. It is a data conversion tool, not accounting, tax, legal, lending, compliance, or financial advice.
+AI Converter provides automated file conversion. It is a data conversion tool, not accounting, tax, legal, lending, compliance, or financial advice.
 
 ## Workflow
 
-The first production AI workflow is bank statement PDF to CSV. Receipt, invoice, screenshot-table, audio transcript, document Markdown, screenshot-to-HTML, and common file-format conversion are available when configured. Upload a supported file, review a free sample preview, then pay once to generate and download the selected output. PNG/JPG/WEBP image-format and raster-to-SVG conversion keep the image on the device.
+The first production AI workflow is bank statement PDF to CSV. Receipt, invoice, screenshot-table, audio transcript, document Markdown, screenshot-to-HTML, and common file-format conversion are available when configured. Upload a supported file, review a free sample preview, then pay once to generate and download the selected output.
 
 ## User responsibility
 
@@ -427,7 +436,7 @@ A sample preview is free. Paid access unlocks the full extraction for the select
 
 ## Redo and refund
 
-Paid jobs include one automatic stronger redo. If the stronger redo still cannot produce a usable generated file, the job is marked for refund or credit review under the refund policy.
+Paid jobs include one automatic stronger redo. If the stronger redo still cannot produce a usable generated file, the job is marked refund due or credit due under the refund policy.
 
 ## Prohibited use
 
@@ -455,7 +464,7 @@ Paid jobs include one stronger automatic redo. Use it when the full generated fi
 
 ## Refund or credit
 
-If a paid job still cannot produce a usable generated file after the stronger redo, AI Converter records refund or credit due. If a usable file has already been delivered and downloaded, support may offer credit instead of a cash refund depending on the issue and abuse signals.
+If a paid job still cannot produce a usable generated file after the stronger redo, AI Converter records the job as refund due or credit due. When automatic refunds are enabled and a cash refund is allowed, the refund is requested through the payment provider. If a cash refund is not available automatically, support uses the recorded job status to resolve the credit or refund.
 
 ## Anti-abuse limits
 
@@ -463,7 +472,7 @@ Repeated free previews from the same file or connection are limited. Each paid j
 
 ## Help
 
-Use https://aiconverter.app/support with your job ID, payment email, and a short issue description. Do not send source files through support.
+Use https://aiconverter.app/support/ with your job ID, payment email, and a short issue description. Do not send source files through support.
 `;
 
 const securityMarkdown = `---
@@ -484,7 +493,13 @@ AI Converter is designed for files you would not put in a shared inbox: private 
 
 ## Processing controls
 
-Digital bank statement PDFs use the native parser first. OCR fallback is reserved for scanned, photo-based, receipt, invoice, screenshot, or messy files when configured. Audio transcript, document Markdown, screenshot-to-HTML, and common file-format conversion run only when the selected conversion is available. Browser-only image-format and raster-to-SVG conversion do not upload files to AI Converter. Low-confidence AI extraction files fail closed.
+Digital bank statement PDFs use the native parser first. OCR fallback is reserved for scanned, photo-based, receipt, invoice, screenshot, or messy files when configured. Audio transcript, document Markdown, screenshot-to-HTML, and common file-format conversion run only when the selected conversion is available. Low-confidence AI extraction files fail closed.
+
+## Subprocessors
+
+Cloudflare runs hosting, Workers, private storage, database, Turnstile, and some AI routes. Mistral may process OCR or document understanding jobs. CloudConvert and Convertio may process provider-backed file-format conversions. Dodo handles checkout and card processing.
+
+AI Converter does not use uploaded files or generated outputs to train models.
 
 ## Retention controls
 
@@ -516,9 +531,9 @@ Source files are deleted after failed preview, failed full extraction, completed
 
 Generated files expire after 7 days. Download the file after the export completes if you need a copy later.
 
-## Local image conversions
+## Support and processor records
 
-PNG/JPG/WEBP image-format and raster-to-SVG conversions run in the browser and do not create source files, generated files, jobs, or payment records on AI Converter.
+Support messages, payment records, abuse-prevention events, provider job IDs, and operational logs may last longer when needed for payment, security, debugging, or legal records.
 
 ## Job metadata
 
@@ -526,11 +541,15 @@ Minimal metadata such as job status, selected plan, timestamps, row count, confi
 
 ## Abuse-prevention records
 
-Hashed connection data, file hashes, and preview-limit events may be retained long enough to limit repeated free previews, payment reuse, and refund abuse. These records are not used to train a model.
+Hashed connection data, file hashes, and preview-limit events may be retained long enough to limit repeated free previews, payment reuse, and refund abuse. These records are not used by AI Converter to train a model.
+
+## Processor records
+
+Cloudflare, Dodo, Mistral, CloudConvert, and Convertio may keep service, security, billing, or conversion records under their own terms when they are used for a selected route.
 
 ## Deletion requests
 
-Use https://aiconverter.app/support with your job ID and payment email. Do not send source files through support.
+Use https://aiconverter.app/support/ with your job ID and payment email. Do not send source files through support.
 `;
 
 const supportMarkdown = `---
@@ -540,7 +559,7 @@ description: Get help with AI Converter payment, refund, deletion, and conversio
 
 # Support
 
-Use https://aiconverter.app/support for conversion, payment, refund, deletion, or security requests.
+Use https://aiconverter.app/support/ for conversion, payment, refund, deletion, or security requests.
 
 Include the job ID when you have one. Do not paste bank statements, receipts, invoices, screenshots, or source-file details into the message.
 
@@ -554,6 +573,34 @@ Include the job ID when you have one. Do not paste bank statements, receipts, in
 ## Current support scope
 
 Support requests are recorded for review. Security reports and payment, deletion, or refund issues are treated as priority requests.
+`;
+
+const trustMarkdown = `---
+title: Trust Center - AI Converter
+description: AI Converter trust center for private file handling, retention, subprocessors, payments, and support.
+---
+
+# Trust center
+
+AI Converter is built around direct upload, free preview, short retention, tokened access, payment-bound unlocks, and no human file review queue.
+
+## File handling
+
+Source files are kept for preview, paid unlock, and the redo window. Generated files expire after 7 days. Completed jobs can be deleted from the converter screen.
+
+## Processors and subprocessors
+
+Cloudflare runs the app, private storage, database, security checks, and some AI routes. OCR or AI routes may use Mistral or Cloudflare Workers AI. Provider-backed format conversion may use CloudConvert first and Convertio as backup. Dodo handles checkout and card processing.
+
+## Training
+
+AI Converter does not use uploaded files or generated outputs to train models. External processors receive data only to perform the selected conversion or security check.
+
+## Support
+
+Use the support form for conversion, payment, refund, deletion, or security questions. Do not paste bank statement, receipt, invoice, or source-file contents into support messages.
+
+AI Converter does not claim SOC 2, GDPR certification, official bank feeds, guaranteed accounting-platform imports, accounting advice, or tax advice.
 `;
 
 const markdownByRoute = new Map([
@@ -574,6 +621,7 @@ const markdownByRoute = new Map([
   ["/terms", termsMarkdown],
   ["/refund", refundMarkdown],
   ["/security", securityMarkdown],
+  ["/trust", trustMarkdown],
   ["/support", supportMarkdown],
   ["/data-retention", dataRetentionMarkdown]
 ]);

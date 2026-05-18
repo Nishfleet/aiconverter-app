@@ -28,6 +28,7 @@ async function handleBatchDownload({ request, env }) {
   if (!items.length) return badRequest("Choose completed conversions first.");
 
   const zipEntries = [];
+  const usedNames = new Set();
   const manifest = [
     "AI Converter batch export",
     `Created: ${new Date().toISOString()}`,
@@ -39,7 +40,10 @@ async function handleBatchDownload({ request, env }) {
     const bodyToken = String(item.token || "");
     const token = tokenFromBodyOrCookie(request, jobId, bodyToken);
     const job = await getAuthorizedJob(env, jobId, token);
-    if (!job) return badRequest("One selected conversion is unknown or expired.");
+    if (!job) {
+      manifest.push(`${jobId || "unknown job"}: skipped, unknown or expired`);
+      continue;
+    }
 
     if (job.status !== "complete") {
       manifest.push(`${job.original_file_name || job.id}: skipped, not complete`);
@@ -58,8 +62,9 @@ async function handleBatchDownload({ request, env }) {
       continue;
     }
 
+    const exportName = uniqueZipName(`exports/${downloadFileName(job)}`, usedNames);
     zipEntries.push({
-      name: `exports/${downloadFileName(job)}`,
+      name: exportName,
       bytes: new Uint8Array(await object.arrayBuffer())
     });
 
@@ -67,13 +72,13 @@ async function handleBatchDownload({ request, env }) {
       const report = await env.AICONVERTER_BUCKET.get(job.validation_report_key).catch(() => null);
       if (report) {
         zipEntries.push({
-          name: `reports/${reportFileName(job)}`,
+          name: uniqueZipName(`reports/${reportFileName(job)}`, usedNames),
           bytes: new Uint8Array(await report.arrayBuffer())
         });
       }
     }
 
-    manifest.push(`${job.original_file_name || job.id}: included as ${downloadFileName(job)}`);
+    manifest.push(`${job.original_file_name || job.id}: included as ${exportName}`);
     await updateJob(env, job.id, {
       download_count: Number(job.download_count || 0) + 1
     }).catch(() => {});
@@ -122,4 +127,20 @@ function reportFileName(job) {
     .replace(/^-+|-+$/g, "")
     .slice(0, 48) || "bank-statement";
   return `aiconverter-${stem}-validation-report.txt`;
+}
+
+function uniqueZipName(name, usedNames) {
+  const clean = String(name || "export.txt");
+  if (!usedNames.has(clean)) {
+    usedNames.add(clean);
+    return clean;
+  }
+  const dot = clean.lastIndexOf(".");
+  const prefix = dot > clean.lastIndexOf("/") ? clean.slice(0, dot) : clean;
+  const extension = dot > clean.lastIndexOf("/") ? clean.slice(dot) : "";
+  let index = 2;
+  while (usedNames.has(`${prefix}-${index}${extension}`)) index += 1;
+  const unique = `${prefix}-${index}${extension}`;
+  usedNames.add(unique);
+  return unique;
 }

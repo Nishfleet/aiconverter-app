@@ -36,8 +36,8 @@ function renderOverview(payload) {
     renderTable("Dodo payments", payload.payments || [], ["event_type", "job_id", "payment_id", "plan_id", "status", "amount", "currency", "match_status", "created_at"]),
     renderTable("Dodo checkout handoffs", payload.checkoutHandoffs || [], ["id", "status", "converter_id", "plan_id", "checkout_session_id", "payment_id", "email", "updated_at"]),
     renderTable("Unmatched Dodo payments", payload.unmatchedPayments || [], ["event_type", "job_id", "payment_id", "checkout_session_id", "plan_id", "status", "match_status", "created_at"]),
-    renderTable("Refunds", payload.refunds || [], ["job_id", "payment_id", "refund_id", "status", "reason", "created_at"]),
-    renderTable("Refund or credit due", payload.refundDue || [], ["id", "payment_id", "refund_status", "refund_id", "error", "updated_at"]),
+    renderTable("Refunds", payload.refunds || [], ["job_id", "payment_id", "refund_id", "status", "reason", "error", "created_at"]),
+    renderTable("Refund or credit due", payload.refundDue || [], ["id", "payment_id", "refund_status", "refund_id", "error", "refund_error", "updated_at"]),
     renderTable("Webhook failures", payload.webhookFailures || [], ["webhook_id", "event_type", "status", "received_count", "error", "updated_at"]),
     renderTable("Webhooks", payload.webhooks || [], ["webhook_id", "event_type", "status", "received_count", "error", "updated_at"])
   ].join("");

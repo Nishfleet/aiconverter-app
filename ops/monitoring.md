@@ -8,6 +8,12 @@ Run the private-aware live monitor:
 npm run monitor:live
 ```
 
+Use strict mode for release gates:
+
+```bash
+AICONVERTER_MONITOR_STRICT=true npm run monitor:live
+```
+
 The monitor loads `.monitor.env` when present. It must contain the private admin token unless this is an intentionally public-only check:
 
 ```bash
@@ -20,6 +26,7 @@ The monitor fails on:
 - missing admin token unless `AICONVERTER_MONITOR_PUBLIC_ONLY=true` is set
 - private admin overview not responding
 - any critical private admin alert
+- any private warning when strict mode is enabled
 
 Run the controlled provider failover drill after deploys that touch provider routing:
 
@@ -64,3 +71,4 @@ Repeat these after checkout, provider, upload, or Turnstile changes:
 - browser upload with a human-solved Turnstile challenge
 - real-card Dodo checkout return, webhook, paid finalize, download, and redo path
 - cash refund retry after the Dodo wallet has enough funds
+- private corpus run with `AICONVERTER_PRIVATE_CORPUS_REQUIRED=true` before paid traffic or serious ads

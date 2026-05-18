@@ -43,6 +43,7 @@ const classNames = (...values) => values.filter(Boolean).join(" ");
 let turnstileScriptPromise = null;
 const TICKER_MIN_COPY_COUNT = 8;
 const BRAND_NAME = "AI Converter";
+const BATCH_RETURN_KEY = "aiconverter_batch_return";
 
 function BrandName({ className = "" }) {
   return <strong className={classNames("brand-name", className)}>{BRAND_NAME}</strong>;
@@ -325,15 +326,12 @@ function entryPriceInfo(entry, pricingPreview) {
 }
 
 function queuePriceSummary(entries, pricingPreview) {
-  const pricedEntries = entries.map((entry) => entryPriceInfo(entry, pricingPreview));
-  const paidEntries = pricedEntries.filter((entry) => !entry.free);
   if (!entries.length) return "";
+  const paidFileEntries = entries.filter((entry) => !isLocalConverter(converterById(entry.selectedId)));
+  const paidEntries = paidFileEntries.map((entry) => entryPriceInfo(entry, pricingPreview)).filter((entry) => !entry.free);
   if (!paidEntries.length) return "All selected files are free";
-  const currency = paidEntries[0]?.currency || "INR";
-  const canSum = paidEntries.every((entry) => entry.currency === currency && Number.isFinite(entry.amount));
-  if (!canSum) return `${paidEntries.length} paid checkout${paidEntries.length === 1 ? "" : "s"}`;
-  const total = paidEntries.reduce((sum, entry) => sum + entry.amount, 0);
-  return `${formatMinorCurrency(total, currency)} if unlocked one by one`;
+  const totalPages = paidFileEntries.reduce((sum, entry) => sum + Math.max(1, Number(entry.pageCount || 1)), 0);
+  return priceInfoForPlan(planForPages(totalPages), pricingPreview).display;
 }
 
 function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
@@ -388,7 +386,7 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
         </a>
         <nav className="site-nav" aria-label="Primary navigation">
           <a href="/">Open converter</a>
-          <a href="/support">Support</a>
+          <a href="/support/">Support</a>
         </nav>
       </header>
 
@@ -477,12 +475,13 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
         </div>
         <nav className="footer-links" aria-label="Footer navigation">
           <a href="/">Converter</a>
-          <a href="/privacy">Privacy</a>
-          <a href="/terms">Terms</a>
-          <a href="/refund">Refunds</a>
-          <a href="/security">Security</a>
-          <a href="/data-retention">Data retention</a>
-          <a href="/support">Support</a>
+          <a href="/privacy/">Privacy</a>
+          <a href="/terms/">Terms</a>
+          <a href="/refund/">Refunds</a>
+          <a href="/security/">Security</a>
+          <a href="/trust/">Trust center</a>
+          <a href="/data-retention/">Data retention</a>
+          <a href="/support/">Support</a>
         </nav>
       </footer>
     </main>
@@ -507,6 +506,7 @@ function App() {
   const [reviewRowsSaving, setReviewRowsSaving] = useState(false);
   const [reviewColumns, setReviewColumns] = useState([]);
   const [reviewRows, setReviewRows] = useState([]);
+  const [reviewRowsTruncated, setReviewRowsTruncated] = useState(false);
   const [reviewMessage, setReviewMessage] = useState("");
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
@@ -604,6 +604,19 @@ function App() {
       fileQueue
         .map((entry) => entry.result)
         .filter((entryResult) => entryResult?.status === "complete" && entryResult.jobId && !entryResult.localDownloadUrl),
+    [fileQueue]
+  );
+  const previewReadyServerResults = useMemo(
+    () =>
+      fileQueue
+        .map((entry) => entry.result)
+        .filter(
+          (entryResult) =>
+            entryResult?.status === "preview_ready" &&
+            !entryResult.paid &&
+            entryResult.jobId &&
+            !entryResult.localDownloadUrl
+        ),
     [fileQueue]
   );
   const isPdfFirstConverter = selectedId === "bank";
@@ -718,6 +731,7 @@ function App() {
     setReviewRowsOpen(false);
     setReviewRows([]);
     setReviewColumns([]);
+    setReviewRowsTruncated(false);
     setReviewMessage("");
   }, [result?.jobId, result?.outputFormat]);
 
@@ -754,10 +768,17 @@ function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlJobId = params.get("jobId");
+    const urlBatchId = params.get("batchId");
     const jobId = urlJobId || "";
     const paymentId = params.get("payment_id") || params.get("paymentId");
     const paymentStatus = params.get("status") || params.get("payment_status");
-    const shouldCleanUrl = Boolean(urlJobId || paymentId || paymentStatus);
+    const shouldCleanUrl = Boolean(urlJobId || urlBatchId || paymentId || paymentStatus);
+    if (urlBatchId) {
+      restoreBatch(urlBatchId)
+        .catch(() => setError("We could not restore that batch. Contact support if you were charged."))
+        .finally(() => window.history.replaceState({}, "", window.location.pathname));
+      return;
+    }
     if (!jobId) {
       if (shouldCleanUrl) {
         setError("Payment returned without a conversion ID. Contact support if you were charged.");
@@ -795,6 +816,32 @@ function App() {
 
     restoreJob();
   }, [selectedPlan]);
+
+  async function restoreBatch(batchId) {
+    const stored = JSON.parse(sessionStorage.getItem(BATCH_RETURN_KEY) || "{}");
+    if (stored.batchId !== batchId || !Array.isArray(stored.jobs) || stored.jobs.length < 2) {
+      throw new Error("Missing batch return details.");
+    }
+    for (const item of stored.jobs) {
+      const response = await fetch("/api/job", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: item.jobId, token: item.token || "" })
+      });
+      const restored = await response.json();
+      if (!response.ok) throw new Error(restored.error || "Batch restore failed.");
+      const restoredResult = {
+        ...restored,
+        token: restored.token || item.token || "",
+        plan: data.pricing.find((plan) => plan.id === restored.plan) || selectedPlan
+      };
+      setResultForFile(item.fileEntryId, restoredResult);
+      if (restoredResult.paid && restoredResult.status === "preview_ready") {
+        await finalizeConversion(item.jobId, restoredResult.token || item.token || "", "", item.fileEntryId);
+      }
+    }
+    sessionStorage.removeItem(BATCH_RETURN_KEY);
+  }
 
   function initialSettingsForFile(nextFile, preferredSelectedId = selectedId) {
     if (!nextFile) {
@@ -1101,6 +1148,46 @@ function App() {
     }
   }
 
+  async function handleBatchUnlock() {
+    if (previewReadyServerResults.length < 2) return;
+    setUnlocking(true);
+    setError("");
+    try {
+      const jobs = previewReadyServerResults.map((entryResult) => ({
+        jobId: entryResult.jobId,
+        token: entryResult.token || "",
+        fileEntryId: entryResult.fileEntryId || ""
+      }));
+      const response = await fetch("/api/batch-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          jobs: jobs.map(({ jobId, token }) => ({ jobId, token }))
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Batch checkout is not ready yet.");
+
+      if (payload.mode === "finalize_all") {
+        for (const item of jobs) await finalizeConversion(item.jobId, item.token, "", item.fileEntryId);
+        return;
+      }
+
+      if (payload.mode === "checkout" && payload.checkoutUrl) {
+        sessionStorage.setItem(BATCH_RETURN_KEY, JSON.stringify({ batchId: payload.batchId, jobs }));
+        window.location.href = payload.checkoutUrl;
+        return;
+      }
+
+      throw new Error("Batch checkout is not ready yet.");
+    } catch (err) {
+      setError(err.message || "Batch checkout is not ready yet.");
+    } finally {
+      setUnlocking(false);
+    }
+  }
+
   async function downloadCsv(jobId, token = "") {
     setUnlocking(true);
     setError("");
@@ -1177,9 +1264,10 @@ function App() {
       if (!response.ok) throw new Error(payload.error || "The rows could not be loaded.");
       setReviewColumns(payload.columns || []);
       setReviewRows(payload.rows || []);
+      setReviewRowsTruncated(Boolean(payload.truncated));
       setReviewMessage(
         payload.truncated
-          ? `Loaded the first ${payload.maxRows} rows. Download the file for the full export.`
+          ? `Loaded the first ${payload.maxRows} rows. Large exports must be edited after download so rows are not dropped.`
           : `${payload.totalRows || payload.rows?.length || 0} rows loaded.`
       );
     } catch (err) {
@@ -1198,6 +1286,10 @@ function App() {
 
   async function saveReviewRows() {
     if (!canReviewRows || !reviewRows.length) return;
+    if (reviewRowsTruncated) {
+      setReviewMessage("Large exports must be edited after download so rows are not dropped.");
+      return;
+    }
     setReviewRowsSaving(true);
     setReviewMessage("");
     setError("");
@@ -1424,9 +1516,9 @@ function App() {
           <span className="brand-name">AI Converter</span>
         </a>
         <nav className="site-nav" aria-label="Primary navigation">
-          <a href="/formats">All formats</a>
+          <a href="/formats/">All formats</a>
           <a href="#pricing">Pricing</a>
-          <a href="/support">Support</a>
+          <a href="/support/">Support</a>
           <a className="nav-proof" href="#security">Private</a>
           <a className="nav-cta" href="#start">Start private preview</a>
         </nav>
@@ -1453,6 +1545,7 @@ function App() {
             </a>
             <h1>
               <span>Messy files in.</span>
+              {" "}
               <strong>Clean exports out.</strong>
             </h1>
             <p>
@@ -1610,6 +1703,12 @@ function App() {
                         </button>
                       ))}
                     </div>
+                    {previewReadyServerResults.length > 1 && (
+                      <button className="primary-button full-width batch-zip-button" type="button" onClick={handleBatchUnlock} disabled={unlocking}>
+                        Unlock queued previews
+                        {unlocking ? <LoaderCircle className="spin" size={16} /> : <CreditCard size={16} />}
+                      </button>
+                    )}
                     {completedServerResults.length > 1 && (
                       <button className="secondary-button full-width batch-zip-button" type="button" onClick={downloadCompletedZip}>
                         Download completed ZIP
@@ -1755,7 +1854,7 @@ function App() {
                       <div>
                         <span>Queued files</span>
                         <strong>{queuePriceSummary(fileQueue, pricingPreview)}</strong>
-                        <small>{fileQueue.length} uploaded files priced from their selected outputs</small>
+                        <small>{fileQueue.length} uploaded files priced as one checkout when unlocked together</small>
                       </div>
                     )}
                   </div>
@@ -1983,7 +2082,7 @@ function App() {
                           className="secondary-button"
                           type="button"
                           onClick={saveReviewRows}
-                          disabled={reviewRowsSaving || reviewRowsLoading || !reviewRows.length}
+                          disabled={reviewRowsSaving || reviewRowsLoading || reviewRowsTruncated || !reviewRows.length}
                         >
                           {reviewRowsSaving ? "Saving..." : "Save edits"}
                           {reviewRowsSaving ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />}
@@ -2161,8 +2260,7 @@ function App() {
           <h2>Private conversion, without the vague trust theater.</h2>
           <p>
             Source files are private, never accepted by email, and removed after failed
-            extraction, completed redo, or the 24-hour lifecycle. Local image and SVG
-            conversions stay in your browser.
+            extraction, completed redo, or the 24-hour lifecycle.
           </p>
         </div>
         <button className="primary-button" onClick={() => fileInputRef.current?.click()}>
@@ -2176,14 +2274,15 @@ function App() {
           <BrandName />
         </div>
         <nav className="footer-links" aria-label="Footer navigation">
-          <a href="/privacy">Privacy</a>
-          <a href="/formats">Formats</a>
-          <a href="/about">About</a>
-          <a href="/terms">Terms</a>
-          <a href="/refund">Refunds</a>
-          <a href="/security">Security</a>
-          <a href="/data-retention">Data retention</a>
-          <a href="/support">Support</a>
+          <a href="/privacy/">Privacy</a>
+          <a href="/formats/">Formats</a>
+          <a href="/about/">About</a>
+          <a href="/terms/">Terms</a>
+          <a href="/refund/">Refunds</a>
+          <a href="/security/">Security</a>
+          <a href="/trust/">Trust center</a>
+          <a href="/data-retention/">Data retention</a>
+          <a href="/support/">Support</a>
         </nav>
       </footer>
     </main>
