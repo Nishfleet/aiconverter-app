@@ -1,6 +1,6 @@
 # AI Converter
 
-AI Converter is a Cloudflare Pages app for preview-first AI conversion plus local browser image/SVG conversion.
+AI Converter is a Cloudflare Pages app for preview-first AI conversion, common file conversion, and browser-only image conversion.
 
 Current production AI module:
 - Bank statement PDF to CSV.
@@ -59,7 +59,7 @@ Use the safe-deploy wrapper on Nish's machine before live commands.
 
 - Preview is free.
 - Full AI extraction unlock is paid.
-- Dodo checkout creation is live; a real paid card/webhook/download drill must pass before scaling paid traffic.
+- Dodo checkout, webhook, paid finalize, download, and failed-payment handling are live-tested. Cash refund retry is implemented; current live refund proof is blocked until the Dodo wallet has enough funds.
 - Source files are private and short-retention.
 - No human file review queue.
 - Provider-backed universal conversion is implemented and activates when the production `CLOUDCONVERT_API_KEY` or `CONVERTIO_API_KEY` secret is configured.

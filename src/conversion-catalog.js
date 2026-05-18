@@ -395,7 +395,7 @@ export function buildConversionCatalog(converters, options = {}) {
             label: `${formatLabel(input)} to ${formatLabel(output)}`,
             category: "Images",
             available: true,
-            detail: "Private image conversion"
+            detail: "Browser-only image conversion"
           }));
         }
       }
@@ -410,7 +410,7 @@ export function buildConversionCatalog(converters, options = {}) {
           label: `${formatLabel(input)} to SVG`,
           category: "Images",
           available: true,
-          detail: "Private image conversion"
+          detail: "Browser-only image conversion"
         }));
       }
       continue;

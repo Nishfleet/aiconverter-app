@@ -56,7 +56,7 @@ The homepage ticker and /formats page suggest common requests that fit the curre
 
 ## Security posture
 
-The AI workflow is designed for private storage, 24-hour source retention, 7-day generated-file retention, random job tokens, no public object URLs, no emailed bank PDFs, and minimal job metadata. Private image and SVG conversion does not create server-side files.
+The AI workflow is designed for private storage, 24-hour source retention, 7-day generated-file retention, random job tokens, no public object URLs, no emailed bank PDFs, and minimal job metadata. Browser-only image conversion does not create server-side files.
 
 ## Request access
 
@@ -92,7 +92,7 @@ It is built for short retention, private storage, and clear failure states.
 - Sample preview before payment.
 - Paid full export and download.
 - One stronger automatic redo for paid jobs.
-- Private image format and raster-to-SVG tools.
+- Browser-only image format and raster-to-SVG tools.
 
 ## More conversion routes
 
@@ -368,7 +368,7 @@ Real exports depend on what can be safely extracted from your PDF.
 
 const privacyMarkdown = `---
 title: Privacy Policy - AI Converter
-description: How AI Converter handles uploaded source files, generated files, local image/SVG conversion, payment status, and short retention.
+description: How AI Converter handles uploaded source files, generated files, browser-only image conversion, payment status, and short retention.
 ---
 
 # Privacy Policy
@@ -395,7 +395,7 @@ Low-confidence files fail closed instead of being sent to a human review queue.
 
 ## Retention
 
-Source files are kept only for preview, paid unlock, and the automatic redo window. Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle. Generated files expire after 7 days. Private image/SVG conversions do not create server-side source files.
+Source files are kept only for preview, paid unlock, and the automatic redo window. Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle. Generated files expire after 7 days. Browser-only image conversions do not create server-side source files.
 
 ## Requests
 
@@ -404,14 +404,14 @@ Use https://aiconverter.app/support for deletion, privacy, or payment-related re
 
 const termsMarkdown = `---
 title: Terms of Service - AI Converter
-description: Terms for using AI Converter's automated conversion and local image/SVG conversion service.
+description: Terms for using AI Converter's automated conversion and browser-only image conversion service.
 ---
 
 # Terms of Service
 
 Last updated May 17, 2026.
 
-AI Converter provides automated file conversion and private image tools. It is a data conversion tool, not accounting, tax, legal, lending, compliance, or financial advice.
+AI Converter provides automated file conversion and browser-only image tools. It is a data conversion tool, not accounting, tax, legal, lending, compliance, or financial advice.
 
 ## Workflow
 
@@ -484,7 +484,7 @@ AI Converter is designed for files you would not put in a shared inbox: private 
 
 ## Processing controls
 
-Digital bank statement PDFs use the native parser first. OCR fallback is reserved for scanned, photo-based, receipt, invoice, screenshot, or messy files when configured. Audio transcript, document Markdown, screenshot-to-HTML, and common file-format conversion run only when the selected conversion is available. Private image-format and raster-to-SVG conversion do not upload files to AI Converter. Low-confidence AI extraction files fail closed.
+Digital bank statement PDFs use the native parser first. OCR fallback is reserved for scanned, photo-based, receipt, invoice, screenshot, or messy files when configured. Audio transcript, document Markdown, screenshot-to-HTML, and common file-format conversion run only when the selected conversion is available. Browser-only image-format and raster-to-SVG conversion do not upload files to AI Converter. Low-confidence AI extraction files fail closed.
 
 ## Retention controls
 

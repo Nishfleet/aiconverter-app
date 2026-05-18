@@ -1,6 +1,6 @@
 # AI Converter
 
-AI Converter is a web app for automated AI conversion, private image/SVG conversion, and common file-format conversion. Bank statement PDF to CSV is the first production AI module.
+AI Converter is a web app for automated AI conversion, browser-only image conversion, and common file-format conversion. Bank statement PDF to CSV is the first production AI module.
 
 Live and beta modules:
 - Bank statement PDF to CSV.
@@ -54,7 +54,7 @@ Important product truth:
 - Need OFX/QBO? Add bank details in the converter. Treat those files as advanced exports to review separately, not guaranteed import files.
 - Email monitoring is not the primary intake for bank PDFs.
 - Human file review is not part of the automated workflow.
-- Source files use a 24-hour private retention window. Generated files expire after 7 days. Private image/SVG conversions do not create server-side source files.
+- Source files use a 24-hour private retention window. Generated files expire after 7 days. Browser-only image conversions do not create server-side source files.
 
 Primary URL:
 - https://aiconverter.app

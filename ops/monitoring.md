@@ -57,9 +57,10 @@ The private admin page flags:
 - unmatched Dodo payment events
 - refund or credit due jobs
 
-## Human-Only Launch Checks
+## Human-Only Checks
 
-These still require a real operator action:
+Repeat these after checkout, provider, upload, or Turnstile changes:
 
 - browser upload with a human-solved Turnstile challenge
-- real-card Dodo checkout return, webhook, paid finalize, download, redo, and refund path
+- real-card Dodo checkout return, webhook, paid finalize, download, and redo path
+- cash refund retry after the Dodo wallet has enough funds

@@ -1,6 +1,6 @@
 # AI Converter full context
 
-AI Converter is a web app for automated AI conversion, private image/SVG conversion, and common file-format conversion. Bank statement PDF to CSV is the first production AI module.
+AI Converter is a web app for automated AI conversion, browser-only image conversion, and common file-format conversion. Bank statement PDF to CSV is the first production AI module.
 
 ## Current product wedge
 
