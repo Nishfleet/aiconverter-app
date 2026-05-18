@@ -1401,6 +1401,11 @@ function App() {
 
   return (
     <main className="page-shell">
+      <div className="announcement-bar" aria-label="Product status">
+        <span>[ LIVE ]</span>
+        <p>Private uploads, free previews, paid unlocks, and backup conversion routes.</p>
+      </div>
+
       <header className="site-header" aria-label="Site header">
         <a className="brand" href="/" aria-label="AI Converter home">
           <span className="brand-mark">
@@ -1415,16 +1420,64 @@ function App() {
       </header>
 
       <section id="top" className="conversion-stage">
-        <div className="conversion-heading">
-          <h1>
-            <span>What would you like to</span>
-            <strong>convert?</strong>
-          </h1>
-          <p>Drop a file and <BrandName /> will suggest the cleanest outputs.</p>
+        <div className="section-marker" aria-hidden="true">
+          <span>[ 01 / 04 ]</span>
+          <strong>CONVERT</strong>
         </div>
 
-        <section className={classNames("converter-workspace", file && "has-file", result && "has-result")} aria-label="AI conversion workspace">
+        <div className="landing-hero-grid">
+          <div className="conversion-heading">
+            <div className="hero-chip-row" aria-label="Supported output highlights">
+              <span>[ PDF ]</span>
+              <span>[ CSV ]</span>
+              <span>[ JSON ]</span>
+              <span>[ MD ]</span>
+              <span>[ 24H SOURCE ]</span>
+            </div>
+            <h1>
+              <span>Private files.</span>
+              <strong>Clean exports.</strong>
+            </h1>
+            <p>
+              Drop a bank statement, receipt, invoice, document, audio file, image,
+              video, or archive. <BrandName /> shows a free preview first, then unlocks
+              the full output only when the sample is useful.
+            </p>
+            <div className="hero-actions">
+              <a className="primary-button" href="#start">
+                Start with a file
+                <ArrowRight size={16} />
+              </a>
+              <a className="secondary-button" href="/formats">
+                See supported formats
+              </a>
+            </div>
+            <div className="hero-metrics" aria-label="Conversion guarantees">
+              <div>
+                <span>[ PREVIEW ]</span>
+                <strong>Free sample first</strong>
+                <small>Inspect rows or output shape before checkout.</small>
+              </div>
+              <div>
+                <span>[ PRIVACY ]</span>
+                <strong>No review queue</strong>
+                <small>Automated processing, private storage, short retention.</small>
+              </div>
+              <div>
+                <span>[ FALLBACK ]</span>
+                <strong>Backup route</strong>
+                <small>File-format jobs can retry through a second route if the first one fails.</small>
+              </div>
+            </div>
+          </div>
+
+          <section className={classNames("converter-workspace", file && "has-file", result && "has-result")} aria-label="AI conversion workspace">
           <form className="conversion-flow" id="start" onSubmit={handleConvert}>
+            <div className="workspace-console-bar" aria-hidden="true">
+              <span>[ 200 OK ]</span>
+              <span>[ PRIVATE ]</span>
+              <span>[ PREVIEW ]</span>
+            </div>
             <div className="flow-rail" aria-label="Conversion steps">
               {["Upload", "Choose output", "Preview", "Unlock"].map((step, index) => (
                 <span
@@ -1952,7 +2005,8 @@ function App() {
               )}
             </aside>
           )}
-        </section>
+          </section>
+        </div>
 
         <section className="popular-conversions" aria-label="Popular conversion suggestions">
           <div className="popular-conversions-row">
@@ -2001,12 +2055,15 @@ function App() {
       </section>
 
       <section id="workflow" className="section-band">
+        <div className="section-marker" aria-hidden="true">
+          <span>[ 02 / 04 ]</span>
+          <strong>WORKFLOW</strong>
+        </div>
         <div className="section-heading">
-          <h2>Built for files you would not email around.</h2>
+          <h2>Built for files you would not put in a shared inbox.</h2>
           <p>
-            Upload directly, review a sample, then unlock only if it looks right.
-            Source files stay private, expire quickly, and never enter a human
-            file review queue.
+            Direct upload, real preview, paid export, short retention. No inbox
+            forwarding. No manual review line. No mystery handoff.
           </p>
         </div>
         <div className="queue-list">
@@ -2014,7 +2071,7 @@ function App() {
             <span className="queue-number">01</span>
             <div>
               <h3>Upload directly</h3>
-              <p>Your file goes into private storage for preview and download, not a public link or shared inbox.</p>
+              <p>Your file goes into private storage for preview and download, not a public link or shared mailbox.</p>
             </div>
             <strong>Private</strong>
           </article>
@@ -2038,9 +2095,13 @@ function App() {
       </section>
 
       <section id="pricing" className="pricing-section">
+        <div className="section-marker" aria-hidden="true">
+          <span>[ 03 / 04 ]</span>
+          <strong>PRICING</strong>
+        </div>
         <div className="section-heading compact">
-          <h2>Higher-trust conversion. Lower one-off pricing.</h2>
-          <p>Preview is free. Pay once only when the sample looks right.</p>
+          <h2>Pay after the preview, not before the guess.</h2>
+          <p>One-time packs. No subscription trap for a file you only need converted once.</p>
         </div>
         <div className="pricing-grid">
           {data.pricing.map((plan) => (
@@ -2065,8 +2126,12 @@ function App() {
       </section>
 
       <section id="security" className="request-section">
+        <div className="section-marker inverted" aria-hidden="true">
+          <span>[ 04 / 04 ]</span>
+          <strong>SECURITY</strong>
+        </div>
         <div>
-          <h2>Private conversion, plainly stated.</h2>
+          <h2>Private conversion, without the vague trust theater.</h2>
           <p>
             Source files are private, never accepted by email, and removed after failed
             extraction, completed redo, or the 24-hour lifecycle. Local image and SVG
