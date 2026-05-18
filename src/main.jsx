@@ -592,6 +592,7 @@ function App() {
     [selected, outputFormat, universalProviderReady]
   );
   const needsTurnstile = Boolean(turnstileSiteKey);
+  const shouldRenderTurnstile = Boolean(turnstileSiteKey && file && !isLocalImageConverter);
   const previewColumns = result?.columns?.length ? result.columns : selected?.columns || data.converters[0].columns;
   const previewRows = result?.previewRows || data.sampleRowsByConverter?.[selectedId] || data.sampleRows;
   const previewCountLabel = result?.localDownloadUrl
@@ -743,12 +744,22 @@ function App() {
   }, [result?.sourceExpiresAt, result?.resultExpiresAt]);
 
   useEffect(() => {
-    if (!turnstileSiteKey || !turnstileRef.current) return;
+    if (!shouldRenderTurnstile) {
+      setTurnstileToken("");
+      turnstileWidgetIdRef.current = null;
+      return undefined;
+    }
+    if (!turnstileSiteKey || !turnstileRef.current) return undefined;
     let cancelled = false;
 
     loadTurnstile()
       .then(() => {
-        if (cancelled || !window.turnstile || !turnstileRef.current || turnstileWidgetIdRef.current) return;
+        if (cancelled || !window.turnstile || !turnstileRef.current) return;
+        if (turnstileWidgetIdRef.current) {
+          window.turnstile.remove?.(turnstileWidgetIdRef.current);
+          turnstileWidgetIdRef.current = null;
+        }
+        setTurnstileToken("");
         turnstileWidgetIdRef.current = window.turnstile.render(turnstileRef.current, {
           sitekey: turnstileSiteKey,
           theme: "auto",
@@ -762,8 +773,12 @@ function App() {
 
     return () => {
       cancelled = true;
+      if (window.turnstile && turnstileWidgetIdRef.current) {
+        window.turnstile.remove?.(turnstileWidgetIdRef.current);
+        turnstileWidgetIdRef.current = null;
+      }
     };
-  }, [turnstileSiteKey]);
+  }, [turnstileSiteKey, shouldRenderTurnstile, activeFileId]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1914,7 +1929,7 @@ function App() {
                     </label>
                   )}
 
-                  {turnstileSiteKey && !isLocalImageConverter && (
+                  {shouldRenderTurnstile && (
                     <div className="turnstile-wrap" ref={turnstileRef} aria-label="Human check" />
                   )}
 
