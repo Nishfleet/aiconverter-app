@@ -12,6 +12,9 @@ test("admin overview exposes preview funnel counts and safe issue rows", () => {
   assert.match(apiSource, /previewFunnelIssues/);
   assert.match(apiSource, /previewErrors/);
   assert.match(apiSource, /turnstileFailures/);
+  assert.match(apiSource, /customerRefundDue/);
+  assert.match(apiSource, /drillRefundDue/);
+  assert.match(apiSource, /Drill refund retry needed/);
 
   assert.match(adminSource, /renderFunnel/);
   assert.match(adminSource, /Preview funnel/);

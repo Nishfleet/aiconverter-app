@@ -165,6 +165,7 @@ export async function onRequestGet({ request, env }) {
          jobs.refund_status,
          jobs.refund_id,
          jobs.error,
+         CASE WHEN jobs.id LIKE 'checkout_drill_%' THEN 1 ELSE 0 END AS is_drill,
          (
            SELECT dodo_refund_events.error
            FROM dodo_refund_events
@@ -255,6 +256,8 @@ export async function onRequestGet({ request, env }) {
     stalePaymentHandoffs: (staleCheckoutHandoffs || []).length,
     unmatchedPayments: (unmatchedPayments || []).length,
     refundDue: (refundDue || []).length,
+    customerRefundDue: (refundDue || []).filter((row) => !isDrillRefund(row)).length,
+    drillRefundDue: (refundDue || []).filter(isDrillRefund).length,
     openSupport: (support || []).length,
     webhookFailures: (webhookFailures || []).length,
     previewErrors: safeCountFromFunnel(previewFunnel, "preview_error"),
@@ -475,11 +478,21 @@ function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckPr
     });
   }
 
-  if ((refundDue || []).length > 0) {
+  const customerRefundDue = (refundDue || []).filter((row) => !isDrillRefund(row));
+  const drillRefundDue = (refundDue || []).filter(isDrillRefund);
+  if (customerRefundDue.length > 0) {
     alerts.push({
       severity: "warning",
       title: "Refund or credit due",
-      detail: `${refundDue.length} job${refundDue.length === 1 ? "" : "s"} need refund/credit follow-up.`
+      detail: `${customerRefundDue.length} customer job${customerRefundDue.length === 1 ? "" : "s"} need refund/credit follow-up.`
+    });
+  }
+
+  if (drillRefundDue.length > 0) {
+    alerts.push({
+      severity: "warning",
+      title: "Drill refund retry needed",
+      detail: `${drillRefundDue.length} admin drill refund${drillRefundDue.length === 1 ? "" : "s"} need wallet funds or manual cleanup.`
     });
   }
 
@@ -491,6 +504,10 @@ function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckPr
 function numberOrZero(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function isDrillRefund(row = {}) {
+  return Number(row.is_drill || row.isDrill || 0) === 1 || String(row.id || "").startsWith("checkout_drill_");
 }
 
 function safeCountFromFunnel(rows, eventType) {
