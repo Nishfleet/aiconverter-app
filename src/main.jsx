@@ -376,8 +376,13 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
     <main className="page-shell formats-page">
       <header className="site-header" aria-label="Site header">
         <a className="brand" href="/" aria-label="AI Converter home">
-          <span className="brand-mark">
-            <Wand2 size={18} strokeWidth={2.4} />
+          <span className="brand-mark" aria-hidden="true">
+            <span className="brand-glyph">
+              <span className="brand-glyph-core" />
+              <span className="brand-glyph-spark spark-a" />
+              <span className="brand-glyph-spark spark-b" />
+              <span className="brand-glyph-spark spark-c" />
+            </span>
           </span>
           <span className="brand-name">AI Converter</span>
         </a>
@@ -1402,19 +1407,25 @@ function App() {
   return (
     <main className="page-shell">
       <div className="announcement-bar" aria-label="Product status">
-        <span>[ LIVE ]</span>
-        <p>Private uploads, free previews, paid unlocks, and backup conversion routes.</p>
+        <p>Free previews are live. Convert private files without inbox handoffs.</p>
+        <a href="#start">Try it now →</a>
       </div>
 
       <header className="site-header" aria-label="Site header">
         <a className="brand" href="/" aria-label="AI Converter home">
-          <span className="brand-mark">
-            <Wand2 size={18} strokeWidth={2.4} />
+          <span className="brand-mark" aria-hidden="true">
+            <span className="brand-glyph">
+              <span className="brand-glyph-core" />
+              <span className="brand-glyph-spark spark-a" />
+              <span className="brand-glyph-spark spark-b" />
+              <span className="brand-glyph-spark spark-c" />
+            </span>
           </span>
           <span className="brand-name">AI Converter</span>
         </a>
         <nav className="site-nav" aria-label="Primary navigation">
           <a href="/formats">All formats</a>
+          <a href="#pricing">Pricing</a>
           <a href="/support">Support</a>
         </nav>
       </header>
@@ -1427,56 +1438,27 @@ function App() {
 
         <div className="landing-hero-grid">
           <div className="conversion-heading">
-            <div className="hero-chip-row" aria-label="Supported output highlights">
-              <span>[ PDF ]</span>
-              <span>[ CSV ]</span>
-              <span>[ JSON ]</span>
-              <span>[ MD ]</span>
-              <span>[ 24H SOURCE ]</span>
-            </div>
+            <a className="hero-chip-row" href="#start" aria-label="Start with a free preview">
+              <span>Free preview first</span>
+              <ArrowRight size={14} />
+            </a>
             <h1>
-              <span>Private files.</span>
-              <strong>Clean exports.</strong>
+              <span>Turn private files into</span>
+              <strong>clean exports</strong>
             </h1>
             <p>
-              Drop a bank statement, receipt, invoice, document, audio file, image,
-              video, or archive. <BrandName /> shows a free preview first, then unlocks
-              the full output only when the sample is useful.
+              Drop a file. Preview the result. Unlock the full export only when
+              the sample is worth paying for.
             </p>
-            <div className="hero-actions">
-              <a className="primary-button" href="#start">
-                Start with a file
-                <ArrowRight size={16} />
-              </a>
-              <a className="secondary-button" href="/formats">
-                See supported formats
-              </a>
-            </div>
-            <div className="hero-metrics" aria-label="Conversion guarantees">
-              <div>
-                <span>[ PREVIEW ]</span>
-                <strong>Free sample first</strong>
-                <small>Inspect rows or output shape before checkout.</small>
-              </div>
-              <div>
-                <span>[ PRIVACY ]</span>
-                <strong>No review queue</strong>
-                <small>Automated processing, private storage, short retention.</small>
-              </div>
-              <div>
-                <span>[ FALLBACK ]</span>
-                <strong>Backup route</strong>
-                <small>File-format jobs can retry through a second route if the first one fails.</small>
-              </div>
-            </div>
           </div>
 
           <section className={classNames("converter-workspace", file && "has-file", result && "has-result")} aria-label="AI conversion workspace">
           <form className="conversion-flow" id="start" onSubmit={handleConvert}>
             <div className="workspace-console-bar" aria-hidden="true">
-              <span>[ 200 OK ]</span>
-              <span>[ PRIVATE ]</span>
-              <span>[ PREVIEW ]</span>
+              <span>Statement</span>
+              <span>Receipt</span>
+              <span>Document</span>
+              <span>Any file</span>
             </div>
             <div className="flow-rail" aria-label="Conversion steps">
               {["Upload", "Choose output", "Preview", "Unlock"].map((step, index) => (
@@ -1503,6 +1485,9 @@ function App() {
                   <strong>Drop a file here or click to upload</strong>
                   <small>PDF, images, audio, documents, media, and archives</small>
                 </span>
+                <span className="upload-go" aria-hidden="true">
+                  <ArrowRight size={20} />
+                </span>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -1527,12 +1512,16 @@ function App() {
             {!file && (
               <div className="quiet-benefits" aria-label="Conversion guardrails">
                 <span>
+                  <FileText size={15} />
+                  Bank CSV
+                </span>
+                <span>
                   <ShieldCheck size={15} />
-                  Free preview first
+                  Private preview
                 </span>
                 <span>
                   <Database size={15} />
-                  Private short retention
+                  Short retention
                 </span>
               </div>
             )}
