@@ -80,6 +80,54 @@ test("admin refund drill refuses non-drill jobs", async () => {
   assert.match((await response.json()).error, /only refunds admin checkout drill jobs/i);
 });
 
+test("admin refund drill retries a refund-due drill job after operator confirmation", async () => {
+  const originalFetch = globalThis.fetch;
+  const job = {
+    id: "checkout_drill_retry123",
+    email: "admin-drill@aiconverter.app",
+    original_file_name: "checkout-drill-statement.pdf",
+    paid_at: "2026-05-18T00:00:00.000Z",
+    payment_id: "pay_drill_retry",
+    plan_id: "starter",
+    download_count: 1,
+    refund_status: "refund_due",
+    refund_id: ""
+  };
+  let refundCalls = 0;
+  globalThis.fetch = async () => {
+    refundCalls += 1;
+    return Response.json({
+      refund_id: "ref_retry_123",
+      payment_id: job.payment_id,
+      status: "succeeded",
+      amount: 29900,
+      currency: "INR"
+    });
+  };
+
+  try {
+    const response = await refundDrill({
+      env: fakeEnv({ job }),
+      request: new Request("https://aiconverter.app/api/admin/refund-drill", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${"a".repeat(32)}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ jobId: job.id, confirmJobId: job.id })
+      })
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.ok, true);
+    assert.equal(payload.refundStatus, "succeeded");
+    assert.equal(payload.refundId, "ref_retry_123");
+    assert.equal(refundCalls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 function fakeEnv({ job, events = [], attempts = [], updates = [] }) {
   return {
     ADMIN_TOKEN: "a".repeat(32),

@@ -327,7 +327,14 @@ export async function requestDodoRefund(env, job, reason, options = {}) {
   }
 
   if (job.refund_status) {
-    return { status: job.refund_status, refundId: job.refund_id || "" };
+    const existingStatus = String(job.refund_status || "").toLowerCase();
+    const retryableDue =
+      options.retryDue === true &&
+      !job.refund_id &&
+      (existingStatus === "refund_due" || existingStatus === "credit_due");
+    if (!retryableDue) {
+      return { status: job.refund_status, refundId: job.refund_id || "" };
+    }
   }
 
   const cashRefundAllowed =

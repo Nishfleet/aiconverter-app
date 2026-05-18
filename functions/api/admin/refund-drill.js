@@ -42,7 +42,7 @@ export async function onRequestPost({ request, env }) {
     },
     job,
     String(body.reason || "Operator paid-path drill refund.").slice(0, 3000),
-    { cashRefund: true }
+    { cashRefund: true, retryDue: true }
   );
 
   return json({
