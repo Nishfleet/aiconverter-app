@@ -1,5 +1,6 @@
 import { badRequest, json, methodNotAllowed, serverError, withSecurityHeaders } from "../lib/http.js";
-import { getAuthorizedJob, hasRequiredBindings, outputFormatFromResultKey, tokenFromBodyOrCookie, updateJob } from "../lib/jobs.js";
+import { bankDownloadFileName, bankOutputContentType } from "../lib/accounting-exports.js";
+import { getAuthorizedJob, hasRequiredBindings, jobOutputFormat, outputFormatFromResultKey, tokenFromBodyOrCookie, updateJob } from "../lib/jobs.js";
 import { contentTypeForOutputFormat, isUniversalConverter } from "../lib/universal.js";
 
 export async function onRequestPost(context) {
@@ -52,6 +53,8 @@ async function handleDownload({ request, env }) {
 }
 
 function downloadFileName(job) {
+  const selectedFormat = jobOutputFormat(job);
+  if (job.converter_id === "bank") return bankDownloadFileName(selectedFormat, job.original_file_name || "bank-statement");
   const extension = outputFormatFromResultKey(job.result_key);
   let prefix = "bank-statement";
   if (job.converter_id === "audio-transcript") prefix = "audio-transcript";
@@ -65,6 +68,7 @@ function downloadFileName(job) {
 }
 
 function contentTypeForJob(job) {
+  if (job.converter_id === "bank") return bankOutputContentType(jobOutputFormat(job));
   const format = outputFormatFromResultKey(job.result_key);
   if (format === "json") return "application/json; charset=utf-8";
   if (format === "txt") return "text/plain; charset=utf-8";

@@ -146,6 +146,12 @@ export function normalizeUniversalOutputFormat(value = "") {
   return UNIVERSAL_OUTPUT_FORMATS.includes(normalized) ? normalized : "pdf";
 }
 
+export function normalizeAnyOutputFormat(value = "") {
+  const normalized = String(value || "").trim().toLowerCase().replace(/^jpeg$/, "jpg");
+  if (["qif", "ofx", "qbo"].includes(normalized)) return normalized;
+  return normalizeUniversalOutputFormat(normalized);
+}
+
 export function universalOutputLabel(format = "") {
   const labels = {
     pdf: "PDF",
@@ -205,7 +211,7 @@ export function universalFileKind(fileName = "", contentType = "") {
 }
 
 export function contentTypeForOutputFormat(format = "") {
-  const normalized = normalizeUniversalOutputFormat(format);
+  const normalized = normalizeAnyOutputFormat(format);
   const types = {
     pdf: "application/pdf",
     docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -230,13 +236,16 @@ export function contentTypeForOutputFormat(format = "") {
     mov: "video/quicktime",
     zip: "application/zip",
     "7z": "application/x-7z-compressed",
-    tar: "application/x-tar"
+    tar: "application/x-tar",
+    qif: "application/x-qif; charset=utf-8",
+    ofx: "application/x-ofx; charset=utf-8",
+    qbo: "application/vnd.intu.qbo; charset=utf-8"
   };
   return types[normalized] || "application/octet-stream";
 }
 
 export function isBinaryOutputFormat(format = "") {
-  return !["csv", "json", "txt", "md", "html"].includes(String(format || "").toLowerCase());
+  return !["csv", "json", "txt", "md", "html", "qif", "ofx", "qbo"].includes(String(format || "").toLowerCase());
 }
 
 export function universalPreviewRow(fileName, contentType, outputFormat, route = "Preview ready") {

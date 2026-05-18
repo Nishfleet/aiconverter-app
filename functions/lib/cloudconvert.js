@@ -1,5 +1,5 @@
 import { requestDodoRefund } from "./dodo.js";
-import { outputFormatFromResultKey, updateJob } from "./jobs.js";
+import { jobOutputFormat, updateJob } from "./jobs.js";
 import {
   cloudConvertInputFormat,
   cloudConvertOutputFormat,
@@ -45,7 +45,7 @@ export async function startCloudConvertConversion(env, job, arrayBuffer) {
     };
   }
 
-  const outputFormat = outputFormatFromResultKey(job.result_key);
+  const outputFormat = jobOutputFormat(job);
   const inputFormat = cloudConvertInputFormat(job.original_file_name || "");
   const timeout = Math.max(
     60,
@@ -130,7 +130,7 @@ export async function refreshCloudConvertConversion(env, job) {
     return failCloudConvertJob(env, job, `CloudConvert export download failed (${fileResponse.status}).`);
   }
 
-  const outputFormat = outputFormatFromResultKey(job.result_key);
+  const outputFormat = jobOutputFormat(job);
   const contentType = fileResponse.headers.get("Content-Type") || contentTypeForOutputFormat(outputFormat);
   const resultBuffer = await fileResponse.arrayBuffer();
 
@@ -418,7 +418,7 @@ async function reserveCloudConvertDailySlot(env, limit) {
 }
 
 function pendingResult(job, status = "processing") {
-  const outputFormat = outputFormatFromResultKey(job.result_key);
+  const outputFormat = jobOutputFormat(job);
   return {
     ok: true,
     pending: true,

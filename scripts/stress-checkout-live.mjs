@@ -1,24 +1,36 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+loadLocalMonitorEnv();
+
 const baseUrl = process.env.AICONVERTER_STRESS_URL || "https://aiconverter.app";
 const rounds = Number(process.env.CHECKOUT_STRESS_ROUNDS || 2);
 const turnstileResponseToken = process.env.TURNSTILE_RESPONSE_TOKEN || "";
 const existingJobId = process.env.CHECKOUT_STRESS_JOB_ID || "";
 const existingJobToken = process.env.CHECKOUT_STRESS_JOB_TOKEN || "";
+const adminToken =
+  process.env.AICONVERTER_MONITOR_ADMIN_TOKEN || process.env.AICONVERTER_ADMIN_TOKEN || process.env.ADMIN_TOKEN || "";
 const failures = [];
 const checkouts = [];
 const started = Date.now();
 const config = await fetch(new URL("/api/config", baseUrl)).then((response) => response.json()).catch(() => ({}));
 
-if (config.turnstileSiteKey && !turnstileResponseToken && !(existingJobId && existingJobToken)) {
+if (config.turnstileSiteKey && !turnstileResponseToken && !(existingJobId && existingJobToken) && !adminToken) {
   failures.push({
     step: "turnstile",
     status: "token-required",
     message:
-      "Turnstile is active. Provide TURNSTILE_RESPONSE_TOKEN or CHECKOUT_STRESS_JOB_ID/CHECKOUT_STRESS_JOB_TOKEN from a browser-created preview job."
+      "Turnstile is active. Provide TURNSTILE_RESPONSE_TOKEN, CHECKOUT_STRESS_JOB_ID/CHECKOUT_STRESS_JOB_TOKEN, or AICONVERTER_ADMIN_TOKEN for the admin checkout drill."
   });
 }
 
 for (let round = 0; round < rounds; round += 1) {
   if (failures.length) break;
+  if (config.turnstileSiteKey && !turnstileResponseToken && !(existingJobId && existingJobToken) && adminToken) {
+    await runAdminCheckoutDrill(round);
+    continue;
+  }
+
   const id = `${Date.now()}-${round}-${Math.random().toString(16).slice(2)}`;
   let convertStarted = Date.now();
   let convertBody = { jobId: existingJobId, token: existingJobToken };
@@ -110,10 +122,70 @@ console.log(
 
 if (failures.length) process.exit(1);
 
+async function runAdminCheckoutDrill(round) {
+  const checkoutStarted = Date.now();
+  const response = await fetch(new URL("/api/admin/checkout-drill", baseUrl), {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${adminToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ round })
+  });
+  const body = await response.json().catch(async () => ({ raw: await response.text() }));
+  const cookie =
+    typeof response.headers.getSetCookie === "function"
+      ? response.headers.getSetCookie().join(";")
+      : response.headers.get("set-cookie") || "";
+
+  if (
+    !response.ok ||
+    body.ok !== true ||
+    body.mode !== "checkout" ||
+    body.checkoutHost !== "checkout.dodopayments.com" ||
+    !cookie.includes("HttpOnly") ||
+    !cookie.includes("SameSite=Lax")
+  ) {
+    failures.push({
+      round,
+      step: "admin-checkout-drill",
+      status: response.status,
+      host: body.checkoutHost || "",
+      cookieSet: Boolean(cookie),
+      body: redact(body),
+      elapsedMs: Date.now() - checkoutStarted
+    });
+    return;
+  }
+
+  checkouts.push({
+    round,
+    jobId: body.jobId,
+    host: body.checkoutHost,
+    cookieSet: Boolean(cookie),
+    checkoutMs: Date.now() - checkoutStarted,
+    route: "admin-checkout-drill"
+  });
+}
+
 function redact(value) {
   if (!value || typeof value !== "object") return value;
   const copy = { ...value };
   if (copy.token) copy.token = "[redacted]";
   if (copy.checkoutUrl) copy.checkoutUrl = "[redacted]";
   return copy;
+}
+
+function loadLocalMonitorEnv() {
+  const envPath = resolve(process.cwd(), ".monitor.env");
+  if (!existsSync(envPath)) return;
+  const content = readFileSync(envPath, "utf8");
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+    const [key, ...valueParts] = trimmed.split("=");
+    const name = key.trim();
+    if (!name || process.env[name]) continue;
+    process.env[name] = valueParts.join("=").trim().replace(/^["']|["']$/g, "");
+  }
 }

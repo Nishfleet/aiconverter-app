@@ -7,7 +7,17 @@
       "output": "CSV",
       "state": "Live",
       "accept": "application/pdf,.pdf",
-      "description": "Preview and extract dates, descriptions, money in, money out, and balances from bank statement PDFs.",
+      "description": "Preview and extract bank statement rows, then export clean CSV presets for accounting imports.",
+      "outputFormats": [
+        { "id": "quickbooks-csv", "label": "QuickBooks CSV" },
+        { "id": "xero-csv", "label": "Xero CSV" },
+        { "id": "wave-csv", "label": "Wave CSV" },
+        { "id": "gnucash-csv", "label": "GnuCash CSV" },
+        { "id": "csv", "label": "Clean CSV" },
+        { "id": "ofx", "label": "OFX" },
+        { "id": "qbo", "label": "QBO" },
+        { "id": "qif", "label": "QIF" }
+      ],
       "columns": [
         { "key": "date", "label": "Date" },
         { "key": "description", "label": "Description" },
@@ -15,7 +25,7 @@
         { "key": "money_out", "label": "Out" },
         { "key": "balance", "label": "Balance" }
       ],
-      "checks": ["Row extraction", "Date normalization", "Balance checks"]
+      "checks": ["Row extraction", "Accounting CSV presets", "Balance checks"]
     },
     {
       "id": "receipt",

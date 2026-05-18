@@ -6,8 +6,16 @@ AI Converter is a web app for automated AI conversion, private image/SVG convers
 
 The production AI module is bank statement PDF to CSV. Receipt, invoice, screenshot-table, audio transcript, document-to-Markdown, screenshot-to-HTML, and common file-format conversion use the same preview-first path when configured. PNG/JPG/WEBP image format conversion and raster-to-SVG conversion do not upload files. Pixel-perfect image-to-code is not claimed.
 
+Accounting SEO pages explain truthful CSV preparation use cases for QuickBooks, Xero, Wave, Excel, credit card statements, and bookkeepers. These pages must not claim official accounting-platform support, direct bank feeds, guaranteed imports, reconciliation, categorization, SOC 2, GDPR, accounting advice, or tax advice.
+
 Live behavior:
 - Direct browser upload for bank statement PDFs.
+- PDF bank statement to QuickBooks CSV preparation, with explicit limits: not official QuickBooks Web Connect, no QuickBooks connection, and no guaranteed import.
+- PDF bank statement to Xero CSV preparation, with explicit limits: no Xero connection, no direct bank feed, and no guaranteed import.
+- PDF bank statement to Wave CSV preparation, with explicit limits: no Wave connection, no direct bank feed, and no guaranteed import.
+- Scanned bank statement to Excel-readable CSV when OCR confidence is high enough. This is CSV that opens in Excel, not a guaranteed native Excel workbook.
+- Credit card statement PDF to CSV when transaction rows can be safely extracted.
+- Bank statement converter for bookkeepers who need reviewable CSV rows for cleanup, client workpapers, and accounting-system prep.
 - PDF upload limit: 50 MB.
 - Page-pack pricing up to 500 pages.
 - Built-in parser first for digital PDFs.
@@ -99,6 +107,12 @@ Fake sample CSV:
 - About: https://aiconverter.app/about
 - Bank statement PDF to CSV: https://aiconverter.app/bank-statement-pdf-to-csv
 - Convert bank statement to CSV: https://aiconverter.app/convert-bank-statement-to-csv
+- PDF bank statement to QuickBooks CSV: https://aiconverter.app/pdf-bank-statement-to-quickbooks-csv
+- PDF bank statement to Xero CSV: https://aiconverter.app/pdf-bank-statement-to-xero-csv
+- PDF bank statement to Wave CSV: https://aiconverter.app/pdf-bank-statement-to-wave-csv
+- Scanned bank statement to Excel: https://aiconverter.app/scanned-bank-statement-to-excel
+- Credit card statement PDF to CSV: https://aiconverter.app/credit-card-statement-pdf-to-csv
+- Bank statement converter for bookkeepers: https://aiconverter.app/bank-statement-converter-for-bookkeepers
 - Sample CSV: https://aiconverter.app/sample-csv
 - Security: https://aiconverter.app/security
 - Privacy: https://aiconverter.app/privacy
@@ -114,3 +128,5 @@ Fake sample CSV:
 ## Claims to avoid
 
 Do not claim AI Converter supports every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every audio file, every document, every image format, every file type, certified compliance, human review, guaranteed accuracy, accounting or tax advice, instant AI processing, pixel-perfect screenshot-to-code, or customer-volume proof. Format conversion depends on the live app accepting that exact input/output pair. Exports should be reviewed before important use.
+
+Do not claim official QuickBooks Web Connect, direct QuickBooks/Xero/Wave integration, direct bank feeds, guaranteed imports, reconciliation, categorization, SOC 2, or GDPR. Mention OFX or QBO only through the optional "Need OFX/QBO? Add bank details" path, not as guaranteed import files.

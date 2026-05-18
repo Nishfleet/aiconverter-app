@@ -3,7 +3,7 @@ import { refreshUniversalProviderConversion } from "../lib/universal-providers.j
 import { verifyDodoPayment } from "../lib/dodo.js";
 import { CONVERTER_COLUMNS } from "../lib/extract.js";
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
-import { getAuthorizedJob, hasRequiredBindings, outputFormatFromResultKey, parseStoredPreview, PLANS, sourceAvailableForRedo, tokenFromBodyOrCookie } from "../lib/jobs.js";
+import { getAuthorizedJob, hasRequiredBindings, jobOutputFormat, outputFormatFromResultKey, parseStoredPreview, PLANS, retentionFields, sourceAvailableForRedo, tokenFromBodyOrCookie } from "../lib/jobs.js";
 import { isBinaryOutputFormat, isUniversalConverter, UNIVERSAL_COLUMNS } from "../lib/universal.js";
 
 export function onRequestGet() {
@@ -36,7 +36,9 @@ export async function onRequestPost({ request, env }) {
 
   if (job.status === "complete") {
     const object = await env.AICONVERTER_BUCKET.get(job.result_key);
-    const previewRows = isUniversalConverter(job.converter_id) || isBinaryOutputFormat(outputFormatFromResultKey(job.result_key))
+    const resultFormat = outputFormatFromResultKey(job.result_key);
+    const selectedFormat = jobOutputFormat(job);
+    const previewRows = isUniversalConverter(job.converter_id) || isBinaryOutputFormat(resultFormat)
       ? await storedPreviewRows(env, job)
       : object
         ? parseStoredPreview(await object.text(), job.result_key, 5)
@@ -47,13 +49,15 @@ export async function onRequestPost({ request, env }) {
       token: bodyToken ? token : "",
       plan: PLANS[job.plan_id] || PLANS.starter,
       converterId: job.converter_id || "bank",
-      outputFormat: outputFormatFromResultKey(job.result_key),
+      outputFormat: selectedFormat,
       columns: columnsForPreview(job.converter_id || "bank", previewRows),
       paid: true,
       previewRows,
       confidence: job.confidence || 0,
       rowCount: job.row_count || 0,
+      validationReportAvailable: Boolean(job.validation_report_key),
       redoAvailable: !isUniversalConverter(job.converter_id) && Number(job.redo_count || 0) < 1 && sourceAvailableForRedo(job),
+      ...retentionFields(job),
       refundStatus: job.refund_status || ""
     });
   }
@@ -76,11 +80,12 @@ export async function onRequestPost({ request, env }) {
         token: bodyToken ? token : "",
         plan: PLANS[job.plan_id] || PLANS.starter,
         converterId: job.converter_id || "bank",
-        outputFormat: outputFormatFromResultKey(job.result_key),
+        outputFormat: jobOutputFormat(job),
         columns: CONVERTER_COLUMNS[job.converter_id || "bank"] || [],
         message: result.message,
         confidence: result.confidence,
         rowCount: result.rowCount,
+        ...retentionFields(job),
         refundStatus: result.refundStatus || ""
       });
     }
@@ -91,13 +96,15 @@ export async function onRequestPost({ request, env }) {
       token: bodyToken ? token : "",
       plan: PLANS[job.plan_id] || PLANS.starter,
       converterId: job.converter_id || "bank",
-      outputFormat: result.outputFormat || outputFormatFromResultKey(job.result_key),
+      outputFormat: result.outputFormat || jobOutputFormat(job),
       columns: result.columns || columnsForPreview(job.converter_id || "bank", result.previewRows || []),
       paid: true,
       previewRows: result.previewRows,
       confidence: result.confidence,
       rowCount: result.rowCount,
+      validationReportAvailable: Boolean(result.validationReportAvailable),
       redoAvailable: !isUniversalConverter(job.converter_id) && sourceAvailableForRedo(job),
+      ...retentionFields(job),
       refundStatus: ""
     });
   } catch (error) {
@@ -111,20 +118,23 @@ export async function onRequestPost({ request, env }) {
 }
 
 function responseForConversion(job, token, bodyToken, result) {
+  const updatedJob = result.job || job;
   return {
     status: result.status || (result.pending ? "converting_full" : result.ok ? "complete" : "failed"),
     jobId: job.id,
     token: bodyToken ? token : "",
     plan: PLANS[job.plan_id] || PLANS.starter,
     converterId: job.converter_id || "bank",
-    outputFormat: result.outputFormat || outputFormatFromResultKey(job.result_key),
+    outputFormat: result.outputFormat || jobOutputFormat(updatedJob),
     columns: result.columns || columnsForPreview(job.converter_id || "bank", result.previewRows || []),
     paid: true,
     previewRows: result.previewRows || [],
     confidence: result.confidence || 0,
     rowCount: result.rowCount || 0,
+    validationReportAvailable: Boolean(result.validationReportAvailable || updatedJob.validation_report_key),
     redoAvailable: Boolean(result.ok && !result.pending && !isUniversalConverter(job.converter_id) && sourceAvailableForRedo(job)),
     refundStatus: result.refundStatus || "",
+    ...retentionFields(updatedJob),
     message: result.message || ""
   };
 }

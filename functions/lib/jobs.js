@@ -7,6 +7,7 @@ import {
   UNIVERSAL_CONVERTER_ID,
   UNIVERSAL_MAX_FILE_BYTES
 } from "./universal.js";
+import { normalizeBankOutputFormat } from "./accounting-exports.js";
 
 export const MAX_FILE_BYTES = 50 * 1024 * 1024;
 export const MAX_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
@@ -40,6 +41,21 @@ export function sourceAvailableForRedo(job) {
   const createdAt = Date.parse(job.created_at || "");
   if (!Number.isFinite(createdAt)) return true;
   return Date.now() - createdAt < SOURCE_RETENTION_SECONDS * 1000;
+}
+
+export function sourceExpiresAt(job) {
+  if (!job || job.source_deleted_at) return "";
+  const createdAt = Date.parse(job.created_at || "");
+  if (!Number.isFinite(createdAt)) return "";
+  return new Date(createdAt + SOURCE_RETENTION_SECONDS * 1000).toISOString();
+}
+
+export function retentionFields(job) {
+  return {
+    sourceExpiresAt: sourceExpiresAt(job),
+    resultExpiresAt: job?.expires_at || "",
+    sourceDeletedAt: job?.source_deleted_at || ""
+  };
 }
 
 export function randomId(prefix) {
@@ -252,6 +268,7 @@ export function supportedConverters() {
 
 export function normalizeOutputFormat(value, converterId = "bank") {
   const normalized = String(value || "").trim().toLowerCase();
+  if (converterId === "bank") return normalizeBankOutputFormat(normalized);
   if (converterId === "invoice" && ["csv", "json"].includes(normalized)) return normalized;
   if (converterId === "audio-transcript" && ["txt", "json"].includes(normalized)) return normalized;
   if (converterId === "document-markdown") return "md";
@@ -263,7 +280,11 @@ export function normalizeOutputFormat(value, converterId = "bank") {
 export function outputFormatFromResultKey(resultKey = "") {
   const match = String(resultKey || "").toLowerCase().match(/\.([a-z0-9]+)$/);
   const extension = match?.[1] || "csv";
-  return ["csv", "json", "txt", "md", "html", "pdf", "docx", "xlsx", "pptx", "png", "jpg", "webp", "gif", "svg", "mp3", "wav", "m4a", "ogg", "flac", "mp4", "webm", "mov", "zip", "7z", "tar"].includes(extension) ? extension : "csv";
+  return ["csv", "json", "txt", "md", "html", "pdf", "docx", "xlsx", "pptx", "png", "jpg", "webp", "gif", "svg", "mp3", "wav", "m4a", "ogg", "flac", "mp4", "webm", "mov", "zip", "7z", "tar", "ofx", "qbo", "qif"].includes(extension) ? extension : "csv";
+}
+
+export function jobOutputFormat(job) {
+  return job?.output_format || outputFormatFromResultKey(job?.result_key || "");
 }
 
 export function normalizeConverterId(value) {
@@ -407,8 +428,9 @@ export async function insertJob(env, job) {
     `INSERT INTO jobs (
       id, token_hash, status, plan_id, email, source_key, result_key,
       original_file_name, file_size, estimated_pages, file_hash, ip_hash,
-      user_agent_hash, converter_id, input_mime_type, created_at, updated_at, expires_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      user_agent_hash, converter_id, input_mime_type, output_format, accounting_metadata_json,
+      created_at, updated_at, expires_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       job.id,
@@ -426,6 +448,8 @@ export async function insertJob(env, job) {
       job.userAgentHash || "",
       normalizeConverterId(job.converterId),
       job.inputMimeType || "",
+      job.outputFormat || normalizeOutputFormat("", normalizeConverterId(job.converterId)),
+      job.accountingMetadataJson || "",
       job.now,
       job.now,
       job.expiresAt
@@ -576,6 +600,26 @@ export async function enforceJobExpiry(env, job) {
   return job;
 }
 
+export async function deleteJobData(env, job, now = new Date()) {
+  if (!job?.id || !env?.AICONVERTER_BUCKET || !env?.AICONVERTER_DB) return null;
+  const nowIso = now.toISOString();
+  const keys = new Set(
+    [job.source_key, job.preview_key, job.result_key, job.validation_report_key].filter(Boolean)
+  );
+  await Promise.all([...keys].map((key) => env.AICONVERTER_BUCKET.delete(key).catch(() => {})));
+  const fields = {
+    status: "deleted",
+    source_deleted_at: job.source_deleted_at || nowIso,
+    error: "Customer deleted this conversion.",
+    source_key: "",
+    preview_key: "",
+    result_key: "",
+    validation_report_key: ""
+  };
+  await updateJob(env, job.id, fields);
+  return { ...job, ...fields };
+}
+
 export async function getAuthorizedJob(env, id, token) {
   if (!id || !token) return null;
   const tokenHash = await sha256(token);
@@ -680,15 +724,25 @@ export function rowsToCsv(rows, columns = DEFAULT_CSV_COLUMNS) {
 }
 
 export function parseCsvPreview(csv, limit = 5) {
+  return parseCsvContent(csv, limit).rows;
+}
+
+export function parseCsvContent(csv, limit = 5000) {
   const lines = csv.trim().split(/\r?\n/);
   const headers = lines.shift()?.split(",") || [];
-  return lines.slice(0, limit).map((line) => {
+  const rows = lines.slice(0, limit).map((line) => {
     const cells = parseCsvLine(line);
     return headers.reduce((row, header, index) => {
       row[header] = cells[index] || "";
       return row;
     }, {});
   });
+  return {
+    columns: headers.map((header) => ({ key: header, label: header })),
+    rows,
+    totalRows: Math.max(0, lines.length),
+    truncated: lines.length > limit
+  };
 }
 
 export function parseStoredPreview(content, resultKey = "", limit = 5) {

@@ -53,6 +53,7 @@ export async function onRequestPost({ request, env }) {
     estimatedPages: 1,
     converterId: "universal-file",
     inputMimeType: DRILL_MIME,
+    outputFormat: DRILL_OUTPUT_FORMAT,
     fileHash: await sha256Bytes(arrayBuffer),
     ipHash: "admin-failover-drill",
     userAgentHash: "admin-failover-drill",
@@ -79,6 +80,7 @@ export async function onRequestPost({ request, env }) {
     result_key: resultKey,
     original_file_name: fileName,
     input_mime_type: DRILL_MIME,
+    output_format: DRILL_OUTPUT_FORMAT,
     expires_at: expiresAt
   }, arrayBuffer);
 

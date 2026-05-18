@@ -3,6 +3,12 @@ import { hasAzureConfig, hasMistralConfig, MAX_PAGE_COUNT, normalizeConverterId,
 import { hasCloudConvertConfig } from "./cloudconvert.js";
 import { hasConvertioConfig } from "./convertio.js";
 import {
+  bankOutputContentType,
+  bankOutputFileExtension,
+  exportBankRows,
+  normalizeBankOutputFormat
+} from "./accounting-exports.js";
+import {
   isUniversalConverter,
   normalizeUniversalOutputFormat,
   UNIVERSAL_COLUMNS,
@@ -175,16 +181,43 @@ export async function convertPdfToCsv(env, fileName, arrayBuffer, options = {}) 
   }
 
   const rows = normalizeRows(extracted.transactions);
+  const outputFormat = normalizeBankOutputFormat(options.outputFormat || "csv");
+  const exported = exportBankRows(rows, outputFormat, {
+    accountingMetadata: options.accountingMetadata,
+    sourceFileName: fileName,
+    validation: {
+      confidence: extracted.confidence,
+      trustScore: extracted.trustScore || extracted.confidence,
+      warnings: extracted.warnings || [],
+      provider: extracted.provider || "unknown"
+    }
+  });
+  if (!exported.ok) {
+    return {
+      ok: false,
+      message: exported.message,
+      confidence: extracted.confidence,
+      trustScore: extracted.trustScore || extracted.confidence,
+      rowCount: rows.length,
+      warnings: extracted.warnings || [],
+      provider: extracted.provider || "unknown"
+    };
+  }
   return {
     ok: true,
-    csv: rowsToCsv(rows),
-    previewRows: rows.slice(0, 5),
-    columns: CONVERTER_COLUMNS.bank,
+    csv: exported.csv,
+    content: exported.content,
+    contentType: exported.contentType || bankOutputContentType(outputFormat),
+    fileExtension: exported.fileExtension || bankOutputFileExtension(outputFormat),
+    outputFormat,
+    previewRows: exported.previewRows || rows.slice(0, 5),
+    columns: exported.columns || CONVERTER_COLUMNS.bank,
     confidence: extracted.confidence,
     trustScore: extracted.trustScore || extracted.confidence,
     rowCount: rows.length,
     warnings: extracted.warnings || [],
-    provider: extracted.provider || "unknown"
+    provider: extracted.provider || "unknown",
+    validationReport: exported.validationReport
   };
 }
 

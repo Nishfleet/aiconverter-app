@@ -777,6 +777,16 @@ tbody tr:last-child td {
   line-height: 1.45;
 }
 
+.deleted-state {
+  color: #344054;
+  background: #f8fafc;
+  border-color: var(--line);
+}
+
+.deleted-state p {
+  color: var(--muted);
+}
+
 .local-result {
   display: grid;
   gap: 14px;
@@ -837,6 +847,30 @@ tbody tr:last-child td {
   font-size: 22px;
 }
 
+.retention-countdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.retention-countdown span {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  color: #344054;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.retention-countdown strong {
+  margin: 0;
+  color: var(--ink);
+  font-size: 12px;
+}
+
 .result-actions {
   display: flex;
   flex-wrap: wrap;
@@ -849,6 +883,94 @@ tbody tr:last-child td {
   min-height: 38px;
   padding: 0 12px;
   white-space: nowrap;
+}
+
+.danger-button {
+  color: #9f1239;
+  border-color: #fecdd3;
+  background: #fff1f2;
+}
+
+.row-review-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.row-review-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.row-review-heading > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.row-review-heading strong {
+  font-size: 14px;
+}
+
+.row-review-heading span,
+.row-review-empty {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.row-review-table {
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.row-review-table table {
+  min-width: 520px;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.row-review-table th,
+.row-review-table td {
+  min-width: 140px;
+  padding: 6px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.row-review-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  color: var(--muted);
+  background: #f8fafc;
+  font-size: 10px;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.row-review-table input {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 0 8px;
+  color: var(--ink);
+  background: #ffffff;
+  outline: none;
+}
+
+.row-review-table input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .inline-note {
@@ -1334,6 +1456,10 @@ tbody tr:last-child td {
   font-size: 11px;
 }
 
+.batch-zip-button {
+  margin-top: 10px;
+}
+
 .selected-route-panel {
   padding: 16px;
   border: 1px solid var(--line);
@@ -1367,6 +1493,89 @@ tbody tr:last-child td {
   color: #ffffff;
   background: var(--ink);
   border-color: var(--ink);
+}
+
+.advanced-bank-file {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.advanced-toggle {
+  width: fit-content;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 11px;
+  color: #344054;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 820;
+  cursor: pointer;
+}
+
+.advanced-toggle svg {
+  transition: transform 160ms ease;
+}
+
+.advanced-toggle svg.is-open {
+  transform: rotate(90deg);
+}
+
+.advanced-bank-body {
+  display: grid;
+  gap: 10px;
+}
+
+.format-picker.compact {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.bank-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.bank-details-grid label {
+  display: grid;
+  gap: 6px;
+}
+
+.bank-details-grid span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.bank-details-grid input,
+.bank-details-grid select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  color: var(--ink);
+  background: #ffffff;
+  outline: none;
+}
+
+.bank-details-grid input:focus,
+.bank-details-grid select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
 }
 
 .instant-price-panel {
@@ -2231,6 +2440,10 @@ tbody tr:last-child td {
   }
 
   .file-queue-list {
+    grid-template-columns: 1fr;
+  }
+
+  .bank-details-grid {
     grid-template-columns: 1fr;
   }
 

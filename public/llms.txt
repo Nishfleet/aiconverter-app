@@ -4,6 +4,12 @@ AI Converter is a web app for automated AI conversion, private image/SVG convers
 
 Live and beta modules:
 - Bank statement PDF to CSV.
+- PDF bank statement to QuickBooks CSV preparation. This is CSV prep only, not official QuickBooks Web Connect, not a direct QuickBooks connection, and not a guaranteed import.
+- PDF bank statement to Xero CSV preparation. This is CSV prep only, not a Xero connection, direct bank feed, or guaranteed import.
+- PDF bank statement to Wave CSV preparation. This is CSV prep only, not a Wave connection, direct bank feed, or guaranteed import.
+- Scanned bank statement to Excel-readable CSV when OCR confidence is high enough. This is not a guaranteed native Excel workbook.
+- Credit card statement PDF to CSV when transaction rows can be safely extracted.
+- Bank statement converter for bookkeepers who need reviewable CSV rows for cleanup and accounting-system prep.
 - Direct browser upload.
 - Built-in parser first for digital PDFs.
 - OCR fallback for scanned or messy PDFs when configured.
@@ -44,6 +50,8 @@ Upcoming module:
 Important product truth:
 - AI Converter does not claim to support every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every audio file, every document, every image format, or every file type.
 - Accuracy, security, compliance, and supported-format claims should stay limited to what the live product can prove.
+- AI Converter does not claim official QuickBooks Web Connect support, direct bank feeds, guaranteed accounting-platform imports, SOC 2, GDPR, accounting advice, tax advice, reconciliation, or categorization.
+- Need OFX/QBO? Add bank details in the converter. Treat those files as advanced exports to review separately, not guaranteed import files.
 - Email monitoring is not the primary intake for bank PDFs.
 - Human file review is not part of the automated workflow.
 - Source files use a 24-hour private retention window. Generated files expire after 7 days. Private image/SVG conversions do not create server-side source files.
@@ -56,6 +64,12 @@ Useful pages:
 - https://aiconverter.app/about
 - https://aiconverter.app/bank-statement-pdf-to-csv
 - https://aiconverter.app/convert-bank-statement-to-csv
+- https://aiconverter.app/pdf-bank-statement-to-quickbooks-csv
+- https://aiconverter.app/pdf-bank-statement-to-xero-csv
+- https://aiconverter.app/pdf-bank-statement-to-wave-csv
+- https://aiconverter.app/scanned-bank-statement-to-excel
+- https://aiconverter.app/credit-card-statement-pdf-to-csv
+- https://aiconverter.app/bank-statement-converter-for-bookkeepers
 - https://aiconverter.app/sample-csv
 - https://aiconverter.app/sample-bank-statement.csv
 - https://aiconverter.app/llms-full.txt

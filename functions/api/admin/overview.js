@@ -168,8 +168,12 @@ export async function onRequestGet({ request, env }) {
        FROM jobs
        WHERE COALESCE(checkout_session_id, '') != ''
          AND paid_at IS NULL
+         AND LOWER(COALESCE(email, '')) NOT IN ('audit@example.com', 'qa+aiconverter@example.com', 'admin-drill@aiconverter.app')
+         AND id NOT LIKE 'job_checkoutstress_%'
+         AND updated_at >= ?
        ORDER BY updated_at DESC
-       LIMIT 25`
+       LIMIT 25`,
+      [since24h]
     ),
     queryAll(
       env,
@@ -177,10 +181,13 @@ export async function onRequestGet({ request, env }) {
        FROM jobs
        WHERE COALESCE(checkout_session_id, '') != ''
          AND paid_at IS NULL
+         AND LOWER(COALESCE(email, '')) NOT IN ('audit@example.com', 'qa+aiconverter@example.com', 'admin-drill@aiconverter.app')
+         AND id NOT LIKE 'job_checkoutstress_%'
          AND updated_at < ?
+         AND updated_at >= ?
        ORDER BY updated_at ASC
        LIMIT 25`,
-      [staleCheckoutBefore]
+      [staleCheckoutBefore, since24h]
     ),
     buildCloudConvertOverview(env)
   ]);
@@ -409,10 +416,11 @@ function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckPr
   }
 
   if ((staleCheckoutHandoffs || []).length > 0) {
+    const count = staleCheckoutHandoffs.length;
     alerts.push({
       severity: "warning",
       title: "Open Dodo checkout handoffs",
-      detail: `${staleCheckoutHandoffs.length} checkout handoff${staleCheckoutHandoffs.length === 1 ? "" : "s"} are still unpaid after 60 minutes.`
+      detail: `${count} checkout handoff${count === 1 ? "" : "s"} ${count === 1 ? "is" : "are"} still unpaid after 60 minutes.`
     });
   }
 

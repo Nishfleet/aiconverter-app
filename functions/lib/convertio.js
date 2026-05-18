@@ -1,5 +1,5 @@
 import { requestDodoRefund } from "./dodo.js";
-import { outputFormatFromResultKey, updateJob } from "./jobs.js";
+import { jobOutputFormat, updateJob } from "./jobs.js";
 import {
   contentTypeForOutputFormat,
   UNIVERSAL_COLUMNS,
@@ -81,7 +81,7 @@ export async function startConvertioConversion(env, job, arrayBuffer) {
   }
 
   const fileName = job.original_file_name || "source.bin";
-  const outputFormat = outputFormatFromResultKey(job.result_key);
+  const outputFormat = jobOutputFormat(job);
   const conversion = await convertioRequest("/convert", {
     method: "POST",
     body: JSON.stringify({
@@ -141,7 +141,7 @@ export async function refreshConvertioConversion(env, job) {
     return pendingResult(job, data.step || "convert");
   }
 
-  const outputFormat = outputFormatFromResultKey(job.result_key);
+  const outputFormat = jobOutputFormat(job);
   const resultBuffer = await downloadConvertioResult(env, job, data.output?.url || "");
   const contentType = contentTypeForOutputFormat(outputFormat);
 
@@ -226,7 +226,7 @@ async function failConvertioJob(env, job, message) {
 }
 
 function pendingResult(job, status = "convert") {
-  const outputFormat = outputFormatFromResultKey(job.result_key);
+  const outputFormat = jobOutputFormat(job);
   return {
     ok: true,
     pending: true,

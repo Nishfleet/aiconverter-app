@@ -1,5 +1,5 @@
 import { convertFileToCsv } from "./extract.js";
-import { outputFormatFromResultKey, updateJob } from "./jobs.js";
+import { jobOutputFormat, updateJob } from "./jobs.js";
 import { requestDodoRefund } from "./dodo.js";
 import { startUniversalProviderConversion } from "./universal-providers.js";
 import { isUniversalConverter } from "./universal.js";
@@ -55,7 +55,8 @@ export async function runFullConversion(env, job, options = {}) {
       arrayBuffer,
       {
         estimatedPages: job.estimated_pages || 25,
-        outputFormat: outputFormatFromResultKey(job.result_key),
+        outputFormat: jobOutputFormat(job),
+        accountingMetadata: parseAccountingMetadata(job.accounting_metadata_json),
         allowPaidFallback: true,
         ...(options.convertOptions || {})
       }
@@ -93,6 +94,17 @@ export async function runFullConversion(env, job, options = {}) {
         deleteAfter: job.expires_at
       }
     });
+    const validationReportKey = converted.validationReport ? `jobs/${job.id}/validation-report.txt` : "";
+    if (validationReportKey) {
+      await env.AICONVERTER_BUCKET.put(validationReportKey, converted.validationReport, {
+        httpMetadata: { contentType: "text/plain; charset=utf-8" },
+        customMetadata: {
+          jobId: job.id,
+          purpose: "validation-report",
+          deleteAfter: job.expires_at
+        }
+      });
+    }
 
     const sourceDeletedAt = options.deleteSource ? new Date().toISOString() : "";
     if (options.deleteSource) await env.AICONVERTER_BUCKET.delete(job.source_key).catch(() => {});
@@ -102,7 +114,8 @@ export async function runFullConversion(env, job, options = {}) {
       row_count: converted.rowCount,
       ...(sourceDeletedAt ? { source_deleted_at: sourceDeletedAt } : {}),
       completed_at: new Date().toISOString(),
-      extractor: converted.provider || ""
+      extractor: converted.provider || "",
+      ...(validationReportKey ? { validation_report_key: validationReportKey } : {})
     });
 
     return {
@@ -111,7 +124,8 @@ export async function runFullConversion(env, job, options = {}) {
       columns: converted.columns || [],
       confidence: converted.confidence,
       rowCount: converted.rowCount,
-      outputFormat: converted.outputFormat || outputFormatFromResultKey(job.result_key)
+      outputFormat: converted.outputFormat || jobOutputFormat(job),
+      validationReportAvailable: Boolean(validationReportKey)
     };
   } catch (error) {
     const message = error?.message || "The full converted file could not be generated.";
@@ -141,5 +155,14 @@ export async function runFullConversion(env, job, options = {}) {
       error: message
     });
     throw error;
+  }
+}
+
+function parseAccountingMetadata(value = "") {
+  if (!value) return {};
+  try {
+    return JSON.parse(value);
+  } catch {
+    return {};
   }
 }

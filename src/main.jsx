@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
+  Trash2,
   Upload,
   Wand2
 } from "lucide-react";
@@ -34,6 +35,9 @@ import "./styles.css";
 
 const MAX_SIZE_MB = 50;
 const MAX_PAGES = 500;
+const BANK_NATIVE_FORMATS = new Set(["ofx", "qbo"]);
+const BANK_ADVANCED_FORMATS = new Set(["ofx", "qbo", "qif"]);
+const BANK_CSV_FORMATS = new Set(["quickbooks-csv", "xero-csv", "wave-csv", "gnucash-csv", "csv"]);
 
 const classNames = (...values) => values.filter(Boolean).join(" ");
 let turnstileScriptPromise = null;
@@ -105,6 +109,29 @@ function defaultOutputFormat(converter) {
   return converter?.outputFormats?.[0]?.id || "csv";
 }
 
+function bankNativeNeedsDetails(outputFormat) {
+  return BANK_NATIVE_FORMATS.has(outputFormat);
+}
+
+function defaultBankDetails() {
+  return {
+    bankName: "",
+    bankId: "",
+    accountId: "",
+    accountType: "CHECKING",
+    currency: "USD",
+    intuitBankId: ""
+  };
+}
+
+function isBankAdvancedFormat(format) {
+  return BANK_ADVANCED_FORMATS.has(String(format || "").toLowerCase());
+}
+
+function isEditableBankCsvResult(result) {
+  return result?.status === "complete" && result?.converterId === "bank" && BANK_CSV_FORMATS.has(result?.outputFormat);
+}
+
 function outputLabel(converter, outputFormat) {
   return converter?.outputFormats?.find((format) => format.id === outputFormat)?.label || "CSV";
 }
@@ -130,6 +157,13 @@ function formatCell(value, key) {
 function resultFormatLabel(format) {
   const labels = {
     csv: "full CSV",
+    "quickbooks-csv": "QuickBooks CSV",
+    "xero-csv": "Xero CSV",
+    "wave-csv": "Wave CSV",
+    "gnucash-csv": "GnuCash CSV",
+    qif: "QIF",
+    ofx: "OFX",
+    qbo: "QBO",
     json: "JSON",
     txt: "TXT transcript",
     md: "Markdown",
@@ -166,7 +200,14 @@ function downloadNameForResult(result) {
     txt: "aiconverter-transcript.txt",
     md: "aiconverter-document.md",
     html: "aiconverter-screen.html",
-    csv: "aiconverter-export.csv"
+    csv: "aiconverter-export.csv",
+    "quickbooks-csv": "aiconverter-quickbooks.csv",
+    "xero-csv": "aiconverter-xero.csv",
+    "wave-csv": "aiconverter-wave.csv",
+    "gnucash-csv": "aiconverter-gnucash.csv",
+    qif: "aiconverter-bank.qif",
+    ofx: "aiconverter-bank.ofx",
+    qbo: "aiconverter-bank.qbo"
   };
   return names[extension] || `aiconverter-export.${extension}`;
 }
@@ -244,6 +285,20 @@ function formatMinorCurrency(amount, currency = "INR") {
   } catch {
     return `${normalizedCurrency} ${Math.round(amount / 100)}`;
   }
+}
+
+function formatRetentionCountdown(value, now) {
+  const expiry = Date.parse(value || "");
+  if (!Number.isFinite(expiry)) return "";
+  const remaining = expiry - now;
+  if (remaining <= 0) return "expired";
+  const minutes = Math.max(1, Math.ceil(remaining / 60000));
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const mins = minutes % 60;
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
 }
 
 function entryPriceInfo(entry, pricingPreview) {
@@ -419,10 +474,19 @@ function App() {
   const [fileQueue, setFileQueue] = useState([]);
   const [activeFileId, setActiveFileId] = useState("");
   const [pageCount, setPageCount] = useState(25);
+  const [showBankDetails, setShowBankDetails] = useState(false);
+  const [bankDetails, setBankDetails] = useState(defaultBankDetails);
   const [email, setEmail] = useState("");
   const [converting, setConverting] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
   const [redoing, setRedoing] = useState(false);
+  const [deletingJob, setDeletingJob] = useState(false);
+  const [reviewRowsOpen, setReviewRowsOpen] = useState(false);
+  const [reviewRowsLoading, setReviewRowsLoading] = useState(false);
+  const [reviewRowsSaving, setReviewRowsSaving] = useState(false);
+  const [reviewColumns, setReviewColumns] = useState([]);
+  const [reviewRows, setReviewRows] = useState([]);
+  const [reviewMessage, setReviewMessage] = useState("");
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [turnstileSiteKey, setTurnstileSiteKey] = useState("");
@@ -434,11 +498,13 @@ function App() {
     "--ticker-distance": "-25%",
     "--ticker-duration": "48s"
   });
+  const [retentionNow, setRetentionNow] = useState(Date.now());
   const fileInputRef = useRef(null);
   const tickerViewportRef = useRef(null);
   const tickerGroupRef = useRef(null);
   const turnstileRef = useRef(null);
   const turnstileWidgetIdRef = useRef(null);
+  const activeFileIdRef = useRef("");
   const routePath = window.location.pathname.replace(/\/+$/, "") || "/";
 
   const selected = useMemo(
@@ -484,6 +550,17 @@ function App() {
     [liveConverters, universalProviderReady]
   );
   const selectedOutputFormats = useMemo(() => capableOutputFormats(selected, file), [selected, file]);
+  const primaryOutputFormats = useMemo(
+    () =>
+      selectedId === "bank"
+        ? selectedOutputFormats.filter((format) => !isBankAdvancedFormat(format.id))
+        : selectedOutputFormats,
+    [selectedId, selectedOutputFormats]
+  );
+  const advancedBankOutputFormats = useMemo(
+    () => (selectedId === "bank" ? selectedOutputFormats.filter((format) => isBankAdvancedFormat(format.id)) : []),
+    [selectedId, selectedOutputFormats]
+  );
   const selectedPlan = useMemo(() => planForPages(pageCount), [pageCount]);
   const selectedPlanPrice = displayPriceForPlan(selectedPlan, pricingPreview);
   const isLocalImageConverter = isLocalConverter(selected);
@@ -501,16 +578,42 @@ function App() {
     : result
       ? previewMetricLabel(selectedId, result)
       : `${previewRows.length} sample rows`;
+  const completedServerResults = useMemo(
+    () =>
+      fileQueue
+        .map((entry) => entry.result)
+        .filter((entryResult) => entryResult?.status === "complete" && entryResult.jobId && !entryResult.localDownloadUrl),
+    [fileQueue]
+  );
   const isPdfFirstConverter = selectedId === "bank";
   const selectedOutputLabel = outputLabel(selected, outputFormat);
+  const needsBankDetailsForOutput = selectedId === "bank" && bankNativeNeedsDetails(outputFormat);
+  const bankDetailsReady =
+    !needsBankDetailsForOutput ||
+    Boolean(
+      bankDetails.bankId.trim() &&
+        bankDetails.accountId.trim() &&
+        (outputFormat !== "qbo" || bankDetails.intuitBankId.trim())
+    );
   const canConvert =
     file &&
     !converting &&
     file.size <= selectedMaxSizeMb * 1024 * 1024 &&
     pageCount <= MAX_PAGES &&
     selectedEnabled &&
+    bankDetailsReady &&
     (isLocalImageConverter || !needsTurnstile || Boolean(turnstileToken));
   const flowStep = !file ? 1 : result ? (result.status === "complete" ? 4 : 3) : 2;
+  const canDeleteServerJob = Boolean(result?.jobId && ["preview_ready", "complete"].includes(result.status));
+  const canReviewRows = isEditableBankCsvResult(result);
+  const sourceCountdown = result?.sourceDeletedAt
+    ? "deleted"
+    : formatRetentionCountdown(result?.sourceExpiresAt, retentionNow);
+  const resultCountdown = formatRetentionCountdown(result?.resultExpiresAt, retentionNow);
+
+  useEffect(() => {
+    activeFileIdRef.current = activeFileId;
+  }, [activeFileId]);
 
   useEffect(() => {
     fetch("/api/config")
@@ -575,18 +678,33 @@ function App() {
   }, [popularConversions]);
 
   useEffect(() => {
-    const nextFormat = selectedOutputFormats[0]?.id || defaultOutputFormat(selected);
+    const allowedFormats = selectedId === "bank" && !showBankDetails ? primaryOutputFormats : selectedOutputFormats;
+    const nextFormat = allowedFormats[0]?.id || selectedOutputFormats[0]?.id || defaultOutputFormat(selected);
     if (!selectedOutputFormats.some((format) => format.id === outputFormat)) {
       setOutputFormat(nextFormat);
       updateActiveFileSettings({ outputFormat: nextFormat });
     }
-  }, [selected, selectedOutputFormats, outputFormat, activeFileId]);
+  }, [selected, selectedId, selectedOutputFormats, primaryOutputFormats, showBankDetails, outputFormat, activeFileId]);
 
   useEffect(() => {
     return () => {
       if (result?.localDownloadUrl) URL.revokeObjectURL(result.localDownloadUrl);
     };
   }, [result?.localDownloadUrl]);
+
+  useEffect(() => {
+    setReviewRowsOpen(false);
+    setReviewRows([]);
+    setReviewColumns([]);
+    setReviewMessage("");
+  }, [result?.jobId, result?.outputFormat]);
+
+  useEffect(() => {
+    if (!result?.sourceExpiresAt && !result?.resultExpiresAt) return undefined;
+    const timer = window.setInterval(() => setRetentionNow(Date.now()), 60000);
+    setRetentionNow(Date.now());
+    return () => window.clearInterval(timer);
+  }, [result?.sourceExpiresAt, result?.resultExpiresAt]);
 
   useEffect(() => {
     if (!turnstileSiteKey || !turnstileRef.current) return;
@@ -661,19 +779,22 @@ function App() {
       return {
         selectedId: selectedId || "bank",
         outputFormat: outputFormat || "csv",
-        pageCount: 25
+        pageCount: 25,
+        bankDetails: defaultBankDetails()
       };
     }
     const matches = selectableConverters.filter((converter) => converterAcceptsFile(converter, nextFile));
     const nextSelected = preferredConverterForFile(matches, preferredSelectedId) || selected;
     const outputFormats = capableOutputFormats(nextSelected, nextFile);
-    const nextOutputFormat = outputFormats.some((format) => format.id === outputFormat)
+    const preferredOutputFormat = nextSelected?.id === "bank" && isBankAdvancedFormat(outputFormat) ? "" : outputFormat;
+    const nextOutputFormat = outputFormats.some((format) => format.id === preferredOutputFormat)
       ? outputFormat
       : outputFormats[0]?.id || defaultOutputFormat(nextSelected);
     return {
       selectedId: nextSelected?.id || selectedId,
       outputFormat: nextOutputFormat,
-      pageCount: isPdfFile(nextFile) ? estimatePages(nextFile) : 1
+      pageCount: isPdfFile(nextFile) ? estimatePages(nextFile) : 1,
+      bankDetails: defaultBankDetails()
     };
   }
 
@@ -681,6 +802,8 @@ function App() {
     setSelectedId(entry.selectedId);
     setOutputFormat(entry.outputFormat);
     setPageCount(entry.pageCount);
+    setBankDetails(entry.bankDetails || defaultBankDetails());
+    setShowBankDetails(entry.selectedId === "bank" && isBankAdvancedFormat(entry.outputFormat));
   }
 
   function updateActiveFileSettings(updates) {
@@ -690,21 +813,76 @@ function App() {
     );
   }
 
+  function clearActiveResult() {
+    setResult(null);
+    updateActiveFileSettings({ result: null, status: "" });
+  }
+
+  function attachResultToFile(fileId, nextResult) {
+    if (!fileId || !nextResult) return;
+    setFileQueue((currentQueue) =>
+      currentQueue.map((entry) =>
+        entry.id === fileId
+          ? {
+              ...entry,
+              selectedId: nextResult.converterId || entry.selectedId,
+              outputFormat: nextResult.outputFormat || entry.outputFormat,
+              result: nextResult,
+              status: nextResult.status || entry.status
+            }
+          : entry
+      )
+    );
+  }
+
+  function setResultForFile(fileId, nextResult) {
+    const resultWithOwner = nextResult ? { ...nextResult, fileEntryId: fileId } : nextResult;
+    if (!fileId) {
+      setResult(resultWithOwner);
+      return;
+    }
+    if (activeFileIdRef.current === fileId) setResult(resultWithOwner);
+    attachResultToFile(fileId, resultWithOwner);
+  }
+
   function handleOutputFormatChange(nextFormat) {
     setOutputFormat(nextFormat);
+    if (selectedId === "bank" && isBankAdvancedFormat(nextFormat)) setShowBankDetails(true);
     updateActiveFileSettings({ outputFormat: nextFormat });
-    setResult(null);
+    clearActiveResult();
+  }
+
+  function toggleBankDetails() {
+    setShowBankDetails((current) => {
+      const next = !current;
+      if (!next && isBankAdvancedFormat(outputFormat)) {
+        const nextFormat = primaryOutputFormats[0]?.id || "quickbooks-csv";
+        setOutputFormat(nextFormat);
+        updateActiveFileSettings({ outputFormat: nextFormat });
+        clearActiveResult();
+      }
+      return next;
+    });
   }
 
   function handlePageCountChange(nextPageCount) {
     setPageCount(nextPageCount);
     updateActiveFileSettings({ pageCount: nextPageCount });
-    setResult(null);
+    clearActiveResult();
+  }
+
+  function handleBankDetailsChange(field, value) {
+    setBankDetails((current) => {
+      const nextDetails = { ...current, [field]: value };
+      updateActiveFileSettings({ bankDetails: nextDetails });
+      return nextDetails;
+    });
+    clearActiveResult();
   }
 
   function activateFileEntry(entry) {
     setError("");
-    setResult(null);
+    setResult(entry.result || null);
     setActiveFileId(entry.id);
     applyEntrySettings(entry);
   }
@@ -765,14 +943,25 @@ function App() {
     setConverting(true);
     setError("");
     setResult(null);
+    const fileId = activeFileId;
+    const fileToConvert = file;
+    const converterToUse = selectedId;
+    const outputToUse = outputFormat;
+    const planToUse = selectedPlan;
+    const pageCountToUse = pageCount;
+    const emailToUse = email;
+    const bankDetailsToUse = bankDetails;
 
     const form = new FormData();
-    form.append("file", file);
-    form.append("converterId", selectedId);
-    form.append("email", email);
-    form.append("planId", selectedPlan.id);
-    form.append("estimatedPages", String(pageCount));
-    form.append("outputFormat", outputFormat);
+    form.append("file", fileToConvert);
+    form.append("converterId", converterToUse);
+    form.append("email", emailToUse);
+    form.append("planId", planToUse.id);
+    form.append("estimatedPages", String(pageCountToUse));
+    form.append("outputFormat", outputToUse);
+    if (converterToUse === "bank" && BANK_ADVANCED_FORMATS.has(outputToUse)) {
+      form.append("accountingMetadata", JSON.stringify(bankDetailsToUse));
+    }
     if (turnstileToken) form.append("turnstileToken", turnstileToken);
 
     try {
@@ -786,7 +975,7 @@ function App() {
         throw new Error(payload.error || "The AI converter could not process this file.");
       }
 
-      setResult(payload);
+      setResultForFile(fileId, payload);
     } catch (err) {
       setError(err.message || "The AI converter could not process this file.");
     } finally {
@@ -799,25 +988,31 @@ function App() {
     setConverting(true);
     setError("");
     setResult(null);
+    const fileId = activeFileId;
+    const fileToConvert = file;
+    const outputToUse = outputFormat;
+    const selectedToUse = selected;
+    const selectedIdToUse = selectedId;
 
     try {
       const converted =
-        selected?.mode === "local-svg"
-          ? await convertRasterToSvgInBrowser(file)
-          : await convertImageInBrowser(file, outputFormat);
-      setResult({
+        selectedToUse?.mode === "local-svg"
+          ? await convertRasterToSvgInBrowser(fileToConvert)
+          : await convertImageInBrowser(fileToConvert, outputToUse);
+      const localResult = {
         status: "complete",
         localDownloadUrl: converted.url,
         localFileName: converted.fileName,
         localPreviewUrl: converted.url,
-        outputFormat,
-        converterId: selectedId,
+        outputFormat: outputToUse,
+        converterId: selectedIdToUse,
         rowCount: 1,
         confidence: 1,
         paid: true,
         columns: [],
         previewRows: []
-      });
+      };
+      setResultForFile(fileId, localResult);
     } catch (err) {
       setError(err.message || "This image could not be converted in the browser.");
     } finally {
@@ -913,6 +1108,139 @@ function App() {
     }
   }
 
+  async function downloadValidationReport() {
+    if (!result?.jobId || !result.validationReportAvailable) return;
+    setError("");
+    try {
+      const response = await fetch("/api/validation-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: result.jobId, ...(result.token ? { token: result.token } : {}) })
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || "The validation report could not be downloaded.");
+      }
+      const blob = await response.blob();
+      const href = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = href;
+      link.download = "aiconverter-validation-report.txt";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(href);
+    } catch (err) {
+      setError(err.message || "The validation report could not be downloaded.");
+    }
+  }
+
+  async function loadReviewRows() {
+    if (!canReviewRows) return;
+    if (reviewRowsOpen && reviewRows.length) {
+      setReviewRowsOpen(false);
+      return;
+    }
+    setReviewRowsOpen(true);
+    setReviewRowsLoading(true);
+    setReviewMessage("");
+    setError("");
+    try {
+      const response = await fetch("/api/result-rows", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: result.jobId, ...(result.token ? { token: result.token } : {}) })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "The rows could not be loaded.");
+      setReviewColumns(payload.columns || []);
+      setReviewRows(payload.rows || []);
+      setReviewMessage(
+        payload.truncated
+          ? `Loaded the first ${payload.maxRows} rows. Download the file for the full export.`
+          : `${payload.totalRows || payload.rows?.length || 0} rows loaded.`
+      );
+    } catch (err) {
+      setError(err.message || "The rows could not be loaded.");
+      setReviewRowsOpen(false);
+    } finally {
+      setReviewRowsLoading(false);
+    }
+  }
+
+  function updateReviewCell(rowIndex, columnKey, value) {
+    setReviewRows((currentRows) =>
+      currentRows.map((row, index) => (index === rowIndex ? { ...row, [columnKey]: value } : row))
+    );
+  }
+
+  async function saveReviewRows() {
+    if (!canReviewRows || !reviewRows.length) return;
+    setReviewRowsSaving(true);
+    setReviewMessage("");
+    setError("");
+    try {
+      const response = await fetch("/api/update-result-rows", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId: result.jobId,
+          ...(result.token ? { token: result.token } : {}),
+          columns: reviewColumns,
+          rows: reviewRows
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "The edited rows could not be saved.");
+      const nextResult = {
+        ...result,
+        ...payload,
+        plan: result.plan,
+        converterId: result.converterId,
+        token: result.token,
+        fileEntryId: result.fileEntryId
+      };
+      setResultForFile(result.fileEntryId || activeFileId, nextResult);
+      setReviewMessage(payload.message || "Saved. The download now uses your edited rows.");
+    } catch (err) {
+      setError(err.message || "The edited rows could not be saved.");
+    } finally {
+      setReviewRowsSaving(false);
+    }
+  }
+
+  async function downloadCompletedZip() {
+    if (completedServerResults.length < 2) return;
+    setError("");
+    try {
+      const response = await fetch("/api/batch-download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobs: completedServerResults.map((entryResult) => ({
+            jobId: entryResult.jobId,
+            token: entryResult.token || ""
+          }))
+        })
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || "The ZIP could not be downloaded.");
+      }
+      const blob = await response.blob();
+      const href = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = href;
+      link.download = `aiconverter-batch-${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(href);
+    } catch (err) {
+      setError(err.message || "The ZIP could not be downloaded.");
+    }
+  }
+
   function downloadLocalFile(localResult) {
     const link = document.createElement("a");
     link.href = localResult.localDownloadUrl;
@@ -922,7 +1250,7 @@ function App() {
     link.remove();
   }
 
-  async function finalizeConversion(jobId, token = "", paymentId = "") {
+  async function finalizeConversion(jobId, token = "", paymentId = "", fileId = result?.fileEntryId || activeFileId) {
     setUnlocking(true);
     setError("");
     try {
@@ -934,7 +1262,8 @@ function App() {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "The full file could not be prepared.");
       const planId = typeof payload.plan === "string" ? payload.plan : payload.plan?.id;
-      setResult({ ...payload, plan: data.pricing.find((plan) => plan.id === planId) || payload.plan || selectedPlan });
+      const nextResult = { ...payload, plan: data.pricing.find((plan) => plan.id === planId) || payload.plan || selectedPlan };
+      setResultForFile(fileId, nextResult);
     } catch (err) {
       setError(err.message || "The full file could not be prepared.");
     } finally {
@@ -946,6 +1275,7 @@ function App() {
     if (result?.status !== "converting_full" || !result.jobId) return;
     let cancelled = false;
     let inFlight = false;
+    const fileId = result.fileEntryId || activeFileId;
 
     async function pollJob() {
       if (inFlight) return;
@@ -959,7 +1289,8 @@ function App() {
         const payload = await response.json();
         if (!cancelled && response.ok) {
           const planId = typeof payload.plan === "string" ? payload.plan : payload.plan?.id;
-          setResult({ ...payload, plan: data.pricing.find((plan) => plan.id === planId) || payload.plan || selectedPlan });
+          const nextResult = { ...payload, plan: data.pricing.find((plan) => plan.id === planId) || payload.plan || selectedPlan };
+          setResultForFile(fileId, nextResult);
         }
       } catch {
         if (!cancelled) setError("The conversion is still running. Refresh this page if it does not update.");
@@ -974,7 +1305,7 @@ function App() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [result?.status, result?.jobId, result?.token, selectedPlan]);
+  }, [result?.status, result?.jobId, result?.token, result?.fileEntryId, selectedPlan, activeFileId]);
 
   async function handleRedo() {
     if (!result?.jobId || !result.redoAvailable) return;
@@ -993,11 +1324,42 @@ function App() {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "The stronger redo could not be prepared.");
       const planId = typeof payload.plan === "string" ? payload.plan : payload.plan?.id;
-      setResult({ ...payload, plan: data.pricing.find((plan) => plan.id === planId) || payload.plan || selectedPlan });
+      const nextResult = { ...payload, plan: data.pricing.find((plan) => plan.id === planId) || payload.plan || selectedPlan };
+      setResultForFile(result.fileEntryId || activeFileId, nextResult);
     } catch (err) {
       setError(err.message || "The stronger redo could not be prepared.");
     } finally {
       setRedoing(false);
+    }
+  }
+
+  async function handleDeleteJob() {
+    if (!canDeleteServerJob) return;
+    setDeletingJob(true);
+    setError("");
+    try {
+      const response = await fetch("/api/delete-job", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: result.jobId, ...(result.token ? { token: result.token } : {}) })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "This conversion could not be deleted.");
+      const nextResult = {
+        ...payload,
+        converterId: result.converterId,
+        outputFormat: result.outputFormat,
+        columns: result.columns || [],
+        previewRows: [],
+        rowCount: 0,
+        confidence: 0,
+        plan: result.plan
+      };
+      setResultForFile(result.fileEntryId || activeFileId, nextResult);
+    } catch (err) {
+      setError(err.message || "This conversion could not be deleted.");
+    } finally {
+      setDeletingJob(false);
     }
   }
 
@@ -1151,6 +1513,12 @@ function App() {
                         </button>
                       ))}
                     </div>
+                    {completedServerResults.length > 1 && (
+                      <button className="secondary-button full-width batch-zip-button" type="button" onClick={downloadCompletedZip}>
+                        Download completed ZIP
+                        <Download size={16} />
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -1160,11 +1528,11 @@ function App() {
                     <p>{renderBrandText(selectedRouteDescription(selected, file))}</p>
                   </div>
 
-                  {selectedOutputFormats.length > 1 && (
+                  {primaryOutputFormats.length > 1 && (
                     <div className="format-picker" aria-label="Output format">
                       <span>Choose output</span>
                       <div>
-                        {selectedOutputFormats.map((format) => (
+                        {primaryOutputFormats.map((format) => (
                           <button
                             type="button"
                             key={format.id}
@@ -1175,6 +1543,104 @@ function App() {
                           </button>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {selectedId === "bank" && (
+                    <div className="advanced-bank-file">
+                      <button
+                        type="button"
+                        className="advanced-toggle"
+                        onClick={toggleBankDetails}
+                      >
+                        Need OFX/QBO? Add bank details
+                        <ArrowRight size={15} className={classNames(showBankDetails && "is-open")} />
+                      </button>
+                      {showBankDetails && (
+                        <div className="advanced-bank-body">
+                          <div className="format-picker compact" aria-label="Advanced bank file output">
+                            <span>Advanced output</span>
+                            <div>
+                              {advancedBankOutputFormats.map((format) => (
+                                <button
+                                  type="button"
+                                  key={format.id}
+                                  className={classNames("format-option", outputFormat === format.id && "is-selected")}
+                                  onClick={() => handleOutputFormatChange(format.id)}
+                                >
+                                  {format.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          {needsBankDetailsForOutput && (
+                            <div className="bank-details-grid" aria-label="Bank details for OFX and QBO">
+                              <label>
+                                <span>Bank name</span>
+                                <input
+                                  value={bankDetails.bankName}
+                                  onChange={(event) => handleBankDetailsChange("bankName", event.target.value)}
+                                  placeholder="Bank name"
+                                />
+                              </label>
+                              <label>
+                                <span>Routing / bank ID</span>
+                                <input
+                                  value={bankDetails.bankId}
+                                  onChange={(event) => handleBankDetailsChange("bankId", event.target.value)}
+                                  placeholder="ABA, sort code, bank code"
+                                />
+                              </label>
+                              <label>
+                                <span>Account ID</span>
+                                <input
+                                  value={bankDetails.accountId}
+                                  onChange={(event) => handleBankDetailsChange("accountId", event.target.value)}
+                                  placeholder="Account number or ID"
+                                />
+                              </label>
+                              <label>
+                                <span>Currency</span>
+                                <input
+                                  value={bankDetails.currency}
+                                  onChange={(event) => handleBankDetailsChange("currency", event.target.value.toUpperCase())}
+                                  placeholder="USD"
+                                  maxLength={3}
+                                />
+                              </label>
+                              <label>
+                                <span>Account type</span>
+                                <select
+                                  value={bankDetails.accountType}
+                                  onChange={(event) => handleBankDetailsChange("accountType", event.target.value)}
+                                >
+                                  <option value="CHECKING">Checking</option>
+                                  <option value="SAVINGS">Savings</option>
+                                  <option value="MONEYMRKT">Money market</option>
+                                  <option value="CREDITLINE">Credit line</option>
+                                  <option value="CD">CD</option>
+                                </select>
+                              </label>
+                              <label>
+                                <span>QuickBooks institution ID</span>
+                                <input
+                                  value={bankDetails.intuitBankId}
+                                  onChange={(event) => handleBankDetailsChange("intuitBankId", event.target.value)}
+                                  placeholder="Only needed for QBO"
+                                />
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {needsBankDetailsForOutput && !bankDetailsReady && (
+                    <div className="inline-note">
+                      {outputFormat === "qbo"
+                        ? "QBO needs routing / bank ID, account ID, and QuickBooks institution ID."
+                        : "OFX needs routing / bank ID and account ID."}
                     </div>
                   )}
 
@@ -1306,6 +1772,12 @@ function App() {
                   <strong>No charge.</strong>
                   <p>{result.message || "The converter could not safely extract this file."}</p>
                 </div>
+              ) : result.status === "deleted" ? (
+                <div className="failed-state deleted-state">
+                  <Trash2 size={24} />
+                  <strong>Deleted.</strong>
+                  <p>{result.message || "This conversion and its stored files were deleted."}</p>
+                </div>
               ) : (
                 <>
                   <div className="table-wrap">
@@ -1344,6 +1816,20 @@ function App() {
                         <span>{result.status === "complete" ? resultFormatLabel(result.outputFormat) : "Preview confidence"}</span>
                         <strong>{Math.round((result.confidence || 0) * 100)}%</strong>
                       </div>
+                      {(sourceCountdown || resultCountdown) && (
+                        <div className="retention-countdown" aria-label="File retention countdown">
+                          {sourceCountdown && (
+                            <span>
+                              Source <strong>{sourceCountdown}</strong>
+                            </span>
+                          )}
+                          {resultCountdown && (
+                            <span>
+                              Result <strong>{resultCountdown}</strong>
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <div className="result-actions">
                         <button className="primary-button" onClick={handleUnlock} disabled={unlocking || result.status === "converting_full"}>
                           {resultButtonLabel()}
@@ -1361,7 +1847,74 @@ function App() {
                             {redoing ? <LoaderCircle className="spin" size={16} /> : <RefreshCw size={16} />}
                           </button>
                         )}
+                        {result.status === "complete" && result.validationReportAvailable && (
+                          <button className="secondary-button" onClick={downloadValidationReport} type="button">
+                            Validation report
+                            <FileText size={16} />
+                          </button>
+                        )}
+                        {canReviewRows && (
+                          <button className="secondary-button" onClick={loadReviewRows} disabled={reviewRowsLoading} type="button">
+                            {reviewRowsLoading ? "Loading rows..." : reviewRowsOpen ? "Hide rows" : "Review rows"}
+                            {reviewRowsLoading ? <LoaderCircle className="spin" size={16} /> : <FileSpreadsheet size={16} />}
+                          </button>
+                        )}
+                        {canDeleteServerJob && (
+                          <button className="secondary-button danger-button" onClick={handleDeleteJob} disabled={deletingJob} type="button">
+                            {deletingJob ? "Deleting..." : "Delete now"}
+                            {deletingJob ? <LoaderCircle className="spin" size={16} /> : <Trash2 size={16} />}
+                          </button>
+                        )}
                       </div>
+                    </div>
+                  )}
+                  {reviewRowsOpen && (
+                    <div className="row-review-panel" aria-label="Editable exported rows">
+                      <div className="row-review-heading">
+                        <div>
+                          <strong>Review rows</strong>
+                          <span>{reviewMessage || "Changes save to the file you download."}</span>
+                        </div>
+                        <button
+                          className="secondary-button"
+                          type="button"
+                          onClick={saveReviewRows}
+                          disabled={reviewRowsSaving || reviewRowsLoading || !reviewRows.length}
+                        >
+                          {reviewRowsSaving ? "Saving..." : "Save edits"}
+                          {reviewRowsSaving ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />}
+                        </button>
+                      </div>
+                      {reviewRowsLoading ? (
+                        <div className="row-review-empty">Loading exported rows...</div>
+                      ) : (
+                        <div className="row-review-table">
+                          <table>
+                            <thead>
+                              <tr>
+                                {reviewColumns.map((column) => (
+                                  <th key={column.key}>{column.label}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {reviewRows.map((row, rowIndex) => (
+                                <tr key={`review-row-${rowIndex}`}>
+                                  {reviewColumns.map((column) => (
+                                    <td key={column.key}>
+                                      <input
+                                        value={row[column.key] ?? ""}
+                                        onChange={(event) => updateReviewCell(rowIndex, column.key, event.target.value)}
+                                        aria-label={`${column.label} row ${rowIndex + 1}`}
+                                      />
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
                   )}
                   {result.refundStatus && (

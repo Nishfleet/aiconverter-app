@@ -2,6 +2,13 @@ import { convertFileToCsv, detectPdfPageCount } from "../lib/extract.js";
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
 import { verifyTurnstile } from "../lib/turnstile.js";
 import {
+  bankOutputFileExtension,
+  missingBankMetadata,
+  sanitizeBankMetadata,
+  normalizeBankOutputFormat,
+  bankOutputLabel
+} from "../lib/accounting-exports.js";
+import {
   assertSupportedUpload,
   enforceRateLimit,
   enforceUploadPolicy,
@@ -16,6 +23,7 @@ import {
   randomId,
   randomToken,
   requestFingerprint,
+  retentionFields,
   RESULT_RETENTION_SECONDS,
   safeFileName,
   sourceObjectKey,
@@ -77,6 +85,13 @@ export async function onRequestPost({ request, env }) {
   const arrayBuffer = await file.arrayBuffer();
   const uploadError = assertSupportedUpload(file, arrayBuffer, converterId);
   if (uploadError) return badRequest(uploadError);
+  const accountingMetadata =
+    converterId === "bank" ? sanitizeBankMetadata(form.get("accountingMetadata") || {}) : {};
+  const missingMetadata =
+    converterId === "bank" ? missingBankMetadata(outputFormat, accountingMetadata) : [];
+  if (missingMetadata.length) {
+    return badRequest(`${bankOutputLabel(outputFormat)} needs bank details before we can make that file.`);
+  }
 
   const clientEstimate = Number(form.get("estimatedPages") || 25);
   const clientEstimatedPages = Number.isFinite(clientEstimate) ? Math.max(1, clientEstimate) : 25;
@@ -104,7 +119,9 @@ export async function onRequestPost({ request, env }) {
   const sourceExpiresAt = new Date(Date.now() + SOURCE_RETENTION_SECONDS * 1000).toISOString();
   const sourceKey = sourceObjectKey(jobId, fileName, converterId);
   const previewKey = `jobs/${jobId}/preview.csv`;
-  const resultKey = `jobs/${jobId}/result.${outputFormat}`;
+  const resultExtension =
+    converterId === "bank" ? bankOutputFileExtension(normalizeBankOutputFormat(outputFormat)) : outputFormat;
+  const resultKey = `jobs/${jobId}/result.${resultExtension}`;
 
   await insertJob(env, {
     id: jobId,
@@ -119,6 +136,8 @@ export async function onRequestPost({ request, env }) {
     estimatedPages,
     converterId,
     inputMimeType: file.type || (isPdf ? "application/pdf" : "application/octet-stream"),
+    outputFormat,
+    accountingMetadataJson: converterId === "bank" ? JSON.stringify(accountingMetadata) : "",
     fileHash,
     ipHash: fingerprint.ipHash,
     userAgentHash: fingerprint.userAgentHash,
@@ -139,7 +158,8 @@ export async function onRequestPost({ request, env }) {
     const converted = await convertFileToCsv(env, converterId, fileName, file.type || (isPdf ? "application/pdf" : ""), arrayBuffer, {
       previewPages: PREVIEW_PAGE_LIMIT,
       estimatedPages,
-      outputFormat
+      outputFormat,
+      accountingMetadata
     });
 
     if (!converted.ok) {
@@ -163,6 +183,8 @@ export async function onRequestPost({ request, env }) {
         columns: converted.columns || [],
         converterId,
         outputFormat,
+        sourceDeletedAt: new Date().toISOString(),
+        resultExpiresAt: expiresAt,
         plan
       });
     }
@@ -195,6 +217,7 @@ export async function onRequestPost({ request, env }) {
       previewRows: converted.previewRows,
       confidence: converted.confidence,
       rowCount: converted.rowCount,
+      ...retentionFields({ created_at: now, expires_at: expiresAt }),
       message: `Preview ready. Pay once to run the full extraction and download the ${outputFormatLabel(outputFormat)}.`
     });
   } catch (error) {
@@ -211,6 +234,8 @@ export async function onRequestPost({ request, env }) {
         jobId,
         token,
         plan,
+        sourceDeletedAt: new Date().toISOString(),
+        resultExpiresAt: expiresAt,
         message: error?.message || "The converter could not safely process this file.",
         confidence: 0,
         rowCount: 0
@@ -223,6 +248,13 @@ export async function onRequestPost({ request, env }) {
 function outputFormatLabel(format) {
   const labels = {
     csv: "CSV",
+    "quickbooks-csv": "QuickBooks CSV",
+    "xero-csv": "Xero CSV",
+    "wave-csv": "Wave CSV",
+    "gnucash-csv": "GnuCash CSV",
+    qif: "QIF",
+    ofx: "OFX",
+    qbo: "QBO",
     json: "JSON",
     txt: "TXT transcript",
     md: "Markdown",

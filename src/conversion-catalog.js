@@ -1,9 +1,17 @@
 export const TOP_CONVERSION_REQUESTS = [
   {
-    label: "Bank statement PDF to CSV",
+    label: "Bank statement PDF to QuickBooks CSV",
     converterId: "bank",
     input: "PDF",
-    output: "CSV",
+    output: "QuickBooks CSV",
+    category: "Data extraction",
+    qaPriority: "core"
+  },
+  {
+    label: "Bank statement PDF to Xero CSV",
+    converterId: "bank",
+    input: "PDF",
+    output: "Xero CSV",
     category: "Data extraction",
     qaPriority: "core"
   },
@@ -162,7 +170,13 @@ export const TOP_CONVERSION_REQUESTS = [
 ];
 
 const DIRECT_CONVERSION_PAIRS = {
-  bank: [{ input: "PDF", output: "CSV", label: "Bank statement PDF to CSV" }],
+  bank: [
+    { input: "PDF", output: "QuickBooks CSV", label: "Bank statement PDF to QuickBooks CSV" },
+    { input: "PDF", output: "Xero CSV", label: "Bank statement PDF to Xero CSV" },
+    { input: "PDF", output: "Wave CSV", label: "Bank statement PDF to Wave CSV" },
+    { input: "PDF", output: "GnuCash CSV", label: "Bank statement PDF to GnuCash CSV" },
+    { input: "PDF", output: "CSV", label: "Bank statement PDF to CSV" }
+  ],
   receipt: [
     { input: "Image", output: "Expense CSV", label: "Receipt image to expense CSV" },
     { input: "PDF", output: "Expense CSV", label: "Receipt PDF to expense CSV" }

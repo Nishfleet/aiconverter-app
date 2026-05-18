@@ -198,6 +198,158 @@ AI Converter is not for bank login access, tax advice, accounting review, guaran
 Download the fictional sample CSV at https://aiconverter.app/sample-bank-statement.csv.
 `;
 
+const quickBooksCsvMarkdown = `---
+title: PDF bank statement to QuickBooks CSV
+description: Convert bank statement PDFs into reviewable CSV rows you can clean up for QuickBooks. Imports are not guaranteed.
+---
+
+# PDF bank statement to QuickBooks CSV
+
+AI Converter can turn a bank statement PDF into CSV rows you can review, clean, and map for a QuickBooks workflow.
+
+This is not official QuickBooks Web Connect, does not connect to QuickBooks, and does not guarantee a successful import.
+
+## Workflow
+
+1. Upload a bank statement PDF.
+2. Review sample rows before payment.
+3. Unlock the full CSV if the preview is usable.
+4. Map and review the CSV inside your accounting workflow before posting transactions.
+
+## Output
+
+Typical columns are date, description, money in, money out, and balance when available.
+
+Need OFX/QBO? Add bank details in the converter. Treat those files as advanced exports to review separately, not guaranteed QuickBooks import files.
+
+## Limits
+
+Password-protected, corrupted, unusual, low-quality, or unsupported files may fail. Review every export before important bookkeeping, tax, lending, or compliance use.
+`;
+
+const xeroCsvMarkdown = `---
+title: PDF bank statement to Xero CSV
+description: Convert bank statement PDFs into reviewable CSV rows you can prepare for Xero workflows.
+---
+
+# PDF bank statement to Xero CSV
+
+AI Converter extracts reviewable transaction rows from bank statement PDFs so you can prepare a CSV for a Xero workflow.
+
+AI Converter does not connect to Xero, does not provide a direct bank feed, and does not guarantee that Xero will accept the file without edits.
+
+## Workflow
+
+1. Upload a PDF statement.
+2. Review sample rows before payment.
+3. Unlock the full CSV when the preview is useful.
+4. Check dates, signs, descriptions, and account mapping before import.
+
+## Output
+
+Typical CSV columns are date, description, money in, money out, and balance when available.
+
+## Limits
+
+Some files fail because they are scanned poorly, password-protected, corrupted, unusual, or unsupported. Review the export before bookkeeping, tax, lending, or compliance use.
+`;
+
+const waveCsvMarkdown = `---
+title: PDF bank statement to Wave CSV
+description: Convert bank statement PDFs into reviewable CSV rows you can clean up for Wave bookkeeping workflows.
+---
+
+# PDF bank statement to Wave CSV
+
+AI Converter extracts transaction rows from a bank statement PDF into CSV so you can review and prepare the file for a Wave bookkeeping workflow.
+
+AI Converter does not connect to Wave, does not provide a direct bank feed, does not categorize expenses, and does not guarantee accepted imports.
+
+## Workflow
+
+1. Upload a PDF bank statement.
+2. Check sample rows before payment.
+3. Unlock the full CSV if the preview is usable.
+4. Review, clean, and map the CSV before import.
+
+## Best fit
+
+Clear statement rows are the best fit. Very low-quality scans, locked PDFs, unusual layouts, and corrupted files may fail.
+`;
+
+const scannedStatementMarkdown = `---
+title: Scanned bank statement to Excel
+description: Turn scanned bank statement PDFs into reviewable CSV rows that open in Excel when OCR confidence is high enough.
+---
+
+# Scanned bank statement to Excel
+
+AI Converter can use OCR fallback for scanned or image-heavy bank statement PDFs when configured. The output is CSV that opens in Excel, not a guaranteed native Excel workbook.
+
+## Workflow
+
+1. Upload the scanned PDF.
+2. Check sample rows before payment.
+3. Unlock the full CSV when the preview is useful.
+4. Open the CSV in Excel and review every row before important use.
+
+## Limits
+
+OCR is sensitive to scan quality. Blurry pages, shadows, cut-off columns, handwriting, password protection, corruption, or unusual layouts may fail.
+
+Low-confidence conversions should fail closed instead of inventing rows.
+`;
+
+const creditCardStatementMarkdown = `---
+title: Credit card statement PDF to CSV
+description: Convert credit card statement PDFs into reviewable CSV rows when transaction tables can be safely extracted.
+---
+
+# Credit card statement PDF to CSV
+
+AI Converter can extract transaction rows from credit card statement PDFs into CSV when the rows can be safely detected.
+
+No card login is requested. There is no direct feed, categorization promise, reconciliation service, tax advice, or guaranteed perfect conversion.
+
+## Workflow
+
+1. Upload the statement PDF.
+2. Review sample rows before payment.
+3. Unlock the full CSV if the preview is usable.
+4. Check signs, duplicate rows, fees, credits, dates, and descriptions before use.
+
+## Best fit
+
+Clear transaction tables are the best fit. Rewards pages, summaries, promotional sections, unusual layouts, scans, locked files, and corrupted PDFs may require cleanup or fail.
+`;
+
+const bookkeepersMarkdown = `---
+title: Bank statement converter for bookkeepers
+description: A preview-first bank statement PDF to CSV converter for bookkeepers who need reviewable rows and clear limits.
+---
+
+# Bank statement converter for bookkeepers
+
+AI Converter helps bookkeepers turn bank statement PDFs into CSV rows for cleanup, client workpapers, and accounting-system prep.
+
+The tool extracts rows. It does not provide accounting advice, tax advice, reconciliation, categorization, direct bank feeds, guaranteed imports, certified compliance status, or official accounting-platform support.
+
+## Workflow
+
+1. Upload a bank statement PDF.
+2. Review sample rows before payment.
+3. Unlock the full CSV if the preview is useful.
+4. Clean, map, reconcile, and review the file in your own bookkeeping workflow.
+
+## Platform prep
+
+Use the CSV as a preparation layer for tools such as QuickBooks, Xero, Wave, or Excel. Need OFX/QBO? Add bank details in the converter. Treat those files as advanced exports to review separately, not official import support.
+
+## Operational limits
+
+Source files use a 24-hour private lifecycle. Generated files expire after 7 days. Low-confidence files can fail closed. Review every export before important bookkeeping, tax, lending, or compliance use.
+`;
+
 const sampleMarkdown = `---
 title: Sample bank statement CSV
 description: Download a fictional CSV showing the bank statement output shape used by AI Converter.
@@ -411,6 +563,12 @@ const markdownByRoute = new Map([
   ["/about", aboutMarkdown],
   ["/bank-statement-pdf-to-csv", bankStatementMarkdown],
   ["/convert-bank-statement-to-csv", convertMarkdown],
+  ["/pdf-bank-statement-to-quickbooks-csv", quickBooksCsvMarkdown],
+  ["/pdf-bank-statement-to-xero-csv", xeroCsvMarkdown],
+  ["/pdf-bank-statement-to-wave-csv", waveCsvMarkdown],
+  ["/scanned-bank-statement-to-excel", scannedStatementMarkdown],
+  ["/credit-card-statement-pdf-to-csv", creditCardStatementMarkdown],
+  ["/bank-statement-converter-for-bookkeepers", bookkeepersMarkdown],
   ["/sample-csv", sampleMarkdown],
   ["/privacy", privacyMarkdown],
   ["/terms", termsMarkdown],

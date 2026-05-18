@@ -2,7 +2,7 @@ import { runFullConversion } from "../lib/conversion.js";
 import { requestDodoRefund } from "../lib/dodo.js";
 import { CONVERTER_COLUMNS } from "../lib/extract.js";
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
-import { getAuthorizedJob, hasRequiredBindings, outputFormatFromResultKey, PLANS, sourceAvailableForRedo, tokenFromBodyOrCookie, updateJob } from "../lib/jobs.js";
+import { getAuthorizedJob, hasRequiredBindings, jobOutputFormat, PLANS, sourceAvailableForRedo, tokenFromBodyOrCookie, updateJob } from "../lib/jobs.js";
 import { isUniversalConverter } from "../lib/universal.js";
 
 export function onRequestGet() {
@@ -61,7 +61,7 @@ export async function onRequestPost({ request, env }) {
         token: bodyToken ? token : "",
         plan: PLANS[job.plan_id] || PLANS.starter,
         converterId: job.converter_id || "bank",
-        outputFormat: outputFormatFromResultKey(job.result_key),
+        outputFormat: jobOutputFormat(job),
         columns: CONVERTER_COLUMNS[job.converter_id || "bank"] || [],
         message: result.message,
         confidence: result.confidence,
@@ -77,12 +77,13 @@ export async function onRequestPost({ request, env }) {
       token: bodyToken ? token : "",
       plan: PLANS[job.plan_id] || PLANS.starter,
       converterId: job.converter_id || "bank",
-      outputFormat: result.outputFormat || outputFormatFromResultKey(job.result_key),
+      outputFormat: result.outputFormat || jobOutputFormat(job),
       columns: result.columns || columnsForPreview(job.converter_id || "bank", result.previewRows || []),
       paid: true,
       previewRows: result.previewRows,
       confidence: result.confidence,
       rowCount: result.rowCount,
+      validationReportAvailable: Boolean(result.validationReportAvailable),
       redoAvailable: false,
       refundStatus: ""
     });
@@ -104,7 +105,7 @@ export async function onRequestPost({ request, env }) {
       token: bodyToken ? token : "",
       plan: PLANS[job.plan_id] || PLANS.starter,
       converterId: job.converter_id || "bank",
-      outputFormat: outputFormatFromResultKey(job.result_key),
+      outputFormat: jobOutputFormat(job),
       columns: CONVERTER_COLUMNS[job.converter_id || "bank"] || [],
       message: error?.message || "Automatic redo could not be completed.",
       confidence: 0,
