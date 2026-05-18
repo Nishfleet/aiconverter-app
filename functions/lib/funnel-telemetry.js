@@ -24,6 +24,7 @@ const SAFE_ERROR_CODES = new Set([
   "missing_token",
   "verify_failed",
   "preview_failed",
+  "ui_crash",
   "network_or_runtime",
   "http_400",
   "http_403",

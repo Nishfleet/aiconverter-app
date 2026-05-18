@@ -206,6 +206,99 @@ function trackFunnelEvent(eventType, fields = {}) {
   }).catch(() => {});
 }
 
+async function readJsonSafe(response) {
+  try {
+    return await response.json();
+  } catch {
+    return {};
+  }
+}
+
+function requestErrorMessage(payload, fallback, status = 0) {
+  const message = payload?.error || payload?.message || fallback;
+  return status >= 500 ? `${message} Try again in a moment.` : message;
+}
+
+async function fetchJsonResponse(url, options = {}, settings = {}) {
+  const timeoutMs = settings.timeoutMs || 45000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    const payload = await readJsonSafe(response);
+    return { response, payload };
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error(settings.timeoutMessage || "The request timed out. Try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchJson(url, options = {}, settings = {}) {
+  const { response, payload } = await fetchJsonResponse(url, options, settings);
+  if (!response.ok) {
+    throw new Error(requestErrorMessage(payload, settings.fallback || "Request failed.", response.status));
+  }
+  return payload;
+}
+
+async function readErrorMessage(response, fallback) {
+  const payload = await readJsonSafe(response);
+  return requestErrorMessage(payload, fallback, response.status);
+}
+
+function supportHrefForJob(jobId = "", category = "conversion") {
+  const params = new URLSearchParams();
+  if (category) params.set("category", category);
+  if (jobId) params.set("jobId", jobId);
+  const query = params.toString();
+  return `/support/${query ? `?${query}` : ""}`;
+}
+
+class AppErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { crashed: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { crashed: true };
+  }
+
+  componentDidCatch(error) {
+    trackFunnelEvent("preview_error", {
+      errorCode: "ui_crash",
+      routePath: window.location.pathname.replace(/\/+$/, "") || "/"
+    });
+    console.error(error);
+  }
+
+  render() {
+    if (!this.state.crashed) return this.props.children;
+    return (
+      <main className="app-crash-state" role="alert">
+        <div>
+          <BrandName />
+          <h1>Something went wrong.</h1>
+          <p>Reload the app. If it happens again, contact support and we will trace it from the server logs.</p>
+          <div className="crash-actions">
+            <button type="button" className="primary-button" onClick={() => window.location.reload()}>
+              Reload app
+              <RefreshCw size={17} />
+            </button>
+            <a className="secondary-button" href={supportHrefForJob("", "other")}>
+              Contact support
+            </a>
+          </div>
+        </div>
+      </main>
+    );
+  }
+}
+
 function formatCell(value, key) {
   if (value === null || value === undefined || value === "") return "";
   if (["money_in", "money_out", "balance", "total", "subtotal", "tax"].includes(key) && typeof value === "number") return money(value);
@@ -756,8 +849,7 @@ function App() {
   }, [activeFileId]);
 
   useEffect(() => {
-    fetch("/api/config")
-      .then((response) => response.json())
+    fetchJson("/api/config", {}, { timeoutMs: 12000, fallback: "Secure upload settings could not load." })
       .then((payload) => {
         setTurnstileSiteKey(payload.turnstileSiteKey || "");
         setCapabilities(payload.capabilities || {});
@@ -768,8 +860,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/pricing-preview")
-      .then((response) => response.json())
+    fetchJson("/api/pricing-preview", {}, { timeoutMs: 12000, fallback: "Pricing preview could not load." })
       .then((payload) => {
         if (payload?.available) setPricingPreview(payload);
       })
@@ -931,23 +1022,20 @@ function App() {
 
     async function restoreJob() {
       try {
-        const response = await fetch("/api/job", {
+        const restored = await fetchJson("/api/job", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ jobId, paymentId, status: paymentStatus })
-        });
-        const restored = await response.json();
-        if (response.ok) {
-          const restoredResult = {
-            ...restored,
-            plan: data.pricing.find((plan) => plan.id === restored.plan) || selectedPlan
-          };
-          setResult(restoredResult);
-          if (restoredResult.converterId) setSelectedId(restoredResult.converterId);
-          if (restoredResult.outputFormat) setOutputFormat(restoredResult.outputFormat);
-          if (restoredResult.paid && restoredResult.status === "preview_ready") {
-            await finalizeConversion(jobId, restoredResult.token || "", paymentId);
-          }
+        }, { fallback: "We could not restore that conversion." });
+        const restoredResult = {
+          ...restored,
+          plan: data.pricing.find((plan) => plan.id === restored.plan) || selectedPlan
+        };
+        setResult(restoredResult);
+        if (restoredResult.converterId) setSelectedId(restoredResult.converterId);
+        if (restoredResult.outputFormat) setOutputFormat(restoredResult.outputFormat);
+        if (restoredResult.paid && restoredResult.status === "preview_ready") {
+          await finalizeConversion(jobId, restoredResult.token || "", paymentId);
         }
       } catch {
         setError("We could not restore that conversion. Upload again or contact support with your job ID.");
@@ -965,13 +1053,11 @@ function App() {
       throw new Error("Missing batch return details.");
     }
     for (const item of stored.jobs) {
-      const response = await fetch("/api/job", {
+      const restored = await fetchJson("/api/job", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobId: item.jobId, token: item.token || "" })
-      });
-      const restored = await response.json();
-      if (!response.ok) throw new Error(restored.error || "Batch restore failed.");
+      }, { fallback: "Batch restore failed." });
       const restoredResult = {
         ...restored,
         token: restored.token || item.token || "",
@@ -1126,7 +1212,6 @@ function App() {
 
   function handleUploadAnotherFile() {
     setError("");
-    setResult(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     fileInputRef.current?.click();
   }
@@ -1202,17 +1287,16 @@ function App() {
         pageCount: pageCountToUse,
         turnstileState: turnstileToken ? "verified" : turnstileStatus
       });
-      const response = await fetch("/api/convert", {
+      const { response, payload } = await fetchJsonResponse("/api/convert", {
         method: "POST",
         body: form
-      });
-      const payload = await response.json();
+      }, { timeoutMs: 90000, fallback: "The AI converter could not process this file." });
 
       if (!response.ok) {
         if (response.status === 403) setTurnstileStatus("error");
         trackPreviewEvent("preview_error", { errorCode: `http_${response.status}` });
         previewErrorTracked = true;
-        throw new Error(payload.error || "The AI converter could not process this file.");
+        throw new Error(requestErrorMessage(payload, "The AI converter could not process this file.", response.status));
       }
 
       setResultForFile(fileId, payload);
@@ -1282,7 +1366,7 @@ function App() {
     setError("");
 
     try {
-      const response = await fetch("/api/checkout", {
+      const payload = await fetchJson("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1291,12 +1375,7 @@ function App() {
           planId: result.plan?.id || selectedPlan.id,
           email
         })
-      });
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.error || "Payment is not ready yet.");
-      }
+      }, { fallback: "Payment is not ready yet." });
 
       if (payload.mode === "download") {
         await downloadCsv(result.jobId, result.token);
@@ -1331,16 +1410,14 @@ function App() {
         token: entryResult.token || "",
         fileEntryId: entryResult.fileEntryId || ""
       }));
-      const response = await fetch("/api/batch-checkout", {
+      const payload = await fetchJson("/api/batch-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
           jobs: jobs.map(({ jobId, token }) => ({ jobId, token }))
         })
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Batch checkout is not ready yet.");
+      }, { fallback: "Batch checkout is not ready yet." });
 
       if (payload.mode === "finalize_all") {
         for (const item of jobs) await finalizeConversion(item.jobId, item.token, "", item.fileEntryId);
@@ -1371,8 +1448,7 @@ function App() {
         body: JSON.stringify({ jobId, ...(token ? { token } : {}) })
       });
       if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.error || "The converted file could not be downloaded.");
+        throw new Error(await readErrorMessage(response, "The converted file could not be downloaded."));
       }
       const blob = await response.blob();
       const href = URL.createObjectURL(blob);
@@ -1400,8 +1476,7 @@ function App() {
         body: JSON.stringify({ jobId: result.jobId, ...(result.token ? { token: result.token } : {}) })
       });
       if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.error || "The validation report could not be downloaded.");
+        throw new Error(await readErrorMessage(response, "The validation report could not be downloaded."));
       }
       const blob = await response.blob();
       const href = URL.createObjectURL(blob);
@@ -1428,13 +1503,11 @@ function App() {
     setReviewMessage("");
     setError("");
     try {
-      const response = await fetch("/api/result-rows", {
+      const payload = await fetchJson("/api/result-rows", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobId: result.jobId, ...(result.token ? { token: result.token } : {}) })
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "The rows could not be loaded.");
+      }, { fallback: "The rows could not be loaded." });
       setReviewColumns(payload.columns || []);
       setReviewRows(payload.rows || []);
       setReviewRowsTruncated(Boolean(payload.truncated));
@@ -1467,7 +1540,7 @@ function App() {
     setReviewMessage("");
     setError("");
     try {
-      const response = await fetch("/api/update-result-rows", {
+      const payload = await fetchJson("/api/update-result-rows", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1476,9 +1549,7 @@ function App() {
           columns: reviewColumns,
           rows: reviewRows
         })
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "The edited rows could not be saved.");
+      }, { fallback: "The edited rows could not be saved." });
       const nextResult = {
         ...result,
         ...payload,
@@ -1511,8 +1582,7 @@ function App() {
         })
       });
       if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.error || "The ZIP could not be downloaded.");
+        throw new Error(await readErrorMessage(response, "The ZIP could not be downloaded."));
       }
       const blob = await response.blob();
       const href = URL.createObjectURL(blob);
@@ -1541,13 +1611,11 @@ function App() {
     setUnlocking(true);
     setError("");
     try {
-      const response = await fetch("/api/finalize", {
+      const payload = await fetchJson("/api/finalize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobId, ...(token ? { token } : {}), ...(paymentId ? { paymentId } : {}) })
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "The full file could not be prepared.");
+      }, { timeoutMs: 90000, fallback: "The full file could not be prepared." });
       const planId = typeof payload.plan === "string" ? payload.plan : payload.plan?.id;
       const nextResult = { ...payload, plan: data.pricing.find((plan) => plan.id === planId) || payload.plan || selectedPlan };
       setResultForFile(fileId, nextResult);
@@ -1568,13 +1636,12 @@ function App() {
       if (inFlight) return;
       inFlight = true;
       try {
-        const response = await fetch("/api/job", {
+        const payload = await fetchJson("/api/job", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ jobId: result.jobId, ...(result.token ? { token: result.token } : {}) })
-        });
-        const payload = await response.json();
-        if (!cancelled && response.ok) {
+        }, { timeoutMs: 20000, fallback: "The conversion is still running." });
+        if (!cancelled) {
           const planId = typeof payload.plan === "string" ? payload.plan : payload.plan?.id;
           const nextResult = { ...payload, plan: data.pricing.find((plan) => plan.id === planId) || payload.plan || selectedPlan };
           setResultForFile(fileId, nextResult);
@@ -1599,7 +1666,7 @@ function App() {
     setRedoing(true);
     setError("");
     try {
-      const response = await fetch("/api/redo", {
+      const payload = await fetchJson("/api/redo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1607,9 +1674,7 @@ function App() {
           ...(result.token ? { token: result.token } : {}),
           reason: "Customer requested stronger automatic redo."
         })
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "The stronger redo could not be prepared.");
+      }, { timeoutMs: 90000, fallback: "The stronger redo could not be prepared." });
       const planId = typeof payload.plan === "string" ? payload.plan : payload.plan?.id;
       const nextResult = { ...payload, plan: data.pricing.find((plan) => plan.id === planId) || payload.plan || selectedPlan };
       setResultForFile(result.fileEntryId || activeFileId, nextResult);
@@ -1625,13 +1690,11 @@ function App() {
     setDeletingJob(true);
     setError("");
     try {
-      const response = await fetch("/api/delete-job", {
+      const payload = await fetchJson("/api/delete-job", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobId: result.jobId, ...(result.token ? { token: result.token } : {}) })
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "This conversion could not be deleted.");
+      }, { fallback: "This conversion could not be deleted." });
       const nextResult = {
         ...payload,
         converterId: result.converterId,
@@ -2153,6 +2216,14 @@ function App() {
                   <AlertCircle size={24} />
                   <strong>No charge.</strong>
                   <p>{result.message || "The converter could not safely extract this file."}</p>
+                  <div className="failed-actions">
+                    <button type="button" className="secondary-button" onClick={handleUploadAnotherFile}>
+                      Upload another file
+                    </button>
+                    <a className="inline-text-button" href={supportHrefForJob(result.jobId, "conversion")}>
+                      Contact support
+                    </a>
+                  </div>
                 </div>
               ) : result.status === "deleted" ? (
                 <div className="failed-state deleted-state">
@@ -2486,4 +2557,8 @@ function loadTurnstile() {
   });
 }
 
-createRoot(document.getElementById("root")).render(<App />);
+createRoot(document.getElementById("root")).render(
+  <AppErrorBoundary>
+    <App />
+  </AppErrorBoundary>
+);

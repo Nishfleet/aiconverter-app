@@ -33,6 +33,19 @@ test("funnel telemetry rejects unknown events", () => {
   assert.equal(sanitized.ok, false);
 });
 
+test("funnel telemetry preserves UI crash error code without storing private data", () => {
+  const sanitized = sanitizeFunnelEvent({
+    eventType: "preview_error",
+    errorCode: "ui_crash",
+    routePath: "/convert",
+    content: "private statement text"
+  });
+
+  assert.equal(sanitized.ok, true);
+  assert.equal(sanitized.event.errorCode, "ui_crash");
+  assert.equal(sanitized.event.content, undefined);
+});
+
 test("funnel event API writes a sanitized event to D1", async () => {
   const writes = [];
   const response = await funnelEvent({

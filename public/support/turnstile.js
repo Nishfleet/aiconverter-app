@@ -1,8 +1,20 @@
 (async function setupSupportTurnstile() {
+  const params = new URLSearchParams(window.location.search);
+  const jobId = (params.get("jobId") || "").replace(/[^a-zA-Z0-9_:-]/g, "").slice(0, 80);
+  const category = (params.get("category") || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40);
+  const jobIdInput = document.querySelector('input[name="jobId"]');
+  const categorySelect = document.querySelector('select[name="category"]');
+  if (jobId && jobIdInput) jobIdInput.value = jobId;
+  if (category && categorySelect && [...categorySelect.options].some((option) => option.value === category)) {
+    categorySelect.value = category;
+  }
+
   const container = document.querySelector("[data-turnstile-support]");
   if (!container) return;
 
-  const config = await fetch("/api/config").then((response) => response.json()).catch(() => ({}));
+  const config = await fetch("/api/config")
+    .then((response) => (response.ok ? response.json() : {}))
+    .catch(() => ({}));
   if (!config.turnstileSiteKey) {
     container.remove();
     return;

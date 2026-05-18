@@ -89,6 +89,43 @@ body {
     auto;
 }
 
+.app-crash-state {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.app-crash-state > div {
+  width: min(520px, 100%);
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.app-crash-state h1 {
+  margin: 18px 0 8px;
+  font-size: clamp(32px, 5vw, 56px);
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.app-crash-state p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.crash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+
 button,
 input,
 textarea {
@@ -938,6 +975,20 @@ tbody tr:last-child td {
   max-width: 360px;
   color: #88412a;
   line-height: 1.45;
+}
+
+.failed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.failed-actions .inline-text-button {
+  margin-left: 0;
+  color: #7b260f;
 }
 
 .deleted-state {
