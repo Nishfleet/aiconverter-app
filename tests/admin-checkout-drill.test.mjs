@@ -36,10 +36,44 @@ test("admin checkout drill creates a trusted Dodo handoff without exposing the c
     assert.equal(payload.mode, "checkout");
     assert.equal(payload.checkoutHost, "checkout.dodopayments.com");
     assert.equal(payload.checkoutUrl, undefined);
+    assert.equal(payload.token, undefined);
     assert.match(response.headers.get("set-cookie") || "", /HttpOnly/);
     assert.match(response.headers.get("set-cookie") || "", /SameSite=Lax/);
     assert.equal(jobs.get(payload.jobId).checkout_session_id, "cks_admin_drill");
+    assert.equal(jobs.get(payload.jobId).original_file_name, "checkout-drill-statement.pdf");
+    assert.equal(jobs.get(payload.jobId).input_mime_type, "application/pdf");
     assert.ok(objects.has(`jobs/${payload.jobId}/preview.csv`));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("admin checkout drill can return a real operator checkout URL and token when explicitly requested", async () => {
+  const originalFetch = globalThis.fetch;
+  const jobs = new Map();
+  const objects = new Map();
+  globalThis.fetch = async () =>
+    Response.json({
+      session_id: "cks_operator_drill",
+      checkout_url: "https://checkout.dodopayments.com/session/cks_operator_drill"
+    });
+
+  try {
+    const response = await checkoutDrill({
+      env: fakeEnv(jobs, objects),
+      request: new Request("https://aiconverter.app/api/admin/checkout-drill", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${"a".repeat(32)}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ returnCheckoutUrl: true, includeToken: true })
+      })
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.checkoutUrl, "https://checkout.dodopayments.com/session/cks_operator_drill");
+    assert.match(payload.token, /^[a-f0-9]{48}$/);
   } finally {
     globalThis.fetch = originalFetch;
   }

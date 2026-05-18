@@ -469,7 +469,7 @@ async function applyDodoPayment(env, payment, options = {}) {
   });
 
   if (!match.ok) return { ok: false, ignored: true, reason: match.reason };
-  if (options.requirePaid && !PAID_STATUSES.has(normalized.status)) {
+  if (!PAID_STATUSES.has(normalized.status)) {
     return { ok: false, ignored: true, reason: "not_paid" };
   }
 

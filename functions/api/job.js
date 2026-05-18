@@ -56,6 +56,9 @@ export async function onRequestPost({ request, env }) {
     previewRows = previewRows.map((row) => ({ ...row, status: "Ready to download" }));
   }
 
+  const latestPayment = await latestDodoPaymentEvent(env, job.id);
+  const paymentMessage = paymentMessageForEvent(latestPayment, job);
+
   return json({
     status: job.status,
     jobId: job.id,
@@ -68,12 +71,44 @@ export async function onRequestPost({ request, env }) {
     confidence: job.confidence || 0,
     previewRows: providerResult?.previewRows || previewRows,
     paid: Boolean(job.paid_at),
+    paymentStatus: latestPayment?.status || "",
+    paymentEvent: latestPayment?.event_type || "",
+    paymentMessage,
     validationReportAvailable: Boolean(job.validation_report_key || providerResult?.validationReportAvailable),
     redoAvailable: Boolean(job.paid_at) && !isUniversalConverter(job.converter_id) && job.status === "complete" && Number(job.redo_count || 0) < 1 && sourceAvailableForRedo(job),
     refundStatus: job.refund_status || "",
     ...retentionFields(job),
     message: providerResult?.message || job.error || ""
   });
+}
+
+async function latestDodoPaymentEvent(env, jobId) {
+  if (!env?.AICONVERTER_DB || !jobId) return null;
+  try {
+    return await env.AICONVERTER_DB.prepare(
+      `SELECT event_type, status, created_at
+       FROM dodo_payment_events
+       WHERE job_id = ?
+       ORDER BY created_at DESC
+       LIMIT 1`
+    )
+      .bind(jobId)
+      .first();
+  } catch {
+    return null;
+  }
+}
+
+function paymentMessageForEvent(paymentEvent, job) {
+  if (!paymentEvent || job?.paid_at) return "";
+  const status = String(paymentEvent.status || "").toLowerCase();
+  const eventType = String(paymentEvent.event_type || "").toLowerCase();
+  if (status === "failed" || eventType === "payment.failed") return "Payment failed. Try again with another card.";
+  if (status === "cancelled" || eventType === "payment.cancelled") return "Payment was cancelled. You can try checkout again.";
+  if (status === "processing" || eventType === "payment.processing") {
+    return "Payment is still processing. Refresh this conversion in a moment.";
+  }
+  return "";
 }
 
 function columnsForPreview(converterId, previewRows) {

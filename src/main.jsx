@@ -218,6 +218,22 @@ function previewMetricLabel(converterId, result) {
   return `${result.rowCount || 0} rows`;
 }
 
+function paymentNoticeForResult(result) {
+  if (!result || result.paid) return "";
+  const status = String(result.paymentStatus || "").toLowerCase();
+  const event = String(result.paymentEvent || "").toLowerCase();
+  if (status === "failed" || event === "payment.failed") {
+    return result.paymentMessage || "Payment failed. Try again with another card.";
+  }
+  if (status === "cancelled" || event === "payment.cancelled") {
+    return result.paymentMessage || "Payment was cancelled. You can try checkout again.";
+  }
+  if (status === "processing" || event === "payment.processing") {
+    return result.paymentMessage || "Payment is still processing. Refresh this conversion in a moment.";
+  }
+  return "";
+}
+
 function fileKindLabel(candidate) {
   if (!candidate) return "No file selected";
   const extension = fileExtension(candidate);
@@ -610,6 +626,7 @@ function App() {
     ? "deleted"
     : formatRetentionCountdown(result?.sourceExpiresAt, retentionNow);
   const resultCountdown = formatRetentionCountdown(result?.resultExpiresAt, retentionNow);
+  const paymentNotice = paymentNoticeForResult(result);
 
   useEffect(() => {
     activeFileIdRef.current = activeFileId;
@@ -1753,6 +1770,13 @@ function App() {
                 </div>
                 <span>{previewCountLabel}</span>
               </div>
+
+              {paymentNotice && (
+                <div className="inline-alert payment-alert" role="status">
+                  <AlertCircle size={17} />
+                  <span>{paymentNotice}</span>
+                </div>
+              )}
 
               {result.localDownloadUrl ? (
                 <div className="local-result">

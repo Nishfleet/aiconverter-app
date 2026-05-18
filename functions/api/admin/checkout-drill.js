@@ -29,15 +29,23 @@ export async function onRequestPost({ request, env }) {
   const denied = requireAdmin(request, env);
   if (denied) return denied;
 
+  const body = await readJsonBody(request);
+  const returnCheckoutUrl = body.returnCheckoutUrl === true;
+  const includeToken = body.includeToken === true;
+  const checkoutEmail = String(body.customerEmail || "").trim().slice(0, 120);
   const plan = PLANS.starter;
   const jobId = randomId("checkout_drill");
   const token = randomToken();
   const now = new Date().toISOString();
   const expiresAt = new Date(Date.now() + RESULT_RETENTION_SECONDS * 1000).toISOString();
-  const sourceText = `AI Converter checkout drill\ncreated_at,${now}\n`;
-  const sourceBytes = new TextEncoder().encode(sourceText);
+  const sourceBytes = buildDrillPdf([
+    "Date Description Money Out Money In Balance",
+    "2026-05-01 Opening Deposit 0.00 1000.00 1000.00",
+    "2026-05-02 Coffee Shop 4.50 0.00 995.50",
+    "2026-05-03 Hosting 12.30 0.00 983.20"
+  ]);
   const sourceBuffer = sourceBytes.buffer.slice(sourceBytes.byteOffset, sourceBytes.byteOffset + sourceBytes.byteLength);
-  const sourceKey = `jobs/${jobId}/source.csv`;
+  const sourceKey = `jobs/${jobId}/source.pdf`;
   const previewKey = `jobs/${jobId}/preview.csv`;
   const resultKey = `jobs/${jobId}/result.csv`;
 
@@ -49,11 +57,11 @@ export async function onRequestPost({ request, env }) {
     email: DRILL_EMAIL,
     sourceKey,
     resultKey,
-    originalFileName: "checkout-drill.csv",
+    originalFileName: "checkout-drill-statement.pdf",
     fileSize: sourceBytes.byteLength,
     estimatedPages: 1,
     converterId: "bank",
-    inputMimeType: "text/csv",
+    inputMimeType: "application/pdf",
     outputFormat: "csv",
     fileHash: await sha256Bytes(sourceBuffer),
     ipHash: "admin-checkout-drill",
@@ -64,10 +72,10 @@ export async function onRequestPost({ request, env }) {
 
   await Promise.all([
     env.AICONVERTER_BUCKET.put(sourceKey, sourceBuffer, {
-      httpMetadata: { contentType: "text/csv; charset=utf-8" },
+      httpMetadata: { contentType: "application/pdf" },
       customMetadata: { jobId, purpose: "admin-checkout-drill-source", deleteAfter: expiresAt }
     }),
-    env.AICONVERTER_BUCKET.put(previewKey, "Date,Description,Money In,Money Out,Balance\n", {
+    env.AICONVERTER_BUCKET.put(previewKey, "Date,Description,Money In,Money Out,Balance\n2026-05-01,Opening Deposit,1000.00,,1000.00\n", {
       httpMetadata: { contentType: "text/csv; charset=utf-8" },
       customMetadata: { jobId, purpose: "admin-checkout-drill-preview", deleteAfter: expiresAt }
     })
@@ -76,7 +84,7 @@ export async function onRequestPost({ request, env }) {
   await updateJob(env, jobId, {
     preview_key: previewKey,
     confidence: 1,
-    row_count: 0,
+    row_count: 3,
     extractor: "admin-checkout-drill"
   });
 
@@ -88,7 +96,7 @@ export async function onRequestPost({ request, env }) {
       request,
       job,
       plan,
-      email: DRILL_EMAIL
+      email: checkoutEmail
     });
   } catch (error) {
     return json(
@@ -118,6 +126,8 @@ export async function onRequestPost({ request, env }) {
       jobId,
       checkoutHost: checkout.host,
       cookieSet: true,
+      ...(returnCheckoutUrl ? { checkoutUrl } : {}),
+      ...(includeToken ? { token } : {}),
       plan: {
         id: plan.id,
         detail: plan.detail,
@@ -134,8 +144,53 @@ export async function onRequestPost({ request, env }) {
   );
 }
 
+async function readJsonBody(request) {
+  const contentType = request.headers.get("Content-Type") || "";
+  if (!contentType.includes("application/json")) return {};
+  return request.json().catch(() => ({}));
+}
+
 async function readJob(env, jobId) {
   return env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE id = ?").bind(jobId).first();
+}
+
+function buildDrillPdf(lines) {
+  const stream = [
+    "BT",
+    "/F1 10 Tf",
+    "50 760 Td",
+    ...lines.flatMap((line, index) => [
+      ...(index ? ["0 -16 Td"] : []),
+      `(${pdfTextEscape(line)}) Tj`
+    ]),
+    "ET"
+  ].join("\n");
+
+  const objects = [
+    "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+    "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
+    "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n",
+    "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n",
+    `5 0 obj\n<< /Length ${stream.length} >>\nstream\n${stream}\nendstream\nendobj\n`
+  ];
+
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  for (const object of objects) {
+    offsets.push(pdf.length);
+    pdf += object;
+  }
+  const xrefOffset = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let index = 1; index < offsets.length; index += 1) {
+    pdf += `${String(offsets[index]).padStart(10, "0")} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Root 1 0 R /Size ${objects.length + 1} >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+  return new TextEncoder().encode(pdf);
+}
+
+function pdfTextEscape(value) {
+  return String(value).replace(/([\\()])/g, "\\$1");
 }
 
 function isTrustedCheckout(url) {

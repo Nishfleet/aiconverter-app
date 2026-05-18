@@ -1,5 +1,6 @@
 node_modules/
 dist/
+.drill-artifacts/
 .wrangler/
 .dev.vars
 .env

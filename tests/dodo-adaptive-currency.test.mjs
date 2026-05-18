@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createDodoCheckout, isDodoPaymentAmountTooLow, previewDodoPlanPrices, syncDodoProductPrices } from "../functions/lib/dodo.js";
+import {
+  createDodoCheckout,
+  isDodoPaymentAmountTooLow,
+  previewDodoPlanPrices,
+  processDodoWebhookEvent,
+  syncDodoProductPrices
+} from "../functions/lib/dodo.js";
 import { PLANS } from "../functions/lib/jobs.js";
 
 test("Dodo pricing preview returns Dodo-calculated local totals", async () => {
@@ -98,6 +104,47 @@ test("Dodo checkout requests fee-inclusive adaptive currency", async () => {
   }
 });
 
+test("Dodo failed payment webhooks are recorded without unlocking the job", async () => {
+  const job = {
+    id: "job_failed_payment",
+    plan_id: "starter",
+    checkout_session_id: "cks_failed_payment",
+    payment_id: "",
+    paid_at: ""
+  };
+  const paymentEvents = [];
+
+  const result = await processDodoWebhookEvent(
+    fakePaymentEventEnv(job, paymentEvents),
+    {
+      type: "payment.failed",
+      data: {
+        id: "pay_failed_payment",
+        checkout_session_id: "cks_failed_payment",
+        status: "failed",
+        total_amount: 29900,
+        currency: "INR",
+        business_id: "biz_test",
+        metadata: { job_id: job.id, plan_id: "starter" },
+        product_cart: [{ product_id: "prod_starter" }]
+      }
+    },
+    { webhookId: "evt_failed_payment", payloadHash: "hash_failed_payment" }
+  );
+
+  assert.equal(result.ok, false);
+  assert.equal(result.ignored, true);
+  assert.equal(result.reason, "not_paid");
+  assert.equal(job.payment_id, "");
+  assert.equal(job.paid_at, "");
+  assert.equal(paymentEvents.length, 1);
+  assert.equal(paymentEvents[0].event_type, "payment.failed");
+  assert.equal(paymentEvents[0].job_id, job.id);
+  assert.equal(paymentEvents[0].payment_id, "pay_failed_payment");
+  assert.equal(paymentEvents[0].status, "failed");
+  assert.equal(paymentEvents[0].match_status, "matched");
+});
+
 test("adaptive currency payments are not rejected as underpaid local minor units", () => {
   assert.equal(
     isDodoPaymentAmountTooLow({}, { amount: 250, currency: "INR" }, PLANS.starter),
@@ -112,6 +159,82 @@ test("adaptive currency payments are not rejected as underpaid local minor units
     true
   );
 });
+
+function fakePaymentEventEnv(job, paymentEvents) {
+  return {
+    DODO_BUSINESS_ID: "biz_test",
+    DODO_PRODUCT_STARTER_ID: "prod_starter",
+    DODO_CURRENCY: "INR",
+    DODO_ADAPTIVE_CURRENCY: "false",
+    AICONVERTER_DB: {
+      prepare(sql) {
+        if (sql.startsWith("SELECT * FROM jobs WHERE id = ?")) {
+          return {
+            bind(id) {
+              return { first: async () => (id === job.id ? job : null) };
+            }
+          };
+        }
+        if (sql.startsWith("SELECT * FROM jobs WHERE checkout_session_id = ?")) {
+          return {
+            bind(checkoutSessionId) {
+              return { first: async () => (checkoutSessionId === job.checkout_session_id ? job : null) };
+            }
+          };
+        }
+        if (sql.startsWith("SELECT * FROM jobs WHERE payment_id = ?")) {
+          return {
+            bind(paymentId) {
+              return { first: async () => (paymentId && paymentId === job.payment_id ? job : null) };
+            }
+          };
+        }
+        if (sql.startsWith("INSERT INTO dodo_payment_events")) {
+          return {
+            bind(...values) {
+              return {
+                run: async () => {
+                  paymentEvents.push({
+                    id: values[0],
+                    provider_event_id: values[1],
+                    event_type: values[2],
+                    job_id: values[3],
+                    payment_id: values[4],
+                    checkout_session_id: values[5],
+                    product_id: values[6],
+                    plan_id: values[7],
+                    status: values[8],
+                    amount: values[9],
+                    currency: values[10],
+                    business_id: values[11],
+                    matched_by: values[12],
+                    match_status: values[13]
+                  });
+                }
+              };
+            }
+          };
+        }
+        if (sql.startsWith("UPDATE jobs SET")) {
+          return {
+            bind(...values) {
+              return {
+                run: async () => {
+                  const assignments = sql.match(/SET (.*) WHERE/)?.[1]?.split(", ") || [];
+                  assignments.forEach((assignment, index) => {
+                    const key = assignment.split(" = ")[0];
+                    if (key !== "updated_at") job[key] = values[index];
+                  });
+                }
+              };
+            }
+          };
+        }
+        throw new Error(`Unexpected SQL: ${sql}`);
+      }
+    }
+  };
+}
 
 test("Dodo product price sync patches INR one-time prices", async () => {
   const originalFetch = globalThis.fetch;
