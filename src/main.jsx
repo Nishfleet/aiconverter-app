@@ -1407,8 +1407,8 @@ function App() {
   return (
     <main className="page-shell">
       <div className="announcement-bar" aria-label="Product status">
-        <p>Free previews are live. Convert private files without inbox handoffs.</p>
-        <a href="#start">Try it now →</a>
+        <p>Private previews are live.</p>
+        <a href="#start">Start free preview →</a>
       </div>
 
       <header className="site-header" aria-label="Site header">
@@ -1427,75 +1427,109 @@ function App() {
           <a href="/formats">All formats</a>
           <a href="#pricing">Pricing</a>
           <a href="/support">Support</a>
+          <a className="nav-proof" href="#security">Private</a>
+          <a className="nav-cta" href="#start">Start private preview</a>
         </nav>
       </header>
 
       <section id="top" className="conversion-stage">
-        <div className="section-marker" aria-hidden="true">
-          <span>[ 01 / 04 ]</span>
-          <strong>CONVERT</strong>
+        <div className="hero-backdrop" aria-hidden="true">
+          <span className="hero-label label-ok">[ 200 OK ]</span>
+          <span className="hero-label label-csv">[ .CSV ]</span>
+          <span className="hero-label label-md">[ .MD ]</span>
+          <span className="hero-cross cross-a">✦</span>
+          <span className="hero-cross cross-b">✦</span>
+          <span className="hero-pixel pixel-a" />
+          <span className="hero-pixel pixel-b" />
+          <pre className="hero-ascii ascii-left">{`+= receipt\n++ date amount\n+ clean rows\n+= csv json`}</pre>
+          <pre className="hero-ascii ascii-right">{`{ file }\n  rows: true\n  paid: after\n  private: yes`}</pre>
         </div>
 
         <div className="landing-hero-grid">
           <div className="conversion-heading">
             <a className="hero-chip-row" href="#start" aria-label="Start with a free preview">
-              <span>Free preview first</span>
+              <span>Preview before checkout</span>
               <ArrowRight size={14} />
             </a>
             <h1>
-              <span>Turn private files into</span>
-              <strong>clean exports</strong>
+              <span>Messy files in.</span>
+              <strong>Clean exports out.</strong>
             </h1>
             <p>
-              Drop a file. Preview the result. Unlock the full export only when
-              the sample is worth paying for.
+              Upload a bank statement, receipt, invoice, document, audio file,
+              image, or archive. <BrandName /> generates a real preview first and
+              only charges when you unlock the export.
             </p>
           </div>
 
           <section className={classNames("converter-workspace", file && "has-file", result && "has-result")} aria-label="AI conversion workspace">
           <form className="conversion-flow" id="start" onSubmit={handleConvert}>
             <div className="workspace-console-bar" aria-hidden="true">
-              <span>Statement</span>
-              <span>Receipt</span>
-              <span>Document</span>
+              <span>Bank PDFs</span>
+              <span>Receipts</span>
+              <span>Documents</span>
               <span>Any file</span>
             </div>
-            <div className="flow-rail" aria-label="Conversion steps">
-              {["Upload", "Choose output", "Preview", "Unlock"].map((step, index) => (
-                <span
-                  key={step}
-                  className={classNames(
-                    "flow-step",
-                    flowStep === index + 1 && "is-active",
-                    flowStep > index + 1 && "is-done"
-                  )}
-                >
-                  <i>{index + 1}</i>
-                  {step}
-                </span>
-              ))}
-            </div>
+            {file && (
+              <div className="flow-rail" aria-label="Conversion steps">
+                {["Upload", "Choose output", "Preview", "Unlock"].map((step, index) => (
+                  <span
+                    key={step}
+                    className={classNames(
+                      "flow-step",
+                      flowStep === index + 1 && "is-active",
+                      flowStep > index + 1 && "is-done"
+                    )}
+                  >
+                    <i>{index + 1}</i>
+                    {step}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {!file && (
-              <label className="upload-target">
-                <span className="upload-symbol">
-                  <Upload size={26} />
-                </span>
-                <span>
-                  <strong>Drop a file here or click to upload</strong>
-                  <small>PDF, images, audio, documents, media, and archives</small>
-                </span>
-                <span className="upload-go" aria-hidden="true">
-                  <ArrowRight size={20} />
-                </span>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept={allAcceptedTypes(selectableConverters)}
-                  onChange={handleFileChange}
-                />
-              </label>
+              <div className="hero-lab-grid">
+                <label className="upload-target">
+                  <span className="upload-symbol">
+                    <Upload size={26} />
+                  </span>
+                  <span>
+                    <strong>Upload a file for a private preview</strong>
+                    <small>PDFs, images, audio, documents, media, and archives</small>
+                  </span>
+                  <span className="upload-go" aria-hidden="true">
+                    <ArrowRight size={20} />
+                  </span>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept={allAcceptedTypes(selectableConverters)}
+                    onChange={handleFileChange}
+                  />
+                </label>
+                <div className="export-preview-card" aria-hidden="true">
+                  <div className="export-preview-top">
+                    <span>Preview output</span>
+                    <strong>CSV</strong>
+                  </div>
+                  <div className="export-preview-table">
+                    <span>Date</span>
+                    <span>Description</span>
+                    <span>Amount</span>
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+                </div>
+              </div>
             )}
 
             {file && (
@@ -1513,15 +1547,19 @@ function App() {
               <div className="quiet-benefits" aria-label="Conversion guardrails">
                 <span>
                   <FileText size={15} />
-                  Bank CSV
+                  Real preview first
                 </span>
                 <span>
                   <ShieldCheck size={15} />
-                  Private preview
+                  Pay only to export
                 </span>
                 <span>
                   <Database size={15} />
-                  Short retention
+                  Private short retention
+                </span>
+                <span>
+                  <Wand2 size={15} />
+                  No human review
                 </span>
               </div>
             )}
