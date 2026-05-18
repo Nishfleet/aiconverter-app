@@ -13,9 +13,9 @@ test("Dodo pricing preview returns Dodo-calculated local totals", async () => {
   const originalFetch = globalThis.fetch;
   const calls = [];
   const responses = {
-    prod_starter_in: { currency: "INR", current_breakup: { total_amount: 29900 }, billing_country: "IN" },
-    prod_batch_in: { currency: "INR", current_breakup: { total_amount: 59900 }, billing_country: "IN" },
-    prod_pro_in: { currency: "INR", current_breakup: { total_amount: 109900 }, billing_country: "IN" }
+    prod_starter_in: { currency: "INR", current_breakup: { total_amount: 39900 }, billing_country: "IN" },
+    prod_batch_in: { currency: "INR", current_breakup: { total_amount: 79900 }, billing_country: "IN" },
+    prod_pro_in: { currency: "INR", current_breakup: { total_amount: 139900 }, billing_country: "IN" }
   };
 
   globalThis.fetch = async (url, options = {}) => {
@@ -40,8 +40,8 @@ test("Dodo pricing preview returns Dodo-calculated local totals", async () => {
     assert.equal(preview.available, true);
     assert.equal(preview.provider, "dodo");
     assert.equal(preview.prices.starter.currency, "INR");
-    assert.equal(preview.prices.starter.amount, 29900);
-    assert.match(preview.prices.starter.display, /299/);
+    assert.equal(preview.prices.starter.amount, 39900);
+    assert.match(preview.prices.starter.display, /399/);
     assert.doesNotMatch(preview.prices.starter.display, /\./);
     assert.equal(calls.length, 3);
     assert.equal(calls[0].url, "https://live.dodopayments.com/checkouts/preview");
@@ -96,7 +96,7 @@ test("Dodo checkout requests fee-inclusive adaptive currency", async () => {
     assert.equal(checkoutBody.adaptive_currency_fees_inclusive, true);
     assert.equal(checkoutBody.billing_address.country, "AU");
     assert.equal(checkoutBody.customer.email, "customer@example.com");
-    assert.equal(checkoutBody.metadata.expected_amount, "29900");
+    assert.equal(checkoutBody.metadata.expected_amount, "39900");
     assert.equal(checkoutBody.metadata.expected_currency, "INR");
     assert.equal(updates.length, 1);
   } finally {
@@ -122,7 +122,7 @@ test("Dodo failed payment webhooks are recorded without unlocking the job", asyn
         id: "pay_failed_payment",
         checkout_session_id: "cks_failed_payment",
         status: "failed",
-        total_amount: 29900,
+        total_amount: 39900,
         currency: "INR",
         business_id: "biz_test",
         metadata: { job_id: job.id, plan_id: "starter" },
@@ -256,7 +256,7 @@ test("Dodo product price sync patches INR one-time prices", async () => {
     assert.equal(calls.length, 3);
     assert.equal(calls[0].url, "https://live.dodopayments.com/products/prod_starter");
     assert.equal(calls[0].headers.Authorization, "Bearer dodo_test");
-    assert.deepEqual(calls.map((call) => call.body.price.price), [29900, 59900, 109900]);
+    assert.deepEqual(calls.map((call) => call.body.price.price), [39900, 79900, 139900]);
     assert.deepEqual(calls.map((call) => call.body.price.currency), ["INR", "INR", "INR"]);
     assert.deepEqual(calls.map((call) => call.body.price.purchasing_power_parity), [true, true, true]);
     assert.deepEqual(calls.map((call) => call.body.price.type), ["one_time_price", "one_time_price", "one_time_price"]);

@@ -45,9 +45,9 @@ The homepage ticker and /formats page suggest common requests that fit the curre
 ## Pricing
 
 - Free preview: first rows before payment.
-- Starter: ₹299 for 25 pages or images.
-- Standard: ₹599 for 100 pages or images.
-- Bulk: ₹1,099 for 500 pages or images.
+- Starter: ₹399 for 25 pages or images.
+- Standard: ₹799 for 100 pages or images.
+- Bulk: ₹1,399 for 500 pages or images.
 
 ## Upcoming modules
 
@@ -165,9 +165,9 @@ AI Converter turns bank statement PDFs into spreadsheet-ready CSV. Upload the PD
 ## Pricing
 
 - Free preview.
-- ₹299 for up to 25 pages.
-- ₹599 for up to 100 pages.
-- ₹1,099 for up to 500 pages.
+- ₹399 for up to 25 pages.
+- ₹799 for up to 100 pages.
+- ₹1,399 for up to 500 pages.
 
 ## Limits
 

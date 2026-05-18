@@ -270,7 +270,7 @@ function selectedRouteDescription(converter, candidate) {
 
 function displayPriceForPlan(plan, pricingPreview) {
   const planId = typeof plan === "string" ? plan : plan?.id;
-  return pricingPreview?.prices?.[planId]?.display || planById(planId)?.price || plan?.price || "₹299";
+  return pricingPreview?.prices?.[planId]?.display || planById(planId)?.price || plan?.price || "₹399";
 }
 
 function priceInfoForPlan(plan, pricingPreview) {

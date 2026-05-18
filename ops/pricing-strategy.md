@@ -4,9 +4,9 @@
 
 Launch with simple one-time packs:
 
-- Starter: ₹299 for 25 pages.
-- Standard: ₹599 for 100 pages.
-- Bulk: ₹1,099 for 500 pages.
+- Starter: ₹399 for 25 pages.
+- Standard: ₹799 for 100 pages.
+- Bulk: ₹1,399 for 500 pages.
 
 Customer-facing paid sessions are INR one-time packs. The app should display the checkout-preview total when available and keep the INR pack price as the fallback. Do not advertise the payment provider in the customer-facing pricing line.
 
@@ -20,14 +20,14 @@ Based on official provider pricing checked on 2026-05-12:
 - Mistral OCR 3: $2 per 1,000 pages, or $3 per 1,000 annotated pages.
 - Azure Document Intelligence prebuilt is materially higher and should remain a rare paid-job fallback.
 
-For a ₹599 standard sale:
+For a ₹799 standard sale:
 
 - Dodo fee estimate: depends on the live Indian payment mix and taxes.
 - Native parser cost: effectively server compute only.
 - Worst-case Mistral OCR for 100 pages: about $0.20 OCR-only or $0.30 annotated.
 - Gross margin remains strong when OCR fallback is only used for files that need it.
 
-For a ₹1,099 bulk sale:
+For a ₹1,399 bulk sale:
 
 - Dodo fee estimate: depends on the live Indian payment mix and taxes.
 - Native parser cost: effectively server compute only.
@@ -42,7 +42,7 @@ Visible market pricing is much higher:
 - BankStatementConverter.org: $29/month for 400 pages.
 - Bank-statement-conversion.com: roughly $0.10-$0.20/page subscription tiers and $0.50/page pay-as-you-go.
 
-So ₹1,099 for 500 pages is still a strong wedge, but the product must enforce anti-abuse controls:
+So ₹1,399 for 500 pages is still a strong wedge, but the product must enforce anti-abuse controls:
 
 - server-side page estimation,
 - hard rejection above 500 pages,

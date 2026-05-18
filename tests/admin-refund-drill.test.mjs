@@ -25,7 +25,7 @@ test("admin refund drill refunds only a confirmed paid checkout drill job", asyn
       refund_id: "ref_drill_123",
       payment_id: job.payment_id,
       status: "succeeded",
-      amount: 29900,
+      amount: 39900,
       currency: "INR"
     });
   };
@@ -100,7 +100,7 @@ test("admin refund drill retries a refund-due drill job after operator confirmat
       refund_id: "ref_retry_123",
       payment_id: job.payment_id,
       status: "succeeded",
-      amount: 29900,
+      amount: 39900,
       currency: "INR"
     });
   };

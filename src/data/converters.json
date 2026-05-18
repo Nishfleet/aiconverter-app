@@ -350,8 +350,8 @@
     {
       "id": "starter",
       "name": "Starter",
-      "price": "₹299",
-      "amount": 29900,
+      "price": "₹399",
+      "amount": 39900,
       "currency": "INR",
       "detail": "25 pages/images",
       "pages": 25,
@@ -360,8 +360,8 @@
     {
       "id": "batch",
       "name": "Standard",
-      "price": "₹599",
-      "amount": 59900,
+      "price": "₹799",
+      "amount": 79900,
       "currency": "INR",
       "detail": "100 pages/images",
       "pages": 100,
@@ -370,8 +370,8 @@
     {
       "id": "pro",
       "name": "Bulk",
-      "price": "₹1,099",
-      "amount": 109900,
+      "price": "₹1,399",
+      "amount": 139900,
       "currency": "INR",
       "detail": "500 pages/images",
       "pages": 500,

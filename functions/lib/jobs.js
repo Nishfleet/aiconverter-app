@@ -24,9 +24,9 @@ const BLOCKED_RATE_LIMIT_SALTS = new Set(["aiconverter", "change-me", "changeme"
 let runtimeRateLimitSalt = "";
 
 export const PLANS = {
-  starter: { id: "starter", name: "Starter", price: "₹299", amount: 29900, currency: "INR", pages: 25 },
-  batch: { id: "batch", name: "Standard", price: "₹599", amount: 59900, currency: "INR", pages: 100 },
-  pro: { id: "pro", name: "Bulk", price: "₹1,099", amount: 109900, currency: "INR", pages: 500 }
+  starter: { id: "starter", name: "Starter", price: "₹399", amount: 39900, currency: "INR", pages: 25 },
+  batch: { id: "batch", name: "Standard", price: "₹799", amount: 79900, currency: "INR", pages: 100 },
+  pro: { id: "pro", name: "Bulk", price: "₹1,399", amount: 139900, currency: "INR", pages: 500 }
 };
 
 export function planForPages(pages) {
