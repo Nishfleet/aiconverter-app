@@ -16,8 +16,8 @@ test("authorized delete removes stored job objects and clears matching cookie", 
     preview_key: "jobs/job_123/preview.csv",
     result_key: "jobs/job_123/result.csv",
     validation_report_key: "jobs/job_123/validation.txt",
-    created_at: "2026-05-18T00:00:00.000Z",
-    expires_at: "2026-05-25T00:00:00.000Z"
+    created_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
   };
   const env = {
     AICONVERTER_BUCKET: {

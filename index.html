@@ -5,26 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Convert bank statement PDFs, receipts, invoices, screenshots, documents, audio, and common images into useful CSV, JSON, Markdown, transcript, HTML, SVG, or image outputs with preview-first AI routes and local conversion."
+      content="Preview private files before checkout. Convert bank statements, receipts, invoices, documents, audio, images, and archives into clean exports."
     />
     <link rel="canonical" href="https://aiconverter.app/" />
     <meta property="og:title" content="AI Converter - Useful file conversion" />
     <meta
       property="og:description"
-      content="Preview-first private file conversion for bank statements, receipts, invoices, screenshots, documents, audio, and common file formats."
+      content="Preview private files before checkout. Convert statements, receipts, invoices, documents, audio, images, and archives into clean exports."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://aiconverter.app/" />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content="https://aiconverter.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="AI Converter - Useful file conversion" />
     <meta
       name="twitter:description"
-      content="Preview-first private file conversion for bank statements, receipts, invoices, screenshots, documents, audio, and common file formats."
+      content="Preview private files before checkout. Convert statements, receipts, invoices, documents, audio, images, and archives into clean exports."
     />
+    <meta name="twitter:image" content="https://aiconverter.app/og-image.png" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="alternate" type="text/markdown" href="https://aiconverter.app/" />
     <link rel="alternate" type="text/plain" href="/llms.txt" />
     <title>AI Converter - Useful file conversion</title>
+    <style>
+      .seo-fallback {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 48px 24px;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #12120f;
+        background: #f7f7f1;
+      }
+      .seo-fallback img {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+      }
+      .seo-fallback h1 {
+        margin: 24px 0 16px;
+        font-size: 54px;
+        line-height: 1;
+      }
+      .seo-fallback p,
+      .seo-fallback li {
+        color: #4f5649;
+        font-size: 18px;
+        line-height: 1.55;
+      }
+      .seo-fallback a {
+        color: #314d05;
+        font-weight: 700;
+      }
+    </style>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -33,7 +68,8 @@
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Web",
         "url": "https://aiconverter.app",
-        "description": "AI Converter converts bank statement PDFs, receipts, invoices, screenshot tables, documents, audio, and common images into useful CSV, JSON, Markdown, transcript, HTML, SVG, or image outputs.",
+        "image": "https://aiconverter.app/og-image.png",
+        "description": "AI Converter previews private files before checkout and converts bank statements, receipts, invoices, documents, audio, images, and archives into clean exports.",
         "offers": [
           {
             "@type": "Offer",
@@ -58,7 +94,52 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main class="seo-fallback">
+        <img src="/favicon.svg" alt="AI Converter logo" width="56" height="56" />
+        <h1>AI Converter for private file conversion.</h1>
+        <p>
+          AI Converter turns messy files into clean exports with a preview-first workflow. Upload a bank statement,
+          receipt, invoice, screenshot table, document, audio file, image, video, or archive, inspect a sample result,
+          and unlock the full export only when the preview is useful. The product is built for sensitive files that
+          need a clear output, not a black-box upload that charges before showing the result.
+        </p>
+        <h2>Popular conversion routes</h2>
+        <p>
+          Start with <a href="/bank-statement-pdf-to-csv/">bank statement PDF to CSV</a>,
+          <a href="/pdf-bank-statement-to-quickbooks-csv/">PDF bank statement to QuickBooks CSV</a>,
+          <a href="/pdf-bank-statement-to-xero-csv/">PDF bank statement to Xero CSV</a>,
+          <a href="/pdf-bank-statement-to-wave-csv/">PDF bank statement to Wave CSV</a>,
+          <a href="/scanned-bank-statement-to-excel/">scanned bank statement to Excel</a>, or
+          <a href="/credit-card-statement-pdf-to-csv/">credit card statement PDF to CSV</a>. The
+          <a href="/formats/">formats page</a> lists the current live routes for documents, audio, images, archives,
+          and provider-backed file conversion.
+        </p>
+        <h2>Privacy and payment model</h2>
+        <p>
+          Files are handled for the conversion job you start. Source files are stored privately for the preview,
+          unlock, and short redo window, while generated exports expire after a limited download window. The app asks
+          for a payment only after the preview is available, and paid jobs include one stronger automatic redo. Read
+          the <a href="/privacy/">privacy policy</a>, <a href="/security/">security notes</a>,
+          <a href="/data-retention/">data retention policy</a>, and <a href="/refund/">refund policy</a> before
+          using the service for important records.
+        </p>
+        <h2>Accounting import references</h2>
+        <p>
+          Review every export before importing it into bookkeeping software. Official product guidance is available
+          from <a href="https://quickbooks.intuit.com/learn-support/" rel="noopener">QuickBooks support</a>,
+          <a href="https://central.xero.com/" rel="noopener">Xero Central</a>,
+          <a href="https://www.waveapps.com/accounting" rel="noopener">Wave accounting</a>, and
+          <a href="https://www.gnucash.org/docs/" rel="noopener">GnuCash documentation</a>.
+        </p>
+        <p>
+          The converter does not replace professional review. Use it to clean up file formats, extract rows, create
+          transcripts, and prepare exports faster, then check the result against the original source before sharing,
+          importing, filing, or making decisions from it. Unsupported, encrypted, damaged, unusually formatted, or
+          low-confidence files can be rejected instead of forced into a misleading output.
+        </p>
+      </main>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
