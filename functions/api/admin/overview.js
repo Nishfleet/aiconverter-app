@@ -154,6 +154,12 @@ export async function onRequestGet({ request, env }) {
       `SELECT event_type, job_id, payment_id, checkout_session_id, plan_id, status, match_status, created_at
        FROM dodo_payment_events
        WHERE COALESCE(match_status, '') NOT IN ('', 'matched')
+         AND NOT (
+           COALESCE(job_id, '') = ''
+           AND event_type = 'payment.failed'
+           AND status = 'failed'
+           AND match_status = 'job_not_found'
+         )
        ORDER BY created_at DESC
        LIMIT 25`
     ),
@@ -461,11 +467,12 @@ function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckPr
     });
   }
 
-  if ((unmatchedPayments || []).length > 0) {
+  const actionableUnmatchedPayments = (unmatchedPayments || []).filter(isActionableUnmatchedPayment);
+  if (actionableUnmatchedPayments.length > 0) {
     alerts.push({
       severity: "warning",
       title: "Unmatched Dodo payments",
-      detail: `${unmatchedPayments.length} payment event${unmatchedPayments.length === 1 ? "" : "s"} did not match cleanly.`
+      detail: `${actionableUnmatchedPayments.length} payment event${actionableUnmatchedPayments.length === 1 ? "" : "s"} did not match cleanly.`
     });
   }
 
@@ -508,6 +515,14 @@ function numberOrZero(value) {
 
 function isDrillRefund(row = {}) {
   return Number(row.is_drill || row.isDrill || 0) === 1 || String(row.id || "").startsWith("checkout_drill_");
+}
+
+export function isActionableUnmatchedPayment(row = {}) {
+  const eventType = String(row.event_type || row.eventType || "").toLowerCase();
+  const status = String(row.status || "").toLowerCase();
+  const matchStatus = String(row.match_status || row.matchStatus || "").toLowerCase();
+  const jobId = String(row.job_id || row.jobId || "").trim();
+  return !(eventType === "payment.failed" && status === "failed" && matchStatus === "job_not_found" && !jobId);
 }
 
 function safeCountFromFunnel(rows, eventType) {
