@@ -13,6 +13,7 @@
         { "id": "xero-csv", "label": "Xero CSV" },
         { "id": "wave-csv", "label": "Wave CSV" },
         { "id": "gnucash-csv", "label": "GnuCash CSV" },
+        { "id": "google-sheets-csv", "label": "Google Sheets CSV" },
         { "id": "csv", "label": "Clean CSV" },
         { "id": "ofx", "label": "OFX" },
         { "id": "qbo", "label": "QBO" },

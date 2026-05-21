@@ -3,6 +3,7 @@ import { jobOutputFormat, updateJob } from "./jobs.js";
 import { requestDodoRefund } from "./dodo.js";
 import { startUniversalProviderConversion } from "./universal-providers.js";
 import { isUniversalConverter } from "./universal.js";
+import { storeBankRowsArtifact } from "./bank-row-artifacts.js";
 
 export async function runFullConversion(env, job, options = {}) {
   if (!job?.source_key || !job?.result_key) {
@@ -104,6 +105,15 @@ export async function runFullConversion(env, job, options = {}) {
           deleteAfter: job.expires_at
         }
       });
+    }
+    if ((job.converter_id || "bank") === "bank" && Array.isArray(converted.rows)) {
+      await storeBankRowsArtifact(env, job, converted.rows, {
+        kind: "extracted",
+        outputFormat: converted.outputFormat || jobOutputFormat(job),
+        sourceFileName: job.original_file_name || "statement.pdf",
+        validation: converted.validation || {},
+        createdAt: new Date().toISOString()
+      }).catch(() => {});
     }
 
     const sourceDeletedAt = options.deleteSource ? new Date().toISOString() : "";

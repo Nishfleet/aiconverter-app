@@ -1,6 +1,7 @@
 import { bankDownloadFileName } from "../lib/accounting-exports.js";
 import { badRequest, json, methodNotAllowed, serverError, withSecurityHeaders } from "../lib/http.js";
 import { getAuthorizedJob, hasRequiredBindings, jobOutputFormat, outputFormatFromResultKey, tokenFromBodyOrCookie, updateJob } from "../lib/jobs.js";
+import { labelsFromJob } from "../lib/job-labels.js";
 import { isUniversalConverter } from "../lib/universal.js";
 import { createZip, textBytes } from "../lib/zip.js";
 
@@ -62,7 +63,8 @@ async function handleBatchDownload({ request, env }) {
       continue;
     }
 
-    const exportName = uniqueZipName(`exports/${downloadFileName(job)}`, usedNames);
+    const folderPrefix = labeledFolderPrefix(labelsFromJob(job, item));
+    const exportName = uniqueZipName(`${folderPrefix ? `${folderPrefix}/exports` : "exports"}/${downloadFileName(job)}`, usedNames);
     zipEntries.push({
       name: exportName,
       bytes: new Uint8Array(await object.arrayBuffer())
@@ -72,13 +74,13 @@ async function handleBatchDownload({ request, env }) {
       const report = await env.AICONVERTER_BUCKET.get(job.validation_report_key).catch(() => null);
       if (report) {
         zipEntries.push({
-          name: uniqueZipName(`reports/${reportFileName(job)}`, usedNames),
+          name: uniqueZipName(`${folderPrefix ? `${folderPrefix}/reports` : "reports"}/${reportFileName(job)}`, usedNames),
           bytes: new Uint8Array(await report.arrayBuffer())
         });
       }
     }
 
-    manifest.push(`${job.original_file_name || job.id}: included as ${exportName}`);
+    manifest.push(`${job.original_file_name || job.id}: included as ${exportName}${folderPrefix ? ` (${folderPrefix})` : ""}`);
     await updateJob(env, job.id, {
       download_count: Number(job.download_count || 0) + 1
     }).catch(() => {});
@@ -127,6 +129,23 @@ function reportFileName(job) {
     .replace(/^-+|-+$/g, "")
     .slice(0, 48) || "bank-statement";
   return `aiconverter-${stem}-validation-report.txt`;
+}
+
+function labeledFolderPrefix(item = {}) {
+  const parts = [item.clientLabel, item.periodLabel, item.accountLabel].map(cleanZipSegment).filter(Boolean);
+  return parts.length ? `clients/${parts.join("/")}` : "";
+}
+
+function cleanZipSegment(value = "") {
+  return String(value || "")
+    .trim()
+    .replace(/[/\\]+/g, "-")
+    .replace(/[^a-zA-Z0-9._ -]+/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^\.+/, "")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
 }
 
 function uniqueZipName(name, usedNames) {

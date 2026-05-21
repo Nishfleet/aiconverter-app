@@ -1,13 +1,13 @@
 import { withSecurityHeaders } from "./lib/http.js";
 
 const markdown = `---
-title: AI Converter - Useful file conversion
-description: Convert bank statement PDFs, receipts, invoices, screenshots, documents, audio, images, video, archives, and common file formats into useful outputs with preview-first conversion.
+title: AI Converter - Bank statement PDF conversion
+description: Preview bank statement PDFs before checkout. Review extracted rows, validation warnings, and accounting export prep before paying.
 ---
 
 # AI Converter
 
-AI Converter converts sensitive files into useful CSV, JSON, Markdown, transcript, HTML, SVG, image, document, media, or archive outputs. Bank statements are the first live AI module. Receipts, invoices, screenshot tables, audio transcripts, document Markdown, screenshot-to-HTML, image conversion, and common file-format conversion use the same preview-first product surface.
+AI Converter turns bank statement PDFs into reviewable rows with a preview-first workflow. Users can inspect extracted rows and validation warnings, then unlock CSV, QuickBooks CSV, Xero CSV, Google Sheets-ready CSV, QIF, OFX, or QBO prep only when the preview is useful. Receipts, invoices, screenshot tables, audio transcripts, document Markdown, screenshot-to-HTML, image conversion, and common file-format conversion use the same product surface when configured.
 
 ## Live and beta modules
 
@@ -17,7 +17,7 @@ Live:
 - Built-in parser first for digital PDFs.
 - OCR fallback for scanned or messy PDFs when configured.
 - Free sample preview before payment.
-- Full extraction and CSV download after payment.
+- Full extraction and CSV/QIF/OFX/QBO download after payment.
 - One automatic stronger redo for paid jobs.
 - No email intake for bank statements.
 - No human review queue.
@@ -38,16 +38,15 @@ Beta:
 - Screenshot to HTML provides a clean starter preview and uses image understanding for paid image exports when configured. This does not claim pixel-perfect screenshot cloning.
 - Beta modules use OCR and fail closed when confidence is too low.
 
-## Popular conversion examples
+## Homepage bank route chips
 
-The homepage ticker and /formats page suggest common requests that fit the current product surface. Core examples include bank statement PDF to CSV, receipt image to expense CSV, invoice PDF to JSON, screenshot table to CSV, JPG to PNG, PNG to JPG, WEBP to PNG, audio to transcript, and document to Markdown. Provider-backed conversion options are available across the current accepted input formats and output choices, with more coming soon. Examples include PDF to Word, Word to PDF, PDF to JPG, HEIC to JPG, SVG to PNG, MP4 to MP3, MOV to MP4, GIF to MP4, WAV to MP3, XLSX to CSV, CSV to XLSX, and docs/images/audio/video/archive categories.
+Current bank export routes are Clean CSV, QuickBooks CSV, Xero CSV, Wave CSV, Google Sheets-ready CSV, QIF, OFX, and QBO. CSV prep is live now. Direct app connections are not live. Provider-backed conversion options remain available after a supported file and output pair are selected.
 
 ## Pricing
 
 - Free preview: first rows before payment.
-- Starter: ₹399 for 25 pages or images.
-- Standard: ₹799 for 100 pages or images.
-- Bulk: ₹1,399 for 500 pages or images.
+- Paid unlock pricing is loaded from live Dodo checkout preview.
+- If live pricing cannot load, checkout should stay paused instead of showing a fixed fallback price.
 
 ## Upcoming modules
 
@@ -70,7 +69,7 @@ Use the upload flow at https://aiconverter.app.
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
   "url": "https://aiconverter.app",
-  "description": "AI Converter converts bank statement PDFs, receipts, invoices, screenshot tables, documents, audio, images, video, archives, and common file formats into useful outputs."
+  "description": "AI Converter previews bank statement PDFs before checkout and prepares reviewable accounting CSV, QIF, OFX, or QBO-style exports."
 }
 \`\`\`
 `;
@@ -118,7 +117,7 @@ AI Converter lists only routes the live app is allowed to offer.
 
 ## Current families
 
-- Bank statement PDFs to Clean CSV, QuickBooks CSV, Xero CSV, Wave CSV, GnuCash CSV, QIF, OFX, or QBO. CSV is the default path. OFX and QBO require bank details.
+- Bank statement PDFs to Clean CSV, QuickBooks CSV, Xero CSV, Wave CSV, GnuCash CSV, Google Sheets-ready CSV, QIF, OFX, or QBO. CSV is the default path. OFX and QBO require bank details. Google Sheets output is a downloadable CSV, not a connected Google account.
 - Receipts to expense CSV.
 - Invoices to CSV or JSON.
 - Screenshot tables to CSV.
@@ -168,9 +167,8 @@ AI Converter turns bank statement PDFs into spreadsheet-ready CSV. Upload the PD
 ## Pricing
 
 - Free preview.
-- ₹399 for up to 25 pages.
-- ₹799 for up to 100 pages.
-- ₹1,399 for up to 500 pages.
+- Paid unlock pricing is loaded from live Dodo checkout preview.
+- If live pricing cannot load, checkout should stay paused instead of showing a fixed fallback price.
 
 ## Limits
 
@@ -346,7 +344,7 @@ The tool extracts rows. It does not provide accounting advice, tax advice, recon
 
 ## Platform prep
 
-Use the CSV as a preparation layer for tools such as QuickBooks, Xero, Wave, or Excel. Need OFX/QBO? Add bank details in the converter. Treat those files as advanced exports to review separately, not official import support.
+Use the CSV as a preparation layer for tools such as QuickBooks, Xero, Wave, Excel, or Google Sheets. Need OFX/QBO? Add bank details in the converter. Treat those files as advanced exports to review separately, not official import support or direct app connection.
 
 ## Operational limits
 

@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import data from "./data/converters.json";
 import {
-  TOP_CONVERSION_REQUESTS,
   availableConversionCount,
   availableConversionCountLabel,
   buildConversionCatalog,
@@ -37,13 +36,29 @@ const MAX_SIZE_MB = 50;
 const MAX_PAGES = 500;
 const BANK_NATIVE_FORMATS = new Set(["ofx", "qbo"]);
 const BANK_ADVANCED_FORMATS = new Set(["ofx", "qbo", "qif"]);
-const BANK_CSV_FORMATS = new Set(["quickbooks-csv", "xero-csv", "wave-csv", "gnucash-csv", "csv"]);
+const BANK_CSV_FORMATS = new Set(["quickbooks-csv", "xero-csv", "wave-csv", "gnucash-csv", "google-sheets-csv", "csv"]);
 
 const classNames = (...values) => values.filter(Boolean).join(" ");
 let turnstileScriptPromise = null;
-const TICKER_MIN_COPY_COUNT = 8;
 const BRAND_NAME = "AI Converter";
 const BATCH_RETURN_KEY = "aiconverter_batch_return";
+const BANK_ROUTE_CHIPS = [
+  { label: "Clean CSV", href: "/bank-statement-pdf-to-csv/" },
+  { label: "QuickBooks CSV", href: "/pdf-bank-statement-to-quickbooks-csv/" },
+  { label: "Xero CSV", href: "/pdf-bank-statement-to-xero-csv/" },
+  { label: "Wave CSV", href: "/pdf-bank-statement-to-wave-csv/" },
+  { label: "Google Sheets CSV", href: "#start" },
+  { label: "QIF", href: "#start" },
+  { label: "OFX", href: "#start" },
+  { label: "QBO", href: "#start" }
+];
+const BANK_DEMO_CHECKS = [
+  { label: "Rows found", detail: "4 sample rows" },
+  { label: "Date coverage", detail: "Apr 2 to Apr 22" },
+  { label: "Amount check", detail: "In/out split" },
+  { label: "Balance review", detail: "Needs import review" }
+];
+const BANK_DEMO_EXPORTS = ["CSV", "QuickBooks CSV", "Xero CSV", "Sheets-ready CSV", "QBO/OFX with bank details"];
 
 function BrandName({ className = "" }) {
   return <strong className={classNames("brand-name", className)}>{BRAND_NAME}</strong>;
@@ -125,6 +140,14 @@ function defaultBankDetails() {
   };
 }
 
+function defaultBatchDetails() {
+  return {
+    clientLabel: "",
+    periodLabel: "",
+    accountLabel: ""
+  };
+}
+
 function isBankAdvancedFormat(format) {
   return BANK_ADVANCED_FORMATS.has(String(format || "").toLowerCase());
 }
@@ -135,6 +158,14 @@ function isEditableBankCsvResult(result) {
 
 function outputLabel(converter, outputFormat) {
   return converter?.outputFormats?.find((format) => format.id === outputFormat)?.label || "CSV";
+}
+
+function batchLabelSummary(entry) {
+  const details = entry?.batchDetails || {};
+  return [details.clientLabel, details.periodLabel, details.accountLabel]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function money(value) {
@@ -312,6 +343,7 @@ function resultFormatLabel(format) {
     "xero-csv": "Xero CSV",
     "wave-csv": "Wave CSV",
     "gnucash-csv": "GnuCash CSV",
+    "google-sheets-csv": "Google Sheets CSV",
     qif: "QIF",
     ofx: "OFX",
     qbo: "QBO",
@@ -356,6 +388,7 @@ function downloadNameForResult(result) {
     "xero-csv": "aiconverter-xero.csv",
     "wave-csv": "aiconverter-wave.csv",
     "gnucash-csv": "aiconverter-gnucash.csv",
+    "google-sheets-csv": "aiconverter-google-sheets.csv",
     qif: "aiconverter-bank.qif",
     ofx: "aiconverter-bank.ofx",
     qbo: "aiconverter-bank.qbo"
@@ -367,6 +400,53 @@ function previewMetricLabel(converterId, result) {
   if (converterId === "audio-transcript") return `${result.rowCount || 0} words`;
   if (["document-markdown", "screenshot-code", "universal-file"].includes(converterId)) return "1 generated file";
   return `${result.rowCount || 0} rows`;
+}
+
+function hasDisplayValue(value) {
+  return value !== null && value !== undefined && String(value).trim() !== "" && String(value).trim() !== "-";
+}
+
+function rowHasAmount(row) {
+  return ["money_in", "moneyIn", "money_out", "moneyOut", "amount", "deposit", "withdrawal"].some((key) =>
+    hasDisplayValue(row?.[key])
+  );
+}
+
+function bankReviewProofItems(result, rows = []) {
+  const previewRows = Array.isArray(rows) ? rows : [];
+  const rowCount = Number(result?.rowCount || previewRows.length || 0);
+  const dates = previewRows.map((row) => row.date).filter(hasDisplayValue).sort();
+  const amountRows = previewRows.filter(rowHasAmount).length;
+  const balanceRows = previewRows.filter((row) => hasDisplayValue(row.balance)).length;
+  const confidence = Math.round(Number(result?.confidence || 0) * 100);
+
+  return [
+    {
+      label: "Rows found",
+      value: rowCount ? `${rowCount} rows` : "Preview rows",
+      detail: previewRows.length ? `${previewRows.length} shown before unlock` : "Shown after extraction"
+    },
+    {
+      label: "Date coverage",
+      value: dates.length >= 2 ? `${dates[0]} to ${dates[dates.length - 1]}` : "Review dates",
+      detail: "Full range is included in the validation report"
+    },
+    {
+      label: "Amount coverage",
+      value: previewRows.length ? `${amountRows}/${previewRows.length} preview rows` : "Checked in preview",
+      detail: "Money in/out or signed amount must be reviewed"
+    },
+    {
+      label: "Balance continuity",
+      value: balanceRows ? `${balanceRows} balances shown` : "Report check",
+      detail: "Opening, closing, and duplicate rows still need review"
+    },
+    {
+      label: "Confidence",
+      value: confidence ? `${confidence}%` : "Calculated after extraction",
+      detail: "Low-confidence files stop before checkout"
+    }
+  ];
 }
 
 function paymentNoticeForResult(result) {
@@ -421,7 +501,8 @@ function selectedRouteDescription(converter, candidate) {
 
 function displayPriceForPlan(plan, pricingPreview) {
   const planId = typeof plan === "string" ? plan : plan?.id;
-  return pricingPreview?.prices?.[planId]?.display || planById(planId)?.price || plan?.price || "₹399";
+  if (!pricingPreview) return "Loading live pricing";
+  return pricingPreview?.prices?.[planId]?.display || "Pricing unavailable";
 }
 
 function priceInfoForPlan(plan, pricingPreview) {
@@ -429,9 +510,16 @@ function priceInfoForPlan(plan, pricingPreview) {
   const preview = pricingPreview?.prices?.[resolvedPlan?.id];
   return {
     display: displayPriceForPlan(resolvedPlan, pricingPreview),
-    amount: Number(preview?.amount ?? resolvedPlan?.amount ?? 0),
-    currency: String(preview?.currency || resolvedPlan?.currency || "INR").toUpperCase()
+    amount: Number(preview?.amount ?? 0),
+    currency: String(preview?.currency || "").toUpperCase(),
+    unavailable: !preview?.display
   };
+}
+
+function checkoutPricingBlock(pricingPreview) {
+  if (!pricingPreview) return "Live checkout pricing is still loading. Try again in a moment.";
+  if (!pricingPreview.available) return "Live checkout pricing is unavailable right now. Preview still works, but checkout is paused.";
+  return "";
 }
 
 function formatMinorCurrency(amount, currency = "INR") {
@@ -480,6 +568,7 @@ function queuePriceSummary(entries, pricingPreview) {
   const paidFileEntries = entries.filter((entry) => !isLocalConverter(converterById(entry.selectedId)));
   const paidEntries = paidFileEntries.map((entry) => entryPriceInfo(entry, pricingPreview)).filter((entry) => !entry.free);
   if (!paidEntries.length) return "All selected files are free";
+  if (paidEntries.some((entry) => entry.unavailable)) return "Pricing unavailable";
   const totalPages = paidFileEntries.reduce((sum, entry) => sum + Math.max(1, Number(entry.pageCount || 1)), 0);
   return priceInfoForPlan(planForPages(totalPages), pricingPreview).display;
 }
@@ -668,15 +757,8 @@ function App() {
   const [configError, setConfigError] = useState(false);
   const [capabilities, setCapabilities] = useState({});
   const [pricingPreview, setPricingPreview] = useState(null);
-  const [tickerCopyCount, setTickerCopyCount] = useState(TICKER_MIN_COPY_COUNT);
-  const [tickerStyle, setTickerStyle] = useState({
-    "--ticker-distance": "-25%",
-    "--ticker-duration": "48s"
-  });
   const [retentionNow, setRetentionNow] = useState(Date.now());
   const fileInputRef = useRef(null);
-  const tickerViewportRef = useRef(null);
-  const tickerGroupRef = useRef(null);
   const turnstileRef = useRef(null);
   const turnstileWidgetIdRef = useRef(null);
   const activeFileIdRef = useRef("");
@@ -701,24 +783,9 @@ function App() {
     () => availableConversionCount(data.converters, { universalProviderReady }),
     [universalProviderReady]
   );
-  const popularConversions = useMemo(
-    () => [
-      ...TOP_CONVERSION_REQUESTS
-        .filter((request) => request.qaPriority === "core" || universalProviderReady)
-        .map((request) => request.label),
-      ...(universalProviderReady ? ["Docs, images, audio, video, archives", "Many more formats available"] : [])
-    ],
-    [universalProviderReady]
-  );
-  const popularConversionsSummary = universalProviderReady
-    ? {
-        title: availableConversionCountLabel(conversionCount),
-        detail: "Generated from conversion options available today. More coming soon."
-      }
-    : {
-        title: "More conversion options coming soon",
-        detail: "New format groups appear here after they pass QA."
-      };
+  const bankRouteSummary = universalProviderReady
+    ? `${availableConversionCountLabel(conversionCount)} available after the bank workflow.`
+    : "Other file routes appear after they pass QA.";
   const converterIsEnabled = (converter) => !isProviderConverter(converter) || universalProviderReady;
   const liveConverters = useMemo(() => data.converters.filter(isLiveConverter), []);
   const selectableConverters = useMemo(
@@ -755,12 +822,21 @@ function App() {
     : result
       ? previewMetricLabel(selectedId, result)
       : `${previewRows.length} sample rows`;
-  const completedServerResults = useMemo(
+  const bankReviewItems = useMemo(
+    () => (selectedId === "bank" && result ? bankReviewProofItems(result, previewRows) : []),
+    [selectedId, result, previewRows]
+  );
+  const activeBatchDetails = activeFileEntry?.batchDetails || defaultBatchDetails();
+  const completedServerResultItems = useMemo(
     () =>
       fileQueue
-        .map((entry) => entry.result)
-        .filter((entryResult) => entryResult?.status === "complete" && entryResult.jobId && !entryResult.localDownloadUrl),
+        .map((entry) => ({ entry, result: entry.result }))
+        .filter((item) => item.result?.status === "complete" && item.result.jobId && !item.result.localDownloadUrl),
     [fileQueue]
+  );
+  const completedServerResults = useMemo(
+    () => completedServerResultItems.map((item) => item.result),
+    [completedServerResultItems]
   );
   const previewReadyServerResults = useMemo(
     () =>
@@ -862,53 +938,10 @@ function App() {
   useEffect(() => {
     fetchJson("/api/pricing-preview", {}, { timeoutMs: 12000, fallback: "Pricing preview could not load." })
       .then((payload) => {
-        if (payload?.available) setPricingPreview(payload);
+        setPricingPreview(payload?.available ? payload : { available: false, reason: payload?.reason || "unavailable", prices: {} });
       })
-      .catch(() => {});
+      .catch(() => setPricingPreview({ available: false, reason: "request_failed", prices: {} }));
   }, []);
-
-  useEffect(() => {
-    const viewport = tickerViewportRef.current;
-    const group = tickerGroupRef.current;
-    if (!viewport || !group) return undefined;
-
-    let frameId = 0;
-    const updateTicker = () => {
-      const groupWidth = Math.ceil(group.scrollWidth || group.getBoundingClientRect().width);
-      const viewportWidth = Math.ceil(viewport.clientWidth || viewport.getBoundingClientRect().width);
-      if (!groupWidth || !viewportWidth) return;
-
-      const nextCopyCount = Math.max(TICKER_MIN_COPY_COUNT, Math.ceil(viewportWidth / groupWidth) + 3);
-      setTickerCopyCount((current) => (current === nextCopyCount ? current : nextCopyCount));
-      setTickerStyle((current) => {
-        const nextStyle = {
-          "--ticker-distance": `-${groupWidth}px`,
-          "--ticker-duration": `${Math.max(28, Math.round(groupWidth / 34))}s`
-        };
-        return current["--ticker-distance"] === nextStyle["--ticker-distance"] &&
-          current["--ticker-duration"] === nextStyle["--ticker-duration"]
-          ? current
-          : nextStyle;
-      });
-    };
-
-    const scheduleUpdate = () => {
-      cancelAnimationFrame(frameId);
-      frameId = requestAnimationFrame(updateTicker);
-    };
-
-    scheduleUpdate();
-    const resizeObserver = new ResizeObserver(scheduleUpdate);
-    resizeObserver.observe(viewport);
-    resizeObserver.observe(group);
-    window.addEventListener("resize", scheduleUpdate);
-
-    return () => {
-      cancelAnimationFrame(frameId);
-      resizeObserver.disconnect();
-      window.removeEventListener("resize", scheduleUpdate);
-    };
-  }, [popularConversions]);
 
   useEffect(() => {
     const allowedFormats = selectedId === "bank" && !showBankDetails ? primaryOutputFormats : selectedOutputFormats;
@@ -1077,7 +1110,8 @@ function App() {
         selectedId: selectedId || "bank",
         outputFormat: outputFormat || "csv",
         pageCount: 25,
-        bankDetails: defaultBankDetails()
+        bankDetails: defaultBankDetails(),
+        batchDetails: defaultBatchDetails()
       };
     }
     const matches = selectableConverters.filter((converter) => converterAcceptsFile(converter, nextFile));
@@ -1091,7 +1125,8 @@ function App() {
       selectedId: nextSelected?.id || selectedId,
       outputFormat: nextOutputFormat,
       pageCount: isPdfFile(nextFile) ? estimatePages(nextFile) : 1,
-      bankDetails: defaultBankDetails()
+      bankDetails: defaultBankDetails(),
+      batchDetails: defaultBatchDetails()
     };
   }
 
@@ -1176,6 +1211,45 @@ function App() {
       return nextDetails;
     });
     clearActiveResult();
+  }
+
+  function handleBatchDetailsChange(field, value) {
+    if (!activeFileId) return;
+    const currentEntry = fileQueue.find((entry) => entry.id === activeFileId);
+    const nextDetails = {
+      ...defaultBatchDetails(),
+      ...(currentEntry?.batchDetails || {}),
+      [field]: value
+    };
+    setFileQueue((currentQueue) =>
+      currentQueue.map((entry) =>
+        entry.id === activeFileId
+          ? {
+              ...entry,
+              batchDetails: nextDetails
+            }
+          : entry
+      )
+    );
+    syncJobLabelsForEntry({ ...currentEntry, batchDetails: nextDetails });
+  }
+
+  function syncJobLabelsForEntry(entry) {
+    const entryResult = entry?.result;
+    if (!entryResult?.jobId) return;
+    const details = entry.batchDetails || defaultBatchDetails();
+    fetch("/api/job-labels", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jobId: entryResult.jobId,
+        token: entryResult.token || "",
+        clientLabel: details.clientLabel || "",
+        periodLabel: details.periodLabel || "",
+        accountLabel: details.accountLabel || ""
+      }),
+      keepalive: true
+    }).catch(() => {});
   }
 
   function activateFileEntry(entry) {
@@ -1265,6 +1339,7 @@ function App() {
     const pageCountToUse = pageCount;
     const emailToUse = email;
     const bankDetailsToUse = bankDetails;
+    const batchDetailsToUse = activeBatchDetails;
 
     const form = new FormData();
     form.append("file", fileToConvert);
@@ -1277,6 +1352,7 @@ function App() {
     if (converterToUse === "bank" && BANK_ADVANCED_FORMATS.has(outputToUse)) {
       form.append("accountingMetadata", JSON.stringify(bankDetailsToUse));
     }
+    if (converterToUse === "bank") form.append("batchDetails", JSON.stringify(batchDetailsToUse));
     if (turnstileToken) form.append("turnstileToken", turnstileToken);
 
     let previewErrorTracked = false;
@@ -1362,6 +1438,12 @@ function App() {
       return;
     }
 
+    const pricingBlock = checkoutPricingBlock(pricingPreview);
+    if (pricingBlock) {
+      setError(pricingBlock);
+      return;
+    }
+
     setUnlocking(true);
     setError("");
 
@@ -1402,6 +1484,11 @@ function App() {
 
   async function handleBatchUnlock() {
     if (previewReadyServerResults.length < 2) return;
+    const pricingBlock = checkoutPricingBlock(pricingPreview);
+    if (pricingBlock) {
+      setError(pricingBlock);
+      return;
+    }
     setUnlocking(true);
     setError("");
     try {
@@ -1575,9 +1662,12 @@ function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          jobs: completedServerResults.map((entryResult) => ({
+          jobs: completedServerResultItems.map(({ entry, result: entryResult }) => ({
             jobId: entryResult.jobId,
-            token: entryResult.token || ""
+            token: entryResult.token || "",
+            clientLabel: entry.batchDetails?.clientLabel || "",
+            periodLabel: entry.batchDetails?.periodLabel || "",
+            accountLabel: entry.batchDetails?.accountLabel || ""
           }))
         })
       });
@@ -1780,24 +1870,42 @@ function App() {
               <ArrowRight size={14} />
             </a>
             <h1>
-              <span>Messy files in.</span>
+              <span>Bank statement PDFs in.</span>
               {" "}
-              <strong>Clean exports out.</strong>
+              <strong>Reviewable exports out.</strong>
             </h1>
             <p>
-              Upload a bank statement, receipt, invoice, document, audio file,
-              image, or archive. <BrandName /> generates a real preview first and
-              only charges when you unlock the export.
+              Upload a statement, inspect extracted rows and validation warnings,
+              then unlock CSV, QuickBooks CSV, Xero CSV, QIF, OFX, or QBO prep.
+              Other file conversion stays available after the bank workflow.
             </p>
+            <div className="hero-actions" aria-label="Primary actions">
+              <button className="primary-button" type="button" onClick={() => fileInputRef.current?.click()}>
+                Upload bank statement
+                <Upload size={18} />
+              </button>
+              <a className="secondary-button" href="#sample-output">
+                See sample output
+                <FileSpreadsheet size={18} />
+              </a>
+            </div>
+            <div className="hero-pricing-note" role="status">
+              Free preview first.{" "}
+              {!pricingPreview
+                ? "Loading live unlock pricing."
+                : pricingPreview.available
+                ? `Unlock starts at ${displayPriceForPlan("starter", pricingPreview)} after the page estimate.`
+                : "Live pricing is unavailable, so checkout is paused."}
+            </div>
           </div>
 
           <section className={classNames("converter-workspace", file && "has-file", result && "has-result")} aria-label="AI conversion workspace">
           <form className="conversion-flow" id="start" onSubmit={handleConvert}>
             <div className="workspace-console-bar" aria-hidden="true">
               <span>Bank PDFs</span>
-              <span>Receipts</span>
-              <span>Documents</span>
-              <span>Any file</span>
+              <span>Review rows</span>
+              <span>Export prep</span>
+              <span>Other files</span>
             </div>
             {file && (
               <div className="flow-rail" aria-label="Conversion steps">
@@ -1824,8 +1932,8 @@ function App() {
                     <Upload size={26} />
                   </span>
                   <span>
-                    <strong>Upload a file for a private preview</strong>
-                    <small>PDFs, images, audio, documents, media, and archives</small>
+                    <strong>Upload a bank statement PDF for a private preview</strong>
+                    <small>Digital and scanned PDFs are the primary route. Receipts, documents, images, audio, media, and archives are still accepted.</small>
                   </span>
                   <span className="upload-go" aria-hidden="true">
                     <ArrowRight size={20} />
@@ -1838,26 +1946,53 @@ function App() {
                     onChange={handleFileChange}
                   />
                 </label>
-                <div className="export-preview-card" aria-hidden="true">
-                  <div className="export-preview-top">
-                    <span>Preview output</span>
-                    <strong>CSV</strong>
+                <section className="demo-output-card" id="sample-output" aria-label="Fictional bank statement sample output">
+                  <div className="demo-output-top">
+                    <div>
+                      <span>Fictional sample</span>
+                      <strong>Statement rows before payment</strong>
+                    </div>
+                    <a href="/sample-bank-statement.csv" download>
+                      Download sample CSV
+                    </a>
                   </div>
-                  <div className="export-preview-table">
-                    <span>Date</span>
-                    <span>Description</span>
-                    <span>Amount</span>
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                    <i />
+                  <div className="demo-output-table" aria-label="Sample extracted rows">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Description</th>
+                          <th>In</th>
+                          <th>Out</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.sampleRows.slice(0, 3).map((row) => (
+                          <tr key={`${row.date}-${row.description}`}>
+                            <td>{row.date}</td>
+                            <td>{row.description}</td>
+                            <td>{row.moneyIn || "-"}</td>
+                            <td>{row.moneyOut || "-"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                </div>
+                  <div className="demo-validation-grid" aria-label="Sample validation checks">
+                    {BANK_DEMO_CHECKS.map((check) => (
+                      <span key={check.label}>
+                        <Check size={14} />
+                        <strong>{check.label}</strong>
+                        <small>{check.detail}</small>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="demo-export-row" aria-label="Sample export options">
+                    {BANK_DEMO_EXPORTS.map((format) => (
+                      <span key={format}>{format}</span>
+                    ))}
+                  </div>
+                </section>
               </div>
             )}
 
@@ -1876,15 +2011,15 @@ function App() {
               <div className="quiet-benefits" aria-label="Conversion guardrails">
                 <span>
                   <FileText size={15} />
-                  Real preview first
+                  Fictional sample first
                 </span>
                 <span>
                   <ShieldCheck size={15} />
-                  Pay only to export
+                  Validation report
                 </span>
                 <span>
                   <Database size={15} />
-                  Private short retention
+                  Pay only to export
                 </span>
                 <span>
                   <Wand2 size={15} />
@@ -1928,19 +2063,25 @@ function App() {
                           <FileText size={16} />
                           <span>
                             <strong>{entry.file.name}</strong>
-                            <small>
-                              {fileKindLabel(entry.file)} · Output:{" "}
-                              {outputLabel(
-                                data.converters.find((converter) => converter.id === entry.selectedId),
-                                entry.outputFormat
-                              )} · {entryPriceInfo(entry, pricingPreview).display}
-                            </small>
-                          </span>
-                        </button>
+	                            <small>
+	                              {fileKindLabel(entry.file)} · Output:{" "}
+	                              {outputLabel(
+	                                data.converters.find((converter) => converter.id === entry.selectedId),
+	                                entry.outputFormat
+	                              )} · {entryPriceInfo(entry, pricingPreview).display}
+	                              {batchLabelSummary(entry) ? ` · ${batchLabelSummary(entry)}` : ""}
+	                            </small>
+	                          </span>
+	                        </button>
                       ))}
                     </div>
                     {previewReadyServerResults.length > 1 && (
-                      <button className="primary-button full-width batch-zip-button" type="button" onClick={handleBatchUnlock} disabled={unlocking}>
+                      <button
+                        className="primary-button full-width batch-zip-button"
+                        type="button"
+                        onClick={handleBatchUnlock}
+                        disabled={unlocking || Boolean(checkoutPricingBlock(pricingPreview))}
+                      >
                         Unlock queued previews
                         {unlocking ? <LoaderCircle className="spin" size={16} /> : <CreditCard size={16} />}
                       </button>
@@ -1951,10 +2092,46 @@ function App() {
                         <Download size={16} />
                       </button>
                     )}
-                  </div>
-                )}
+	                  </div>
+	                )}
 
-                <div className="selected-route-panel">
+	                {selectedId === "bank" && (
+	                  <div className="bookkeeper-label-panel" aria-label="Bookkeeper batch labels">
+	                    <div className="mini-section-heading">
+	                      <span>Bookkeeper labels</span>
+	                      <strong>Optional ZIP folders</strong>
+	                    </div>
+	                    <div className="bookkeeper-label-grid">
+	                      <label>
+	                        <span>Client</span>
+	                        <input
+	                          value={activeBatchDetails.clientLabel}
+	                          onChange={(event) => handleBatchDetailsChange("clientLabel", event.target.value)}
+	                          placeholder="Acme LLC"
+	                        />
+	                      </label>
+	                      <label>
+	                        <span>Statement month</span>
+	                        <input
+	                          value={activeBatchDetails.periodLabel}
+	                          onChange={(event) => handleBatchDetailsChange("periodLabel", event.target.value)}
+	                          placeholder="2026-04"
+	                        />
+	                      </label>
+	                      <label>
+	                        <span>Account nickname</span>
+	                        <input
+	                          value={activeBatchDetails.accountLabel}
+	                          onChange={(event) => handleBatchDetailsChange("accountLabel", event.target.value)}
+	                          placeholder="Checking 1234"
+	                        />
+	                      </label>
+	                    </div>
+	                    <p>Labels save with this conversion token and organize completed ZIPs. They do not create an account.</p>
+	                  </div>
+	                )}
+
+	                <div className="selected-route-panel">
                   <div>
                     <h2>{selectedRouteTitle(selected, file)}</h2>
                     <p>{renderBrandText(selectedRouteDescription(selected, file))}</p>
@@ -2083,7 +2260,7 @@ function App() {
                       <small>
                         {isLocalImageConverter
                           ? `${selectedOutputLabel} · no checkout needed`
-                          : `${selectedOutputLabel} · ${selectedPlan.detail} · pay after preview`}
+                          : `${selectedOutputLabel} · ${selectedPlan.detail} · live price before checkout`}
                       </small>
                     </div>
                     {fileQueue.length > 1 && (
@@ -2115,6 +2292,9 @@ function App() {
                       <strong>
                         {isLocalImageConverter ? "Free" : `${selectedPlanPrice} · ${selectedPlan.detail}`}
                       </strong>
+                      {!isLocalImageConverter && checkoutPricingBlock(pricingPreview) && (
+                        <small>{checkoutPricingBlock(pricingPreview)}</small>
+                      )}
                     </div>
                   </div>
 
@@ -2263,6 +2443,30 @@ function App() {
                     ))}
                   </div>
 
+                  {selectedId === "bank" && ["preview_ready", "complete", "converting_full"].includes(result.status) && (
+                    <div className="validation-proof-panel" aria-label="Bank statement validation summary">
+                      <div className="validation-proof-heading">
+                        <div>
+                          <strong>Validation before import</strong>
+                          <span>Use this to decide whether to unlock. Review the source statement before importing.</span>
+                        </div>
+                        <FileText size={18} />
+                      </div>
+                      <div className="validation-proof-grid">
+                        {bankReviewItems.map((item) => (
+                          <div key={item.label}>
+                            <span>{item.label}</span>
+                            <strong>{item.value}</strong>
+                            <small>{item.detail}</small>
+                          </div>
+                        ))}
+                      </div>
+                      <p>
+                        This is extraction and import prep, not reconciliation, categorization, tax advice, or an official QuickBooks/Xero connection.
+                      </p>
+                    </div>
+                  )}
+
                   {["preview_ready", "complete", "converting_full"].includes(result.status) && (
                     <div className="result-card">
                       <div>
@@ -2284,7 +2488,15 @@ function App() {
                         </div>
                       )}
                       <div className="result-actions">
-                        <button className="primary-button" onClick={handleUnlock} disabled={unlocking || result.status === "converting_full"}>
+                        <button
+                          className="primary-button"
+                          onClick={handleUnlock}
+                          disabled={
+                            unlocking ||
+                            result.status === "converting_full" ||
+                            (result.status === "preview_ready" && !result.paid && Boolean(checkoutPricingBlock(pricingPreview)))
+                          }
+                        >
                           {resultButtonLabel()}
                           {unlocking ? (
                             <LoaderCircle className="spin" size={17} />
@@ -2384,37 +2596,22 @@ function App() {
           </section>
         </div>
 
-        <section className="popular-conversions" aria-label="Popular conversion suggestions">
+        <section className="popular-conversions bank-route-section" aria-label="Bank statement export routes">
           <div className="popular-conversions-row">
-            <span className="popular-conversions-label">Popular requests</span>
-            <div className="conversion-ticker" aria-hidden="true" ref={tickerViewportRef}>
-              <div className="conversion-ticker-track" style={tickerStyle}>
-                {Array.from({ length: tickerCopyCount }, (_, copyIndex) => (
-                  <div
-                    className={classNames("ticker-group", copyIndex > 0 && "is-duplicate")}
-                    key={copyIndex}
-                    ref={copyIndex === 0 ? tickerGroupRef : null}
-                  >
-                    {popularConversions.map((item) => (
-                      <span className="ticker-chip" key={`${copyIndex}-${item}`}>
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                ))}
-              </div>
+            <span className="popular-conversions-label">Bank export routes</span>
+            <div className="bank-route-chips">
+              {BANK_ROUTE_CHIPS.map((item) => (
+                <a className="bank-route-chip" href={item.href} key={item.label}>
+                  {item.label}
+                  <ArrowRight size={14} />
+                </a>
+              ))}
             </div>
           </div>
           <div className="popular-conversions-more">
-            <strong>{popularConversionsSummary.title}</strong>
-            <span>{popularConversionsSummary.detail}</span>
+            <strong>CSV prep is live now. Direct app connections are not live.</strong>
+            <span>{bankRouteSummary}</span>
           </div>
-          <ul className="sr-only">
-            {popularConversions.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-            <li>{popularConversionsSummary.title}. {popularConversionsSummary.detail}</li>
-          </ul>
         </section>
       </section>
 
@@ -2485,7 +2682,7 @@ function App() {
               <h3>{plan.name}</h3>
               <strong>{displayPriceForPlan(plan, pricingPreview)}</strong>
               <p>{plan.detail}</p>
-              <span>{plan.note}</span>
+              <span>{pricingPreview?.available ? plan.note : "Checkout pauses if live pricing cannot load"}</span>
               <button
                 className="secondary-button full-width"
                 onClick={() => {

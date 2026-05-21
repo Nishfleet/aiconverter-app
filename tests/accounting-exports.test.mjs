@@ -39,6 +39,11 @@ test("accounting CSV presets use destination-specific headers and signed amounts
   const gnucash = exportBankRows(rows, "gnucash-csv");
   assert.match(gnucash.content, /^Date,Description,Deposit,Withdrawal\n/);
   assert.match(gnucash.content, /2026-05-02,Amazon Web Services,,25.50/);
+
+  const sheets = exportBankRows(rows, "google-sheets-csv");
+  assert.match(sheets.content, /^Date,Description,Money In,Money Out,Balance,Signed Amount,Review Note\n/);
+  assert.match(sheets.content, /2026-05-01,Stripe payout,1000.00,,1000.00,1000.00,Review against source statement before import/);
+  assert.match(sheets.content, /2026-05-02,Amazon Web Services,,25.50,974.50,-25.50,Review against source statement before import/);
 });
 
 test("OFX and QBO require account metadata while QIF does not", () => {
@@ -67,11 +72,13 @@ test("bank exports carry validation report and stable download names", () => {
   assert.match(exported.validationReport, /Rows extracted: 2/);
   assert.match(exported.validationReport, /Review before import/);
   assert.equal(bankDownloadFileName("quickbooks-csv", "May Statement.pdf"), "aiconverter-May-Statement-quickbooks.csv");
+  assert.equal(bankDownloadFileName("google-sheets-csv", "May Statement.pdf"), "aiconverter-May-Statement-google-sheets.csv");
   assert.equal(bankDownloadFileName("ofx", "May Statement.pdf"), "aiconverter-May-Statement-ofx.ofx");
 });
 
 test("bank output format normalization keeps accounting presets distinct", () => {
   assert.equal(normalizeBankOutputFormat("quickbooks-csv"), "quickbooks-csv");
+  assert.equal(normalizeBankOutputFormat("google-sheets-csv"), "google-sheets-csv");
   assert.equal(normalizeBankOutputFormat("qbo"), "qbo");
   assert.equal(normalizeBankOutputFormat("docx"), "csv");
 });

@@ -10,7 +10,7 @@ AI Converter lists only routes the live app is allowed to offer.
 
 Current families:
 
-- Bank statement PDFs to Clean CSV, QuickBooks CSV, Xero CSV, Wave CSV, GnuCash CSV, QIF, OFX, or QBO. CSV is the default path. OFX and QBO require bank details.
+- Bank statement PDFs to Clean CSV, QuickBooks CSV, Xero CSV, Wave CSV, GnuCash CSV, Google Sheets-ready CSV, QIF, OFX, or QBO. CSV is the default path. OFX and QBO require bank details. Google Sheets output is a downloadable CSV, not a connected Google account.
 - Receipts to expense CSV.
 - Invoices to CSV or JSON.
 - Screenshot tables to CSV.

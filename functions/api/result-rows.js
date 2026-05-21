@@ -1,4 +1,5 @@
 import { bankOutputFileExtension, bankOutputLabel } from "../lib/accounting-exports.js";
+import { BANK_REVIEW_COLUMNS, readBankRowsArtifact } from "../lib/bank-row-artifacts.js";
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
 import {
   getAuthorizedJob,
@@ -40,6 +41,21 @@ export async function onRequestPost({ request, env }) {
   const outputFormat = jobOutputFormat(job);
   if (bankOutputFileExtension(outputFormat) !== "csv") {
     return badRequest(`${bankOutputLabel(outputFormat)} is a bank-feed file. Download and review it in your accounting app.`);
+  }
+
+  const canonical = await readBankRowsArtifact(env, job);
+  if (canonical?.rows?.length) {
+    return json({
+      jobId: job.id,
+      outputFormat,
+      outputLabel: bankOutputLabel(outputFormat),
+      source: canonical.kind,
+      columns: BANK_REVIEW_COLUMNS,
+      rows: canonical.rows.slice(0, MAX_REVIEW_ROWS),
+      totalRows: canonical.rows.length,
+      truncated: canonical.rows.length > MAX_REVIEW_ROWS,
+      maxRows: MAX_REVIEW_ROWS
+    });
   }
 
   const object = await env.AICONVERTER_BUCKET.get(job.result_key);

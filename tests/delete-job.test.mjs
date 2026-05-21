@@ -66,8 +66,11 @@ test("authorized delete removes stored job objects and clears matching cookie", 
 
   assert.equal(response.status, 200);
   assert.deepEqual(deletedKeys.sort(), [
+    "jobs/job_123/extracted-preview-rows.json",
+    "jobs/job_123/extracted-rows.json",
     "jobs/job_123/preview.csv",
     "jobs/job_123/result.csv",
+    "jobs/job_123/row-corrections.json",
     "jobs/job_123/validation.txt",
     "sources/job_123/source.pdf"
   ]);

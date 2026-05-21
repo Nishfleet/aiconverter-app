@@ -2,15 +2,21 @@
 
 ## Recommendation
 
-Launch with simple one-time packs:
+Launch with simple one-time packs. The local plan amounts below are internal product configuration targets, not customer-facing pricing copy:
 
 - Starter: ₹399 for 25 pages.
 - Standard: ₹799 for 100 pages.
 - Bulk: ₹1,399 for 500 pages.
 
-Customer-facing paid sessions are INR one-time packs. The app should display the checkout-preview total when available and keep the INR pack price as the fallback. Do not advertise the payment provider in the customer-facing pricing line.
+Customer-facing paid sessions must display the live Dodo checkout-preview total and currency. If Dodo preview cannot load, checkout should pause visibly instead of showing a fixed INR fallback. Static pages and agent-readable Markdown should describe preview-first paid unlocks without publishing fixed plan prices.
 
 The 500-page pack is intentionally aggressive. It only works because the default path is our own digital-PDF parser, with paid OCR reserved for scanned or messy files.
+
+## Pricing Ownership
+
+Dodo checkout preview is the visible source of truth for customer-facing price and currency. The repo still keeps internal plan IDs, page limits, and target amounts so checkout, tests, and optional Dodo product sync can agree on the intended packs.
+
+`npm run dodo:sync-prices` is an operator command, not an automatic release step. If it is used, treat the repo plan config as the source that pushes product amounts into Dodo; otherwise treat the Dodo dashboard/product setup as canonical and use `/api/pricing-preview` to render what Dodo will charge.
 
 ## Unit Economics
 
@@ -42,7 +48,7 @@ Visible market pricing is much higher:
 - BankStatementConverter.org: $29/month for 400 pages.
 - Bank-statement-conversion.com: roughly $0.10-$0.20/page subscription tiers and $0.50/page pay-as-you-go.
 
-So ₹1,399 for 500 pages is still a strong wedge, but the product must enforce anti-abuse controls:
+So the 500-page pack can still be a strong wedge, but the product must enforce anti-abuse controls:
 
 - server-side page estimation,
 - hard rejection above 500 pages,

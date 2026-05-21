@@ -2,6 +2,8 @@ import { convertFileToCsv, detectPdfPageCount } from "../lib/extract.js";
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
 import { verifyTurnstile } from "../lib/turnstile.js";
 import { recordFunnelEvent } from "../lib/funnel-telemetry.js";
+import { storeBankRowsArtifact } from "../lib/bank-row-artifacts.js";
+import { jobLabelFields, sanitizeJobLabels } from "../lib/job-labels.js";
 import {
   bankOutputFileExtension,
   missingBankMetadata,
@@ -123,6 +125,7 @@ export async function onRequestPost({ request, env }) {
   }
   const accountingMetadata =
     converterId === "bank" ? sanitizeBankMetadata(form.get("accountingMetadata") || {}) : {};
+  const jobLabels = sanitizeJobLabels(form.get("batchDetails") || {});
   const missingMetadata =
     converterId === "bank" ? missingBankMetadata(outputFormat, accountingMetadata) : [];
   if (missingMetadata.length) {
@@ -259,13 +262,28 @@ export async function onRequestPost({ request, env }) {
         deleteAfter: expiresAt
       }
     });
+    if (converterId === "bank" && Array.isArray(converted.rows)) {
+      await storeBankRowsArtifact(
+        env,
+        { id: jobId, original_file_name: fileName, output_format: outputFormat, expires_at: expiresAt },
+        converted.rows,
+        {
+          kind: "preview",
+          outputFormat,
+          sourceFileName: fileName,
+          validation: converted.validation || {},
+          createdAt: now
+        }
+      ).catch(() => {});
+    }
 
     await updateJob(env, jobId, {
       status: "preview_ready",
       preview_key: previewKey,
       confidence: converted.confidence,
       row_count: converted.rowCount,
-      extractor: converted.provider || ""
+      extractor: converted.provider || "",
+      ...jobLabelFields(jobLabels)
     });
     await safeRecordFunnelEvent(env, request, {
       ...baseFunnelEvent,
@@ -363,6 +381,7 @@ function outputFormatLabel(format) {
     "xero-csv": "Xero CSV",
     "wave-csv": "Wave CSV",
     "gnucash-csv": "GnuCash CSV",
+    "google-sheets-csv": "Google Sheets CSV",
     qif: "QIF",
     ofx: "OFX",
     qbo: "QBO",

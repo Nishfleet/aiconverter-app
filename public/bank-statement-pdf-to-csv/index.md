@@ -17,9 +17,8 @@ AI Converter turns bank statement PDFs into spreadsheet-ready CSV. Upload the PD
 ## Pricing
 
 - Free preview.
-- ₹399 for up to 25 pages.
-- ₹799 for up to 100 pages.
-- ₹1,399 for up to 500 pages.
+- Paid unlock pricing is loaded from live checkout preview.
+- If live pricing cannot load, checkout stays paused instead of showing a fixed fallback price.
 
 ## Limits
 

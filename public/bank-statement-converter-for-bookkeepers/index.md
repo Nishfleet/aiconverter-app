@@ -18,7 +18,7 @@ The tool extracts rows. It does not provide accounting advice, tax advice, recon
 
 ## Platform prep
 
-Use the CSV as a preparation layer for tools such as QuickBooks, Xero, Wave, or Excel. Need OFX/QBO? Add bank details in the converter. Treat those files as advanced exports to review separately, not official import support.
+Use the CSV as a preparation layer for tools such as QuickBooks, Xero, Wave, Excel, or Google Sheets. Need OFX/QBO? Add bank details in the converter. Treat those files as advanced exports to review separately, not official import support or direct app connection.
 
 ## Operational limits
 

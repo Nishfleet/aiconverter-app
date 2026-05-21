@@ -13,6 +13,7 @@ Live behavior:
 - PDF bank statement to QuickBooks CSV preparation, with explicit limits: not official QuickBooks Web Connect, no QuickBooks connection, and no guaranteed import.
 - PDF bank statement to Xero CSV preparation, with explicit limits: no Xero connection, no direct bank feed, and no guaranteed import.
 - PDF bank statement to Wave CSV preparation, with explicit limits: no Wave connection, no direct bank feed, and no guaranteed import.
+- Google Sheets-ready CSV preparation, with explicit limits: downloadable CSV only, no connected Google account, no Google Drive sync, and no stored spreadsheet.
 - Scanned bank statement to Excel-readable CSV when OCR confidence is high enough. This is CSV that opens in Excel, not a guaranteed native Excel workbook.
 - Credit card statement PDF to CSV when transaction rows can be safely extracted.
 - Bank statement converter for bookkeepers who need reviewable CSV rows for cleanup, client workpapers, and accounting-system prep.
@@ -37,16 +38,15 @@ Live behavior:
 - Common file conversion supports documents, images, audio, video, and archives when the selected input and output are available. Long media jobs run in the background and update automatically.
 - Beta modules use OCR and can fail closed when structure confidence is too low.
 
-Homepage ticker examples:
-- Core examples: bank statement PDF to CSV, receipt image to expense CSV, invoice PDF to JSON, screenshot table to CSV, JPG to PNG, PNG to JPG, WEBP to PNG, audio to transcript, document to Markdown.
-- Provider-backed conversion options are available across the current accepted input formats and output choices, with more coming soon. Examples include PDF to Word, Word to PDF, PDF to JPG, HEIC to JPG, SVG to PNG, MP4 to MP3, MOV to MP4, GIF to MP4, WAV to MP3, XLSX to CSV, CSV to XLSX, and docs/images/audio/video/archive categories.
+Homepage bank route chips:
+- Current bank export routes: Clean CSV, QuickBooks CSV, Xero CSV, Wave CSV, Google Sheets-ready CSV, QIF, OFX, and QBO.
+- CSV prep is live now. Direct app connections are not live. Provider-backed conversion options remain available after a supported file and output pair are selected.
 
 ## Pricing
 
 - Free preview.
-- Starter: ₹399 for 25 pages or images.
-- Standard: ₹799 for 100 pages or images.
-- Bulk: ₹1,399 for 500 pages or images.
+- Paid unlock pricing is loaded from live Dodo checkout preview.
+- If live pricing cannot load, checkout should stay paused instead of showing a fixed fallback price.
 
 ## Data handling
 
@@ -130,4 +130,4 @@ Fake sample CSV:
 
 Do not claim AI Converter supports every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every audio file, every document, every image format, every file type, certified compliance, human review, guaranteed accuracy, accounting or tax advice, instant AI processing, pixel-perfect screenshot-to-code, or customer-volume proof. Format conversion depends on the live app accepting that exact input/output pair. Exports should be reviewed before important use.
 
-Do not claim official QuickBooks Web Connect, direct QuickBooks/Xero/Wave integration, direct bank feeds, guaranteed imports, reconciliation, categorization, SOC 2, or GDPR. Mention OFX or QBO only through the optional "Need OFX/QBO? Add bank details" path, not as guaranteed import files.
+Do not claim official QuickBooks Web Connect, direct QuickBooks/Xero/Wave integration, Google Sheets sync, Google Drive storage, connected Google accounts, direct bank feeds, guaranteed imports, reconciliation, categorization, SOC 2, or GDPR. Mention OFX or QBO only through the optional "Need OFX/QBO? Add bank details" path, not as guaranteed import files.

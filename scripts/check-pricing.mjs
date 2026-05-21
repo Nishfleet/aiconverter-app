@@ -5,11 +5,16 @@ import data from "../src/data/converters.json" with { type: "json" };
 import { PLANS } from "../functions/lib/jobs.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const publicTexts = await Promise.all([
-  readFile(path.join(root, "functions/_middleware.js"), "utf8"),
-  readFile(path.join(root, "public/llms.txt"), "utf8"),
-  readFile(path.join(root, "ops/pricing-strategy.md"), "utf8")
-]);
+const publicTextPaths = [
+  "functions/_middleware.js",
+  "public/llms.txt",
+  "public/llms-full.txt",
+  "index.html",
+  "public/bank-statement-pdf-to-csv/index.html",
+  "public/bank-statement-pdf-to-csv/index.md"
+];
+const publicTexts = await Promise.all(publicTextPaths.map((filePath) => readFile(path.join(root, filePath), "utf8")));
+const appSource = await readFile(path.join(root, "src/main.jsx"), "utf8");
 
 const failures = [];
 
@@ -23,12 +28,28 @@ for (const plan of data.pricing) {
     failures.push(`Pricing mismatch for ${plan.id}: frontend ${plan.price}/${plan.amount}/${plan.pages}, backend ${backend.price}/${backend.amount}/${backend.pages}.`);
   }
 
-  const expected = `${plan.price} for ${plan.pages} pages`;
   publicTexts.forEach((text, index) => {
-    if (!text.includes(expected)) {
-      failures.push(`Public pricing text ${index + 1} is missing "${expected}".`);
+    if (text.includes(plan.price)) {
+      failures.push(`Public pricing text ${publicTextPaths[index]} contains fixed display price "${plan.price}".`);
+    }
+    if (text.includes(`"price": "${Math.round(plan.amount / 100)}"`)) {
+      failures.push(`Public pricing text ${publicTextPaths[index]} contains fixed schema price for ${plan.id}.`);
     }
   });
+}
+
+if (!publicTexts.some((text) => /live (Dodo )?checkout preview/i.test(text))) {
+  failures.push("Public pricing copy must state that paid unlock pricing comes from live checkout preview.");
+}
+
+for (const forbidden of ["planById(planId)?.price", "plan?.price", "|| \"₹399\""]) {
+  if (appSource.includes(forbidden)) {
+    failures.push(`Frontend pricing display still has fixed fallback: ${forbidden}`);
+  }
+}
+
+if (!appSource.includes("Pricing unavailable") || !appSource.includes("checkoutPricingBlock")) {
+  failures.push("Frontend must show a pricing-unavailable checkout block when Dodo preview cannot load.");
 }
 
 if (failures.length) {
@@ -36,4 +57,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log("Pricing is consistent.");
+console.log("Pricing truth checks passed.");

@@ -578,7 +578,7 @@ export async function enforceJobExpiry(env, job) {
   const fields = {};
 
   if (resultExpired(job, now)) {
-    const keys = new Set([job.source_key, job.preview_key, job.result_key].filter(Boolean));
+    const keys = new Set([...jobStorageKeys(job), ...bankRowArtifactKeys(job.id)]);
     await Promise.all([...keys].map((key) => env.AICONVERTER_BUCKET.delete(key).catch(() => {})));
     fields.source_deleted_at = fields.source_deleted_at || job.source_deleted_at || nowIso;
     fields.status = "expired";
@@ -604,7 +604,7 @@ export async function deleteJobData(env, job, now = new Date()) {
   if (!job?.id || !env?.AICONVERTER_BUCKET || !env?.AICONVERTER_DB) return null;
   const nowIso = now.toISOString();
   const keys = new Set(
-    [job.source_key, job.preview_key, job.result_key, job.validation_report_key].filter(Boolean)
+    [...jobStorageKeys(job), ...bankRowArtifactKeys(job.id)]
   );
   await Promise.all([...keys].map((key) => env.AICONVERTER_BUCKET.delete(key).catch(() => {})));
   const fields = {
@@ -618,6 +618,19 @@ export async function deleteJobData(env, job, now = new Date()) {
   };
   await updateJob(env, job.id, fields);
   return { ...job, ...fields };
+}
+
+function jobStorageKeys(job) {
+  return [job?.source_key, job?.preview_key, job?.result_key, job?.validation_report_key].filter(Boolean);
+}
+
+function bankRowArtifactKeys(jobId) {
+  if (!jobId) return [];
+  return [
+    `jobs/${jobId}/extracted-preview-rows.json`,
+    `jobs/${jobId}/extracted-rows.json`,
+    `jobs/${jobId}/row-corrections.json`
+  ];
 }
 
 export async function getAuthorizedJob(env, id, token) {

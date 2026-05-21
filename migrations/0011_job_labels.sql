@@ -1,0 +1,3 @@
+ALTER TABLE jobs ADD COLUMN client_label TEXT DEFAULT '';
+ALTER TABLE jobs ADD COLUMN period_label TEXT DEFAULT '';
+ALTER TABLE jobs ADD COLUMN account_label TEXT DEFAULT '';

@@ -1,4 +1,10 @@
-import { bankOutputContentType, bankOutputFileExtension, bankOutputLabel } from "../lib/accounting-exports.js";
+import { bankOutputContentType, bankOutputFileExtension, bankOutputLabel, exportBankRows } from "../lib/accounting-exports.js";
+import {
+  BANK_REVIEW_COLUMNS,
+  canonicalRowsFromReviewRows,
+  readBankRowsArtifact,
+  storeBankRowsArtifact
+} from "../lib/bank-row-artifacts.js";
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
 import {
   getAuthorizedJob,
@@ -44,6 +50,11 @@ export async function onRequestPost({ request, env }) {
   const outputFormat = jobOutputFormat(job);
   if (bankOutputFileExtension(outputFormat) !== "csv") {
     return badRequest(`${bankOutputLabel(outputFormat)} is a bank-feed file. Download and review it in your accounting app.`);
+  }
+
+  const canonical = await readBankRowsArtifact(env, job);
+  if (canonical?.rows?.length) {
+    return saveCanonicalRows({ body, env, job, outputFormat, canonical });
   }
 
   const existing = await env.AICONVERTER_BUCKET.get(job.result_key);
@@ -96,6 +107,78 @@ export async function onRequestPost({ request, env }) {
     rowCount: rows.length,
     validationReportAvailable: true,
     message: "Saved. The download now uses your edited rows."
+  });
+}
+
+async function saveCanonicalRows({ body, env, job, outputFormat, canonical }) {
+  const rows = canonicalRowsFromReviewRows(body.rows);
+  if (!rows.length) return badRequest("The edited export needs at least one row.");
+  if (rows.length > MAX_REVIEW_ROWS) {
+    return badRequest(`This export has more than ${MAX_REVIEW_ROWS} rows. Download it and edit the full file locally.`);
+  }
+
+  const rowCheck = validateEditedRows(outputFormat, BANK_REVIEW_COLUMNS, rows);
+  if (!rowCheck.ok) return badRequest(rowCheck.message);
+
+  const exported = exportBankRows(rows, outputFormat, {
+    accountingMetadata: parseAccountingMetadata(job.accounting_metadata_json),
+    sourceFileName: job.original_file_name || "uploaded bank statement",
+    validation: {
+      confidence: Number(job.confidence || canonical.validation?.confidence || 0),
+      warnings: [
+        ...(canonical.validation?.warnings || []),
+        "Rows were edited after extraction. Review the regenerated export before import."
+      ]
+    }
+  });
+  if (!exported.ok) return badRequest(exported.message);
+
+  await env.AICONVERTER_BUCKET.put(job.result_key, exported.content || exported.csv, {
+    httpMetadata: { contentType: exported.contentType || bankOutputContentType(outputFormat) },
+    customMetadata: {
+      jobId: job.id,
+      purpose: "customer-corrected-result",
+      deleteAfter: job.expires_at
+    }
+  });
+
+  const validationReportKey = job.validation_report_key || `jobs/${job.id}/validation-report.txt`;
+  await env.AICONVERTER_BUCKET.put(validationReportKey, editedCanonicalValidationReport(job, outputFormat, rows.length, rowCheck, exported.validationReport), {
+    httpMetadata: { contentType: "text/plain; charset=utf-8" },
+    customMetadata: {
+      jobId: job.id,
+      purpose: "customer-corrected-validation-report",
+      deleteAfter: job.expires_at
+    }
+  });
+
+  await storeBankRowsArtifact(env, job, rows, {
+    kind: "corrected",
+    outputFormat,
+    sourceFileName: job.original_file_name || "uploaded bank statement",
+    revision: Number(canonical.revision || 1) + 1,
+    validation: {
+      confidence: Number(job.confidence || 0),
+      validDates: rowCheck.validDates,
+      validAmounts: rowCheck.validAmounts,
+      warnings: ["Rows were edited after extraction."]
+    }
+  });
+
+  await updateJob(env, job.id, {
+    row_count: rows.length,
+    validation_report_key: validationReportKey
+  });
+
+  return json({
+    status: "complete",
+    jobId: job.id,
+    outputFormat,
+    columns: exported.columns || BANK_REVIEW_COLUMNS,
+    previewRows: exported.previewRows || rows.slice(0, 5),
+    rowCount: rows.length,
+    validationReportAvailable: true,
+    message: "Saved. The selected export was regenerated from your corrected rows."
   });
 }
 
@@ -188,4 +271,28 @@ function editedValidationReport(job, outputFormat, rowCount, rowCheck) {
     "These rows were edited after the full export was generated. Check balances, duplicates, date range, and account selection inside your accounting app before accepting the import.",
     ""
   ].join("\n");
+}
+
+function editedCanonicalValidationReport(job, outputFormat, rowCount, rowCheck, baseReport = "") {
+  return [
+    baseReport.trim() || "AI Converter validation report",
+    "",
+    "Edited row review",
+    `Rows saved: ${rowCount}`,
+    `Rows with valid dates: ${rowCheck.validDates}/${rowCount}`,
+    `Rows with amounts: ${rowCheck.validAmounts}/${rowCount}`,
+    `Edited: ${new Date().toISOString()}`,
+    "",
+    "These rows were corrected after extraction. The selected export was regenerated from the corrected canonical rows. Check balances, duplicates, date range, and account selection before import.",
+    ""
+  ].join("\n");
+}
+
+function parseAccountingMetadata(value = "") {
+  if (!value) return {};
+  try {
+    return JSON.parse(value);
+  } catch {
+    return {};
+  }
 }

@@ -4,6 +4,7 @@ export const BANK_OUTPUT_FORMATS = [
   "xero-csv",
   "wave-csv",
   "gnucash-csv",
+  "google-sheets-csv",
   "qif",
   "ofx",
   "qbo"
@@ -53,6 +54,7 @@ export function bankOutputLabel(format = "") {
     "xero-csv": "Xero CSV",
     "wave-csv": "Wave CSV",
     "gnucash-csv": "GnuCash CSV",
+    "google-sheets-csv": "Google Sheets CSV",
     qif: "QIF",
     ofx: "OFX",
     qbo: "QBO"
@@ -70,6 +72,7 @@ export function bankDownloadFileName(format = "", originalName = "bank-statement
     "xero-csv": "xero",
     "wave-csv": "wave",
     "gnucash-csv": "gnucash",
+    "google-sheets-csv": "google-sheets",
     qif: "qif",
     ofx: "ofx",
     qbo: "qbo"
@@ -271,6 +274,30 @@ function rowsToAccountingCsv(rows, format, metadata) {
     };
   }
 
+  if (format === "google-sheets-csv") {
+    const columns = [
+      { key: "date", label: "Date" },
+      { key: "description", label: "Description" },
+      { key: "money_in", label: "Money In" },
+      { key: "money_out", label: "Money Out" },
+      { key: "balance", label: "Balance" },
+      { key: "signed_amount", label: "Signed Amount" },
+      { key: "review_note", label: "Review Note" }
+    ];
+    return {
+      columns,
+      mappedRows: rows.map((row) => ({
+        date: row.date,
+        description: row.description,
+        money_in: hasNumber(row.money_in) ? formatAmount(row.money_in) : "",
+        money_out: hasNumber(row.money_out) ? formatAmount(row.money_out) : "",
+        balance: hasNumber(row.balance) ? formatAmount(row.balance) : "",
+        signed_amount: formatAmount(signedAmount(row)),
+        review_note: row.review_note || "Review against source statement before import"
+      }))
+    };
+  }
+
   const columns = [
     { key: "date", label: "Date" },
     { key: "description", label: "Description" },
@@ -417,7 +444,8 @@ function normalizeRows(rows) {
       money_in: normalizeNumber(row.money_in),
       money_out: normalizeNumber(row.money_out),
       balance: normalizeNumber(row.balance),
-      confidence: Number(row.confidence || 0)
+      confidence: Number(row.confidence || 0),
+      review_note: cleanText(row.review_note, 220)
     }))
     .filter((row) => row.date || row.description || hasNumber(row.money_in) || hasNumber(row.money_out));
 }

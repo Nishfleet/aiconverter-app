@@ -216,8 +216,16 @@ export async function convertPdfToCsv(env, fileName, arrayBuffer, options = {}) 
     confidence: extracted.confidence,
     trustScore: extracted.trustScore || extracted.confidence,
     rowCount: rows.length,
+    rows,
     warnings: extracted.warnings || [],
     provider: extracted.provider || "unknown",
+    validation: {
+      confidence: extracted.confidence,
+      trustScore: extracted.trustScore || extracted.confidence,
+      checks: extracted.validationChecks || {},
+      warnings: extracted.warnings || [],
+      provider: extracted.provider || "unknown"
+    },
     validationReport: exported.validationReport
   };
 }
