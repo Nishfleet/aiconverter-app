@@ -14,6 +14,7 @@ const failures = [];
 const checkouts = [];
 const started = Date.now();
 const config = await fetch(new URL("/api/config", baseUrl)).then((response) => response.json()).catch(() => ({}));
+const trustedCheckoutHosts = new Set(["checkout.dodopayments.com", "test.checkout.dodopayments.com"]);
 
 if (config.turnstileSiteKey && !turnstileResponseToken && !(existingJobId && existingJobToken) && !adminToken) {
   failures.push({
@@ -80,7 +81,7 @@ for (let round = 0; round < rounds; round += 1) {
   if (
     !checkout.ok ||
     checkoutBody.mode !== "checkout" ||
-    checkoutHost !== "checkout.dodopayments.com" ||
+    !trustedCheckoutHosts.has(checkoutHost) ||
     !cookie.includes("HttpOnly") ||
     !cookie.includes("SameSite=Lax")
   ) {
@@ -142,7 +143,7 @@ async function runAdminCheckoutDrill(round) {
     !response.ok ||
     body.ok !== true ||
     body.mode !== "checkout" ||
-    body.checkoutHost !== "checkout.dodopayments.com" ||
+    !trustedCheckoutHosts.has(body.checkoutHost) ||
     !cookie.includes("HttpOnly") ||
     !cookie.includes("SameSite=Lax")
   ) {

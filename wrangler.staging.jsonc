@@ -1,0 +1,45 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "aiconverter-test",
+  "compatibility_date": "2026-05-12",
+  "pages_build_output_dir": "dist",
+  "ai": {
+    "binding": "AI"
+  },
+  "r2_buckets": [
+    {
+      "binding": "AICONVERTER_BUCKET",
+      "bucket_name": "aiconverter-preview-private"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "AICONVERTER_DB",
+      "database_name": "aiconverter-preview",
+      "database_id": "dbf7a7b8-d40a-45de-9ab8-b28c6ac5e48e"
+    }
+  ],
+  "vars": {
+    "AUTO_REFUNDS_ENABLED": "false",
+    "CANONICAL_REDIRECT_DISABLED": "true",
+    "CLOUDCONVERT_DAILY_JOB_LIMIT": "10",
+    "CLOUDCONVERT_MIN_CREDITS": "1",
+    "CLOUDCONVERT_REQUIRE_CREDIT_CHECK": "true",
+    "ENABLE_AZURE_FALLBACK": "false",
+    "FREE_DOWNLOADS_ENABLED": "false",
+    "PLUNK_FROM_EMAIL": "hello@aiconverter.app",
+    "PLUNK_FROM_NAME": "AI Converter",
+    "PLUNK_REPLY_TO": "hello@aiconverter.app",
+    "PLUNK_SENDING_DOMAIN": "aiconverter.app",
+    "CONVERTIO_DAILY_JOB_LIMIT": "10",
+    "DODO_ENVIRONMENT": "test",
+    "DODO_CURRENCY": "INR",
+    "DODO_ADAPTIVE_CURRENCY": "true",
+    "DODO_ADAPTIVE_CURRENCY_FEES_INCLUSIVE": "true",
+    "DODO_PRODUCT_STARTER_ID": "pdt_0Negop8cvqJYd8Of3IFxk",
+    "DODO_PRODUCT_BATCH_ID": "pdt_0Negop9jfiV7zFwDyWncR",
+    "DODO_PRODUCT_PRO_ID": "pdt_0NegopF0leCBf6f1Ih2K7",
+    "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
+    "RATE_LIMIT_MAX_PER_HOUR": "30"
+  }
+}

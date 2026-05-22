@@ -648,7 +648,8 @@ export async function onRequest(context) {
   const request = context.request;
   const url = new URL(request.url);
 
-  if (url.hostname === "www.aiconverter.app" || url.hostname.endsWith(".pages.dev")) {
+  const canonicalRedirectDisabled = context.env?.CANONICAL_REDIRECT_DISABLED === "true";
+  if (!canonicalRedirectDisabled && (url.hostname === "www.aiconverter.app" || url.hostname.endsWith(".pages.dev"))) {
     url.hostname = "aiconverter.app";
     return withSecurityHeaders(Response.redirect(url.toString(), 301));
   }
