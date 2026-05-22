@@ -27,6 +27,7 @@ Live behavior:
 - Low-confidence conversions fail closed.
 - No human file review queue.
 - No emailed bank statements in the live bank-statement workflow.
+- Email recovery can show matching job, billing, download, and support status through short-lived links. It does not create a customer account or permanent file vault.
 - Receipt image or PDF to expense CSV is beta. It can export vendor, date, category, total, tax, payment method, and notes when safely detected.
 - Invoice or bill image/PDF to CSV or JSON is beta. It can export vendor, invoice number, invoice date, due date, subtotal, tax, total, payment terms, notes, and JSON line items when safely detected.
 - Screenshot PNG, JPG, WEBP, or image PDF to spreadsheet CSV is beta. It can infer table rows and headers when safely detected.
@@ -47,6 +48,7 @@ Homepage bank route chips:
 - Free preview.
 - Paid unlock pricing is loaded from live Dodo checkout preview.
 - If live pricing cannot load, checkout should stay paused instead of showing a fixed fallback price.
+- Dodo checkout is a one-time file unlock. No subscription or customer portal is promised in public copy.
 
 ## Data handling
 
@@ -56,6 +58,7 @@ Homepage bank route chips:
 - Generated files expire after 7 days.
 - API responses for sensitive routes are marked no-store.
 - Job access uses a job ID and random token.
+- Recovery links are short-lived and tied to the receipt email hash.
 
 ## Output shape
 

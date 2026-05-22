@@ -1,5 +1,5 @@
 {
-  "feature_directory": "specs/001-self-serve-saas-upgrade",
-  "feature_branch": "codex/aiconverter-11-saas",
-  "created": "2026-05-21"
+  "feature_directory": "specs/002-11-saas-completion",
+  "feature_branch": "codex/aiconverter-11-saas-completion",
+  "created": "2026-05-22"
 }

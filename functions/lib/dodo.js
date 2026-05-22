@@ -545,7 +545,12 @@ async function applyDodoPayment(env, payment, options = {}) {
 
   const updates = {
     payment_id: normalized.paymentId,
-    paid_at: match.job.paid_at || new Date().toISOString()
+    paid_at: match.job.paid_at || new Date().toISOString(),
+    receipt_email: normalized.receiptEmail || match.job.receipt_email || match.job.email || "",
+    dodo_customer_id: normalized.customerId || match.job.dodo_customer_id || "",
+    dodo_subscription_id: normalized.subscriptionId || match.job.dodo_subscription_id || "",
+    dodo_receipt_url: normalized.receiptUrl || match.job.dodo_receipt_url || "",
+    dodo_invoice_url: normalized.invoiceUrl || match.job.dodo_invoice_url || ""
   };
   if (normalized.checkoutSessionId && !match.job.checkout_session_id) {
     updates.checkout_session_id = normalized.checkoutSessionId;
@@ -687,8 +692,9 @@ async function recordDodoPaymentEvent(env, payment, options = {}) {
     `INSERT INTO dodo_payment_events (
       id, provider_event_id, event_type, job_id, payment_id, checkout_session_id,
       product_id, plan_id, status, amount, currency, business_id, matched_by,
-      match_status, payload_hash, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      match_status, payload_hash, customer_id, subscription_id, receipt_email,
+      receipt_url, invoice_url, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       randomId("payevt"),
@@ -706,6 +712,11 @@ async function recordDodoPaymentEvent(env, payment, options = {}) {
       options.matchedBy || "",
       options.matchStatus || "",
       options.payloadHash || "",
+      payment.customerId || "",
+      payment.subscriptionId || "",
+      payment.receiptEmail || "",
+      payment.receiptUrl || "",
+      payment.invoiceUrl || "",
       now,
       now
     )
@@ -832,6 +843,11 @@ function normalizeDodoPayment(payment = {}) {
     amount: numberOrZero(payment.total_amount ?? payment.amount_total ?? payment.amount),
     currency: normalizeCurrency(payment.currency),
     businessId: firstText(payment.business_id, payment.businessId),
+    customerId: firstText(payment.customer_id, payment.customerId, payment.customer?.customer_id, payment.customer?.id),
+    subscriptionId: firstText(payment.subscription_id, payment.subscriptionId),
+    receiptEmail: firstText(payment.customer?.email, payment.customer_email, payment.customerEmail, payment.email),
+    receiptUrl: firstText(payment.receipt_url, payment.receiptUrl, payment.receipt?.url),
+    invoiceUrl: firstText(payment.invoice_url, payment.invoiceUrl, payment.invoice?.url),
     status: String(payment.status || "").toLowerCase()
   };
 }

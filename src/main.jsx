@@ -465,6 +465,23 @@ function paymentNoticeForResult(result) {
   return "";
 }
 
+function statusLabel(value) {
+  return String(value || "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function billingAmountLabel(summary, fallbackPlan, pricingPreview) {
+  if (summary?.displayAmount) return summary.displayAmount;
+  const plan = summary?.planId || fallbackPlan;
+  return displayPriceForPlan(plan || "starter", pricingPreview);
+}
+
+function supportStatusLabel(supportCase) {
+  if (!supportCase) return "No ticket";
+  return `${supportCase.ticketId || "Support"} · ${statusLabel(supportCase.status || "open")}`;
+}
+
 function fileKindLabel(candidate) {
   if (!candidate) return "No file selected";
   const extension = fileExtension(candidate);
@@ -736,6 +753,13 @@ function App() {
   const [showBankDetails, setShowBankDetails] = useState(false);
   const [bankDetails, setBankDetails] = useState(defaultBankDetails);
   const [email, setEmail] = useState("");
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryToken, setRecoveryToken] = useState("");
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [recoveryMessage, setRecoveryMessage] = useState("");
+  const [recoveredJobs, setRecoveredJobs] = useState([]);
+  const [recoveredSupportCases, setRecoveredSupportCases] = useState([]);
+  const [billingSummary, setBillingSummary] = useState(null);
   const [converting, setConverting] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
   const [redoing, setRedoing] = useState(false);
@@ -974,6 +998,28 @@ function App() {
   }, [result?.sourceExpiresAt, result?.resultExpiresAt]);
 
   useEffect(() => {
+    if (!result?.jobId || result.localDownloadUrl || result.status === "deleted") {
+      setBillingSummary(null);
+      return undefined;
+    }
+    let cancelled = false;
+    fetchJson("/api/billing/summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId: result.jobId, ...(result.token ? { token: result.token } : {}) })
+    }, { timeoutMs: 15000, fallback: "Billing status could not load." })
+      .then((payload) => {
+        if (!cancelled) setBillingSummary(payload.summary || null);
+      })
+      .catch(() => {
+        if (!cancelled) setBillingSummary(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [result?.jobId, result?.token, result?.paid, result?.status, result?.localDownloadUrl]);
+
+  useEffect(() => {
     if (!shouldRenderTurnstile) {
       setTurnstileToken("");
       setTurnstileStatus("idle");
@@ -1033,12 +1079,18 @@ function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const urlRecoveryToken = params.get("recoveryToken") || "";
     const urlJobId = params.get("jobId");
     const urlBatchId = params.get("batchId");
     const jobId = urlJobId || "";
     const paymentId = params.get("payment_id") || params.get("paymentId");
     const paymentStatus = params.get("status") || params.get("payment_status");
-    const shouldCleanUrl = Boolean(urlJobId || urlBatchId || paymentId || paymentStatus);
+    const shouldCleanUrl = Boolean(urlRecoveryToken || urlJobId || urlBatchId || paymentId || paymentStatus);
+    if (urlRecoveryToken) {
+      setRecoveryToken(urlRecoveryToken);
+      loadRecoveryJobs(urlRecoveryToken).finally(() => window.history.replaceState({}, "", window.location.pathname));
+      return;
+    }
     if (urlBatchId) {
       restoreBatch(urlBatchId)
         .catch(() => setError("We could not restore that batch. Contact support if you were charged."))
@@ -1102,6 +1154,97 @@ function App() {
       }
     }
     sessionStorage.removeItem(BATCH_RETURN_KEY);
+  }
+
+  async function requestRecoveryLink() {
+    const targetEmail = (recoveryEmail || email).trim();
+    if (!targetEmail) {
+      setRecoveryMessage("Enter the receipt email first.");
+      return;
+    }
+    setRecoveryLoading(true);
+    setRecoveryMessage("");
+    setError("");
+    try {
+      const payload = await fetchJson("/api/recovery/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: targetEmail })
+      }, { fallback: "Recovery could not start." });
+      setRecoveryEmail(targetEmail);
+      setRecoveryMessage(
+        payload.emailStatus === "sent"
+          ? `Recovery link sent to ${payload.emailHint || "that email"}.`
+          : `Recovery request saved for ${payload.emailHint || "that email"}.`
+      );
+      if (payload.recoveryToken) {
+        setRecoveryToken(payload.recoveryToken);
+        await loadRecoveryJobs(payload.recoveryToken);
+      }
+    } catch (err) {
+      setRecoveryMessage(err.message || "Recovery could not start.");
+    } finally {
+      setRecoveryLoading(false);
+    }
+  }
+
+  async function loadRecoveryJobs(token = recoveryToken) {
+    const targetToken = String(token || "").trim();
+    if (!targetToken) {
+      setRecoveryMessage("Paste a recovery token or use the email link.");
+      return;
+    }
+    setRecoveryLoading(true);
+    setRecoveryMessage("");
+    setError("");
+    try {
+      const payload = await fetchJson("/api/recovery/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: targetToken })
+      }, { fallback: "Recovery link is invalid or expired." });
+      setRecoveryToken(targetToken);
+      setRecoveredJobs(payload.jobs || []);
+      setRecoveredSupportCases(payload.supportCases || []);
+      setRecoveryMessage(
+        payload.jobs?.length
+          ? `${payload.jobs.length} conversion${payload.jobs.length === 1 ? "" : "s"} recovered.`
+          : "No conversions were found for that email."
+      );
+    } catch (err) {
+      setRecoveredJobs([]);
+      setRecoveredSupportCases([]);
+      setRecoveryMessage(err.message || "Recovery link is invalid or expired.");
+    } finally {
+      setRecoveryLoading(false);
+    }
+  }
+
+  async function openRecoveredJob(recoveredJob) {
+    if (!recoveredJob?.id) return;
+    setRecoveryLoading(true);
+    setError("");
+    try {
+      const restored = await fetchJson("/api/job", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: recoveredJob.id, token: recoveredJob.token || "" })
+      }, { fallback: "This recovered conversion could not be opened." });
+      const planId = typeof restored.plan === "string" ? restored.plan : restored.plan?.id;
+      const restoredResult = {
+        ...restored,
+        token: restored.token || recoveredJob.token || "",
+        plan: data.pricing.find((plan) => plan.id === planId) || restored.plan || selectedPlan
+      };
+      setResult(restoredResult);
+      if (restoredResult.converterId) setSelectedId(restoredResult.converterId);
+      if (restoredResult.outputFormat) setOutputFormat(restoredResult.outputFormat);
+      window.location.hash = "start";
+    } catch (err) {
+      setRecoveryMessage(err.message || "This recovered conversion could not be opened.");
+    } finally {
+      setRecoveryLoading(false);
+    }
   }
 
   function initialSettingsForFile(nextFile, preferredSelectedId = selectedId) {
@@ -2028,6 +2171,68 @@ function App() {
               </div>
             )}
 
+            {!file && (
+              <section className="self-serve-panel" aria-label="Recover previous conversions">
+                <div className="self-serve-heading">
+                  <div>
+                    <span>Recover jobs</span>
+                    <strong>No account is created.</strong>
+                  </div>
+                  <ShieldCheck size={18} />
+                </div>
+                <div className="self-serve-controls">
+                  <label>
+                    <span>Receipt email</span>
+                    <input
+                      type="email"
+                      inputMode="email"
+                      placeholder="you@example.com"
+                      value={recoveryEmail}
+                      onChange={(event) => setRecoveryEmail(event.target.value)}
+                    />
+                  </label>
+                  <button type="button" className="secondary-button" onClick={requestRecoveryLink} disabled={recoveryLoading}>
+                    {recoveryLoading ? "Checking..." : "Send link"}
+                    {recoveryLoading ? <LoaderCircle className="spin" size={16} /> : <ArrowRight size={16} />}
+                  </button>
+                </div>
+                <div className="self-serve-token-row">
+                  <input
+                    value={recoveryToken}
+                    onChange={(event) => setRecoveryToken(event.target.value)}
+                    placeholder="Paste recovery token"
+                    aria-label="Recovery token"
+                  />
+                  <button type="button" className="secondary-button" onClick={() => loadRecoveryJobs()} disabled={recoveryLoading}>
+                    Open
+                  </button>
+                </div>
+                {recoveryMessage && <p className="self-serve-message">{recoveryMessage}</p>}
+                {recoveredJobs.length > 0 && (
+                  <div className="recovered-jobs-list" aria-label="Recovered conversions">
+                    {recoveredJobs.map((job) => (
+                      <button type="button" key={job.id} onClick={() => openRecoveredJob(job)}>
+                        <FileText size={15} />
+                        <span>
+                          <strong>{resultFormatLabel(job.outputFormat)} · {statusLabel(job.status)}</strong>
+                          <small>
+                            {job.id} · {job.billing?.paymentStatus ? statusLabel(job.billing.paymentStatus) : "Billing pending"} · {supportStatusLabel(job.supportCases?.[0])}
+                          </small>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {recoveredSupportCases.length > 0 && (
+                  <div className="self-serve-support-list" aria-label="Recovered support tickets">
+                    {recoveredSupportCases.map((supportCase) => (
+                      <span key={supportCase.id || supportCase.ticketId}>{supportStatusLabel(supportCase)}</span>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
             {file && (
               <>
                 <div className="detected-file">
@@ -2128,6 +2333,12 @@ function App() {
 	                      </label>
 	                    </div>
 	                    <p>Labels save with this conversion token and organize completed ZIPs. They do not create an account.</p>
+                      <div className="bookkeeper-checklist" aria-label="Bookkeeper first-run checklist">
+                        <strong>Bookkeeper first-run checklist</strong>
+                        <span>Preview dates and signs</span>
+                        <span>Download the validation report</span>
+                        <span>Keep job IDs with client workpapers</span>
+                      </div>
 	                  </div>
 	                )}
 
@@ -2319,7 +2530,7 @@ function App() {
 
                   {!isLocalImageConverter && (
                     <label className="email-field">
-                      <span>Email for payment receipt</span>
+                      <span>Email for payment receipt and recovery</span>
                       <input
                         type="email"
                         inputMode="email"
@@ -2447,7 +2658,7 @@ function App() {
                     <div className="validation-proof-panel" aria-label="Bank statement validation summary">
                       <div className="validation-proof-heading">
                         <div>
-                          <strong>Validation before import</strong>
+                          <strong>Import confidence report</strong>
                           <span>Use this to decide whether to unlock. Review the source statement before importing.</span>
                         </div>
                         <FileText size={18} />
@@ -2530,6 +2741,70 @@ function App() {
                             {deletingJob ? <LoaderCircle className="spin" size={16} /> : <Trash2 size={16} />}
                           </button>
                         )}
+                      </div>
+                    </div>
+                  )}
+                  {["preview_ready", "complete", "converting_full"].includes(result.status) && (
+                    <div className="job-lifecycle-panel" aria-label="Lifecycle">
+                      <div className="job-lifecycle-heading">
+                        <span>Lifecycle</span>
+                        <strong>{result.jobId}</strong>
+                      </div>
+                      <div className="job-lifecycle-grid">
+                        <span>
+                          <small>Preview</small>
+                          <strong>{statusLabel(result.status)}</strong>
+                        </span>
+                        <span>
+                          <small>Unlock</small>
+                          <strong>{result.paid ? "Paid" : "Not paid"}</strong>
+                        </span>
+                        <span>
+                          <small>Source</small>
+                          <strong>{sourceCountdown || "short window"}</strong>
+                        </span>
+                        <span>
+                          <small>Download</small>
+                          <strong>{result.status === "complete" ? resultCountdown || "available" : "after unlock"}</strong>
+                        </span>
+                        <span>
+                          <small>Redo</small>
+                          <strong>{result.redoAvailable ? "Available" : "Unavailable"}</strong>
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {["preview_ready", "complete", "converting_full"].includes(result.status) && (
+                    <div className="billing-status-panel" aria-label="Billing truth">
+                      <div className="billing-status-heading">
+                        <div>
+                          <span>Billing truth</span>
+                          <strong>{billingAmountLabel(billingSummary, result.plan || selectedPlan, pricingPreview)}</strong>
+                        </div>
+                        <CreditCard size={18} />
+                      </div>
+                      <div className="billing-status-grid">
+                        <span>
+                          <small>Payment</small>
+                          <strong>{statusLabel(billingSummary?.paymentStatus || (result.paid ? "paid" : "unpaid"))}</strong>
+                        </span>
+                        <span>
+                          <small>Receipt</small>
+                          <strong>{billingSummary?.receiptEmail || "After checkout"}</strong>
+                        </span>
+                        <span>
+                          <small>Refund</small>
+                          <strong>{billingSummary?.refundStatus ? statusLabel(billingSummary.refundStatus) : "None recorded"}</strong>
+                        </span>
+                        <span>
+                          <small>Portal</small>
+                          <strong>{billingSummary?.portalStatus === "available" ? "Available" : "Support handled"}</strong>
+                        </span>
+                      </div>
+                      <div className="billing-links">
+                        {billingSummary?.receiptUrl && <a href={billingSummary.receiptUrl} rel="noopener">Receipt</a>}
+                        {billingSummary?.invoiceUrl && <a href={billingSummary.invoiceUrl} rel="noopener">Invoice</a>}
+                        <a href={billingSummary?.supportPath || supportHrefForJob(result.jobId, "payment")}>Payment support</a>
                       </div>
                     </div>
                   )}
@@ -2695,6 +2970,24 @@ function App() {
               </button>
             </article>
           ))}
+        </div>
+        <div className="pricing-truth-strip" aria-label="Billing truth">
+          <span>
+            <CreditCard size={15} />
+            Dodo checkout creates the charge.
+          </span>
+          <span>
+            <ShieldCheck size={15} />
+            Checkout pauses if live pricing cannot load.
+          </span>
+          <span>
+            <FileText size={15} />
+            Receipts use the email entered before unlock.
+          </span>
+          <span>
+            <Clock size={15} />
+            No subscription or customer portal is promised here.
+          </span>
         </div>
       </section>
 

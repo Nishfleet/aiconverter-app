@@ -171,6 +171,8 @@ export function buildValidationReport(rows, options = {}) {
   const amountCheck = checks.amountCoverage || {};
   const balanceCheck = checks.runningBalance || {};
   const pageCheck = checks.pageCoverage || {};
+  const confidence = Number(validation.confidence || average(rows.map((row) => Number(row.confidence || 0))) || 0);
+  const importReadiness = importReadinessStatus({ confidence, warnings, balanceCheck, rowCount: rows.length });
   const lines = [
     "AI Converter validation report",
     "",
@@ -184,7 +186,8 @@ export function buildValidationReport(rows, options = {}) {
     `Money out: ${formatAmount(withdrawals)}`,
     `Opening balance: ${balances.length ? formatAmount(balances[0]) : "not available"}`,
     `Closing balance: ${balances.length ? formatAmount(balances[balances.length - 1]) : "not available"}`,
-    `Confidence score: ${Math.round(Number(validation.confidence || average(rows.map((row) => Number(row.confidence || 0))) || 0) * 100)}%`,
+    `Confidence score: ${Math.round(confidence * 100)}%`,
+    `Import readiness: ${importReadiness.label}`,
     `Balance check: ${balanceCheckSummary(balanceCheck)}`,
     `Duplicate check: ${duplicateCount ? "needs review" : "no obvious duplicate rows found"}`,
     `Page coverage: ${pageCoverageSummary(pageCheck)}`,
@@ -197,10 +200,30 @@ export function buildValidationReport(rows, options = {}) {
     `Currency: ${metadata.currency}`,
     "",
     "Review before import",
+    importReadiness.guidance,
     "Check the opening/closing balance, duplicates, date range, and account selection inside your accounting app before accepting the import.",
     ...(warnings.length ? ["", "Warnings", ...warnings.map((warning) => `- ${warning}`)] : [])
   ];
   return `${lines.join("\n")}\n`;
+}
+
+function importReadinessStatus({ confidence, warnings, balanceCheck, rowCount }) {
+  if (!rowCount || confidence < 0.55) {
+    return {
+      label: "not ready - do not import without rechecking the source statement",
+      guidance: "This output is not import-ready. Compare it against the source statement before paying, posting, or relying on it."
+    };
+  }
+  if (warnings.length || (Number(balanceCheck.checked || 0) > 0 && Number(balanceCheck.matched || 0) < Number(balanceCheck.checked || 0))) {
+    return {
+      label: "needs review before import",
+      guidance: "This output needs review before import. Resolve warnings and compare the rows against the statement."
+    };
+  }
+  return {
+    label: "ready for review before import",
+    guidance: "This output passed the automated checks available here, but it still needs human review before import."
+  };
 }
 
 function rowsToAccountingCsv(rows, format, metadata) {

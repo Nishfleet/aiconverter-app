@@ -33,7 +33,7 @@ SAFE_DEPLOY_APPROVED='pages deploy dist --project-name aiconverter --branch main
 <!-- SPECKIT START -->
 Current product upgrade plan:
 
-- `/Users/nish/Vibecoded projects/aiconverter-app-11-saas/specs/001-self-serve-saas-upgrade/spec.md`
-- `/Users/nish/Vibecoded projects/aiconverter-app-11-saas/specs/001-self-serve-saas-upgrade/plan.md`
-- `/Users/nish/Vibecoded projects/aiconverter-app-11-saas/specs/001-self-serve-saas-upgrade/tasks.md`
+- `/Users/nish/Vibecoded projects/aiconverter-app-11-saas/specs/002-11-saas-completion/spec.md`
+- `/Users/nish/Vibecoded projects/aiconverter-app-11-saas/specs/002-11-saas-completion/plan.md`
+- `/Users/nish/Vibecoded projects/aiconverter-app-11-saas/specs/002-11-saas-completion/tasks.md`
 <!-- SPECKIT END -->

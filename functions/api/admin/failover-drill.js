@@ -1,4 +1,5 @@
 import { requireAdmin } from "../../lib/admin-auth.js";
+import { customerEmailHash } from "../../lib/customer-identity.js";
 import { json, methodNotAllowed, serverError } from "../../lib/http.js";
 import {
   insertJob,
@@ -46,6 +47,8 @@ export async function onRequestPost({ request, env }) {
     status: "processing",
     planId: PLANS.starter.id,
     email: "admin-drill@aiconverter.app",
+    customerEmailHash: await customerEmailHash(env, "admin-drill@aiconverter.app"),
+    receiptEmail: "admin-drill@aiconverter.app",
     sourceKey,
     resultKey,
     originalFileName: fileName,

@@ -429,8 +429,8 @@ export async function insertJob(env, job) {
       id, token_hash, status, plan_id, email, source_key, result_key,
       original_file_name, file_size, estimated_pages, file_hash, ip_hash,
       user_agent_hash, converter_id, input_mime_type, output_format, accounting_metadata_json,
-      created_at, updated_at, expires_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      created_at, updated_at, expires_at, customer_email_hash, receipt_email, recovery_visible_until
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       job.id,
@@ -452,7 +452,10 @@ export async function insertJob(env, job) {
       job.accountingMetadataJson || "",
       job.now,
       job.now,
-      job.expiresAt
+      job.expiresAt,
+      job.customerEmailHash || "",
+      job.receiptEmail || job.email || "",
+      job.recoveryVisibleUntil || job.expiresAt || ""
     )
     .run();
 }
@@ -635,9 +638,32 @@ function bankRowArtifactKeys(jobId) {
 
 export async function getAuthorizedJob(env, id, token) {
   if (!id || !token) return null;
+  if (String(token).startsWith("recovery:")) {
+    return getRecoveryAuthorizedJob(env, id, String(token).slice("recovery:".length));
+  }
   const tokenHash = await sha256(token);
   const job = await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE id = ? AND token_hash = ?")
     .bind(id, tokenHash)
+    .first();
+  return enforceJobExpiry(env, job || null);
+}
+
+async function getRecoveryAuthorizedJob(env, id, token) {
+  if (!id || !token) return null;
+  const tokenHash = await sha256(token);
+  const now = new Date().toISOString();
+  const recovery = await env.AICONVERTER_DB.prepare(
+    `SELECT email_hash
+     FROM customer_recovery_tokens
+     WHERE token_hash = ? AND expires_at > ?
+     ORDER BY created_at DESC
+     LIMIT 1`
+  )
+    .bind(tokenHash, now)
+    .first();
+  if (!recovery?.email_hash) return null;
+  const job = await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE id = ? AND customer_email_hash = ?")
+    .bind(id, recovery.email_hash)
     .first();
   return enforceJobExpiry(env, job || null);
 }

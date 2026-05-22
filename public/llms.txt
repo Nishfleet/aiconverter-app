@@ -18,6 +18,7 @@ Live and beta modules:
 - Paid full extraction and CSV download.
 - One automatic stronger redo for paid jobs.
 - No emailed bank statements.
+- Email recovery can show matching job, billing, download, and support status through short-lived links. It does not create a customer account or permanent file vault.
 - No human file review queue.
 - Source files are deleted after failed extraction, completed redo, or the 24-hour source lifecycle.
 - Low-confidence conversions fail closed with no charge.
@@ -42,6 +43,7 @@ Opening pricing:
 - Free preview.
 - Paid unlock pricing is loaded from live Dodo checkout preview.
 - If live pricing cannot load, checkout should stay paused instead of showing a fixed fallback price.
+- Dodo checkout is a one-time file unlock. No subscription or customer portal is promised in public copy.
 
 Upcoming module:
 - AI-monitored email intake after the secure direct upload workflow is stable.
@@ -56,6 +58,7 @@ Important product truth:
 - Email monitoring is not the primary intake for bank PDFs.
 - Human file review is not part of the automated workflow.
 - Source files use a 24-hour private retention window. Generated files expire after 7 days.
+- Recovery links are short-lived and tied to the receipt email hash.
 
 Primary URL:
 - https://aiconverter.app

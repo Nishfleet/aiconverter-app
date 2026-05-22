@@ -47,13 +47,27 @@ test("homepage uses static bank route chips and truthful integration boundaries"
 });
 
 test("review workspace and bookkeeper batch labels are exposed", () => {
-  assert.match(source, /Validation before import/);
+  assert.match(source, /Import confidence report/);
   assert.match(source, /Full range is included in the validation report/);
   assert.match(source, /Bookkeeper labels/);
+  assert.match(source, /Bookkeeper first-run checklist/);
   assert.match(source, /clientLabel/);
   assert.match(source, /periodLabel/);
   assert.match(source, /accountLabel/);
   assert.match(source, /Optional ZIP folders/);
+});
+
+test("self-serve recovery, billing truth, and lifecycle surfaces are exposed", () => {
+  assert.match(source, /Recover jobs/);
+  assert.match(source, /No account is created/);
+  assert.match(source, /api\/recovery\/request/);
+  assert.match(source, /api\/recovery\/jobs/);
+  assert.match(source, /api\/billing\/summary/);
+  assert.match(source, /Billing truth/);
+  assert.match(source, /Lifecycle/);
+  assert.match(source, /Email for payment receipt and recovery/);
+  assert.match(source, /Checkout pauses if live pricing cannot load/);
+  assert.match(source, /No subscription or customer portal is promised here/);
 });
 
 test("direct integrations stay gated in repo documentation", () => {

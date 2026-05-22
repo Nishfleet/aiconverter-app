@@ -1,4 +1,5 @@
 import { requireAdmin } from "../../lib/admin-auth.js";
+import { customerEmailHash } from "../../lib/customer-identity.js";
 import { createDodoCheckout } from "../../lib/dodo.js";
 import { json, methodNotAllowed, serverError } from "../../lib/http.js";
 import {
@@ -55,6 +56,8 @@ export async function onRequestPost({ request, env }) {
     status: "preview_ready",
     planId: plan.id,
     email: DRILL_EMAIL,
+    customerEmailHash: await customerEmailHash(env, DRILL_EMAIL),
+    receiptEmail: DRILL_EMAIL,
     sourceKey,
     resultKey,
     originalFileName: "checkout-drill-statement.pdf",

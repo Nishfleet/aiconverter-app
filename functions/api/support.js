@@ -1,6 +1,13 @@
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
 import { hasRequiredBindings, randomId, requestFingerprint } from "../lib/jobs.js";
 import { verifyTurnstile } from "../lib/turnstile.js";
+import {
+  publicStatusNote,
+  sanitizeSupportMessage,
+  sanitizeSupportTopic,
+  supportCustomerFields,
+  supportTicketId
+} from "../lib/support-tickets.js";
 
 const CATEGORIES = new Set(["conversion", "payment", "refund", "deletion", "security", "other"]);
 
@@ -34,7 +41,8 @@ export async function onRequestPost({ request, env }) {
   const email = String(data.email || "").trim().slice(0, 160);
   const jobId = String(data.jobId || "").trim().replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80);
   const category = CATEGORIES.has(String(data.category || "")) ? String(data.category) : "other";
-  const message = String(data.message || "").trim().slice(0, 4000);
+  const topic = sanitizeSupportTopic(category);
+  const message = sanitizeSupportMessage(data.message || "");
 
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return wantsJson ? badRequest("Use a valid email address or leave it blank.") : supportHtml("Check your email", "Use a valid email address or leave it blank.", 400);
@@ -58,19 +66,47 @@ export async function onRequestPost({ request, env }) {
   }
 
   const id = randomId("sup");
+  const ticketId = supportTicketId(now, id);
+  const status = "open";
+  const statusNote = publicStatusNote(status);
+  const customer = await supportCustomerFields(env, email);
   await env.AICONVERTER_DB.prepare(
     `INSERT INTO support_requests (
-      id, job_id, email, category, message, ip_hash, user_agent_hash, status, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)`
+      id, job_id, email, category, message, ip_hash, user_agent_hash, status,
+      created_at, ticket_id, customer_email_hash, topic, public_status_note, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
-    .bind(id, jobId, email, category, message, fingerprint.ipHash, fingerprint.userAgentHash, now.toISOString())
+    .bind(
+      id,
+      jobId,
+      customer.email,
+      category,
+      message,
+      fingerprint.ipHash,
+      fingerprint.userAgentHash,
+      status,
+      now.toISOString(),
+      ticketId,
+      customer.emailHash,
+      topic,
+      statusNote,
+      now.toISOString()
+    )
     .run();
 
-  if (wantsJson) return json({ ok: true, id });
+  await env.AICONVERTER_DB.prepare(
+    `INSERT INTO support_status_events (id, support_request_id, old_status, new_status, actor, note, created_at)
+     VALUES (?, ?, '', ?, 'system', ?, ?)`
+  )
+    .bind(randomId("supportevt"), id, status, statusNote, now.toISOString())
+    .run()
+    .catch(() => {});
+
+  if (wantsJson) return json({ ok: true, id, ticketId, status, statusNote });
 
   return supportHtml(
     "Support request received",
-    `Your request ID is ${id}. We prioritize payment, refund, deletion, and security issues.`
+    `Your request ID is ${ticketId}. Status: ${statusNote} We prioritize payment, refund, deletion, and security issues.`
   );
 }
 

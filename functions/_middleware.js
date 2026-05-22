@@ -20,6 +20,7 @@ Live:
 - Full extraction and CSV/QIF/OFX/QBO download after payment.
 - One automatic stronger redo for paid jobs.
 - No email intake for bank statements.
+- Email recovery can show matching job, billing, download, and support status through short-lived links. It does not create a customer account or permanent file vault.
 - No human review queue.
 - Source files are stored privately and deleted after failed extraction, completed redo, or the 24-hour source lifecycle.
 - Low-confidence conversions fail closed with no charge.
@@ -47,6 +48,7 @@ Current bank export routes are Clean CSV, QuickBooks CSV, Xero CSV, Wave CSV, Go
 - Free preview: first rows before payment.
 - Paid unlock pricing is loaded from live Dodo checkout preview.
 - If live pricing cannot load, checkout should stay paused instead of showing a fixed fallback price.
+- Dodo checkout is a one-time file unlock. No subscription or customer portal is promised in public copy.
 
 ## Upcoming modules
 
@@ -55,7 +57,7 @@ Current bank export routes are Clean CSV, QuickBooks CSV, Xero CSV, Wave CSV, Go
 
 ## Security posture
 
-The AI workflow is designed for private storage, 24-hour source retention, 7-day generated-file retention, random job tokens, no public object URLs, no emailed bank PDFs, and minimal job metadata.
+The AI workflow is designed for private storage, 24-hour source retention, 7-day generated-file retention, random job tokens, short-lived email recovery links, no public object URLs, no emailed bank PDFs, and minimal job metadata.
 
 ## Request access
 

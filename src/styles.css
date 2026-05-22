@@ -1177,6 +1177,75 @@ tbody tr:last-child td {
   white-space: nowrap;
 }
 
+.job-lifecycle-panel,
+.billing-status-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.job-lifecycle-grid,
+.billing-status-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.billing-status-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.job-lifecycle-grid span,
+.billing-status-grid span {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfa;
+}
+
+.job-lifecycle-grid small,
+.billing-status-grid small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.job-lifecycle-grid strong,
+.billing-status-grid strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #243041;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.billing-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.billing-links a {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  color: var(--blue);
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  border-radius: 999px;
+  background: var(--blue-soft);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .danger-button {
   color: #9f1239;
   border-color: #fecdd3;
@@ -1669,6 +1738,165 @@ tbody tr:last-child td {
   font-weight: 400;
 }
 
+.self-serve-panel {
+  display: grid;
+  gap: 10px;
+  margin: 0 16px 18px;
+  padding: 14px;
+  border: 1px solid rgba(18, 18, 15, 0.08);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.self-serve-heading,
+.billing-status-heading,
+.job-lifecycle-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.self-serve-heading span,
+.billing-status-heading span,
+.job-lifecycle-heading span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.self-serve-heading strong,
+.billing-status-heading strong,
+.job-lifecycle-heading strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 14px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.self-serve-heading svg,
+.billing-status-heading svg {
+  flex: 0 0 auto;
+  color: var(--green-dark);
+}
+
+.self-serve-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.self-serve-controls label {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.self-serve-controls label span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.self-serve-controls input,
+.self-serve-token-row input {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  color: var(--ink);
+  background: #ffffff;
+  outline: none;
+}
+
+.self-serve-token-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.self-serve-message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.recovered-jobs-list {
+  display: grid;
+  gap: 7px;
+}
+
+.recovered-jobs-list button {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px;
+  color: var(--ink);
+  background: #fbfcfa;
+  cursor: pointer;
+}
+
+.recovered-jobs-list button:hover {
+  border-color: rgba(37, 99, 235, 0.32);
+}
+
+.recovered-jobs-list svg {
+  flex: 0 0 auto;
+  color: var(--blue);
+}
+
+.recovered-jobs-list span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.recovered-jobs-list strong,
+.recovered-jobs-list small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recovered-jobs-list strong {
+  font-size: 12px;
+}
+
+.recovered-jobs-list small,
+.self-serve-support-list span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.self-serve-support-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.self-serve-support-list span {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #f8fafc;
+  font-weight: 700;
+}
+
 .detected-file {
   min-height: 58px;
   display: flex;
@@ -1876,6 +2104,31 @@ tbody tr:last-child td {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
+}
+
+.bookkeeper-checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bookkeeper-checklist strong,
+.bookkeeper-checklist span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #344054;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.bookkeeper-checklist strong {
+  color: #172404;
+  background: var(--green);
 }
 
 .selected-route-panel {
@@ -2227,6 +2480,38 @@ tbody tr:last-child td {
 
 .price-card .secondary-button {
   margin-top: 22px;
+}
+
+.pricing-truth-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  border: 1px solid var(--line);
+  border-top: 0;
+  background: #ffffff;
+}
+
+.pricing-truth-strip span {
+  min-width: 0;
+  min-height: 54px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-right: 1px solid var(--line);
+  color: #344054;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.pricing-truth-strip span:last-child {
+  border-right: 0;
+}
+
+.pricing-truth-strip svg {
+  flex: 0 0 auto;
+  color: var(--green-dark);
 }
 
 .request-section {
@@ -3626,6 +3911,14 @@ tbody tr:last-child td {
     grid-template-columns: 1fr;
   }
 
+  .pricing-truth-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pricing-truth-strip span:nth-child(2n) {
+    border-right: 0;
+  }
+
   .proof-row {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -3760,6 +4053,23 @@ tbody tr:last-child td {
   .formats-confidence,
   .confidence-panel {
     grid-template-columns: 1fr;
+  }
+
+  .self-serve-controls,
+  .self-serve-token-row,
+  .job-lifecycle-grid,
+  .billing-status-grid,
+  .pricing-truth-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .pricing-truth-strip span {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .pricing-truth-strip span:last-child {
+    border-bottom: 0;
   }
 }
 

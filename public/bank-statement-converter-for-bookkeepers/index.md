@@ -16,6 +16,13 @@ The tool extracts rows. It does not provide accounting advice, tax advice, recon
 3. Unlock the full CSV if the preview is useful.
 4. Clean, map, reconcile, and review the file in your own bookkeeping workflow.
 
+## Bookkeeper first-run checklist
+
+- Add client, statement month, and account nickname before batch checkout.
+- Compare preview dates, signs, balances, and row count against the source PDF.
+- Download the validation report and keep the job ID with client workpapers.
+- Review the CSV before importing into QuickBooks, Xero, Wave, Excel, or Google Sheets.
+
 ## Platform prep
 
 Use the CSV as a preparation layer for tools such as QuickBooks, Xero, Wave, Excel, or Google Sheets. Need OFX/QBO? Add bank details in the converter. Treat those files as advanced exports to review separately, not official import support or direct app connection.

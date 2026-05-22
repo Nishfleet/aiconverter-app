@@ -4,6 +4,7 @@ import { verifyTurnstile } from "../lib/turnstile.js";
 import { recordFunnelEvent } from "../lib/funnel-telemetry.js";
 import { storeBankRowsArtifact } from "../lib/bank-row-artifacts.js";
 import { jobLabelFields, sanitizeJobLabels } from "../lib/job-labels.js";
+import { customerEmailHash } from "../lib/customer-identity.js";
 import {
   bankOutputFileExtension,
   missingBankMetadata,
@@ -187,6 +188,8 @@ export async function onRequestPost({ request, env }) {
     status: "processing",
     planId: plan.id,
     email,
+    customerEmailHash: email ? await customerEmailHash(env, email) : "",
+    receiptEmail: email,
     sourceKey,
     resultKey,
     originalFileName: fileName,
