@@ -23,5 +23,10 @@ test("preview funnel hooks cover file, output, click, success, and error", () =>
   assert.match(source, /trackPreviewEvent\("preview_click"/);
   assert.match(source, /trackPreviewEvent\("preview_success"/);
   assert.match(source, /trackPreviewEvent\("preview_error"/);
+  assert.match(source, /trackFunnelEvent\("page_view"/);
+  assert.match(source, /trackPreviewEvent\("free_sample_download"/);
+  assert.match(source, /trackPreviewEvent\("checkout_click"/);
+  assert.match(source, /trackPreviewEvent\("checkout_redirect"/);
+  assert.match(source, /trackPreviewEvent\("download_success"/);
   assert.match(source, /form\.append\("funnelSessionId", funnelSessionIdRef\.current\)/);
 });

@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { onRequestPost as batchDownload } from "../functions/api/batch-download.js";
 import { sha256 } from "../functions/lib/jobs.js";
 
+const futureExpiry = () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
 test("batch ZIP includes available exports and skips expired selections", async () => {
   const token = "tok_batch";
   const tokenHash = await sha256(token);
@@ -19,7 +21,7 @@ test("batch ZIP includes available exports and skips expired selections", async 
         result_key: "jobs/job_batch_1/result.csv",
         validation_report_key: "jobs/job_batch_1/validation.txt",
         original_file_name: "May Statement.pdf",
-        expires_at: "2026-05-25T00:00:00.000Z",
+        expires_at: futureExpiry(),
         download_count: 0
       }
     ]

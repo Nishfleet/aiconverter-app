@@ -46,6 +46,14 @@ test("funnel telemetry preserves UI crash error code without storing private dat
   assert.equal(sanitized.event.content, undefined);
 });
 
+test("funnel telemetry accepts revenue funnel milestones", () => {
+  for (const eventType of ["page_view", "free_sample_download", "checkout_click", "checkout_redirect", "finalize_success", "download_success"]) {
+    const sanitized = sanitizeFunnelEvent({ eventType, sessionId: "session_123", jobId: "job_123" });
+    assert.equal(sanitized.ok, true);
+    assert.equal(sanitized.event.eventType, eventType);
+  }
+});
+
 test("funnel event API writes a sanitized event to D1", async () => {
   const writes = [];
   const response = await funnelEvent({

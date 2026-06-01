@@ -13,7 +13,7 @@ Live and beta modules:
 - Direct browser upload.
 - Built-in parser first for digital PDFs.
 - OCR fallback for scanned or messy PDFs when configured.
-- Free sample preview before payment.
+- Free preview and downloadable sample CSV before payment.
 - Paid full extraction and CSV download.
 - One automatic stronger redo for paid jobs.
 - No emailed bank statements.
@@ -38,7 +38,7 @@ Homepage ticker examples:
 - Provider-backed conversion options are available across the current accepted input formats and output choices, with more coming soon. Examples include PDF to Word, Word to PDF, PDF to JPG, HEIC to JPG, SVG to PNG, MP4 to MP3, MOV to MP4, GIF to MP4, WAV to MP3, XLSX to CSV, CSV to XLSX, and docs/images/audio/video/archive categories.
 
 Opening pricing:
-- Free preview.
+- Free preview and sample CSV download.
 - Starter: ₹399 for 25 pages or images.
 - Standard: ₹799 for 100 pages or images.
 - Bulk: ₹1,399 for 500 pages or images.

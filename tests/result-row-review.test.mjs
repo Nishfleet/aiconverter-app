@@ -4,6 +4,8 @@ import { onRequestPost as loadRows } from "../functions/api/result-rows.js";
 import { onRequestPost as saveRows } from "../functions/api/update-result-rows.js";
 import { sha256 } from "../functions/lib/jobs.js";
 
+const futureExpiry = () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
 test("paid bank CSV export rows can be loaded and saved", async () => {
   const token = "tok_rows";
   const tokenHash = await sha256(token);
@@ -21,7 +23,7 @@ test("paid bank CSV export rows can be loaded and saved", async () => {
     result_key: "jobs/job_rows/result.csv",
     validation_report_key: "jobs/job_rows/validation.txt",
     original_file_name: "statement.pdf",
-    expires_at: "2026-05-25T00:00:00.000Z"
+    expires_at: futureExpiry()
   };
   const env = fakeEnv(job, objects, updates);
 
@@ -100,7 +102,7 @@ test("inline row editor refuses to save truncated large exports", async () => {
     output_format: "quickbooks-csv",
     result_key: "jobs/job_large/result.csv",
     original_file_name: "large-statement.pdf",
-    expires_at: "2026-05-25T00:00:00.000Z"
+    expires_at: futureExpiry()
   };
 
   const response = await saveRows({

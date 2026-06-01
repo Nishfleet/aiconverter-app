@@ -197,6 +197,7 @@ function pageBucket(count) {
 }
 
 function trackFunnelEvent(eventType, fields = {}) {
+  if (import.meta.env.DEV && ["localhost", "127.0.0.1"].includes(window.location.hostname)) return;
   const payload = JSON.stringify({ eventType, ...fields });
   fetch("/api/funnel-event", {
     method: "POST",
@@ -361,6 +362,12 @@ function downloadNameForResult(result) {
     qbo: "aiconverter-bank.qbo"
   };
   return names[extension] || `aiconverter-export.${extension}`;
+}
+
+function downloadNameFromDisposition(header, fallback) {
+  const value = String(header || "");
+  const match = value.match(/filename="([^"]+)"/i) || value.match(/filename=([^;]+)/i);
+  return match?.[1]?.trim() || fallback;
 }
 
 function previewMetricLabel(converterId, result) {
@@ -649,6 +656,7 @@ function App() {
   const [email, setEmail] = useState("");
   const [converting, setConverting] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
+  const [sampleDownloading, setSampleDownloading] = useState(false);
   const [redoing, setRedoing] = useState(false);
   const [deletingJob, setDeletingJob] = useState(false);
   const [reviewRowsOpen, setReviewRowsOpen] = useState(false);
@@ -843,6 +851,13 @@ function App() {
       jobId: overrides.jobId || ""
     });
   }
+
+  useEffect(() => {
+    trackFunnelEvent("page_view", {
+      sessionId: funnelSessionIdRef.current,
+      routePath
+    });
+  }, [routePath]);
 
   useEffect(() => {
     activeFileIdRef.current = activeFileId;
@@ -1349,6 +1364,7 @@ function App() {
   async function handleUnlock() {
     if (result?.localDownloadUrl) {
       downloadLocalFile(result);
+      trackPreviewEvent("download_success", { jobId: result.jobId || "" });
       return;
     }
     if (!result?.jobId) return;
@@ -1366,6 +1382,7 @@ function App() {
     setError("");
 
     try {
+      trackPreviewEvent("checkout_click", { jobId: result.jobId });
       const payload = await fetchJson("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1388,12 +1405,14 @@ function App() {
       }
 
       if (payload.mode === "checkout" && payload.checkoutUrl) {
+        trackPreviewEvent("checkout_redirect", { jobId: result.jobId });
         window.location.href = payload.checkoutUrl;
         return;
       }
 
       throw new Error("Payment is not ready yet.");
     } catch (err) {
+      trackPreviewEvent("checkout_error", { jobId: result.jobId, errorCode: "network_or_runtime" });
       setError(err.message || "Payment is not ready yet.");
     } finally {
       setUnlocking(false);
@@ -1405,6 +1424,7 @@ function App() {
     setUnlocking(true);
     setError("");
     try {
+      trackPreviewEvent("checkout_click", { fileCount: previewReadyServerResults.length });
       const jobs = previewReadyServerResults.map((entryResult) => ({
         jobId: entryResult.jobId,
         token: entryResult.token || "",
@@ -1426,15 +1446,48 @@ function App() {
 
       if (payload.mode === "checkout" && payload.checkoutUrl) {
         sessionStorage.setItem(BATCH_RETURN_KEY, JSON.stringify({ batchId: payload.batchId, jobs }));
+        trackPreviewEvent("checkout_redirect", { fileCount: jobs.length });
         window.location.href = payload.checkoutUrl;
         return;
       }
 
       throw new Error("Batch checkout is not ready yet.");
     } catch (err) {
+      trackPreviewEvent("checkout_error", { fileCount: previewReadyServerResults.length, errorCode: "network_or_runtime" });
       setError(err.message || "Batch checkout is not ready yet.");
     } finally {
       setUnlocking(false);
+    }
+  }
+
+  async function downloadPreviewCsv() {
+    if (!result?.jobId) return;
+    setSampleDownloading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/preview-download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: result.jobId, ...(result.token ? { token: result.token } : {}) })
+      });
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response, "The free sample could not be downloaded."));
+      }
+      const blob = await response.blob();
+      const href = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = href;
+      link.download = downloadNameFromDisposition(response.headers.get("content-disposition"), "aiconverter-preview.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(href);
+      trackPreviewEvent("free_sample_download", { jobId: result.jobId });
+    } catch (err) {
+      trackPreviewEvent("free_sample_error", { jobId: result.jobId, errorCode: "network_or_runtime" });
+      setError(err.message || "The free sample could not be downloaded.");
+    } finally {
+      setSampleDownloading(false);
     }
   }
 
@@ -1459,7 +1512,9 @@ function App() {
       link.click();
       link.remove();
       URL.revokeObjectURL(href);
+      trackPreviewEvent("download_success", { jobId });
     } catch (err) {
+      trackPreviewEvent("download_error", { jobId, errorCode: "network_or_runtime" });
       setError(err.message || "The converted file could not be downloaded.");
     } finally {
       setUnlocking(false);
@@ -1593,7 +1648,9 @@ function App() {
       link.click();
       link.remove();
       URL.revokeObjectURL(href);
+      trackPreviewEvent("download_success", { fileCount: completedServerResults.length });
     } catch (err) {
+      trackPreviewEvent("download_error", { fileCount: completedServerResults.length, errorCode: "network_or_runtime" });
       setError(err.message || "The ZIP could not be downloaded.");
     }
   }
@@ -1619,7 +1676,9 @@ function App() {
       const planId = typeof payload.plan === "string" ? payload.plan : payload.plan?.id;
       const nextResult = { ...payload, plan: data.pricing.find((plan) => plan.id === planId) || payload.plan || selectedPlan };
       setResultForFile(fileId, nextResult);
+      trackPreviewEvent(payload.status === "complete" ? "finalize_success" : "finalize_error", { jobId });
     } catch (err) {
+      trackPreviewEvent("finalize_error", { jobId, errorCode: "network_or_runtime" });
       setError(err.message || "The full file could not be prepared.");
     } finally {
       setUnlocking(false);
@@ -1719,7 +1778,7 @@ function App() {
     if (unlocking) return result?.status === "preview_ready" && result?.paid ? "Generating full file..." : "Preparing...";
     if (result?.status === "complete") return `Download ${resultFormatLabel(result?.outputFormat)}`;
     if (result?.paid) return `Generate ${resultFormatLabel(outputFormat)}`;
-    return `Unlock ${resultFormatLabel(outputFormat)} · ${displayPriceForPlan(result?.plan || selectedPlan, pricingPreview)}`;
+    return `Unlock full ${resultFormatLabel(outputFormat)} · ${displayPriceForPlan(result?.plan || selectedPlan, pricingPreview)}`;
   }
 
   if (routePath === "/formats") {
@@ -1735,7 +1794,7 @@ function App() {
   return (
     <main className="page-shell">
       <div className="announcement-bar" aria-label="Product status">
-        <p>Private previews are live.</p>
+        <p>Free sample CSV before checkout.</p>
         <a href="#start">Start free preview →</a>
       </div>
 
@@ -1776,18 +1835,17 @@ function App() {
         <div className="landing-hero-grid">
           <div className="conversion-heading">
             <a className="hero-chip-row" href="#start" aria-label="Start with a free preview">
-              <span>Preview before checkout</span>
+              <span>Preview and sample before checkout</span>
               <ArrowRight size={14} />
             </a>
             <h1>
-              <span>Messy files in.</span>
+              <span>Bank statement PDFs in.</span>
               {" "}
-              <strong>Clean exports out.</strong>
+              <strong>Accounting CSV out.</strong>
             </h1>
             <p>
-              Upload a bank statement, receipt, invoice, document, audio file,
-              image, or archive. <BrandName /> generates a real preview first and
-              only charges when you unlock the export.
+              Upload a bank statement PDF, choose a Xero, Wave, QuickBooks, or spreadsheet CSV,
+              review the rows, and download a free sample before unlocking the full export.
             </p>
           </div>
 
@@ -1795,9 +1853,9 @@ function App() {
           <form className="conversion-flow" id="start" onSubmit={handleConvert}>
             <div className="workspace-console-bar" aria-hidden="true">
               <span>Bank PDFs</span>
-              <span>Receipts</span>
-              <span>Documents</span>
-              <span>Any file</span>
+              <span>Xero CSV</span>
+              <span>Wave CSV</span>
+              <span>QuickBooks CSV</span>
             </div>
             {file && (
               <div className="flow-rail" aria-label="Conversion steps">
@@ -1824,8 +1882,8 @@ function App() {
                     <Upload size={26} />
                   </span>
                   <span>
-                    <strong>Upload a file for a private preview</strong>
-                    <small>PDFs, images, audio, documents, media, and archives</small>
+                    <strong>Upload a bank statement for a private preview</strong>
+                    <small>PDF statements first. Other converter routes are available in the output picker.</small>
                   </span>
                   <span className="upload-go" aria-hidden="true">
                     <ArrowRight size={20} />
@@ -1876,11 +1934,11 @@ function App() {
               <div className="quiet-benefits" aria-label="Conversion guardrails">
                 <span>
                   <FileText size={15} />
-                  Real preview first
+                  Accounting CSV prep
                 </span>
                 <span>
                   <ShieldCheck size={15} />
-                  Pay only to export
+                  Free sample CSV
                 </span>
                 <span>
                   <Database size={15} />
@@ -2263,6 +2321,13 @@ function App() {
                     ))}
                   </div>
 
+                  {result.status === "preview_ready" && !result.paid && (
+                    <div className="sample-proof-note">
+                      <Download size={16} />
+                      <span>Download the preview rows free. Full statement export unlocks after checkout.</span>
+                    </div>
+                  )}
+
                   {["preview_ready", "complete", "converting_full"].includes(result.status) && (
                     <div className="result-card">
                       <div>
@@ -2284,6 +2349,12 @@ function App() {
                         </div>
                       )}
                       <div className="result-actions">
+                        {result.status === "preview_ready" && !result.paid && (
+                          <button className="secondary-button" onClick={downloadPreviewCsv} disabled={sampleDownloading || unlocking} type="button">
+                            {sampleDownloading ? "Downloading sample..." : "Free sample CSV"}
+                            {sampleDownloading ? <LoaderCircle className="spin" size={17} /> : <Download size={17} />}
+                          </button>
+                        )}
                         <button className="primary-button" onClick={handleUnlock} disabled={unlocking || result.status === "converting_full"}>
                           {resultButtonLabel()}
                           {unlocking ? (

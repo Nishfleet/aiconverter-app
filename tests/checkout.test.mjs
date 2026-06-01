@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { onRequestPost as checkout } from "../functions/api/checkout.js";
 import { sha256 } from "../functions/lib/jobs.js";
 
+const futureExpiry = () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
 test("paid jobs do not create duplicate checkout handoffs", async () => {
   const token = "tok_paid_checkout";
   const tokenHash = await sha256(token);
@@ -12,7 +14,7 @@ test("paid jobs do not create duplicate checkout handoffs", async () => {
     status: "preview_ready",
     plan_id: "starter",
     paid_at: "2026-05-18T00:00:00.000Z",
-    expires_at: "2026-05-25T00:00:00.000Z"
+    expires_at: futureExpiry()
   };
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => {
