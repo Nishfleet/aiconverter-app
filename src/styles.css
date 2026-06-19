@@ -956,6 +956,95 @@ tbody tr:last-child td {
   margin-top: 1px;
 }
 
+.conversion-brief-card {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #cddde7;
+  border-radius: 8px;
+  background: #f7fbfd;
+}
+
+.conversion-brief-heading,
+.conversion-brief-heading div,
+.conversion-brief-meta,
+.conversion-brief-caution {
+  display: flex;
+  align-items: center;
+}
+
+.conversion-brief-heading {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.conversion-brief-heading div {
+  gap: 7px;
+}
+
+.conversion-brief-heading svg {
+  color: var(--blue);
+}
+
+.conversion-brief-heading strong {
+  font-size: 14px;
+}
+
+.conversion-brief-heading span,
+.conversion-brief-meta span {
+  color: #28546f;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.conversion-brief-card p {
+  margin: 0;
+  color: #31475b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.conversion-brief-meta {
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.conversion-brief-meta span {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid #d4e5ef;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.conversion-brief-caution {
+  gap: 7px;
+  color: #174e2d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.conversion-brief-caution svg {
+  flex: 0 0 auto;
+}
+
+.conversion-brief-card ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.conversion-brief-card .inline-text-button {
+  margin-left: 0;
+  color: var(--blue);
+}
+
 .inline-alert,
 .failed-state,
 .result-card {

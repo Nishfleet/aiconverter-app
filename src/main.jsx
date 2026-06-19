@@ -259,6 +259,19 @@ function supportHrefForJob(jobId = "", category = "conversion") {
   return `/support/${query ? `?${query}` : ""}`;
 }
 
+function conversionBriefModeLabel(mode = "") {
+  const labels = {
+    self_serve_preview: "Preview ready",
+    self_serve_unlock: "Ready to generate",
+    self_serve_download: "Ready to download",
+    wait_for_provider: "Generating",
+    safe_failure: "Stopped safely",
+    refund_review: "Refund review",
+    expired_or_deleted: "No longer stored"
+  };
+  return labels[mode] || "Conversion brief";
+}
+
 class AppErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -667,6 +680,7 @@ function App() {
   const [reviewRowsTruncated, setReviewRowsTruncated] = useState(false);
   const [reviewMessage, setReviewMessage] = useState("");
   const [result, setResult] = useState(null);
+  const [conversionBrief, setConversionBrief] = useState(null);
   const [error, setError] = useState("");
   const [turnstileSiteKey, setTurnstileSiteKey] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
@@ -832,6 +846,7 @@ function App() {
     : formatRetentionCountdown(result?.sourceExpiresAt, retentionNow);
   const resultCountdown = formatRetentionCountdown(result?.resultExpiresAt, retentionNow);
   const paymentNotice = paymentNoticeForResult(result);
+  const activeConversionBrief = conversionBrief?.jobId && conversionBrief.jobId === result?.jobId ? conversionBrief : null;
 
   function trackPreviewEvent(eventType, overrides = {}) {
     const targetFile = overrides.file || file;
@@ -947,6 +962,36 @@ function App() {
     setReviewRowsTruncated(false);
     setReviewMessage("");
   }, [result?.jobId, result?.outputFormat]);
+
+  useEffect(() => {
+    if (result?.conversionBrief) {
+      setConversionBrief(result.conversionBrief);
+      return undefined;
+    }
+
+    if (!result?.jobId || result?.localDownloadUrl) {
+      setConversionBrief(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setConversionBrief(null);
+    fetchJson("/api/conversion-brief", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId: result.jobId, ...(result.token ? { token: result.token } : {}) })
+    }, { timeoutMs: 12000, fallback: "The conversion brief could not load." })
+      .then((payload) => {
+        if (!cancelled) setConversionBrief(payload);
+      })
+      .catch(() => {
+        if (!cancelled) setConversionBrief(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [result?.jobId, result?.token, result?.status, result?.paid, result?.validationReportAvailable, result?.redoAvailable, result?.localDownloadUrl, result?.conversionBrief]);
 
   useEffect(() => {
     if (!result?.sourceExpiresAt && !result?.resultExpiresAt) return undefined;
@@ -1754,6 +1799,24 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobId: result.jobId, ...(result.token ? { token: result.token } : {}) })
       }, { fallback: "This conversion could not be deleted." });
+      const deletionBrief = activeConversionBrief
+        ? {
+            ...activeConversionBrief,
+            generatedAt: new Date().toISOString(),
+            mode: "expired_or_deleted",
+            status: "deleted",
+            summary: payload.message || "This conversion is no longer stored. Upload again if you still need the file.",
+            retention: {
+              sourceExpiresAt: "",
+              resultExpiresAt: "",
+              sourceDeletedAt: payload.sourceDeletedAt || new Date().toISOString()
+            },
+            nextActions: [
+              "Upload the file again if you need a new conversion.",
+              "Delete old local downloads if they are no longer needed."
+            ]
+          }
+        : null;
       const nextResult = {
         ...payload,
         converterId: result.converterId,
@@ -1762,7 +1825,8 @@ function App() {
         previewRows: [],
         rowCount: 0,
         confidence: 0,
-        plan: result.plan
+        plan: result.plan,
+        ...(deletionBrief ? { conversionBrief: deletionBrief } : {})
       };
       setResultForFile(result.fileEntryId || activeFileId, nextResult);
     } catch (err) {
@@ -1779,6 +1843,41 @@ function App() {
     if (result?.status === "complete") return `Download ${resultFormatLabel(result?.outputFormat)}`;
     if (result?.paid) return `Generate ${resultFormatLabel(outputFormat)}`;
     return `Unlock full ${resultFormatLabel(outputFormat)} · ${displayPriceForPlan(result?.plan || selectedPlan, pricingPreview)}`;
+  }
+
+  function renderConversionBriefCard() {
+    if (!activeConversionBrief) return null;
+    return (
+      <div className="conversion-brief-card" aria-label="Conversion brief">
+        <div className="conversion-brief-heading">
+          <div>
+            <Wand2 size={17} />
+            <strong>Conversion brief</strong>
+          </div>
+          <span>{conversionBriefModeLabel(activeConversionBrief.mode)}</span>
+        </div>
+        <p>{activeConversionBrief.summary}</p>
+        <div className="conversion-brief-meta">
+          <span>{activeConversionBrief.outputLabel}</span>
+          <span>{activeConversionBrief.validation.rowCount} row{activeConversionBrief.validation.rowCount === 1 ? "" : "s"}</span>
+          <span>{Math.round((activeConversionBrief.validation.confidence || 0) * 100)}% confidence</span>
+        </div>
+        {activeConversionBrief.accountingReadiness?.applicable && (
+          <div className="conversion-brief-caution">
+            <ShieldCheck size={16} />
+            <span>{activeConversionBrief.accountingReadiness.checks[0]}</span>
+          </div>
+        )}
+        <ul>
+          {activeConversionBrief.nextActions.slice(0, 3).map((action) => (
+            <li key={action}>{action}</li>
+          ))}
+        </ul>
+        <a className="inline-text-button" href={activeConversionBrief.support.href || supportHrefForJob(result.jobId, "conversion")}>
+          Support handoff
+        </a>
+      </div>
+    );
   }
 
   if (routePath === "/formats") {
@@ -2270,25 +2369,31 @@ function App() {
                   </div>
                 </div>
               ) : result.status === "failed" ? (
-                <div className="failed-state">
-                  <AlertCircle size={24} />
-                  <strong>No charge.</strong>
-                  <p>{result.message || "The converter could not safely extract this file."}</p>
-                  <div className="failed-actions">
-                    <button type="button" className="secondary-button" onClick={handleUploadAnotherFile}>
-                      Upload another file
-                    </button>
-                    <a className="inline-text-button" href={supportHrefForJob(result.jobId, "conversion")}>
-                      Contact support
-                    </a>
+                <>
+                  <div className="failed-state">
+                    <AlertCircle size={24} />
+                    <strong>{activeConversionBrief?.mode === "refund_review" ? "Refund review." : "No charge."}</strong>
+                    <p>{activeConversionBrief?.summary || result.message || "The converter could not safely extract this file."}</p>
+                    <div className="failed-actions">
+                      <button type="button" className="secondary-button" onClick={handleUploadAnotherFile}>
+                        Upload another file
+                      </button>
+                      <a className="inline-text-button" href={activeConversionBrief?.support?.href || supportHrefForJob(result.jobId, "conversion")}>
+                        {activeConversionBrief?.mode === "refund_review" ? "Refund support" : "Contact support"}
+                      </a>
+                    </div>
                   </div>
-                </div>
+                  {renderConversionBriefCard()}
+                </>
               ) : result.status === "deleted" ? (
-                <div className="failed-state deleted-state">
-                  <Trash2 size={24} />
-                  <strong>Deleted.</strong>
-                  <p>{result.message || "This conversion and its stored files were deleted."}</p>
-                </div>
+                <>
+                  <div className="failed-state deleted-state">
+                    <Trash2 size={24} />
+                    <strong>Deleted.</strong>
+                    <p>{activeConversionBrief?.summary || result.message || "This conversion and its stored files were deleted."}</p>
+                  </div>
+                  {renderConversionBriefCard()}
+                </>
               ) : (
                 <>
                   <div className="table-wrap">
@@ -2320,6 +2425,8 @@ function App() {
                       </span>
                     ))}
                   </div>
+
+                  {renderConversionBriefCard()}
 
                   {result.status === "preview_ready" && !result.paid && (
                     <div className="sample-proof-note">
