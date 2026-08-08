@@ -1976,25 +1976,42 @@ function App() {
 
             {!file && (
               <div className="hero-lab-grid">
-                <label className="upload-target">
-                  <span className="upload-symbol">
-                    <Upload size={26} />
-                  </span>
-                  <span>
-                    <strong>Upload a bank statement for a private preview</strong>
-                    <small>PDF statements first. Other converter routes are available in the output picker.</small>
-                  </span>
-                  <span className="upload-go" aria-hidden="true">
-                    <ArrowRight size={20} />
-                  </span>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept={allAcceptedTypes(selectableConverters)}
-                    onChange={handleFileChange}
-                  />
-                </label>
+                <div className="upload-choice-stack">
+                  <label className="upload-target">
+                    <span className="upload-symbol">
+                      <Upload size={26} />
+                    </span>
+                    <span>
+                      <strong>Bank statement → accounting CSV</strong>
+                      <small>Upload a bank statement PDF for a private preview, review the rows, then export to QuickBooks, Xero, Wave, GnuCash, or CSV.</small>
+                    </span>
+                    <span className="upload-go" aria-hidden="true">
+                      <ArrowRight size={20} />
+                    </span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept={allAcceptedTypes(selectableConverters)}
+                      onChange={handleFileChange}
+                    />
+                  </label>
+                  <a className="other-conversions-card" href="/formats/">
+                    <span className="other-conversions-icon">
+                      <FileText size={20} />
+                    </span>
+                    <span>
+                      <strong>Other file conversions</strong>
+                      <small>
+                        Receipts, invoices, screenshots, audio, documents, images, video, and archives — availability
+                        depends on the exact input and output pair.
+                      </small>
+                    </span>
+                    <span className="upload-go" aria-hidden="true">
+                      <ArrowRight size={20} />
+                    </span>
+                  </a>
+                </div>
                 <div className="export-preview-card" aria-hidden="true">
                   <div className="export-preview-top">
                     <span>Preview output</span>
