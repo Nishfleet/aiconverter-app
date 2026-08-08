@@ -507,6 +507,7 @@ function queuePriceSummary(entries, pricingPreview) {
 function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Available");
+  const searchInputRef = useRef(null);
   const categories = useMemo(
     () => [
       "Available",
@@ -539,6 +540,21 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
   );
   const upcomingConverters = data.converters.filter((converter) => !isLiveConverter(converter));
   const coveredFamilies = ["Documents", "Images", "Audio", "Video", "Archives"];
+  const noFormatsMatch = visiblePairs.length === 0;
+  const noMatchHeading = normalizedQuery ? "No formats match your search" : "No formats in this category yet";
+  const noMatchMessage = normalizedQuery
+    ? `No formats match “${query.trim()}”${
+        category === "Available" ? " among the formats available now" : ` in ${category}`
+      }.`
+    : category === "Available"
+      ? "No formats are available yet."
+      : `No formats are listed under ${category} yet.`;
+
+  function resetFormatsFilters() {
+    setQuery("");
+    setCategory("Available");
+    searchInputRef.current?.focus();
+  }
 
   return (
     <main className="page-shell formats-page">
@@ -587,6 +603,7 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
         <label className="formats-search">
           <Search size={17} />
           <input
+            ref={searchInputRef}
             type="search"
             value={query}
             placeholder="Search a format"
@@ -608,20 +625,33 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
       </section>
 
       <section className="formats-grid" aria-label="Conversion options">
-        {visiblePairs.map((pair) => (
-          <article className={classNames("format-card", !pair.available && "is-disabled")} key={`${pair.converterId}-${pair.input}-${pair.output}-${pair.label}`}>
-            <div>
-              <span>{pair.category}</span>
-              <strong>{pair.label}</strong>
-              <p>{pair.detail}</p>
+        {noFormatsMatch ? (
+          <div className="formats-empty">
+            <div className="formats-empty-copy" role="status">
+              <h2>{noMatchHeading}</h2>
+              <p>{noMatchMessage}</p>
             </div>
-            <div className="format-card-meta">
-              <span>{pair.input}</span>
-              <ArrowRight size={14} />
-              <span>{pair.output}</span>
-            </div>
-          </article>
-        ))}
+            <button type="button" className="secondary-button" onClick={resetFormatsFilters}>
+              Clear search and filters
+              <RefreshCw size={15} />
+            </button>
+          </div>
+        ) : (
+          visiblePairs.map((pair) => (
+            <article className={classNames("format-card", !pair.available && "is-disabled")} key={`${pair.converterId}-${pair.input}-${pair.output}-${pair.label}`}>
+              <div>
+                <span>{pair.category}</span>
+                <strong>{pair.label}</strong>
+                <p>{pair.detail}</p>
+              </div>
+              <div className="format-card-meta">
+                <span>{pair.input}</span>
+                <ArrowRight size={14} />
+                <span>{pair.output}</span>
+              </div>
+            </article>
+          ))
+        )}
       </section>
 
       <section className="formats-confidence" aria-label="Conversion confidence rules">
