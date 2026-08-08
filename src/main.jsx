@@ -197,6 +197,7 @@ function pageBucket(count) {
 }
 
 function trackFunnelEvent(eventType, fields = {}) {
+  if (import.meta.env.DEV && ["localhost", "127.0.0.1"].includes(window.location.hostname)) return;
   const payload = JSON.stringify({ eventType, ...fields });
   fetch("/api/funnel-event", {
     method: "POST",
@@ -256,6 +257,19 @@ function supportHrefForJob(jobId = "", category = "conversion") {
   if (jobId) params.set("jobId", jobId);
   const query = params.toString();
   return `/support/${query ? `?${query}` : ""}`;
+}
+
+function conversionBriefModeLabel(mode = "") {
+  const labels = {
+    self_serve_preview: "Preview ready",
+    self_serve_unlock: "Ready to generate",
+    self_serve_download: "Ready to download",
+    wait_for_provider: "Generating",
+    safe_failure: "Stopped safely",
+    refund_review: "Refund review",
+    expired_or_deleted: "No longer stored"
+  };
+  return labels[mode] || "Conversion brief";
 }
 
 class AppErrorBoundary extends React.Component {
@@ -361,6 +375,12 @@ function downloadNameForResult(result) {
     qbo: "aiconverter-bank.qbo"
   };
   return names[extension] || `aiconverter-export.${extension}`;
+}
+
+function downloadNameFromDisposition(header, fallback) {
+  const value = String(header || "");
+  const match = value.match(/filename="([^"]+)"/i) || value.match(/filename=([^;]+)/i);
+  return match?.[1]?.trim() || fallback;
 }
 
 function previewMetricLabel(converterId, result) {
@@ -487,6 +507,7 @@ function queuePriceSummary(entries, pricingPreview) {
 function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Available");
+  const searchInputRef = useRef(null);
   const categories = useMemo(
     () => [
       "Available",
@@ -519,6 +540,21 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
   );
   const upcomingConverters = data.converters.filter((converter) => !isLiveConverter(converter));
   const coveredFamilies = ["Documents", "Images", "Audio", "Video", "Archives"];
+  const noFormatsMatch = visiblePairs.length === 0;
+  const noMatchHeading = normalizedQuery ? "No formats match your search" : "No formats in this category yet";
+  const noMatchMessage = normalizedQuery
+    ? `No formats match “${query.trim()}”${
+        category === "Available" ? " among the formats available now" : ` in ${category}`
+      }.`
+    : category === "Available"
+      ? "No formats are available yet."
+      : `No formats are listed under ${category} yet.`;
+
+  function resetFormatsFilters() {
+    setQuery("");
+    setCategory("Available");
+    searchInputRef.current?.focus();
+  }
 
   return (
     <main className="page-shell formats-page">
@@ -567,6 +603,7 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
         <label className="formats-search">
           <Search size={17} />
           <input
+            ref={searchInputRef}
             type="search"
             value={query}
             placeholder="Search a format"
@@ -588,20 +625,33 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
       </section>
 
       <section className="formats-grid" aria-label="Conversion options">
-        {visiblePairs.map((pair) => (
-          <article className={classNames("format-card", !pair.available && "is-disabled")} key={`${pair.converterId}-${pair.input}-${pair.output}-${pair.label}`}>
-            <div>
-              <span>{pair.category}</span>
-              <strong>{pair.label}</strong>
-              <p>{pair.detail}</p>
+        {noFormatsMatch ? (
+          <div className="formats-empty">
+            <div className="formats-empty-copy" role="status">
+              <h2>{noMatchHeading}</h2>
+              <p>{noMatchMessage}</p>
             </div>
-            <div className="format-card-meta">
-              <span>{pair.input}</span>
-              <ArrowRight size={14} />
-              <span>{pair.output}</span>
-            </div>
-          </article>
-        ))}
+            <button type="button" className="secondary-button" onClick={resetFormatsFilters}>
+              Clear search and filters
+              <RefreshCw size={15} />
+            </button>
+          </div>
+        ) : (
+          visiblePairs.map((pair) => (
+            <article className={classNames("format-card", !pair.available && "is-disabled")} key={`${pair.converterId}-${pair.input}-${pair.output}-${pair.label}`}>
+              <div>
+                <span>{pair.category}</span>
+                <strong>{pair.label}</strong>
+                <p>{pair.detail}</p>
+              </div>
+              <div className="format-card-meta">
+                <span>{pair.input}</span>
+                <ArrowRight size={14} />
+                <span>{pair.output}</span>
+              </div>
+            </article>
+          ))
+        )}
       </section>
 
       <section className="formats-confidence" aria-label="Conversion confidence rules">
@@ -649,6 +699,7 @@ function App() {
   const [email, setEmail] = useState("");
   const [converting, setConverting] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
+  const [sampleDownloading, setSampleDownloading] = useState(false);
   const [redoing, setRedoing] = useState(false);
   const [deletingJob, setDeletingJob] = useState(false);
   const [reviewRowsOpen, setReviewRowsOpen] = useState(false);
@@ -659,6 +710,7 @@ function App() {
   const [reviewRowsTruncated, setReviewRowsTruncated] = useState(false);
   const [reviewMessage, setReviewMessage] = useState("");
   const [result, setResult] = useState(null);
+  const [conversionBrief, setConversionBrief] = useState(null);
   const [error, setError] = useState("");
   const [turnstileSiteKey, setTurnstileSiteKey] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
@@ -824,6 +876,7 @@ function App() {
     : formatRetentionCountdown(result?.sourceExpiresAt, retentionNow);
   const resultCountdown = formatRetentionCountdown(result?.resultExpiresAt, retentionNow);
   const paymentNotice = paymentNoticeForResult(result);
+  const activeConversionBrief = conversionBrief?.jobId && conversionBrief.jobId === result?.jobId ? conversionBrief : null;
 
   function trackPreviewEvent(eventType, overrides = {}) {
     const targetFile = overrides.file || file;
@@ -843,6 +896,13 @@ function App() {
       jobId: overrides.jobId || ""
     });
   }
+
+  useEffect(() => {
+    trackFunnelEvent("page_view", {
+      sessionId: funnelSessionIdRef.current,
+      routePath
+    });
+  }, [routePath]);
 
   useEffect(() => {
     activeFileIdRef.current = activeFileId;
@@ -932,6 +992,36 @@ function App() {
     setReviewRowsTruncated(false);
     setReviewMessage("");
   }, [result?.jobId, result?.outputFormat]);
+
+  useEffect(() => {
+    if (result?.conversionBrief) {
+      setConversionBrief(result.conversionBrief);
+      return undefined;
+    }
+
+    if (!result?.jobId || result?.localDownloadUrl) {
+      setConversionBrief(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setConversionBrief(null);
+    fetchJson("/api/conversion-brief", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId: result.jobId, ...(result.token ? { token: result.token } : {}) })
+    }, { timeoutMs: 12000, fallback: "The conversion brief could not load." })
+      .then((payload) => {
+        if (!cancelled) setConversionBrief(payload);
+      })
+      .catch(() => {
+        if (!cancelled) setConversionBrief(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [result?.jobId, result?.token, result?.status, result?.paid, result?.validationReportAvailable, result?.redoAvailable, result?.localDownloadUrl, result?.conversionBrief]);
 
   useEffect(() => {
     if (!result?.sourceExpiresAt && !result?.resultExpiresAt) return undefined;
@@ -1349,6 +1439,7 @@ function App() {
   async function handleUnlock() {
     if (result?.localDownloadUrl) {
       downloadLocalFile(result);
+      trackPreviewEvent("download_success", { jobId: result.jobId || "" });
       return;
     }
     if (!result?.jobId) return;
@@ -1366,6 +1457,7 @@ function App() {
     setError("");
 
     try {
+      trackPreviewEvent("checkout_click", { jobId: result.jobId });
       const payload = await fetchJson("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1388,12 +1480,14 @@ function App() {
       }
 
       if (payload.mode === "checkout" && payload.checkoutUrl) {
+        trackPreviewEvent("checkout_redirect", { jobId: result.jobId });
         window.location.href = payload.checkoutUrl;
         return;
       }
 
       throw new Error("Payment is not ready yet.");
     } catch (err) {
+      trackPreviewEvent("checkout_error", { jobId: result.jobId, errorCode: "network_or_runtime" });
       setError(err.message || "Payment is not ready yet.");
     } finally {
       setUnlocking(false);
@@ -1405,6 +1499,7 @@ function App() {
     setUnlocking(true);
     setError("");
     try {
+      trackPreviewEvent("checkout_click", { fileCount: previewReadyServerResults.length });
       const jobs = previewReadyServerResults.map((entryResult) => ({
         jobId: entryResult.jobId,
         token: entryResult.token || "",
@@ -1426,15 +1521,48 @@ function App() {
 
       if (payload.mode === "checkout" && payload.checkoutUrl) {
         sessionStorage.setItem(BATCH_RETURN_KEY, JSON.stringify({ batchId: payload.batchId, jobs }));
+        trackPreviewEvent("checkout_redirect", { fileCount: jobs.length });
         window.location.href = payload.checkoutUrl;
         return;
       }
 
       throw new Error("Batch checkout is not ready yet.");
     } catch (err) {
+      trackPreviewEvent("checkout_error", { fileCount: previewReadyServerResults.length, errorCode: "network_or_runtime" });
       setError(err.message || "Batch checkout is not ready yet.");
     } finally {
       setUnlocking(false);
+    }
+  }
+
+  async function downloadPreviewCsv() {
+    if (!result?.jobId) return;
+    setSampleDownloading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/preview-download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: result.jobId, ...(result.token ? { token: result.token } : {}) })
+      });
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response, "The free sample could not be downloaded."));
+      }
+      const blob = await response.blob();
+      const href = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = href;
+      link.download = downloadNameFromDisposition(response.headers.get("content-disposition"), "aiconverter-preview.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(href);
+      trackPreviewEvent("free_sample_download", { jobId: result.jobId });
+    } catch (err) {
+      trackPreviewEvent("free_sample_error", { jobId: result.jobId, errorCode: "network_or_runtime" });
+      setError(err.message || "The free sample could not be downloaded.");
+    } finally {
+      setSampleDownloading(false);
     }
   }
 
@@ -1459,7 +1587,9 @@ function App() {
       link.click();
       link.remove();
       URL.revokeObjectURL(href);
+      trackPreviewEvent("download_success", { jobId });
     } catch (err) {
+      trackPreviewEvent("download_error", { jobId, errorCode: "network_or_runtime" });
       setError(err.message || "The converted file could not be downloaded.");
     } finally {
       setUnlocking(false);
@@ -1593,7 +1723,9 @@ function App() {
       link.click();
       link.remove();
       URL.revokeObjectURL(href);
+      trackPreviewEvent("download_success", { fileCount: completedServerResults.length });
     } catch (err) {
+      trackPreviewEvent("download_error", { fileCount: completedServerResults.length, errorCode: "network_or_runtime" });
       setError(err.message || "The ZIP could not be downloaded.");
     }
   }
@@ -1619,7 +1751,9 @@ function App() {
       const planId = typeof payload.plan === "string" ? payload.plan : payload.plan?.id;
       const nextResult = { ...payload, plan: data.pricing.find((plan) => plan.id === planId) || payload.plan || selectedPlan };
       setResultForFile(fileId, nextResult);
+      trackPreviewEvent(payload.status === "complete" ? "finalize_success" : "finalize_error", { jobId });
     } catch (err) {
+      trackPreviewEvent("finalize_error", { jobId, errorCode: "network_or_runtime" });
       setError(err.message || "The full file could not be prepared.");
     } finally {
       setUnlocking(false);
@@ -1695,6 +1829,24 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobId: result.jobId, ...(result.token ? { token: result.token } : {}) })
       }, { fallback: "This conversion could not be deleted." });
+      const deletionBrief = activeConversionBrief
+        ? {
+            ...activeConversionBrief,
+            generatedAt: new Date().toISOString(),
+            mode: "expired_or_deleted",
+            status: "deleted",
+            summary: payload.message || "This conversion is no longer stored. Upload again if you still need the file.",
+            retention: {
+              sourceExpiresAt: "",
+              resultExpiresAt: "",
+              sourceDeletedAt: payload.sourceDeletedAt || new Date().toISOString()
+            },
+            nextActions: [
+              "Upload the file again if you need a new conversion.",
+              "Delete old local downloads if they are no longer needed."
+            ]
+          }
+        : null;
       const nextResult = {
         ...payload,
         converterId: result.converterId,
@@ -1703,7 +1855,8 @@ function App() {
         previewRows: [],
         rowCount: 0,
         confidence: 0,
-        plan: result.plan
+        plan: result.plan,
+        ...(deletionBrief ? { conversionBrief: deletionBrief } : {})
       };
       setResultForFile(result.fileEntryId || activeFileId, nextResult);
     } catch (err) {
@@ -1719,7 +1872,42 @@ function App() {
     if (unlocking) return result?.status === "preview_ready" && result?.paid ? "Generating full file..." : "Preparing...";
     if (result?.status === "complete") return `Download ${resultFormatLabel(result?.outputFormat)}`;
     if (result?.paid) return `Generate ${resultFormatLabel(outputFormat)}`;
-    return `Unlock ${resultFormatLabel(outputFormat)} · ${displayPriceForPlan(result?.plan || selectedPlan, pricingPreview)}`;
+    return `Unlock full ${resultFormatLabel(outputFormat)} · ${displayPriceForPlan(result?.plan || selectedPlan, pricingPreview)}`;
+  }
+
+  function renderConversionBriefCard() {
+    if (!activeConversionBrief) return null;
+    return (
+      <div className="conversion-brief-card" aria-label="Conversion brief">
+        <div className="conversion-brief-heading">
+          <div>
+            <Wand2 size={17} />
+            <strong>Conversion brief</strong>
+          </div>
+          <span>{conversionBriefModeLabel(activeConversionBrief.mode)}</span>
+        </div>
+        <p>{activeConversionBrief.summary}</p>
+        <div className="conversion-brief-meta">
+          <span>{activeConversionBrief.outputLabel}</span>
+          <span>{activeConversionBrief.validation.rowCount} row{activeConversionBrief.validation.rowCount === 1 ? "" : "s"}</span>
+          <span>{Math.round((activeConversionBrief.validation.confidence || 0) * 100)}% confidence</span>
+        </div>
+        {activeConversionBrief.accountingReadiness?.applicable && (
+          <div className="conversion-brief-caution">
+            <ShieldCheck size={16} />
+            <span>{activeConversionBrief.accountingReadiness.checks[0]}</span>
+          </div>
+        )}
+        <ul>
+          {activeConversionBrief.nextActions.slice(0, 3).map((action) => (
+            <li key={action}>{action}</li>
+          ))}
+        </ul>
+        <a className="inline-text-button" href={activeConversionBrief.support.href || supportHrefForJob(result.jobId, "conversion")}>
+          Support handoff
+        </a>
+      </div>
+    );
   }
 
   if (routePath === "/formats") {
@@ -1735,7 +1923,7 @@ function App() {
   return (
     <main className="page-shell">
       <div className="announcement-bar" aria-label="Product status">
-        <p>Private previews are live.</p>
+        <p>Free sample CSV before checkout.</p>
         <a href="#start">Start free preview →</a>
       </div>
 
@@ -1776,18 +1964,17 @@ function App() {
         <div className="landing-hero-grid">
           <div className="conversion-heading">
             <a className="hero-chip-row" href="#start" aria-label="Start with a free preview">
-              <span>Preview before checkout</span>
+              <span>Preview and sample before checkout</span>
               <ArrowRight size={14} />
             </a>
             <h1>
-              <span>Messy files in.</span>
+              <span>Bank statement PDFs in.</span>
               {" "}
-              <strong>Clean exports out.</strong>
+              <strong>Accounting CSV out.</strong>
             </h1>
             <p>
-              Upload a bank statement, receipt, invoice, document, audio file,
-              image, or archive. <BrandName /> generates a real preview first and
-              only charges when you unlock the export.
+              Upload a bank statement PDF, choose a Xero, Wave, QuickBooks, or spreadsheet CSV,
+              review the rows, and download a free sample before unlocking the full export.
             </p>
           </div>
 
@@ -1795,9 +1982,9 @@ function App() {
           <form className="conversion-flow" id="start" onSubmit={handleConvert}>
             <div className="workspace-console-bar" aria-hidden="true">
               <span>Bank PDFs</span>
-              <span>Receipts</span>
-              <span>Documents</span>
-              <span>Any file</span>
+              <span>Xero CSV</span>
+              <span>Wave CSV</span>
+              <span>QuickBooks CSV</span>
             </div>
             {file && (
               <div className="flow-rail" aria-label="Conversion steps">
@@ -1819,25 +2006,42 @@ function App() {
 
             {!file && (
               <div className="hero-lab-grid">
-                <label className="upload-target">
-                  <span className="upload-symbol">
-                    <Upload size={26} />
-                  </span>
-                  <span>
-                    <strong>Upload a file for a private preview</strong>
-                    <small>PDFs, images, audio, documents, media, and archives</small>
-                  </span>
-                  <span className="upload-go" aria-hidden="true">
-                    <ArrowRight size={20} />
-                  </span>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept={allAcceptedTypes(selectableConverters)}
-                    onChange={handleFileChange}
-                  />
-                </label>
+                <div className="upload-choice-stack">
+                  <label className="upload-target">
+                    <span className="upload-symbol">
+                      <Upload size={26} />
+                    </span>
+                    <span>
+                      <strong>Bank statement → accounting CSV</strong>
+                      <small>Upload a bank statement PDF for a private preview, review the rows, then export to QuickBooks, Xero, Wave, GnuCash, or CSV.</small>
+                    </span>
+                    <span className="upload-go" aria-hidden="true">
+                      <ArrowRight size={20} />
+                    </span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept={allAcceptedTypes(selectableConverters)}
+                      onChange={handleFileChange}
+                    />
+                  </label>
+                  <a className="other-conversions-card" href="/formats/">
+                    <span className="other-conversions-icon">
+                      <FileText size={20} />
+                    </span>
+                    <span>
+                      <strong>Other file conversions</strong>
+                      <small>
+                        Receipts, invoices, screenshots, audio, documents, images, video, and archives — availability
+                        depends on the exact input and output pair.
+                      </small>
+                    </span>
+                    <span className="upload-go" aria-hidden="true">
+                      <ArrowRight size={20} />
+                    </span>
+                  </a>
+                </div>
                 <div className="export-preview-card" aria-hidden="true">
                   <div className="export-preview-top">
                     <span>Preview output</span>
@@ -1876,11 +2080,11 @@ function App() {
               <div className="quiet-benefits" aria-label="Conversion guardrails">
                 <span>
                   <FileText size={15} />
-                  Real preview first
+                  Accounting CSV prep
                 </span>
                 <span>
                   <ShieldCheck size={15} />
-                  Pay only to export
+                  Free sample CSV
                 </span>
                 <span>
                   <Database size={15} />
@@ -2212,25 +2416,31 @@ function App() {
                   </div>
                 </div>
               ) : result.status === "failed" ? (
-                <div className="failed-state">
-                  <AlertCircle size={24} />
-                  <strong>No charge.</strong>
-                  <p>{result.message || "The converter could not safely extract this file."}</p>
-                  <div className="failed-actions">
-                    <button type="button" className="secondary-button" onClick={handleUploadAnotherFile}>
-                      Upload another file
-                    </button>
-                    <a className="inline-text-button" href={supportHrefForJob(result.jobId, "conversion")}>
-                      Contact support
-                    </a>
+                <>
+                  <div className="failed-state">
+                    <AlertCircle size={24} />
+                    <strong>{activeConversionBrief?.mode === "refund_review" ? "Refund review." : "No charge."}</strong>
+                    <p>{activeConversionBrief?.summary || result.message || "The converter could not safely extract this file."}</p>
+                    <div className="failed-actions">
+                      <button type="button" className="secondary-button" onClick={handleUploadAnotherFile}>
+                        Upload another file
+                      </button>
+                      <a className="inline-text-button" href={activeConversionBrief?.support?.href || supportHrefForJob(result.jobId, "conversion")}>
+                        {activeConversionBrief?.mode === "refund_review" ? "Refund support" : "Contact support"}
+                      </a>
+                    </div>
                   </div>
-                </div>
+                  {renderConversionBriefCard()}
+                </>
               ) : result.status === "deleted" ? (
-                <div className="failed-state deleted-state">
-                  <Trash2 size={24} />
-                  <strong>Deleted.</strong>
-                  <p>{result.message || "This conversion and its stored files were deleted."}</p>
-                </div>
+                <>
+                  <div className="failed-state deleted-state">
+                    <Trash2 size={24} />
+                    <strong>Deleted.</strong>
+                    <p>{activeConversionBrief?.summary || result.message || "This conversion and its stored files were deleted."}</p>
+                  </div>
+                  {renderConversionBriefCard()}
+                </>
               ) : (
                 <>
                   <div className="table-wrap">
@@ -2263,6 +2473,15 @@ function App() {
                     ))}
                   </div>
 
+                  {renderConversionBriefCard()}
+
+                  {result.status === "preview_ready" && !result.paid && (
+                    <div className="sample-proof-note">
+                      <Download size={16} />
+                      <span>Download the preview rows free. Full statement export unlocks after checkout.</span>
+                    </div>
+                  )}
+
                   {["preview_ready", "complete", "converting_full"].includes(result.status) && (
                     <div className="result-card">
                       <div>
@@ -2284,6 +2503,12 @@ function App() {
                         </div>
                       )}
                       <div className="result-actions">
+                        {result.status === "preview_ready" && !result.paid && (
+                          <button className="secondary-button" onClick={downloadPreviewCsv} disabled={sampleDownloading || unlocking} type="button">
+                            {sampleDownloading ? "Downloading sample..." : "Free sample CSV"}
+                            {sampleDownloading ? <LoaderCircle className="spin" size={17} /> : <Download size={17} />}
+                          </button>
+                        )}
                         <button className="primary-button" onClick={handleUnlock} disabled={unlocking || result.status === "converting_full"}>
                           {resultButtonLabel()}
                           {unlocking ? (

@@ -16,7 +16,7 @@ Live:
 - Direct browser upload.
 - Built-in parser first for digital PDFs.
 - OCR fallback for scanned or messy PDFs when configured.
-- Free sample preview before payment.
+- Free preview and downloadable sample CSV before payment.
 - Full extraction and CSV download after payment.
 - One automatic stronger redo for paid jobs.
 - No email intake for bank statements.
@@ -44,7 +44,7 @@ The homepage ticker and /formats page suggest common requests that fit the curre
 
 ## Pricing
 
-- Free preview: first rows before payment.
+- Free preview: first rows can be downloaded before payment.
 - Starter: ₹399 for 25 pages or images.
 - Standard: ₹799 for 100 pages or images.
 - Bulk: ₹1,399 for 500 pages or images.
@@ -89,7 +89,7 @@ It is built for short retention, private storage, and clear failure states.
 ## Live
 
 - Bank statement PDF to CSV.
-- Sample preview before payment.
+- Preview and downloadable sample before payment.
 - Paid full export and download.
 - One stronger automatic redo for paid jobs.
 - Image format and raster-to-SVG tools.
@@ -167,7 +167,7 @@ AI Converter turns bank statement PDFs into spreadsheet-ready CSV. Upload the PD
 
 ## Pricing
 
-- Free preview.
+- Free preview and sample CSV download.
 - ₹399 for up to 25 pages.
 - ₹799 for up to 100 pages.
 - ₹1,399 for up to 500 pages.
@@ -424,7 +424,7 @@ AI Converter provides automated file conversion. It is a data conversion tool, n
 
 ## Workflow
 
-The first production AI workflow is bank statement PDF to CSV. Receipt, invoice, screenshot-table, audio transcript, document Markdown, screenshot-to-HTML, and common file-format conversion are available when configured. Upload a supported file, review a free sample preview, then pay once to generate and download the selected output.
+The first production AI workflow is bank statement PDF to CSV. Receipt, invoice, screenshot-table, audio transcript, document Markdown, screenshot-to-HTML, and common file-format conversion are available when configured. Upload a supported file, review and download a free sample preview, then pay once to generate and download the selected output.
 
 ## User responsibility
 
@@ -432,7 +432,7 @@ You are responsible for checking exported files before using them for bookkeepin
 
 ## Payment and access
 
-A sample preview is free. Paid access unlocks the full extraction for the selected page pack. The service may reject files, block repeated previews, or limit access when needed to protect users, data, infrastructure, or the refund policy.
+A sample preview is free and can be downloaded as a CSV sample. Paid access unlocks the full extraction for the selected page pack. The service may reject files, block repeated previews, or limit access when needed to protect users, data, infrastructure, or the refund policy.
 
 ## Redo and refund
 
@@ -628,6 +628,32 @@ const markdownByRoute = new Map([
 
 const textLikeRoutes = new Set(markdownByRoute.keys());
 
+function notFoundMarkdown(pathname) {
+  return `---
+title: Page not found - AI Converter
+description: This AI Converter route does not exist.
+---
+
+# 404 - Page not found
+
+The requested route \`${pathname || "/"}\` does not match a live AI Converter page.
+
+Use one of the real routes:
+
+- [bank statement PDF to CSV](/bank-statement-pdf-to-csv/)
+- [PDF bank statement to QuickBooks CSV](/pdf-bank-statement-to-quickbooks-csv/)
+- [PDF bank statement to Xero CSV](/pdf-bank-statement-to-xero-csv/)
+- [PDF bank statement to Wave CSV](/pdf-bank-statement-to-wave-csv/)
+- [scanned bank statement to Excel](/scanned-bank-statement-to-excel/)
+- [credit card statement PDF to CSV](/credit-card-statement-pdf-to-csv/)
+- [formats page](/formats/)
+- [privacy policy](/privacy/)
+- [security notes](/security/)
+- [data retention policy](/data-retention/)
+- [refund policy](/refund/)
+`;
+}
+
 function wantsMarkdown(request) {
   const accept = request.headers.get("Accept") || "";
   return accept.toLowerCase().includes("text/markdown");
@@ -654,9 +680,12 @@ export async function onRequest(context) {
   }
 
   if ((request.method === "GET" || request.method === "HEAD") && wantsMarkdown(request) && isPageRequest(url)) {
-    const markdownBody = markdownByRoute.get(normalizePagePath(url.pathname)) || markdown;
+    const normalizedPath = normalizePagePath(url.pathname);
+    const knownMarkdown = markdownByRoute.get(normalizedPath);
+    const markdownBody = knownMarkdown || notFoundMarkdown(url.pathname);
     return withSecurityHeaders(
       new Response(request.method === "HEAD" ? null : markdownBody, {
+        status: knownMarkdown ? 200 : 404,
         headers: {
           "Content-Type": "text/markdown; charset=utf-8",
           "Cache-Control": "public, max-age=300",

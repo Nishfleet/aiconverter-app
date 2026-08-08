@@ -2,12 +2,15 @@
   const params = new URLSearchParams(window.location.search);
   const jobId = (params.get("jobId") || "").replace(/[^a-zA-Z0-9_:-]/g, "").slice(0, 80);
   const category = (params.get("category") || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40);
+  const message = (params.get("message") || "").slice(0, 1000);
   const jobIdInput = document.querySelector('input[name="jobId"]');
   const categorySelect = document.querySelector('select[name="category"]');
+  const messageInput = document.querySelector('textarea[name="message"]');
   if (jobId && jobIdInput) jobIdInput.value = jobId;
   if (category && categorySelect && [...categorySelect.options].some((option) => option.value === category)) {
     categorySelect.value = category;
   }
+  if (message && messageInput && !messageInput.value) messageInput.value = message;
 
   const container = document.querySelector("[data-turnstile-support]");
   if (!container) return;

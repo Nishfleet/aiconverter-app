@@ -464,7 +464,7 @@ export function confidenceDetailsForConverter(converter, outputFormat, options =
       : local
         ? `${output} file generated privately`
         : `${output} preview before full export`,
-    preview: local ? "Instant download" : provider ? "Preview first, full file after unlock" : "Free sample preview before payment",
+    preview: local ? "Instant download" : provider ? "Preview first, full file after unlock" : "Free downloadable sample before payment",
     privacy: local ? "No upload needed" : "Private storage, tokened job access, short retention",
     limit: `${maxSizeMb} MB max${converter?.id === "bank" ? ", 500 pages max" : ""}`,
     state: provider ? (providerReady ? "Available now" : "Coming soon") : converter?.state || "Live"

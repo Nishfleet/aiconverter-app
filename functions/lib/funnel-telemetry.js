@@ -1,6 +1,7 @@
 import { randomId, requestFingerprint } from "./jobs.js";
 
 export const FUNNEL_EVENTS = new Set([
+  "page_view",
   "file_selected",
   "output_selected",
   "turnstile_loaded",
@@ -8,7 +9,16 @@ export const FUNNEL_EVENTS = new Set([
   "turnstile_fail",
   "preview_click",
   "preview_success",
-  "preview_error"
+  "preview_error",
+  "free_sample_download",
+  "free_sample_error",
+  "checkout_click",
+  "checkout_redirect",
+  "checkout_error",
+  "finalize_success",
+  "finalize_error",
+  "download_success",
+  "download_error"
 ]);
 
 const INPUT_KINDS = new Set(["", "pdf", "image", "audio", "video", "document", "archive", "other"]);

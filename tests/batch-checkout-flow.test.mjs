@@ -4,6 +4,8 @@ import { onRequestPost as batchCheckout } from "../functions/api/batch-checkout.
 import { processDodoWebhookEvent } from "../functions/lib/dodo.js";
 import { sha256 } from "../functions/lib/jobs.js";
 
+const futureExpiry = () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
 test("batch checkout creates one Dodo handoff for multiple previewed jobs", async () => {
   const token = "tok_batch_checkout";
   const env = await fakeEnv(token);
@@ -224,6 +226,6 @@ function previewJob(id, tokenHash, pages) {
     estimated_pages: pages,
     converter_id: "bank",
     result_key: `jobs/${id}/result.csv`,
-    expires_at: "2026-05-25T00:00:00.000Z"
+    expires_at: futureExpiry()
   };
 }

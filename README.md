@@ -21,6 +21,7 @@ Current image modules:
 ## Live Infrastructure
 
 - Public domain: `https://aiconverter.app`
+- Authoritative DNS: Porkbun nameservers, with apex ALIAS and `www` CNAME pointed at `aiconverter-wnm.pages.dev`
 - Cloudflare Pages project: `aiconverter`
 - D1 database: `aiconverter`
 - R2 bucket: `aiconverter-private`
@@ -46,6 +47,7 @@ npm run readiness:live
 ```
 
 Database notes: [ops/database.md](ops/database.md)
+DNS notes: [ops/dns.md](ops/dns.md)
 Monitoring notes: [ops/monitoring.md](ops/monitoring.md)
 Private corpus notes: [ops/private-corpus.md](ops/private-corpus.md)
 
