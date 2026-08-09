@@ -1,7 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { sanitizeFunnelEvent, recordFunnelEvent } from "../functions/lib/funnel-telemetry.js";
 import { onRequestPost as funnelEvent } from "../functions/api/funnel-event.js";
+
+test("funnel beacon uses sendBeacon so rendered page loads reach network idle", () => {
+  const source = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
+  const beacon = source.slice(source.indexOf("function trackFunnelEvent"), source.indexOf("async function readJsonSafe"));
+  assert.match(beacon, /navigator\.sendBeacon\("\/api\/funnel-event", new Blob\(\[payload\], \{ type: "application\/json" \}\)/);
+  assert.doesNotMatch(beacon, /keepalive/, "the funnel beacon must not use a keepalive fetch() POST, which Chromium never reports as finished on the Cloudflare edge and blocks network idle");
+  assert.match(beacon, /payload\.length < 1200/, "oversized or unsupported payloads still fall back to a plain fetch() POST");
+});
 
 test("funnel telemetry accepts only safe event fields", () => {
   const sanitized = sanitizeFunnelEvent({

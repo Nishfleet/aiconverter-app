@@ -199,11 +199,20 @@ function pageBucket(count) {
 function trackFunnelEvent(eventType, fields = {}) {
   if (import.meta.env.DEV && ["localhost", "127.0.0.1"].includes(window.location.hostname)) return;
   const payload = JSON.stringify({ eventType, ...fields });
+  // sendBeacon keeps the same POST semantics that let events sent right
+  // before navigation still arrive, but Chromium reports it as a finished
+  // request. A fetch() POST beacon stays "in flight" from the network stack's
+  // view on the Cloudflare edge, so the page never reaches network idle and
+  // rendered-load audits time out on the home page. Fall back to fetch only
+  // when sendBeacon cannot queue the payload.
+  if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function" && payload.length < 1200) {
+    navigator.sendBeacon("/api/funnel-event", new Blob([payload], { type: "application/json" }));
+    return;
+  }
   fetch("/api/funnel-event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: payload,
-    keepalive: payload.length < 1200
+    body: payload
   }).catch(() => {});
 }
 
