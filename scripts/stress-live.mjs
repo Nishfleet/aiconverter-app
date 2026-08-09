@@ -29,7 +29,17 @@ for (let round = 0; round < rounds; round += 1) {
       timings.push(elapsed);
       if (!response.ok) failures.push({ url, status: response.status, elapsed });
       if (path === "/" && !body.includes("AI Converter")) failures.push({ url, status: "missing-brand", elapsed });
-      if (path === "/formats" && !body.includes("AI Converter")) failures.push({ url, status: "missing-formats-shell", elapsed });
+      if (path === "/formats") {
+        if (!body.includes("AI Converter")) failures.push({ url, status: "missing-formats-shell", elapsed });
+        // First-paint structure, kept in step with tests/seo-static-regression.test.mjs:
+        // the deployed page must inline critical styles and must not keep a
+        // render-blocking stylesheet in the head. Catches stale deploys where
+        // the page would render blank until /legal.css arrives.
+        const head = body.slice(0, body.indexOf("</head>"));
+        if (!/<style>[\s\S]*?<\/style>/.test(body) || /rel="stylesheet"/.test(head)) {
+          failures.push({ url, status: "formats-blank-first-paint", elapsed });
+        }
+      }
       if (path === "/api/health") {
         const health = JSON.parse(body);
         if (!health.ok) failures.push({ url, status: "health-not-ready", missing: health.missing || [], elapsed });
