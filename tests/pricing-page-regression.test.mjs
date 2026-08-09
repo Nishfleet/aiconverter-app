@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import pricing from "../src/data/converters.json" with { type: "json" };
+import { onRequest } from "../functions/_middleware.js";
 
 const pricingPage = readFileSync(new URL("../public/pricing/index.html", import.meta.url), "utf8");
 const appSource = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
@@ -29,4 +30,26 @@ test("pricing page is a canonical, crawlable surface with a preview-flow CTA", (
   assert.match(pricingPage, /href="\/#start"/, "pricing page CTA should reach the preview flow");
   assert.match(pricingPage, /preview/, "pricing page should state the preview-first boundary");
   assert.match(pricingPage, /application\/ld\+json/, "pricing page should include JSON-LD schema");
+});
+
+test("agent markdown negotiation for /pricing/ returns the live pricing markdown, not a 404", async () => {
+  const response = await onRequest({
+    request: new Request("https://aiconverter.app/pricing/", {
+      headers: { Accept: "text/markdown" }
+    }),
+    next() {
+      throw new Error("middleware should serve the negotiated pricing markdown directly");
+    }
+  });
+  const body = await response.text();
+  assert.equal(response.status, 200, "Accept: text/markdown for /pricing/ should resolve, not 404");
+  assert.match(response.headers.get("Content-Type"), /^text\/markdown/, "negotiated response should be markdown");
+  assert.match(body, /^# Pricing/m, "negotiated markdown should be the pricing page");
+  for (const plan of pricing.pricing) {
+    assert.ok(
+      body.includes(`${plan.price} for ${plan.pages} pages`),
+      `negotiated markdown should state "${plan.price} for ${plan.pages} pages"`
+    );
+  }
+  assert.match(body, /Free preview and downloadable sample CSV before checkout/, "negotiated markdown should keep the preview-first terms");
 });
