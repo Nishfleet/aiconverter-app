@@ -149,6 +149,32 @@ AI Converter lists only routes the live app is allowed to offer.
 Formats count as available only when the live app accepts that input and output pair. AI Converter does not claim every file, every bank, every statement, every receipt, every invoice, every screenshot, every document, every media file, or every archive will work.
 `;
 
+const pricingMarkdown = `---
+title: Pricing
+description: AI Converter one-time pack prices for 25, 100, or 500 pages, with a free preview and sample CSV before checkout.
+canonical: https://aiconverter.app/pricing/
+---
+
+# Pricing
+
+AI Converter sells one-time page packs in Indian Rupees. Prices are paid only after a free preview and sample CSV are available.
+
+- Starter: ₹399 for 25 pages.
+- Standard: ₹799 for 100 pages.
+- Bulk: ₹1,399 for 500 pages.
+
+How payment works:
+
+- Free preview and downloadable sample CSV before checkout.
+- One-time packs, no subscription.
+- Paid full export and download after the preview.
+- One stronger automatic redo for paid jobs.
+- Low-confidence conversions fail closed with no charge.
+- Source files use a 24-hour private retention window; generated files expire after 7 days.
+
+AI Converter does not claim every bank, every statement format, guaranteed accuracy, or official accounting-platform integration. Review exports against the original source before important use.
+`;
+
 const bankStatementMarkdown = `---
 title: Bank statement PDF to CSV
 description: Convert a bank statement PDF to CSV with direct upload, free preview, paid unlock, and short source-file retention.
@@ -607,6 +633,7 @@ const markdownByRoute = new Map([
   ["/", markdown],
   ["/index.html", markdown],
   ["/formats", formatsMarkdown],
+  ["/pricing", pricingMarkdown],
   ["/about", aboutMarkdown],
   ["/bank-statement-pdf-to-csv", bankStatementMarkdown],
   ["/convert-bank-statement-to-csv", convertMarkdown],
