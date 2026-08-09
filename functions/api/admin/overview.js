@@ -151,13 +151,20 @@ export async function onRequestGet({ request, env }) {
     ),
     queryAll(
       env,
-      `SELECT event_type, job_id, payment_id, checkout_session_id, plan_id, status, match_status, created_at
+      `SELECT event_type, job_id, payment_id, checkout_session_id, plan_id, status, amount, match_status, created_at
        FROM dodo_payment_events
        WHERE COALESCE(match_status, '') NOT IN ('', 'matched')
          AND NOT (
            COALESCE(job_id, '') = ''
            AND event_type = 'payment.failed'
            AND status = 'failed'
+           AND match_status = 'job_not_found'
+         )
+         AND NOT (
+           COALESCE(job_id, '') = ''
+           AND event_type = 'payment.succeeded'
+           AND status = 'succeeded'
+           AND COALESCE(amount, 0) = 0
            AND match_status = 'job_not_found'
          )
        ORDER BY created_at DESC
@@ -522,7 +529,16 @@ export function isActionableUnmatchedPayment(row = {}) {
   const status = String(row.status || "").toLowerCase();
   const matchStatus = String(row.match_status || row.matchStatus || "").toLowerCase();
   const jobId = String(row.job_id || row.jobId || "").trim();
-  return !(eventType === "payment.failed" && status === "failed" && matchStatus === "job_not_found" && !jobId);
+  const amount = Number(row.amount ?? row.amountMinor ?? 0) || 0;
+  // Test/sandbox noise with no app job attached is not actionable:
+  // - payment.failed with no job id (never matched an app job)
+  // - zero-amount payment.succeeded with no job id (Dodo sandbox checkout;
+  //   decision 2026-08-10: exempt as long as no money moved, so a real
+  //   paid-but-unmatched event still alerts)
+  const isNonActionableTestEvent =
+    (eventType === "payment.failed" && status === "failed" && matchStatus === "job_not_found" && !jobId) ||
+    (eventType === "payment.succeeded" && status === "succeeded" && matchStatus === "job_not_found" && !jobId && amount === 0);
+  return !isNonActionableTestEvent;
 }
 
 function safeCountFromFunnel(rows, eventType) {
