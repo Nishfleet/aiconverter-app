@@ -2,11 +2,13 @@
 
 Durable record of launch-venue decisions and submission kits for aiconverter.app.
 Live-production claims only: everything below is grounded in live pages and
-`/llms.txt` (verified 2026-08-09). Automated submission is blocked for both
-venues by the fleet venue policy ledger (`agent-state/growth-loop/venue-policy.json`
-and the `venue-claim` guard): Product Hunt is reviewed as prohibiting automation,
-BetaList is not yet reviewed. Account actions stay with Nish. The kits below make
-each manual submission a copy-paste job.
+`/llms.txt` (verified 2026-08-09; Toolbit.ai section checked 2026-08-10). Automated
+submission is blocked for all three venues by the fleet venue policy ledger
+(`agent-state/growth-loop/venue-policy.json` and the `venue-claim` guard): Product
+Hunt is reviewed as prohibiting automation, BetaList is not yet reviewed, and
+Toolbit.ai is not allowlisted (not yet reviewed; its ToS explicitly prohibits
+robots/spiders/automatic access — see its section). Account actions stay with Nish.
+The kits below make each manual submission a copy-paste job.
 
 ## Product Hunt
 
@@ -96,10 +98,84 @@ each manual submission a copy-paste job.
 - Category suggestions: AI Tools, Personal Finance, Productivity
 - Website: https://aiconverter.app
 
+## Toolbit.ai
+
+### Decision (dated 2026-08-10)
+
+- **Decision: SUBMIT — free community listing first ("Launch Tool $0"), manual by
+  Nish. Paid plan recorded and deferred.**
+- Reason: Toolbit.ai is a live, category-relevant AI tools directory (homepage:
+  "search 10,000+ AI tools") that already lists exact-category competitors:
+  StatementSheet (https://toolbit.ai/ai-tool/statementsheet — "Convert PDF bank
+  statements to Excel or CSV", Data Extraction, 9.5K monthly visits, paid) and
+  Rocket Statements ("Convert Bank Statements to Excel, CSV & JSON", Document
+  Analysis / OCR, 4.8K monthly visits, paid). Search `q=aiconverter` returns no
+  aiconverter.app result (unrelated tools only: ConvertFiles.ai, ipic.ai,
+  AICoverGen, and a different product named "AI Convert" under Creative Tools),
+  so there is no duplicate — the category is hosted, only this listing is missing.
+- Free plan first (plans verified live on https://toolbit.ai/submit, 2026-08-10):
+  the free community listing is **Launch Tool $0 / Forever** — free with Launch
+  Badge verification, do-follow SEO backlink, reviewed up to 3 days, permanent
+  directory listing. FAQ (homepage): "Free community listings require embedding
+  our Launch Badge on your website and are reviewed in 24 to 48 hours."
+- Paid option recorded (deferred): **Launch Tool $29 / One-time** — listed within
+  24h, blue verified badge, sidebar featured (1 day), permanent directory
+  listing, one social media (X) post. ToS section 5: paid submissions are charged
+  at checkout before review; full refund (minus processing fees) if rejected.
+  Decision: the $29 paid launch is an optional commercial call by Nish, not
+  required for the free listing.
+- Verified requirement: the free listing's verification step is embedding
+  Toolbit's Launch Badge on aiconverter.app. The badge snippet is account-gated
+  (only revealed in the submission flow; /launch-badge, /badge and
+  /submit/launch-badge all 404), so embedding is a follow-up owner action that
+  needs a tiny deploy once Nish has the snippet.
+- Constraint: `/submit/tool` redirects to `/login` (signup at /signup) —
+  account-gated. toolbit.ai is not in the venue policy allowlist
+  (`automation_disposition: unknown`, not yet reviewed in `venue-policy.json`);
+  verified live `venue-claim claim toolbit.ai aiconverter ...` exits 4
+  (ALLOWLIST/POLICY BLOCK: "venue toolbit.ai is unknown (not allowlisted, not
+  reviewed)"), so the agent must not drive a browser submission. ToS review lead
+  (https://toolbit.ai/terms-and-conditions, last updated 2026-07-20): section 7
+  "Prohibited Uses" prohibits "any robot, spider, or other automatic device,
+  process, or means to access Service for any purpose" — same class of language
+  as Product Hunt's prohibition; flag for the venue research desk (the guard
+  stays exit-4 either way). Submission (create account, submit via the
+  account-gated flow, embed the Launch Badge) is a human account action, same as
+  the other venues.
+- Next action: Nish signs in (Google or email) and submits using the kit below,
+  embeds the Launch Badge snippet on aiconverter.app (tiny deploy) to complete
+  the free-verified listing, then this file should be updated with the public
+  tool URL.
+
+### Manual submission kit (copy-paste ready)
+
+- Name: **AI Converter**
+- Tagline: **Bank statement PDFs to CSV you can review before paying**
+- Description:
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your
+  > browser. Review sample rows free, then unlock the full extraction only when
+  > the preview looks right. OCR fallback handles scanned statements; low
+  > confidence fails closed with no charge. No bank logins and no human review
+  > queue; source files are deleted after 24 hours.
+
+- Category suggestions: Data Extraction, Document Automation, OCR / Document
+  Analysis (all live Toolbit categories 2026-08-10; exact-category peers sit
+  under Data Extraction and Document Analysis).
+- Pricing tag suggestion: Freemium (free preview + paid extraction, matching
+  live checkout behavior).
+- Website: https://aiconverter.app
+- Canonical links for the listing (all verified live HTTP 200 on 2026-08-10):
+  - https://aiconverter.app/bank-statement-pdf-to-csv/
+  - https://aiconverter.app/sample-csv/
+  - https://aiconverter.app/trust/
+  - https://aiconverter.app/formats/
+
 ## Verification notes
 
 - All copy claims only live production behavior (bank-statement PDF to CSV,
   preview-first, fail-closed) as verified on 2026-08-09. No blanket accuracy
   claims, no official accounting-platform import claims, no pricing-page link
-  (https://aiconverter.app/pricing/ returns 404 until PR #21 lands).
+  (https://aiconverter.app/pricing/ returns 404; the pricing-route PR #26 is still
+  open as of 2026-08-10).
 - Per fleet policy, submissions stay manual-only (account actions are human).
