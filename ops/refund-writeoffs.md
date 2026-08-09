@@ -18,9 +18,14 @@ plus a `written_off` status on the job so the live admin alert stops firing.
 - Job: `checkout_drill_e0406ef6fa9d442bba8ffb73d2e1f13f`
 - Payment: `pay_0Nf62770HL6D5D5zJUVgd` (Dodo, starter plan, ₹299.00 INR = 29900 paise, succeeded 2026-05-18)
 - Reason recorded in Dodo: "Operator write-off decision; no cash refund."
-- Status in D1 after this decision: `refund_status = 'written_off'` on the job,
-  audit event row `status = 'written_off'` in `dodo_refund_events`, and a
-  `refund` attempt row `status = 'written_off'` in `job_attempts`.
+- Decision status: recorded in this file and in the codebase (admin write-off
+  action on `/api/admin/refund-drill`). The D1 rows below are applied by the
+  operator through that endpoint once the tooling is deployed; until then the
+  job stays in `refund_due` and the live warning keeps firing by design.
+- D1 rows written by the write-off action:
+  - `jobs.refund_status = 'written_off'` on the job,
+  - an audit event row `status = 'written_off'` in `dodo_refund_events`,
+  - a `refund` attempt row `status = 'written_off'` in `job_attempts`.
 
 ### Why
 
@@ -39,11 +44,11 @@ plus a `written_off` status on the job so the live admin alert stops firing.
 
 ### Effect on live behavior
 
-- The admin "Drill refund retry needed" warning no longer fires for this job
-  because `refund_status` is `written_off`, which the refund-due overview query
-  does not select.
-- The audit trail stays complete: `dodo_refund_events` keeps every failed
-  attempt row (with the Dodo error) plus the `written_off` decision row.
+Once the write-off action has been applied (see above), the admin
+"Drill refund retry needed" warning stops firing for this job because
+`refund_status` is `written_off`, which the refund-due overview query does not
+select. The audit trail stays complete: `dodo_refund_events` keeps every failed
+attempt row (with the Dodo error) plus the `written_off` decision row.
 
 ### Re-opening
 
