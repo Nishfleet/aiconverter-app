@@ -65,7 +65,7 @@ Use the safe-deploy wrapper on Nish's machine before live commands.
 - Preview is free.
 - Full AI extraction unlock is paid.
 - Dodo checkout creation, signed webhook validation, paid finalize/download code paths, admin refund drills, and failed-payment handling are implemented and covered by automated checks.
-- One successful real-card drill through checkout, webhook, paid finalize, download, redo, and refund still needs operator proof before scaling paid traffic.
+- One successful real-card drill through checkout, webhook, paid finalize, download, redo, and cash refund still needs operator proof before scaling paid traffic. The 2026-05-18 drill's ₹299 refund stayed blocked on Dodo wallet funds (five failed attempts) and was written off by explicit operator decision on 2026-08-10 — see `ops/refund-writeoffs.md`.
 - Source files are private and short-retention.
 - No human file review queue.
 - Multi-file preview is implemented. Batch checkout unlocks queued previews in one payment and downloads completed exports as one ZIP.
