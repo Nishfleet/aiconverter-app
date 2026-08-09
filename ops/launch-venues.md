@@ -2,11 +2,12 @@
 
 Durable record of launch-venue decisions and submission kits for aiconverter.app.
 Live-production claims only: everything below is grounded in live pages and
-`/llms.txt` (verified 2026-08-09). Automated submission is blocked for both
-venues by the fleet venue policy ledger (`agent-state/growth-loop/venue-policy.json`
-and the `venue-claim` guard): Product Hunt is reviewed as prohibiting automation,
-BetaList is not yet reviewed. Account actions stay with Nish. The kits below make
-each manual submission a copy-paste job.
+`/llms.txt` (verified 2026-08-09; SaaSHub section checked 2026-08-10). Automated
+submission is blocked for all three venues by the fleet venue policy ledger
+(`agent-state/growth-loop/venue-policy.json` and the `venue-claim` guard): Product
+Hunt is reviewed as prohibiting automation, BetaList is not yet reviewed, and
+SaaSHub is not allowlisted (fleet disposition: ambiguous/manual-only). Account
+actions stay with Nish. The kits below make each manual submission a copy-paste job.
 
 ## Product Hunt
 
@@ -95,6 +96,59 @@ each manual submission a copy-paste job.
 
 - Category suggestions: AI Tools, Personal Finance, Productivity
 - Website: https://aiconverter.app
+
+## SaaSHub
+
+### Decision (dated 2026-08-10)
+
+- **Decision: SUBMIT — free submission, manual by Nish. Paid promo optional, deferred.**
+- Reason: SaaSHub is a free, live, category-relevant software marketplace (running since
+  2014). Its official submit page (https://saashub.com/submit, checked 2026-08-10) states
+  "This is our free marketing tool that helps you to promote your product" and describes
+  the flow: "You need to submit and verify your product on SaaSHub. Then, from within the
+  management page, click on the 'Submit' tab and post your product to all relevant
+  directories." SaaSHub search `q=aiconverter` returns no aiconverter.app result
+  (unrelated tools only: ExcelDashboard.ai, AIHumanizer.ai, Aiconvert/aiconvert.online,
+  ...), so there is no duplicate — but the exact category is hosted (AI Bank Statement,
+  ConvertMyStatement AI), so the venue fits the product.
+- Constraint: saashub.com is not in the venue policy allowlist and not yet reviewed in
+  `venue-policy.json` (fleet disposition for SaaSHub, seo-fix-kit packet 2026-08-09:
+  `ambiguous` / `manual-only` — the official page describes a user-facing submit/promotion
+  flow without explicit unattended-automation permission; the SaaSHub public API is
+  read-only, /site/api has only two lookup endpoints and no submission route). Verified
+  live `venue-claim claim saashub.com aiconverter` exits 4 (ALLOWLIST/POLICY BLOCK: "venue
+  saashub.com is unknown (not allowlisted, not reviewed)") on 2026-08-10, so the agent
+  must not drive a browser submission. Submission (register, verify the product, submit
+  from the management page) is a human account action, same as Product Hunt and BetaList.
+- Standard submission is free. Paid promo exists ("Feature My Product" — "Get a premium
+  placement and more clicks", https://saashub.com/featured-products) but is optional and
+  not required for the free listing; treat it as a separate commercial call by Nish.
+- Verification note: the flow says "submit and verify your product" — SaaSHub verification
+  may require a verification step (e.g. meta-tag) on the product domain, which is an owner
+  action that can need a tiny deploy of the verification tag.
+- Next action: Nish registers/signs in and submits using the kit below, then this file
+  should be updated with the public product URL.
+
+### Manual submission kit (copy-paste ready)
+
+- Name: **AI Converter**
+- Tagline: **Bank statement PDFs to CSV you can review before paying**
+- Description:
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your browser.
+  > Review sample rows free, then unlock the full extraction only when the preview looks
+  > right. OCR fallback handles scanned statements; low confidence fails closed with no
+  > charge. No bank logins and no human review queue; source files are deleted after
+  > 24 hours.
+
+- Category suggestions: Bank Statements, PDF Converter, Data Extraction, Accounting &
+  Finance, AI Tools (all five facets live on SaaSHub search 2026-08-10).
+- Website: https://aiconverter.app
+- Canonical links for the listing (all verified live HTTP 200 on 2026-08-10):
+  - https://aiconverter.app/bank-statement-pdf-to-csv/
+  - https://aiconverter.app/sample-csv/
+  - https://aiconverter.app/trust/
+  - https://aiconverter.app/formats/
 
 ## Verification notes
 
