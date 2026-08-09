@@ -104,6 +104,7 @@ Fake sample CSV:
 
 - Home: https://aiconverter.app
 - Formats: https://aiconverter.app/formats/
+- Pricing: https://aiconverter.app/pricing/
 - About: https://aiconverter.app/about/
 - Bank statement PDF to CSV: https://aiconverter.app/bank-statement-pdf-to-csv/
 - Convert bank statement to CSV: https://aiconverter.app/convert-bank-statement-to-csv/

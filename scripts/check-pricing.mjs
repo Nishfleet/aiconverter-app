@@ -8,6 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const publicTexts = await Promise.all([
   readFile(path.join(root, "functions/_middleware.js"), "utf8"),
   readFile(path.join(root, "public/llms.txt"), "utf8"),
+  readFile(path.join(root, "public/pricing/index.html"), "utf8"),
   readFile(path.join(root, "ops/pricing-strategy.md"), "utf8")
 ]);
 
