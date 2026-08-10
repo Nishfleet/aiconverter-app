@@ -2,11 +2,31 @@
 
 Durable record of launch-venue decisions and submission kits for aiconverter.app.
 Live-production claims only: everything below is grounded in live pages and
-`/llms.txt` (verified 2026-08-09). Automated submission is blocked for both
-venues by the fleet venue policy ledger (`agent-state/growth-loop/venue-policy.json`
-and the `venue-claim` guard): Product Hunt is reviewed as prohibiting automation,
-BetaList is not yet reviewed. Account actions stay with Nish. The kits below make
-each manual submission a copy-paste job.
+`/llms.txt` (verified 2026-08-09, re-verified 2026-08-10). Automated submission
+is blocked for both venues by the fleet venue policy ledger
+(`agent-state/growth-loop/venue-policy.json` and the `venue-claim` guard):
+Product Hunt is reviewed as prohibiting automation, BetaList is not yet
+reviewed. Account actions stay with Nish. The kits below make each manual
+submission a copy-paste job.
+
+## Status ledger (fleet re-verification 2026-08-10)
+
+Both baseline venues are still NOT live as of 2026-08-10 — the decisions below
+stand unchanged and both kits remain valid and copy-paste ready:
+
+- Product Hunt search `q=aiconverter` (2026-08-10): still zero aiconverter.app
+  result; unrelated tools only (Coval, Wingman City Guide, Sibyl AI, ...).
+  Launches search `q=bank statement csv` shows exact-category competitors live
+  (LedgerBox, BankStatementLab, Convert My Bank Statement, Docsumo) and still no
+  AI Converter listing. The category is hosted; the listing is missing.
+- BetaList search `q=aiconverter` (2026-08-10): still "No results found for
+  aiconverter"; `Submit Startup` still redirects to `/sign_in` (account-gated).
+- Kit reference pages all live HTTP 200 (2026-08-10): `/`, `/llms.txt`,
+  `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+  `/pricing/` still returns 404, so the no-pricing-link note below still holds.
+- **Blocked on a human account action:** Nish owns the manual submissions for
+  both venues. After each submission, update this file with the public URL and
+  flip the venue's status line to live.
 
 ## Product Hunt
 
