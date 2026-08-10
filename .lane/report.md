@@ -94,3 +94,38 @@ should clear — expect network idle ~1–2s on the fixed bundle.
 - `node --test tests/*.test.mjs` — 106 pass, 0 fail.
 - `npm run build` — green; fixed bundle `assets/index-7zU5-aJu.js`.
 - Live bundle re-fetched twice today — unchanged `assets/index-Dqg0j7kd.js`.
+
+## 2026-08-11 — Bing/DuckDuckGo zero indexation (re-verification + deploy-ready IndexNow key)
+
+**Verdict: the finding is STILL LIVE on production. No lane-side automated fix
+exists (account-gated Bing Webmaster ownership, no credentials, no deploy
+path). This lane ships the durable record plus a deploy-ready IndexNow key so
+the first post-deploy submission is a one-shot, credential-free curl.**
+
+### Re-verification (2026-08-11)
+
+- DDG `site:aiconverter.app` (rendered-proxy fetch): "No more results found
+  for site:aiconverter.app" — only unrelated `www.west.cn/p/` (Chinese
+  domain-parking page) matches; zero aiconverter.app results.
+- DDG `"aiconverter.app"` (rendered-proxy fetch): "No results found for
+  'aiconverter.app'".
+- DDG `html`/`lite` endpoints now answer HTTP 202 anomaly-challenge for agent
+  requests; Bing.com `site:` still serves a captcha challenge page (direct
+  curl and rendered fetch) — same blockers as 2026-08-09/10.
+- Live `robots.txt` 200 + sitemap reference; `sitemap.xml` 200, 22 URLs; no
+  `bing-site-verification`/`msvalidate.01` in homepage HTML;
+  `BingSiteAuth.xml` 404. Deploy still blocked: `wrangler whoami` →
+  unauthenticated (2026-08-11); fleet token still lacks Pages:Edit.
+
+### What this lane shipped (PR on branch `lane1/bing-indexation-20260811`)
+
+- `ops/bing-indexation.md` — refreshed durable record + manual kit
+  (the 2026-08-10 version existed only on an unmerged branch).
+- `public/e141d4be-837e-442e-9336-989051af9596.txt` — IndexNow key
+  (owner-generated UUID, public by protocol design, no account involved).
+  Rides along with the next Pages deploy of `main`; then the IndexNow
+  submission curl in the doc pushes the homepage + both bank landers to
+  Bing/Yandex/Naver/Seznam with no Microsoft account.
+- Remaining account action (Nish): Bing Webmaster ownership (recommended DNS
+  TXT at Porkbun) + sitemap submission per the kit; then update the doc with
+  the receipt.
