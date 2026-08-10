@@ -85,6 +85,13 @@ function converterById(converterId) {
   return data.converters.find((converter) => converter.id === converterId) || null;
 }
 
+function intentConverterIdFromUrl() {
+  const requested = new URLSearchParams(window.location.search).get("converter");
+  if (!requested) return "";
+  const converter = data.converters.find((candidate) => candidate.id === requested);
+  return converter && isLiveConverter(converter) ? converter.id : "";
+}
+
 function allAcceptedTypes(converters) {
   return [...new Set(converters.filter(isLiveConverter).flatMap((converter) => String(converter.accept || "").split(",")))]
     .filter(Boolean)
@@ -698,7 +705,7 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
 }
 
 function App() {
-  const [selectedId, setSelectedId] = useState("bank");
+  const [selectedId, setSelectedId] = useState(() => intentConverterIdFromUrl() || "bank");
   const [outputFormat, setOutputFormat] = useState("csv");
   const [fileQueue, setFileQueue] = useState([]);
   const [activeFileId, setActiveFileId] = useState("");
@@ -1977,23 +1984,44 @@ function App() {
               <ArrowRight size={14} />
             </a>
             <h1>
-              <span>Bank statement PDFs in.</span>
-              {" "}
-              <strong>Accounting CSV out.</strong>
+              {selectedId !== "bank" && selected ? (
+                <>
+                  <span>{selected.input} in.</span>
+                  {" "}
+                  <strong>{selected.output} out.</strong>
+                </>
+              ) : (
+                <>
+                  <span>Bank statement PDFs in.</span>
+                  {" "}
+                  <strong>Accounting CSV out.</strong>
+                </>
+              )}
             </h1>
             <p>
-              Upload a bank statement PDF, choose a Xero, Wave, QuickBooks, or spreadsheet CSV,
-              review the rows, and download a free sample before unlocking the full export.
+              {selectedId !== "bank" && selected
+                ? selected.description
+                : "Upload a bank statement PDF, choose a Xero, Wave, QuickBooks, or spreadsheet CSV, review the rows, and download a free sample before unlocking the full export."}
             </p>
           </div>
 
           <section className={classNames("converter-workspace", file && "has-file", result && "has-result")} aria-label="AI conversion workspace">
           <form className="conversion-flow" id="start" onSubmit={handleConvert}>
             <div className="workspace-console-bar" aria-hidden="true">
-              <span>Bank PDFs</span>
-              <span>Xero CSV</span>
-              <span>Wave CSV</span>
-              <span>QuickBooks CSV</span>
+              {selectedId !== "bank" && selected ? (
+                <>
+                  <span>{selected.title}</span>
+                  <span>{selected.output}</span>
+                  <span>{selected.state}</span>
+                </>
+              ) : (
+                <>
+                  <span>Bank PDFs</span>
+                  <span>Xero CSV</span>
+                  <span>Wave CSV</span>
+                  <span>QuickBooks CSV</span>
+                </>
+              )}
             </div>
             {file && (
               <div className="flow-rail" aria-label="Conversion steps">
@@ -2021,8 +2049,17 @@ function App() {
                       <Upload size={26} />
                     </span>
                     <span>
-                      <strong>Bank statement → accounting CSV</strong>
-                      <small>Upload a bank statement PDF for a private preview, review the rows, then export to QuickBooks, Xero, Wave, GnuCash, or CSV.</small>
+                      {selectedId !== "bank" && selected ? (
+                        <>
+                          <strong>{selected.title} → {selected.output}</strong>
+                          <small>{selected.description}</small>
+                        </>
+                      ) : (
+                        <>
+                          <strong>Bank statement → accounting CSV</strong>
+                          <small>Upload a bank statement PDF for a private preview, review the rows, then export to QuickBooks, Xero, Wave, GnuCash, or CSV.</small>
+                        </>
+                      )}
                     </span>
                     <span className="upload-go" aria-hidden="true">
                       <ArrowRight size={20} />
