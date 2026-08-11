@@ -606,7 +606,26 @@ export async function deleteJobData(env, job, now = new Date()) {
   const keys = new Set(
     [job.source_key, job.preview_key, job.result_key, job.validation_report_key].filter(Boolean)
   );
-  await Promise.all([...keys].map((key) => env.AICONVERTER_BUCKET.delete(key).catch(() => {})));
+  const outcomes = await Promise.all(
+    [...keys].map(async (key) => {
+      try {
+        await env.AICONVERTER_BUCKET.delete(key);
+        return { key, ok: true };
+      } catch {
+        return { key, ok: false };
+      }
+    })
+  );
+  const failedKeys = outcomes.filter((outcome) => !outcome.ok).map((outcome) => outcome.key);
+  if (failedKeys.length > 0) {
+    // Do NOT mark the job deleted and do NOT clear any object pointers: the
+    // pointers are the only way a later delete retry or the expiry sweeper
+    // (enforceJobExpiry / sourceExpired) can find and remove the objects.
+    console.error(
+      `AIConverter delete of job ${job.id} did not complete; R2 delete failed for keys: ${failedKeys.join(", ")}`
+    );
+    return { ...job, deletionCompleted: false, failedKeys };
+  }
   const fields = {
     status: "deleted",
     source_deleted_at: job.source_deleted_at || nowIso,
@@ -617,7 +636,7 @@ export async function deleteJobData(env, job, now = new Date()) {
     validation_report_key: ""
   };
   await updateJob(env, job.id, fields);
-  return { ...job, ...fields };
+  return { ...job, ...fields, deletionCompleted: true };
 }
 
 export async function getAuthorizedJob(env, id, token) {
