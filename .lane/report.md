@@ -274,3 +274,76 @@ cannot create the account, pay, or drive the submission form.
 - Live checks for search, tag pages, LedgerBox tool page, submit page, and
   Fulfillment Policy (2026-08-11) — all as recorded above.
 - No code changed; docs only (`ops/launch-venues.md`, `.lane/report.md`).
+
+## 2026-08-11 — Microlaunch launch venue: regular (free) launch kit, Pro $39 deferred (packet item: list the product on Microlaunch via + New Launch)
+
+**Verdict: the item's research deliverable is complete and verified live on
+2026-08-11; the Microlaunch decision and kit are recorded in
+`ops/launch-venues.md` (this run's PR). Microlaunch hosts the exact category —
+both exact-category peers named in the packet, Bank Statement Converter and
+Bankformats, are live with non-premium launch records — and aiconverter.app is
+absent. The remaining steps are Nish-held: the free "Regular launch"
+submission (Google/𝕏 sign-in) and the optional $39 Pro Launch spend decision.**
+
+### Verification (all credential-free, live 2026-08-11)
+
+- Microlaunch homepage live: "The Launch Platform for World-Class Startups",
+  "August '26 — 138 products, 2001 daily visitors".
+- Exact-category peers, both live with `is_premium: false` launch records
+  (regular/free launches are real on this venue):
+  - Bank Statement Converter (https://microlaunch.net/p/bankstatementconverter,
+    launched 2026-02-08, market analytics, Saas, "Free product", mvp-wip) —
+    "Instantly transform PDF bank statements into clean, structured Excel,
+    CSV, or JSON data".
+  - Bankformats (https://microlaunch.net/p/bankformats, launched 2026-06-14,
+    market accounting, Saas, Subscription, growing) — "Bank Statement
+    Converter — Convert to Excel & CSV. PDF bank statements from 1000+
+    banks. EU servers, GDPR-compliant, first 3 pages free."
+- No duplicate: full launches API (5,660 products) — zero aiconverter /
+  "AI Converter" codename or slug (only false-positive is NoteGPT via generic
+  AI-converter keywords); slug probes /p/aiconverter, /p/ai-converter,
+  /p/ai-converter-app, /p/aiconverter-app all no product (500).
+- Launch flow: "+ New Launch" (nav button) opens the "Pick your Launch" modal
+  — Pro Launch card ($39 one-time, struck $49, code LAUNCH20 −20%, OSS/
+  students 50% OFF, 40 spots/month, "Skip the Queue — Launch Anytime",
+  featured spots, 4+ SEO pages, marketplace spot, verified badge) with CTA
+  "Go Pro Now!" → /premium#stats. `/submit` redirects to `/premium#pricing`.
+  Premium page FAQ names a "Regular launch" tier; both peers' non-premium
+  records confirm it. Second pack: Expert Feedback $129 (was $149).
+- Account-gated: header modal offers "Signup with Google" and "Signup with 𝕏".
+- ToS (https://microlaunch.net/terms, "Last updated on 04/03/2023"): generic
+  template, no robot/spider/automated-access prohibition (unlike Product Hunt
+  ToS and Toolbit ToS §7) — flagged for the venue research desk; the venue
+  stays `automation_disposition: unknown` in the fleet policy ledger, so
+  `venue-claim` exits 4 regardless.
+- Product baseline (aiconverter.app, 2026-08-11): `/`, `/llms.txt`,
+  `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/` all
+  HTTP 200; `/pricing/` and `/receipt-to-csv/` still 404 — the kit claims
+  none of those routes.
+
+### Decision recorded (dated 2026-08-11)
+
+- Microlaunch: **SUBMIT — regular (free) launch first, manual by Nish. The
+  paid Pro Launch ($39) is recorded and deferred to Nish's spend call.** Kit
+  copy-paste ready in `ops/launch-venues.md` (Name, Tagline, Description,
+  category suggestions from the peers' markets — Analytics & Data / Accounting
+  Tools — product type Saas, offer type Freemium, Website, canonical links,
+  post-listing check).
+
+### Why the item cannot be closed from a lane (unchanged policy)
+
+microlaunch.net is `automation_disposition: unknown` in the fleet venue policy
+ledger (`agent-state/growth-loop/venue-policy.json`, allowlist empty), so
+`venue-claim claim` exits 4; the launch additionally requires an account
+(Google/𝕏 sign-in) and the free flow is inside the signed-in UI (the anonymous
+"+ New Launch" modal surfaces the Pro Launch only). Per fleet policy, account
+actions and spend stay with Nish — the agent cannot create the account or
+drive the submission form.
+
+### Checks on this lane
+
+- Live checks for homepage, both peer product pages (embedded launch
+  records), full-launches API duplicate check, slug probes, "Pick your
+  Launch" modal, /submit redirect, premium pricing page, sign-in modal, ToS,
+  and the four canonical product links (2026-08-11) — all as recorded above.
+- No code changed; docs only (`ops/launch-venues.md`, `.lane/report.md`).
