@@ -4,13 +4,15 @@ Durable record of launch-venue decisions and submission kits for aiconverter.app
 Live-production claims only: everything below is grounded in live pages and
 `/llms.txt` (verified 2026-08-09 for Product Hunt and BetaList, re-verified
 2026-08-10; WeLikeTools and xix.ai verified 2026-08-10 and re-verified
-2026-08-11; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11).
-Automated submission is blocked for all five venues by the fleet venue policy
-ledger (`agent-state/growth-loop/venue-policy.json` and the `venue-claim`
-guard): Product Hunt is reviewed as prohibiting automation; BetaList,
-WeLikeTools, xix.ai, and Toolbit.ai are not yet reviewed
-(`automation_disposition: unknown`). Account actions (and xix.ai's $9.90 spend)
-stay with Nish. The kits below make each manual submission a copy-paste job.
+2026-08-11; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11;
+Futurepedia, TAAFT, and Dang.ai verified 2026-08-11). Automated submission is
+blocked for all eight venues by the fleet venue policy ledger
+(`agent-state/growth-loop/venue-policy.json` and the `venue-claim` guard):
+Product Hunt is reviewed as prohibiting automation; BetaList, WeLikeTools,
+xix.ai, Toolbit.ai, Futurepedia, TAAFT, and Dang.ai are not yet reviewed
+(`automation_disposition: unknown`). Account actions (and the xix.ai $9.90 and
+TAAFT $20 spend decisions) stay with Nish. The kits below make each manual
+submission a copy-paste job.
 
 ## Status ledger (fleet re-verification 2026-08-10)
 
@@ -352,6 +354,149 @@ copy-paste ready:
   - https://aiconverter.app/trust/
   - https://aiconverter.app/formats/
 
+## Futurepedia
+
+### Decision (dated 2026-08-11, live-verified)
+
+- **Decision: DECLINE the free submit-tool path — Futurepedia officially
+  discontinued free submissions. The only live listing route is paid
+  ($497 Verified; $247 Basic listed but Sold Out), and that spend is Nish's
+  decision, consistent with the 2026-08-09 packet disposition
+  (`futurepedia-manual-paid-decision-20260809.md`).**
+- Reason: https://www.futurepedia.io/submit-tool (live 2026-08-11) shows only
+  paid tiers — "Basic Listing $247 (Sold Out)", "Verified Listing $497 (one
+  time fee)", "Enterprise Packages (Custom Pricing)" — and its FAQ answers
+  "Do you offer free listings?" verbatim: "We are no longer offering free
+  submissions. It's very important to us to maintain the quality of our
+  directory and it became unmanageable to do so." Alternate free-path URLs
+  (/submit, /add-tool, /suggest-tool, /tool-submit, /submit-a-tool,
+  /submit-ai-tool) all return 404; /update-a-tool is for updating existing
+  listings only. There is no free submit-tool path to execute.
+- No duplicate: Futurepedia search `q=aiconverter` (live 2026-08-11) returns
+  zero aiconverter.app results (12 unrelated tools only: CustomGPT.ai, Google
+  Gemini, DeepSeek, Ankon AI, MenuForma, Tickclip, Makiverse, Retainr.io,
+  HeyMilo AI, MarketAlerts.ai, SoBrief, ...); /tool/ai-converter returns 404.
+- Money boundary: $497 (and the sold-out $247 tier) is a spend decision only
+  Nish can make; the agent cannot pay or create the account. Futurepedia is
+  not in the venue policy allowlist (`automation_disposition: unknown`), so
+  `venue-claim claim` exits 4 — no agent-driven browser submission.
+- Next action: if Nish decides to test the $497 Verified route, submit using
+  the kit below, then this file should be updated with the public tool URL.
+
+### Manual submission kit (copy-paste ready, for the paid route only)
+
+- Name: **AI Converter**
+- Tagline: **Bank statement PDFs to CSV you can review before paying**
+- Description:
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your
+  > browser. Review sample rows free, then unlock the full extraction only when
+  > the preview looks right. OCR fallback handles scanned statements; low
+  > confidence fails closed with no charge. No bank logins and no human review
+  > queue; source files are deleted after 24 hours.
+
+- Category suggestions: Finance, Productivity
+- Pricing model: Freemium (free preview; paid per-page plans)
+- Website: https://aiconverter.app
+- Canonical links for the listing (verified live HTTP 200 on 2026-08-11):
+  - https://aiconverter.app/bank-statement-pdf-to-csv/
+  - https://aiconverter.app/sample-csv/
+  - https://aiconverter.app/trust/
+  - https://aiconverter.app/formats/
+
+## TAAFT (theresanaiforthat.com)
+
+### Decision (dated 2026-08-11, live-verified)
+
+- **Decision: SUBMIT — manual submission by Nish, $20 one-off for the paid
+  tool tier (aiconverter.app is freemium, so the free tier does not apply).**
+- Reason: TAAFT's live submission flow (https://theresanaiforthat.com/get-featured/
+  and /launch/, verified 2026-08-11) accepts AI tools for the database with a
+  "Choose listing type" choice: "Free tool — Tools that are either completely
+  free or open source" (free) or "Paid tool $20 — Paid or freemium tools, or
+  tools that are part of a larger paid suite". aiconverter.app is freemium
+  (free preview, paid per-page plans), so it belongs on the $20 tier.
+  Submission fee is one-off ("Is the submission fee one-off or recurring? The
+  $347 submission fee is one-off."); refund guaranteed if not published ("We
+  guarantee a full, automatic refund if your AI doesn't get published").
+- No duplicate: TAAFT search `q=aiconverter` (credential-free check 2026-08-11)
+  returns zero aiconverter.app URLs; Bing `site:theresanaiforthat.com
+  "aiconverter"` returns no results; Wayback CDX has no archived
+  theresanaiforthat.com page containing "aiconverter".
+- Constraint: submission requires sign-in ("Sign in to continue 100% free —
+  To prevent spam, some actions require being signed in"; Google/Facebook).
+  TAAFT is not in the venue policy allowlist (`automation_disposition:
+  unknown`), so `venue-claim claim` exits 4 — the agent must not drive a
+  browser submission. Submission is a human account action.
+- Money boundary: the $20 one-off tier fee (and any extras: Highlight $99/mo,
+  Featured pay-per-click, $49 "Listing + Just Released", $347 ad insights) is
+  a spend decision only Nish can make.
+- Next action: Nish signs in and submits using the kit below, then this file
+  should be updated with the public tool URL.
+
+### Manual submission kit (copy-paste ready)
+
+- Name: **AI Converter**
+- URL of the tool: https://aiconverter.app
+- Task suggestion: Bank statement PDF to CSV
+- Listing type: Paid tool ($20) — freemium product
+- Description:
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your
+  > browser. Review sample rows free, then unlock the full extraction only when
+  > the preview looks right. OCR fallback handles scanned statements; low
+  > confidence fails closed with no charge. No bank logins and no human review
+  > queue; source files are deleted after 24 hours.
+
+- Key features (3-5 bullets for the listing):
+  - Bank statement PDF to CSV with a built-in parser first, OCR fallback for scans.
+  - Free preview: review sample rows and download a sample CSV before paying.
+  - Fail-closed extraction: low-confidence conversions are not charged.
+  - No bank login and no human review queue; source files deleted after 24 hours.
+  - Paid jobs get one automatic stronger redo.
+
+## Dang.ai
+
+### Decision (dated 2026-08-11, live-verified)
+
+- **Decision: DECLINE for agent-executed submission; SUBMIT remains open as a
+  manual Nish action — the submit flow and pricing page both gate behind
+  account sign-in, so fee/account mechanics cannot be verified
+  credential-free and the venue is not in the policy allowlist.**
+- Reason: Dang.ai's "Submit a tool" link resolves to /login?next=%2Fpricing
+  (verified 2026-08-11) — account-gated via email magic link ("Email me a
+  secure link"). The pricing page itself is sign-in-gated ("Sign in to Dang.ai
+  — Manage listings, submissions and billing through a secure email link"), so
+  the listing fee structure is not publicly verifiable; no fee/paid-tier copy
+  exists on the public /about, /terms, or /feedback pages.
+- No duplicate: Dang.ai sitemap (6,476 tool URLs, fetched 2026-08-11) contains
+  zero "aiconverter" entries; /tool/ai-converter, /tool/aiconverter, and
+  /tool/bank-statement all return 404; site search `?s=aiconverter` returns no
+  aiconverter product card; Wayback CDX has no archived dang.ai page containing
+  "aiconverter".
+- Constraint: Dang.ai is not in the venue policy allowlist
+  (`automation_disposition: unknown`), so `venue-claim claim` exits 4 — no
+  agent-driven browser submission. Submission is a human account action.
+- Money boundary: any listing fee (unknown until sign-in) is a spend decision
+  only Nish can make.
+- Next action: Nish signs in (email magic link), reviews /pricing, and either
+  submits or declines; then this file should be updated with the public tool
+  URL or a dated decline.
+
+### Manual submission kit (copy-paste ready)
+
+- Name: **AI Converter**
+- Website: https://aiconverter.app
+- Category suggestions: Business, Productivity
+- Pricing model: Free preview; paid per-page plans
+- Description:
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your
+  > browser. Review sample rows free, then unlock the full extraction only when
+  > the preview looks right. OCR fallback handles scanned statements; low
+  > confidence fails closed with no charge. No bank logins and no human review
+  > queue; source files are deleted after 24 hours.
+
 ## Verification notes
 
 - All copy claims only live production behavior (bank-statement PDF to CSV,
@@ -371,4 +516,12 @@ copy-paste ready:
   the ToS section 7 prohibition, and the four canonical product links (all
   HTTP 200 on 2026-08-11; /pricing/ and /receipt-to-csv/ remain 404 and are
   not claimed in the kit).
+- Futurepedia, TAAFT, and Dang.ai sections verified live on 2026-08-11:
+  Futurepedia submit page (paid-only, free submissions discontinued per its own
+  FAQ), TAAFT submission flow (/get-featured/ + /launch/ with the Free tool vs
+  Paid tool $20 choice), Dang.ai submit/pricing gates, all three venue search
+  surfaces, and the Wayback CDX no-archive checks. Kit reference pages all live
+  HTTP 200 on 2026-08-11: `/`, `/llms.txt`, `/bank-statement-pdf-to-csv/`,
+  `/sample-csv/`, `/trust/`, `/formats/`. `/pricing/` and `/receipt-to-csv/`
+  still return 404, so no kit claims those routes.
 - Per fleet policy, submissions stay manual-only (account actions are human).

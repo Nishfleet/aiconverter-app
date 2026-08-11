@@ -206,3 +206,94 @@ first), embed the Launch Badge snippet on aiconverter.app (tiny deploy — note
 Pages:Edit deploy still blocked per the finding above), then update
 `ops/launch-venues.md` with the public tool URL. The $29 paid launch remains a
 deferred commercial decision.
+
+## 2026-08-11 — Futurepedia free listing + TAAFT/Dang submit-or-decline decisions (live verification, item from traction venue map trio)
+
+**Verdict: the item's research deliverable is complete and verified live on
+2026-08-11; all three venue decisions and kits are recorded in
+`ops/launch-venues.md` (this run's PR). The "free submit-tool path" the item
+assumed for Futurepedia does not exist — Futurepedia's own FAQ states free
+submissions are discontinued, and the only live route is paid ($497 Verified;
+$247 Basic Sold Out). A truthful dated decline is recorded for the free path,
+and the $497 spend decision stays with Nish. TAAFT and Dang.ai get dated
+submit-or-decline decisions with fee notes. All remaining steps are
+Nish-held (account actions and spend).**
+
+### Live verification (all credential-free, live 2026-08-11)
+
+Futurepedia (https://www.futurepedia.io/submit-tool):
+
+- Paid tiers only: "Basic Listing $247 (Sold Out)", "Verified Listing $497
+  (one time fee)", "Enterprise Packages (Custom Pricing)".
+- FAQ on the same page: "Do you offer free listings?" → "We are no longer
+  offering free submissions. It's very important to us to maintain the
+  quality of our directory and it became unmanageable to do so."
+- Free-path alternates all 404: /submit, /add-tool, /suggest-tool,
+  /tool-submit, /submit-a-tool, /submit-ai-tool; /update-a-tool is
+  update-only for existing listings.
+- Search `q=aiconverter`: zero aiconverter.app results (12 unrelated tools:
+  CustomGPT.ai, Google Gemini, DeepSeek, Ankon AI, MenuForma, Tickclip,
+  Makiverse, Retainr.io, HeyMilo AI, MarketAlerts.ai, SoBrief, ...);
+  /tool/ai-converter → 404.
+
+TAAFT (https://theresanaiforthat.com/get-featured/ + /launch/):
+
+- Submission flow live with "Choose listing type": "Free tool — Tools that
+  are either completely free or open source" (free) OR "Paid tool $20 —
+  Paid or freemium tools, or tools that are part of a larger paid suite".
+  aiconverter.app is freemium → $20 one-off tier. Extras: Highlight $99/mo,
+  Featured pay-per-click, $49 "Listing + Just Released", $347 ad insights.
+- "Is the submission fee one-off or recurring? The $347 submission fee is
+  one-off."; "We guarantee a full, automatic refund if your AI doesn't get
+  published."
+- Search `q=aiconverter`: zero aiconverter.app URLs (credential-free check);
+  Bing `site:theresanaiforthat.com "aiconverter"` → no results; Wayback CDX
+  → no archived aiconverter page. Sign-in required (Google/Facebook).
+- TAAFT not in venue policy allowlist (`automation_disposition: unknown`),
+  `venue-claim claim` exits 4 → manual submission by Nish, $20 spend is
+  Nish's decision.
+
+Dang.ai:
+
+- "Submit a tool" → /login?next=%2Fpricing (email magic link). The pricing
+  page itself is sign-in-gated ("Sign in to Dang.ai — Manage listings,
+  submissions and billing through a secure email link"), so fee mechanics
+  are not publicly verifiable; /about, /terms, /feedback have no fee copy.
+- Sitemap (6,476 tool URLs) contains zero "aiconverter"; /tool/ai-converter,
+  /tool/aiconverter, /tool/bank-statement → 404; site search `?s=aiconverter`
+  shows no aiconverter product card; Wayback CDX → no archived aiconverter
+  page.
+- Dang.ai not in venue policy allowlist (`automation_disposition: unknown`),
+  `venue-claim claim` exits 4 → no agent-driven browser submission.
+
+Product baseline (aiconverter.app, 2026-08-11): `/`, `/llms.txt`,
+`/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/` all HTTP
+200; `/pricing/` and `/receipt-to-csv/` still 404 — no kit claims those routes.
+
+### Decisions recorded (dated 2026-08-11, in ops/launch-venues.md)
+
+- Futurepedia: **DECLINE the free submit-tool path — free submissions
+  discontinued (venue's own FAQ); paid-only $497 Verified ($247 Basic Sold
+  Out); $497 spend decision owned by Nish.** Kit prepared for the paid route.
+- TAAFT: **SUBMIT — manual submission by Nish, $20 one-off paid-tool tier
+  (freemium product); free tier does not apply.** Kit copy-paste ready.
+- Dang.ai: **DECLINE for agent-executed submission (submit + pricing gate
+  behind sign-in; fee unverifiable; policy unknown); SUBMIT remains open as
+  a manual Nish action after sign-in.** Kit copy-paste ready.
+
+### Why the remaining steps cannot be closed from a lane (unchanged policy)
+
+All three venues are `automation_disposition: unknown` in the fleet venue
+policy ledger (`agent-state/growth-loop/venue-policy.json`), so `venue-claim
+claim` exits 4 for each; Futurepedia additionally requires a $497 payment and
+TAAFT a $20 payment; Dang.ai's fees are not publicly visible. Per fleet
+policy, account actions and spend stay with Nish. This supersedes the earlier
+`futurepedia-manual-paid-decision-20260809.md` packet disposition only in that
+the free path is now confirmed absent live (the packet already recorded the
+$497-only reading; the FAQ quote is new first-party evidence).
+
+### Checks on this lane
+
+- Live HTTP checks for all three venues' search/submit/pricing pages
+  (2026-08-11) — as recorded above; sitemap and Wayback CDX checks included.
+- No code changed; docs only (`ops/launch-venues.md`, `.lane/report.md`).
