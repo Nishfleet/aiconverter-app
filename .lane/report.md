@@ -1,5 +1,82 @@
 # Lane evidence — aiconverter-app lane 1
 
+## 2026-08-11 — Five observed intent-matched customer trials with free full export (scout item)
+
+**Verdict: the trial kit, grant decision, and free-export gate verification are
+delivered on this run's PR; the five observed sessions themselves are
+Nish-held. Recruiting real bookkeepers / SMB operators requires Nish's human
+network, and an observed session requires a human observer present with
+participant consent — no lane capability or fleet asset exists for either. The
+item closes when Nish runs the five sessions using the kit and records 5/5
+rows in `ops/customer-trials.md`.**
+
+### What was delivered (this PR, branch `lane1/customer-trials-20260811`)
+
+- `ops/customer-trials.md` — the trial kit: operational definition of
+  "intent-matched" and "observed" (real current files, watched session,
+  five separate participants, 2–3 bookkeepers + 2–3 SMB operators), copy-paste
+  recruitment messages (LinkedIn / WhatsApp / email), a 3-question screener,
+  the per-session observation protocol (landing → upload → free preview →
+  unlock → full export), post-session questions, and a per-participant
+  evidence ledger template.
+- Free full-export grant decision (dated 2026-08-11): **per-job `paid_at`
+  grant with `payment_id = 'trial:<participant-id>'`** (D1 UPDATE, exact SQL
+  in the doc), NOT the global flag. Rationale: `FREE_DOWNLOADS_ENABLED=true`
+  makes every export free for every user (revenue impact) and needs a Pages
+  deploy (still blocked from lanes — no Pages:Edit, see below); the per-job
+  grant touches exactly five jobs and needs no deploy.
+- `tests/download-gate.test.mjs` — 5 tests locking the gate semantics the
+  trials depend on: unpaid complete job → 402 by default (no download_count
+  increment); unpaid + `FREE_DOWNLOADS_ENABLED=true` → 200 full export;
+  paid → 200 regardless of flag; unknown job → 400 even with the flag on;
+  batch-download skips unpaid jobs as payment-required unless the flag is on.
+  These are the first direct tests of `functions/api/download.js`.
+
+### Verification (all live / local, 2026-08-11)
+
+- Live `/api/health`: `dodo.freeDownloads: false` — free full export is NOT
+  enabled in production; the gate is real and would block trial downloads
+  today absent the per-job grant.
+- Gate code re-read: `functions/api/download.js:25-28`,
+  `functions/api/batch-download.js:53-57` — `if (!job.paid_at && !freeDownloads)
+  → 402 / skip`. No per-job trial grant exists in code; no admin endpoint
+  grants paid state (admin API surface: overview, dodo-prices, checkout-drill,
+  failover-drill, refund-drill only).
+- `npm run stress:live`: product baseline healthy (108 requests, p95 275ms);
+  the known `formats-blank-first-paint` failure persists — consistent with
+  the documented stale production bundle (merged sendBeacon fix #22 still
+  undeployed; see the first finding in this file).
+- Repo gates: `npm run check:pricing` pass, `node --test tests/*.test.mjs`
+  111/111 pass (106 prior + 5 new), `npm run build` pass.
+
+### Why the five sessions cannot be run from a lane
+
+1. **Recruitment**: no participant pool, no outreach accounts, no network of
+   bookkeepers / SMB operators. Nish has the professional network (and the
+   product is his to pitch).
+2. **Observation**: an observed trial is a live human session (screen share /
+   watch + notes + consent). Fleet assets cannot be present in a human
+   session; no consent mechanism exists.
+3. Per fleet policy, human interactions and account actions stay with Nish —
+   same class of blocker as the launch-venue submissions (this file,
+   entries below).
+
+### Remaining step to close the item (Nish-held)
+
+Run five sessions with the kit in `ops/customer-trials.md` (recruit → screen →
+observe → grant per-job export → record ledger rows). After each session,
+grant the export with the doc's SQL (`UPDATE jobs SET paid_at = …,
+payment_id = 'trial:<id>' WHERE id = '<job id>'`). When 5/5 rows are recorded,
+flip the scout item closed. If the global flag is ever used instead, record
+its exact on/off window in the doc.
+
+### Checks on this lane
+
+- `npm run check:pricing` — Pricing is consistent.
+- `node --test tests/*.test.mjs` — 111 pass, 0 fail.
+- `npm run build` — green.
+- Live `/api/health` — `freeDownloads: false` (2026-08-11).
+
 ## 2026-08-11 — dogfood 3af46f8a2040: Slow rendered load on home (re-verification)
 
 **Verdict: the finding is STILL LIVE on production. The code fix (PR #22,
