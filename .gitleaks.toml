@@ -1,0 +1,13 @@
+# aiconverter-app Gitleaks config
+#
+# Extends the default Gitleaks rule set (do not disable rules globally).
+
+title = "aiconverter-app Gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "IndexNow key e141d4be-837e-442e-9336-989051af9596 is public by protocol design: the IndexNow protocol requires the key file to be served at https://aiconverter.app/<key>.txt, so this UUID is not a credential and committing it is not an ownership claim. Allowlist it wherever it is documented (ops/bing-indexation.md, public/e141d4be-837e-442e-9336-989051af9596.txt)."
+regexes = ['''e141d4be-837e-442e-9336-989051af9596''']
+paths = ['''public/e141d4be-837e-442e-9336-989051af9596\.txt''']
