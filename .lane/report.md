@@ -347,3 +347,80 @@ drive the submission form.
   Launch" modal, /submit redirect, premium pricing page, sign-in modal, ToS,
   and the four canonical product links (2026-08-11) — all as recorded above.
 - No code changed; docs only (`ops/launch-venues.md`, `.lane/report.md`).
+
+---
+
+# 2026-08-11 — Uneed launch venue (new packet, item: list the product via free waiting-line submit, record paid skip-the-line decision)
+
+**Verdict: the item's research deliverable is complete and verified live on
+2026-08-11; the Uneed decision and submission kit are recorded in
+`ops/launch-venues.md` (this run's PR). Uneed hosts the exact category — five
+exact-category peers are live under Business with non-premium launch records —
+while aiconverter.app is absent (public search API returns no hit; slug
+probes 404). The free path is a ~6-month queue (next slot 2027-01-31, quoted
+live by the venue's own public API). The remaining steps are Nish-held: the
+email-OTP account, the free "Join the line" launch (or the $29.99 Skip-the-
+Waiting-Line spend call).**
+
+### Verification (all credential-free, live 2026-08-11)
+
+- Venue confirmed as uneed.best (uneed.ai/uneed.app are parked domain-sale
+  pages; uneed.best is the live platform: "Uneed — Launch. Get seen. Grow.",
+  "10,000+ digital tools ranked by community votes" per /llms.txt).
+- Exact-category peers, all live (`/tool/{slug}` HTTP 200, all
+  `premium: false` in the public search API — free launches are real here):
+  StatementSheet (launched 2025-11-16), Bank PDF Converter (2024-06-27),
+  BankConv (launch records incl. 2026-08-08), PdfBuddy (incl. 2026-08-09),
+  BankScanPro (incl. 2026-05-22).
+- No duplicate: search API q=aiconverter → no aiconverter.app; q=AI Converter
+  → unrelated converters only; /tool/ai-converter, /tool/aiconverter,
+  /tool/ai-converter-app all 404.
+- Free tier + paid options (pricing page live): "New product — Join the
+  line" FREE (auto-assigned date at next available slot); **Skip the line
+  $29.99** (choose date); Fast-track $14.99 (~14 days out); Relaunch $15;
+  Uneed Pro $99/yr early bird includes 1 free Skip per year (worth $29.99).
+- Live queue quote (public GET /api/v1/launch-dates): free_next_available
+  2027-01-31 (173 days); STWL dates bookable from 2026-08-13.
+- Agent path (venue-official, first for this file): /launch.txt "Agent
+  Launch Guide" — full REST flow (email OTP → bearer → POST /api/v1/products
+  → POST /api/v1/launches, tier free|stwl; one product per free account in
+  the waiting line) + public read-only MCP server (mcp.uneed.best/mcp).
+- ToS (/terms-of-use, last updated 2025-07-31, Uneed Platform, Nantes FR):
+  prohibits automated vote/ranking/comment manipulation, NOT product
+  submission; no blanket robot/spider/crawl ban (unlike Product Hunt ToS and
+  Toolbit ToS §7).
+- Product baseline (aiconverter.app, 2026-08-11): `/`, `/llms.txt`,
+  `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/` all
+  HTTP 200; `/pricing/` and `/receipt-to-csv/` still 404 — the kit claims
+  none of those routes.
+
+### Decision recorded (dated 2026-08-11)
+
+- Uneed: **SUBMIT — free waiting-line launch ("Join the line") first, manual
+  by Nish. The paid Skip the Waiting Line ($29.99) is recorded and deferred
+  to Nish's spend call** (Fast-track $14.99 and Pro's bundled yearly Skip
+  also noted). Kit copy-paste ready in `ops/launch-venues.md` (Name,
+  Website, one-line description, tier choice with the live free date,
+  Business category, Freemium pricing tag, post-listing check).
+
+### Why the item cannot be closed from a lane (policy, with a first-time twist)
+
+uneed.best is `automation_disposition: unknown` in the fleet venue policy
+ledger (`agent-state/growth-loop/venue-policy.json`, allowlist empty, only
+producthunt.com reviewed) → `venue-claim claim` exits 4. The free flow
+requires an email-OTP account (an account action, per fleet policy Nish-held;
+the agent has no inbox to receive the code) and the STWL path requires a
+$29.99 payment. **Twist for the venue research desk:** unlike every prior
+venue, Uneed itself publishes an official agent-launch API (launch.txt + REST
+/api/v1 + MCP) and its ToS does not prohibit agent submission — positive
+evidence for a future `automation_disposition: allowed` review of uneed.best.
+Once the ledger is updated, a future agent packet could execute the API flow
+end-to-end with Nish's email OTP.
+
+### Checks on this lane
+
+- Live checks for homepage, llms.txt, pricing page, submit page, launch-dates
+  API, search API duplicate checks, slug probes, five peer tool pages,
+  launch.txt, ToS, and the four canonical product links (2026-08-11) — all
+  as recorded above.
+- No code changed; docs only (`ops/launch-venues.md`, `.lane/report.md`).
