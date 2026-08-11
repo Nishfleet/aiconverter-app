@@ -6,17 +6,25 @@ Live-production claims only: everything below is grounded in live pages and
 2026-08-10; WeLikeTools and xix.ai verified 2026-08-10 and re-verified
 2026-08-11; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11;
 Toolify.ai verified 2026-08-11; Microlaunch verified 2026-08-11; Uneed
-(uneed.best) verified 2026-08-11; Open-Launch verified 2026-08-11).
-Automated submission is blocked for all nine venues by the fleet venue policy
+(uneed.best) verified 2026-08-11; Open-Launch verified 2026-08-11; Capterra
+verified 2026-08-11 via the archived official vendor page (capture 2026-02-13,
+HTTP 200), Wayback CDX, and dated scout live checks — direct VPS access to
+Capterra remains 403-blocked, so no live-page claim is made for it).
+Automated submission is blocked for all ten venues by the fleet venue policy
 ledger (`agent-state/growth-loop/venue-policy.json` and the `venue-claim`
 guard): Product Hunt is reviewed as prohibiting automation; BetaList,
-WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, Microlaunch, uneed.best, and
-Open-Launch are not yet reviewed (`automation_disposition: unknown`). Uneed is
+WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, Microlaunch, uneed.best,
+Open-Launch, and Capterra are not yet reviewed (`automation_disposition:
+unknown`). Uneed is
 the first venue that publishes its own official agent-launch API
 (`/launch.txt` + REST `/api/v1`) — strong positive evidence the venue research
-desk should weigh when reviewing uneed.best. Account actions (and the xix.ai
+desk should weigh when reviewing uneed.best. Per the 2026-08-11 standing
+authorization agents may execute owner account actions (accept terms, create
+accounts, clear CAPTCHAs), but the root-owned venue policy guard still exits 4
+for every unreviewed venue, so submissions here stay manual (Nish) until the
+allowlist changes; the spend decisions (the xix.ai
 $9.90, Toolify.ai $99, Microlaunch Pro Launch $39, Uneed Skip the Waiting Line
-$29.99, and Open-Launch Premium Launch $12 spend decisions) stay with Nish.
+$29.99, and Open-Launch Premium Launch $12) stay with Nish either way.
 The kits below make each manual submission a copy-paste job.
 
 ## Submission outcomes (2026-08-11)
@@ -54,6 +62,18 @@ copy source):
 - **Open-Launch — SKIPPED_PAID.** The current direct launch is paid ($12
   Premium Launch) and no usable free route exists now (free slots booked into
   2027); the spend was not made.
+- **Capterra — NEEDS_NISH_STEP (agent-executed submission declined).**
+  Capterra already hosts the exact category (live peer profile
+  https://www.capterra.com/p/10048907/Bank-Statement-Converter/), and a
+  bounded site search finds no aiconverter.app profile — the listing is
+  missing, not duplicate. capterra.com is unreviewed in the venue policy
+  ledger (`automation_disposition: unknown`, executable allowlist empty), so
+  `venue-claim claim` exits 4 — no agent browser work; direct VPS access is
+  additionally 403-walled. The official path is a reviewed vendor form via
+  Gartner Digital Markets get-listed (no product-creation API, no
+  agent-credential path), so account creation + submission is Nish's human
+  action using the Capterra kit below. No listing fee surfaced in the
+  official-path evidence; sponsored placement stays a separate spend call.
 
 ## Status ledger (fleet re-verification 2026-08-10)
 
@@ -343,6 +363,49 @@ copy-paste ready:
   owns the account creation (Google / GitHub / email sign-in) and the
   Premium Launch paid/decline decision. After the action, update this file
   with the public URL and flip the venue's status line to live.
+
+### Fleet re-verification 2026-08-11 (Capterra)
+
+The Capterra section below was added on 2026-08-11 and grounded in the dated
+scout live checks (2026-08-09T15:30:58Z) plus this run's Wayback/CDX
+evidence — the decision stands as recorded and the kit remains valid and
+copy-paste ready:
+
+- Capterra hosts the exact category: the peer profile `Bank Statement
+  Converter Software Review 2026` is live at
+  https://www.capterra.com/p/10048907/Bank-Statement-Converter/ (last
+  updated 2026-07-02, scout live check 2026-08-09) for an exact
+  PDF-bank-statement-to-Excel/CSV converter. The venue hosts the category;
+  only this product's listing is missing.
+- No aiconverter.app duplicate: scout bounded site search (2026-08-09) for
+  `aiconverter.app` / `AI Converter` returned no product profile, and Wayback
+  CDX (this run, 2026-08-11) holds zero captures for
+  `capterra.com/p/*aiconverter*` and `capterra.com/p/*ai-converter*` (CDX
+  also holds no capture of the peer URL — the scout's live check is the peer
+  evidence).
+- Official path unchanged: the Capterra vendors page (archived 2026-02-13,
+  HTTP 200) still opens "Capterra, powered by Gartner Digital Markets. Join
+  the world's largest platform..." with primary CTA "Get Your Product
+  Listed" → https://digitalmarkets.gartner.com/get-listed/start and a
+  secondary "Log In" → https://digitalmarkets.gartner.com/login. The
+  get-listed `claim-bx` claim flow has archived captures through 2026-08-07
+  (Factúrate, QuickSigner), so the flow is current.
+- Direct access from this VPS remains 403-blocked (2026-08-11): homepage and
+  search both return Capterra's "Performing security verification" bot wall,
+  so baseline rests on the dated scout checks and archived pages above.
+- Gate unchanged: capterra.com is `automation_disposition: unknown` in
+  `venue-policy.json` with an empty executable allowlist → `venue-claim
+  claim` exits 4 → no browser work. (`venue-claim` is not installed on this
+  VPS — exit 127, same as the 2026-08-09 cycle; the outcome is deterministic
+  from the policy file.)
+- Kit reference pages all live HTTP 200 (2026-08-11): `/`, `/llms.txt`,
+  `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+  `/pricing/` and `/receipt-to-csv/` still return 404, so the kit claims none
+  of those routes.
+- **Blocked on a human account action:** Nish owns the account creation and
+  submission through the Gartner Digital Markets get-listed flow (email
+  verification + editorial review). After the action, update this file with
+  the public URL and flip the venue's status line to live.
 
 ## Product Hunt
 
@@ -940,4 +1003,108 @@ copy-paste ready:
   slots daily, 8:00 AM UTC launch hour, payment link inside the signed-in
   flow), and the four canonical product links (all HTTP 200 on 2026-08-11;
   /pricing/ and /receipt-to-csv/ remain 404 and are not claimed in the kit).
-- Per fleet policy, submissions stay manual-only (account actions are human).
+- Per the venue policy guard, submissions stay manual-only (claim exits 4 for
+  every unreviewed venue); per the 2026-08-11 standing authorization account
+  actions may be agent-executed for owner tasks, but the guard still blocks
+  these venues and money stays with Nish.
+
+## Capterra
+
+### Decision (dated 2026-08-11)
+
+- **Decision: DECLINED for agent-executed submission. Truthful profile
+  creation is a manual external-account action by Nish via the official
+  Gartner Digital Markets get-listed flow — the kit below is copy-paste
+  ready and truthful, and this line becomes SUBMITTED (or stays DECLINED)
+  once Nish acts.**
+- Reason: Capterra already hosts the exact category — the live peer profile
+  `Bank Statement Converter Software Review 2026`
+  (https://www.capterra.com/p/10048907/Bank-Statement-Converter/, last
+  updated 2026-07-02, scout live check 2026-08-09T15:30:58Z) — while a
+  bounded Capterra site search for `aiconverter.app` / `AI Converter` finds
+  no product profile (scout 2026-08-09) and Wayback CDX has zero captures
+  for any aiconverter / ai-converter product page (this run 2026-08-11). The
+  venue hosts the category; only this listing is missing.
+- Official reviewed path (archived pages verified this run 2026-08-11): the
+  vendors page (https://www.capterra.com/vendors/, archived capture
+  2026-02-13, HTTP 200) opens "Capterra, powered by Gartner Digital Markets.
+  Join the world's largest platform connecting millions of in-market
+  software buyers with vendors like you." with primary CTA **"Get Your
+  Product Listed"** → https://digitalmarkets.gartner.com/get-listed/start
+  (Gartner Digital Markets vendor onboarding) and a secondary "Log In" →
+  https://digitalmarkets.gartner.com/login. The vendor portal's claim flow
+  (`/get-listed/claim-bx?url=...&name=...`) is live and in active use —
+  archived captures span 2026-02 through 2026-08-07 (SurveyMonkey, Pingdom,
+  Koala AI, Intermapper, Factúrate, QuickSigner, ...). The 2026 profile
+  guidelines (https://www.capterra.com/legal/listing-guidelines/, checked
+  live by scout 2026-08-09; archived captures HTTP 200) permit vendors to
+  create/update a profile for packaged software, with final copy subject to
+  editorial review. There is no public product-creation API and no
+  agent-credential submission path — the listing flow is a reviewed vendor
+  form, not a POST endpoint.
+- Constraint (gate): capterra.com sits in `venue-policy.json`
+  `reviewed_venues` with `automation_disposition: "unknown"` and the
+  executable `allowlist` is empty → `venue-claim claim capterra.com
+  aiconverter-app` exits 4 (allowlist/policy block), and a blocked exit
+  means NO browser work (no automated submission, no account creation).
+  `venue-claim` is not installed on this VPS (exit 127, same as recorded for
+  the 2026-08-09 cycle); the outcome is deterministic from the authoritative
+  files (`venue-policy.json`: `"allowlist": {}`, capterra unknown;
+  `venues.json`: zero capterra claims). The only override is a root change
+  to the allowlist. Direct access from this VPS is additionally 403-blocked
+  by Capterra's bot wall (homepage and search, checked 2026-08-11), so
+  agent-side verification rests on the dated scout checks and Wayback
+  evidence.
+- Standing authorization (2026-08-11) note: agents may now create accounts /
+  accept terms / clear CAPTCHAs for owner tasks, but the root-owned venue
+  policy guard above is the operative block, and the get-listed flow's email
+  verification + editorial review require the account owner (Nish). Money
+  boundary: no listing fee surfaced in the official-path evidence (Capterra
+  monetizes via optional advertising/sponsorship); sponsored placement and
+  lead generation are optional and stay Nish's spend call — no money is
+  spent without a separate decision.
+- Next action: Nish creates the vendor account at
+  https://digitalmarkets.gartner.com/get-listed/start (use the `claim-bx`
+  flow if a profile already exists for aiconverter.app; the new-product form
+  otherwise) and submits using the kit below, then this file should be
+  updated with the public profile URL. Root may also add the allowlist
+  one-liner for record-keeping, but the submission itself stays the account
+  owner's step.
+
+### Manual submission kit (copy-paste ready; truthful — live claims only)
+
+- Name: **AI Converter**
+- Tagline: **Bank statement PDFs to CSV you can review before paying**
+- Website: https://aiconverter.app
+- Description:
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your
+  > browser. Review sample rows free, then unlock the full extraction only when
+  > the preview looks right. OCR fallback handles scanned statements; low
+  > confidence fails closed with no charge. No bank logins and no human review
+  > queue; source files are deleted after 24 hours.
+
+- Key features (3-5 bullets):
+  - Bank statement PDF to CSV with a built-in parser first, OCR fallback for scans.
+  - Free preview: review sample rows and download a sample CSV before paying.
+  - Fail-closed extraction: low-confidence conversions are not charged.
+  - No bank login and no human review queue; source files deleted after 24 hours.
+  - Paid jobs get one automatic stronger redo.
+- Category: match the live peer's placement — read the peer profile's
+  breadcrumb/categories live at submission time and pick the closest category
+  the form offers (the peer is an exact PDF-bank-statement-to-Excel/CSV
+  converter, so a document-conversion / accounting-adjacent category fits).
+  Do not invent a category slug.
+- Pricing tag: Freemium (free preview + paid per-page extraction, matching
+  live checkout behavior).
+- Canonical links for the listing (all verified live HTTP 200 on 2026-08-11):
+  - https://aiconverter.app/bank-statement-pdf-to-csv/
+  - https://aiconverter.app/sample-csv/
+  - https://aiconverter.app/trust/
+  - https://aiconverter.app/formats/
+- Post-listing check (per the scout item's verify criteria): the public
+  profile resolves and links https://aiconverter.app/ and a live canonical
+  bank-statement page; copy avoids blanket accuracy/bank-support claims and
+  never references undeployed `/pricing/` or `/receipt-to-csv/`; record
+  whether the profile also appears on GetApp / Software Advice (same Gartner
+  Digital Markets family); then update this file with the public URL.
