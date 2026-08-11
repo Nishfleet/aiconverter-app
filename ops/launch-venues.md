@@ -4,10 +4,11 @@ Durable record of launch-venue decisions and submission kits for aiconverter.app
 Live-production claims only: everything below is grounded in live pages and
 `/llms.txt` (verified 2026-08-09 for Product Hunt and BetaList, re-verified
 2026-08-10; WeLikeTools and xix.ai verified 2026-08-10 and re-verified
-2026-08-11). Automated submission is blocked for all four venues by the fleet
-venue policy ledger (`agent-state/growth-loop/venue-policy.json` and the
-`venue-claim` guard): Product Hunt is reviewed as prohibiting automation;
-BetaList, WeLikeTools, and xix.ai are not yet reviewed
+2026-08-11; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11).
+Automated submission is blocked for all five venues by the fleet venue policy
+ledger (`agent-state/growth-loop/venue-policy.json` and the `venue-claim`
+guard): Product Hunt is reviewed as prohibiting automation; BetaList,
+WeLikeTools, xix.ai, and Toolbit.ai are not yet reviewed
 (`automation_disposition: unknown`). Account actions (and xix.ai's $9.90 spend)
 stay with Nish. The kits below make each manual submission a copy-paste job.
 
@@ -60,6 +61,44 @@ copy-paste ready:
   owns the WeLikeTools submission and the xix.ai paid/decline decision. After
   each action, update this file with the public URL and flip the venue's status
   line to live.
+
+### Fleet re-verification 2026-08-11 (Toolbit.ai)
+
+The Toolbit.ai section below was added on 2026-08-10 and re-verified live on
+2026-08-11 — the decision stands unchanged and the kit remains valid and
+copy-paste ready:
+
+- Toolbit.ai search `q=aiconverter` (2026-08-11): still no aiconverter.app
+  result — unrelated tools only (ConvertFiles.ai, ipic.ai, AICoverGen, and a
+  different product named "AI Convert" under Creative Tools).
+  `https://toolbit.ai/ai-tool/ai-converter` still 404. The exact-category
+  competitors are still live — StatementSheet
+  (https://toolbit.ai/ai-tool/statementsheet, "Convert PDF bank statements to
+  Excel or CSV", Data Extraction, 9.5K monthly visits, Paid from $20) and
+  Rocket Statements (https://toolbit.ai/ai-tool/rocketstatements, "Convert
+  Bank Statements to Excel, CSV & JSON", Document Analysis / OCR, 4.8K monthly
+  visits, Paid) — so the venue hosts the category; only this product's listing
+  is missing. Note: Rocket Statements moved from `/ai-tool/rocket-statements`
+  (now 404) to `/ai-tool/rocketstatements`; the kit uses the current URL.
+- Plans (https://toolbit.ai/submit, re-verified 2026-08-11): paid **Launch
+  Tool $29 / One-time** (listed within 24h, blue verified badge, sidebar
+  featured 1 day, permanent directory listing, one X post) unchanged; FAQ
+  still: "Free community listings require embedding our Launch Badge on your
+  website and are reviewed in up to 3 days." `/submit/tool?plan=free` still
+  renders the sign-in wall, and `/launch-badge` still 404 — the badge snippet
+  stays account-gated.
+- ToS (https://toolbit.ai/terms-and-conditions, last updated 2026-07-20,
+  re-read live 2026-08-11): section 7 "Prohibited Uses" still prohibits "any
+  robot, spider, or other automatic device, process, or means to access
+  Service for any purpose" — same class of language as Product Hunt's
+  prohibition; flag for the venue research desk.
+- Kit reference pages all live HTTP 200 (2026-08-11): `/`, `/llms.txt`,
+  `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+  `/pricing/` and `/receipt-to-csv/` still return 404, so the kit claims none
+  of those routes.
+- **Blocked on a human account action:** Nish owns the free submission and the
+  $29 paid decision. After each action, update this file with the public URL
+  and flip the venue's status line to live.
 
 ## Product Hunt
 
@@ -237,6 +276,82 @@ copy-paste ready:
   form's category selector.
 - Contact email: use the fleet plus-address for this venue.
 
+## Toolbit.ai
+
+### Decision (dated 2026-08-10, re-verified 2026-08-11)
+
+- **Decision: SUBMIT — free community listing first ("Launch Tool $0"),
+  manual by Nish. Paid plan recorded and deferred.**
+- Reason: Toolbit.ai is a live, category-relevant AI tools directory (homepage:
+  "search 10,000+ AI tools") that already lists exact-category competitors:
+  StatementSheet (https://toolbit.ai/ai-tool/statementsheet — "Convert PDF
+  bank statements to Excel or CSV", Data Extraction, 9.5K monthly visits,
+  paid) and Rocket Statements
+  (https://toolbit.ai/ai-tool/rocketstatements — "Convert Bank Statements to
+  Excel, CSV & JSON", Document Analysis / OCR, 4.8K monthly visits, paid).
+  Search `q=aiconverter` returns no aiconverter.app result (unrelated tools
+  only: ConvertFiles.ai, ipic.ai, AICoverGen, and a different product named
+  "AI Convert" under Creative Tools), so there is no duplicate — the category
+  is hosted, only this listing is missing.
+- Free plan first (plans verified live on https://toolbit.ai/submit,
+  2026-08-10, re-verified 2026-08-11): the free community listing is **Launch
+  Tool $0 / Forever** — free with Launch Badge verification, do-follow SEO
+  backlink, reviewed up to 3 days, permanent directory listing. FAQ (submit
+  center, 2026-08-11): "Free community listings require embedding our Launch
+  Badge on your website and are reviewed in up to 3 days."
+- Paid option recorded (deferred): **Launch Tool $29 / One-time** — listed
+  within 24h, blue verified badge, sidebar featured (1 day), permanent
+  directory listing, one social media (X) post. ToS section 5: paid
+  submissions are charged at checkout before review; full refund (minus
+  processing fees) if rejected. Decision: the $29 paid launch is an optional
+  commercial call by Nish, not required for the free listing.
+- Verified requirement: the free listing's verification step is embedding
+  Toolbit's Launch Badge on aiconverter.app. The badge snippet is
+  account-gated (only revealed in the submission flow; /launch-badge, /badge
+  and /submit/launch-badge all 404, re-verified 2026-08-11), so embedding is a
+  follow-up owner action that needs a tiny deploy once Nish has the snippet.
+- Constraint: `/submit/tool?plan=free` renders the sign-in wall
+  (re-verified 2026-08-11; signup at /signup) — account-gated. toolbit.ai is
+  not in the venue policy allowlist (`automation_disposition: unknown`, not
+  yet reviewed in `venue-policy.json` as of 2026-08-11), so the agent must not
+  drive a browser submission. ToS review lead
+  (https://toolbit.ai/terms-and-conditions, last updated 2026-07-20, re-read
+  live 2026-08-11): section 7 "Prohibited Uses" prohibits "any robot, spider,
+  or other automatic device, process, or means to access Service for any
+  purpose" — same class of language as Product Hunt's prohibition; flag for
+  the venue research desk (the guard stays exit-4 either way). Submission
+  (create account, submit via the account-gated flow, embed the Launch Badge)
+  is a human account action, same as the other venues.
+- Next action: Nish signs in (Google or email) and submits using the kit
+  below, embeds the Launch Badge snippet on aiconverter.app (tiny deploy) to
+  complete the free-verified listing, then this file should be updated with
+  the public tool URL.
+
+### Manual submission kit (copy-paste ready)
+
+- Name: **AI Converter**
+- Tagline: **Bank statement PDFs to CSV you can review before paying**
+- Description:
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your
+  > browser. Review sample rows free, then unlock the full extraction only when
+  > the preview looks right. OCR fallback handles scanned statements; low
+  > confidence fails closed with no charge. No bank logins and no human review
+  > queue; source files are deleted after 24 hours.
+
+- Category suggestions: Data Extraction, Document Automation, OCR / Document
+  Analysis (all live Toolbit categories 2026-08-10; exact-category peers sit
+  under Data Extraction and Document Analysis).
+- Pricing tag suggestion: Freemium (free preview + paid extraction, matching
+  live checkout behavior).
+- Website: https://aiconverter.app
+- Canonical links for the listing (all verified live HTTP 200 on 2026-08-10
+  and re-verified 2026-08-11):
+  - https://aiconverter.app/bank-statement-pdf-to-csv/
+  - https://aiconverter.app/sample-csv/
+  - https://aiconverter.app/trust/
+  - https://aiconverter.app/formats/
+
 ## Verification notes
 
 - All copy claims only live production behavior (bank-statement PDF to CSV,
@@ -249,4 +364,11 @@ copy-paste ready:
   canonical product links (/bank-statement-pdf-to-csv/, /sample-csv/, /trust/,
   /formats/ — all HTTP 200 on 2026-08-11; /pricing/ and /receipt-to-csv/ remain
   404 and are not claimed in any kit).
+- Toolbit.ai section verified live on 2026-08-10 and re-verified on
+  2026-08-11: the site search, both competitor listings (StatementSheet and
+  Rocket Statements at its current /ai-tool/rocketstatements slug), the submit
+  center (paid plans + free FAQ), the sign-in wall on /submit/tool?plan=free,
+  the ToS section 7 prohibition, and the four canonical product links (all
+  HTTP 200 on 2026-08-11; /pricing/ and /receipt-to-csv/ remain 404 and are
+  not claimed in the kit).
 - Per fleet policy, submissions stay manual-only (account actions are human).
