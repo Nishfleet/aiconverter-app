@@ -5,18 +5,20 @@ Live-production claims only: everything below is grounded in live pages and
 `/llms.txt` (verified 2026-08-09 for Product Hunt and BetaList, re-verified
 2026-08-10; WeLikeTools and xix.ai verified 2026-08-10 and re-verified
 2026-08-11; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11;
+2026-08-11; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11;
 Toolify.ai verified 2026-08-11; Microlaunch verified 2026-08-11; Uneed
-(uneed.best) verified 2026-08-11).
-Automated submission is blocked for all eight venues by the fleet venue policy
+(uneed.best) verified 2026-08-11; Open-Launch verified 2026-08-11).
+Automated submission is blocked for all nine venues by the fleet venue policy
 ledger (`agent-state/growth-loop/venue-policy.json` and the `venue-claim`
 guard): Product Hunt is reviewed as prohibiting automation; BetaList,
-WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, Microlaunch, and uneed.best are not
-yet reviewed (`automation_disposition: unknown`). Uneed is the first venue that
-publishes its own official agent-launch API (`/launch.txt` + REST `/api/v1`) —
-strong positive evidence the venue research desk should weigh when reviewing
-uneed.best. Account actions (and the xix.ai $9.90, Toolify.ai $99, Microlaunch
-Pro Launch $39, and Uneed Skip the Waiting Line $29.99 spend decisions) stay
-with Nish. The kits below make each manual submission a copy-paste job.
+WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, Microlaunch, uneed.best, and
+Open-Launch are not yet reviewed (`automation_disposition: unknown`). Uneed is
+the first venue that publishes its own official agent-launch API
+(`/launch.txt` + REST `/api/v1`) — strong positive evidence the venue research
+desk should weigh when reviewing uneed.best. Account actions (and the xix.ai
+$9.90, Toolify.ai $99, Microlaunch Pro Launch $39, Uneed Skip the Waiting Line
+$29.99, and Open-Launch Premium Launch $12 spend decisions) stay with Nish.
+The kits below make each manual submission a copy-paste job.
 
 ## Status ledger (fleet re-verification 2026-08-10)
 
@@ -242,10 +244,6 @@ copy-paste ready:
   §7. Combined with the venue-published launch.txt agent flow, the ToS does
   not prohibit agent submission — still flag for the venue research desk
   (the guard stays exit-4 until the ledger is updated).
-- Kit reference pages all live HTTP 200 (2026-08-11): `/`, `/llms.txt`,
-  `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
-  `/pricing/` and `/receipt-to-csv/` still return 404, so the kit claims none
-  of those routes.
 - **Blocked on a human account action (and one $29.99 spend decision):** the
   free flow needs an account (email OTP per launch.txt; the submit page says
   "No account needed to start — we'll scrape your page first, then ask you to
@@ -253,6 +251,63 @@ copy-paste ready:
   sign-up and the free-queue launch (or the STWL spend call). After each
   action, update this file with the public URL and flip the venue's status
   line to live.
+
+### Fleet re-verification 2026-08-11 (Open-Launch)
+
+The Open-Launch section below was added on 2026-08-11 and verified live on
+2026-08-11 — the decision stands as recorded and the kit remains valid and
+copy-paste ready:
+
+- Site search `q=aiconverter` and `q=ai converter` (the platform's own
+  `/api/search`, same query the nav search box uses) both return zero results
+  — no duplicate, no aiconverter.app listing. Slug probes
+  `/projects/aiconverter`, `/projects/ai-converter`,
+  `/projects/aiconverter-app`, `/projects/ai-converter-app` all 404.
+- The exact-category is heavily hosted — 10+ bank-statement-converter peers
+  live, all HTTP 200 (2026-08-11): AI Bank Statement
+  (/projects/ai-bank-statement), bank-statementconverter.com
+  (/projects/bank-statementconverter-com), BankScanPro | PDF to Excel/CSV
+  (/projects/bankscanpro-pdf-to-excel-csv), Reconciliate Bank / Credit Card
+  Statements with AI (/projects/reconciliate-bank-credit-card-statements-with-ai),
+  Bank Statement Boss (/projects/bank-statement-boss), AIBankStatement
+  (/projects/aibankstatement), Bank PDF Converter (/projects/bank-pdf-converter),
+  StatementSheet (/projects/statementsheet), Bank Statement Converter AI
+  (/projects/bank-statement-converter-ai), and Bank Statement Engine
+  (/projects/bank-statement-engine — also listed in the live `finance-tech`
+  category page). The venue hosts the category; only this product's listing
+  is missing.
+- Pricing page (live 2026-08-11): **Premium Launch $12 / launch** — "The only
+  way to launch right now", "Launch Tomorrow - No Wait!", guaranteed dofollow
+  backlink from a DR 71 domain, only 10 premium slots daily, immediate
+  availability, featured on homepage; **Free Launch $0 fully booked into
+  2027** ("Want free? We'll email you when it reopens — just start a
+  launch."); SEO Growth Package $59 (was $199). FAQ (2026-08-11): all
+  launches at 8:00 AM UTC; "Premium users get 10 dedicated priority slots
+  daily"; "free launch slots are fully booked into 2027. Premium launches
+  are open and let you launch as early as tomorrow, up to 60 days in
+  advance."
+- `/projects/submit` renders the sign-in wall (login with Google, login with
+  GitHub, or email + password) — account-gated; the anonymous flow stops
+  there. robots.txt disallows `/api/`, `/projects/submit`, `/sign-in`,
+  `/payment/`, `/dashboard`.
+- ToS (https://open-launch.com/legal/terms, "Last updated: August 11, 2026")
+  is a generic template; section 2 Acceptable Use has **no
+  robot/spider/automated-access prohibition** (unlike Product Hunt's ToS and
+  Toolbit.ai's ToS §7) — flag for the venue research desk (the guard stays
+  exit-4 either way). Section 11: all payments final and non-refundable.
+  Platform is open source (github.com/openlaunch-org/Open-Launch, "The first
+  complete open source alternative to Product Hunt"); source confirms
+  LAUNCH_LIMITS.PREMIUM_DAILY_LIMIT = 10 and the 8:00 AM UTC launch hour,
+  with payment via a Stripe-style `PREMIUM_PAYMENT_LINK` inside the
+  signed-in flow.
+- Kit reference pages all live HTTP 200 (2026-08-11): `/`, `/llms.txt`,
+  `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+  `/pricing/` and `/receipt-to-csv/` still return 404, so the kit claims none
+  of those routes.
+- **Blocked on a human account action (and one $12 spend decision):** Nish
+  owns the account creation (Google / GitHub / email sign-in) and the
+  Premium Launch paid/decline decision. After the action, update this file
+  with the public URL and flip the venue's status line to live.
 
 ## Product Hunt
 
@@ -658,7 +713,6 @@ copy-paste ready:
 - Post-listing check: confirm the product page at microlaunch.net/p/{slug}
   returns 200 and appears in Microlaunch search, then update this file with
   the public URL.
-
 ## Uneed
 
 ### Decision (dated 2026-08-11)
@@ -718,6 +772,7 @@ copy-paste ready:
   this file should be updated with the public tool URL
   (uneed.best/tool/{slug}).
 
+
 ### Manual submission kit (copy-paste ready)
 
 - Name: **AI Converter**
@@ -741,47 +796,80 @@ copy-paste ready:
   and appears in Uneed search (`q=aiconverter`), then update this file with
   the public URL.
 
-## Verification notes
+## Open-Launch
 
-- All copy claims only live production behavior (bank-statement PDF to CSV,
-  preview-first, fail-closed) as verified on 2026-08-09. No blanket accuracy
-  claims, no official accounting-platform import claims, no pricing-page link
-  (https://aiconverter.app/pricing/ returns 404 until PR #21 lands).
-- WeLikeTools and xix.ai sections verified live on 2026-08-10 and re-verified
-  on 2026-08-11: both submit pages, both site searches, the WeLikeTools
-  competitor listing, the xix.ai exact-term category page, and the four
-  canonical product links (/bank-statement-pdf-to-csv/, /sample-csv/, /trust/,
-  /formats/ — all HTTP 200 on 2026-08-11; /pricing/ and /receipt-to-csv/ remain
-  404 and are not claimed in any kit).
-- Toolbit.ai section verified live on 2026-08-10 and re-verified on
-  2026-08-11: the site search, both competitor listings (StatementSheet and
-  Rocket Statements at its current /ai-tool/rocketstatements slug), the submit
-  center (paid plans + free FAQ), the sign-in wall on /submit/tool?plan=free,
-  the ToS section 7 prohibition, and the four canonical product links (all
-  HTTP 200 on 2026-08-11; /pricing/ and /receipt-to-csv/ remain 404 and are
-  not claimed in the kit).
-- Toolify.ai section verified live on 2026-08-11: the site search
-  (`q=aiconverter` → no results), the `/tool/ai-converter` 404, both
-  exact-category tag pages (/tag/Bank%20Statement%20to%20CSV and
-  /tag/Bank%20Statement%20to%20Excel, both leading with LedgerBox), the live
-  LedgerBox tool page, the live submit page ($99 one-time, no queue, 48h), the
-  Fulfillment Policy (non-refundable one-time fee, account registration,
-  no automation prohibition), and the four canonical product links (all HTTP
-  200 on 2026-08-11; /pricing/ and /receipt-to-csv/ remain 404 and are not
-  claimed in the kit).
-- Microlaunch section verified live on 2026-08-11: the homepage (138 products
-  in August 2026), both exact-category peer product pages (Bank Statement
-  Converter and Bankformats, with embedded launch records showing
-  `is_premium: false`), the full-launches API duplicate check (5,660
-  products, no aiconverter / "AI Converter"), the four slug probes
-  (/p/aiconverter, /p/ai-converter, /p/ai-converter-app, /p/aiconverter-app
-  — all no product), the "Pick your Launch" modal (Pro Launch $39 card, CTA
-  → /premium#stats), the /submit → /premium#pricing redirect, the premium
-  pricing page (Pro Launch $39 / Expert Feedback $129, FAQ naming the
-  Regular launch, code LAUNCH20, OSS/student 50% OFF), the sign-in modal
-  (Google / 𝕏), the ToS page (generic template, no automation prohibition),
-  and the four canonical product links (all HTTP 200 on 2026-08-11; /pricing/
-  and /receipt-to-csv/ remain 404 and are not claimed in the kit).
+### Decision (dated 2026-08-11)
+
+- **Decision: PAID listing at $12 (Premium Launch) recommended for
+  evaluation; declined for agent-executed submission. The $12 spend, the
+  account creation, and the form submission are Nish's human actions — the
+  kit below is ready, and this line becomes SUBMITTED (or DECLINED) once
+  Nish decides on the spend.**
+- Reason: Open-Launch (https://open-launch.com, "Discover the Best Tech
+  Products", open source — "The first complete open source alternative to
+  Product Hunt") is a live launch/upvote platform that already hosts 10+
+  exact-category competitors — AI Bank Statement, bank-statementconverter.com,
+  BankScanPro, Bank Statement Boss, AIBankStatement, Bank PDF Converter,
+  StatementSheet, Bank Statement Converter AI, Bank Statement Engine, and
+  more — while site search `q=aiconverter` and `q=ai converter` return zero
+  results and the four aiconverter slug probes 404. The category is hosted;
+  only this listing is missing.
+- No free path right now: the pricing page (live 2026-08-11) shows **Free
+  Launch $0 fully booked into 2027** ("Want free? We'll email you when it
+  reopens — just start a launch.") and **Premium Launch $12 / launch** as
+  "The only way to launch right now" — launch as early as tomorrow (up to 60
+  days ahead per the FAQ), 10 premium slots daily, guaranteed dofollow
+  backlink from a DR 71 domain, featured on homepage. At $12 with immediate
+  availability, the listing is cheap enough to be worth testing; if Nish
+  declines the spend, this paragraph is the dated decline record.
+- Money boundary: $12 is a spend decision only Nish can make; the agent
+  cannot pay or create the account. open-launch.com is not in the venue
+  policy allowlist (`automation_disposition: unknown`, not yet reviewed in
+  `venue-policy.json` as of 2026-08-11), so `venue-claim claim` exits 4 —
+  no agent-driven browser submission. ToS (live 2026-08-11, "Last updated:
+  August 11, 2026") has no robot/spider/automated-access prohibition (unlike
+  Product Hunt's ToS and Toolbit.ai's ToS §7), but the guard stays exit-4
+  either way (policy not yet reviewed) — flag for the venue research desk.
+  Section 11: all payments final and non-refundable. Submission (create
+  account via Google / GitHub / email, pay $12 at the Stripe-style checkout
+  inside the flow, fill the form) is a human account action, same as the
+  other venues.
+- Next action: Nish signs in, pays $12, and submits a Premium Launch using
+  the kit below, then this file should be updated with the public product
+  URL (open-launch.com/projects/{slug}).
+
+### Manual submission kit (copy-paste ready)
+
+- Name: **AI Converter**
+- Tagline: **Bank statement PDFs to CSV you can review before paying**
+- Description (rich text, from the existing kits):
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your
+  > browser. Review sample rows free, then unlock the full extraction only when
+  > the preview looks right. OCR fallback handles scanned statements; low
+  > confidence fails closed with no charge. No bank logins and no human review
+  > queue; source files are deleted after 24 hours.
+
+- Category: **finance-tech** (live category at
+  /categories?category=finance-tech; exact-category peers sit there, e.g.
+  Bank Statement Engine).
+- Platform: Web (the form offers web / mobile / desktop / api / other).
+- Pricing: Freemium (the form offers free / freemium / paid; matches live
+  checkout behavior: free preview + paid per-page extraction).
+- Launch type: **Premium Launch ($12)** — the only available launch right
+  now (free slots booked into 2027); pick the earliest date the date picker
+  offers (all launches at 8:00 AM UTC, premium can schedule up to 60 days
+  ahead per the FAQ).
+- Website: https://aiconverter.app
+- Canonical links for the listing (all verified live HTTP 200 on 2026-08-11):
+  - https://aiconverter.app/bank-statement-pdf-to-csv/
+  - https://aiconverter.app/sample-csv/
+  - https://aiconverter.app/trust/
+  - https://aiconverter.app/formats/
+- Post-listing check: confirm the product page at
+  https://open-launch.com/projects/aiconverter returns 200 and that site
+  search `q=aiconverter` returns the project, then update this file with the
+  public URL.
 - Uneed section verified live on 2026-08-11: the homepage ("Launch. Get
   seen. Grow."), `/llms.txt` (10,000+ tools, MCP/API pointers), the pricing
   page (free "Join the line" + Skip the line $29.99 / Fast-track $14.99 /
@@ -798,4 +886,20 @@ copy-paste ready:
   vote/comment manipulation prohibited, no blanket crawl ban), and the four
   canonical product links (all HTTP 200 on 2026-08-11; /pricing/ and
   /receipt-to-csv/ remain 404 and are not claimed in the kit).
-- Per fleet policy, submissions stay manual-only (account actions are human).
+- Open-Launch section verified live on 2026-08-11: the homepage (trending
+  launch/upvote platform), the site search API duplicate checks
+  (`q=aiconverter`, `q=ai converter` → zero results; `q=bank`,
+  `q=statement`, `q=converter` → peers), the four absent-slug probes
+  (/projects/aiconverter, /projects/ai-converter, /projects/aiconverter-app,
+  /projects/ai-converter-app — all 404), six live peer project pages (AI
+  Bank Statement, Bank Statement Boss, Bank PDF Converter, StatementSheet,
+  Bank Statement Engine, Bank Statement Converter AI — all HTTP 200), the
+  `finance-tech` category page, the pricing page (Premium Launch $12, Free
+  Launch fully booked into 2027, SEO Growth Package $59, FAQ answers), the
+  account-gated /projects/submit page (Google / GitHub / email), robots.txt
+  (/api/, /projects/submit, /payment/ disallowed), the ToS page ("Last
+  updated: August 11, 2026", no automation prohibition, §11 non-refundable),
+  the open-source repo (github.com/openlaunch-org/Open-Launch: 10 premium
+  slots daily, 8:00 AM UTC launch hour, payment link inside the signed-in
+  flow), and the four canonical product links (all HTTP 200 on 2026-08-11;
+  /pricing/ and /receipt-to-csv/ remain 404 and are not claimed in the kit).- Per fleet policy, submissions stay manual-only (account actions are human).

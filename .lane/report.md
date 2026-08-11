@@ -347,7 +347,6 @@ drive the submission form.
   Launch" modal, /submit redirect, premium pricing page, sign-in modal, ToS,
   and the four canonical product links (2026-08-11) — all as recorded above.
 - No code changed; docs only (`ops/launch-venues.md`, `.lane/report.md`).
-
 ---
 
 # 2026-08-11 — Uneed launch venue (new packet, item: list the product via free waiting-line submit, record paid skip-the-line decision)
@@ -395,7 +394,6 @@ Waiting-Line spend call).**
   none of those routes.
 
 ### Decision recorded (dated 2026-08-11)
-
 - Uneed: **SUBMIT — free waiting-line launch ("Join the line") first, manual
   by Nish. The paid Skip the Waiting Line ($29.99) is recorded and deferred
   to Nish's spend call** (Fast-track $14.99 and Pro's bundled yearly Skip
@@ -423,4 +421,87 @@ end-to-end with Nish's email OTP.
   API, search API duplicate checks, slug probes, five peer tool pages,
   launch.txt, ToS, and the four canonical product links (2026-08-11) — all
   as recorded above.
-- No code changed; docs only (`ops/launch-venues.md`, `.lane/report.md`).
+
+---
+
+## 2026-08-11 — Open-Launch launch venue: Premium Launch $12 kit, free slots booked into 2027 (packet item: list the product on Open-Launch via Premium Launch ($12; free slots booked into 2027) — exact-category peers Bank)
+
+**Verdict: the item's research deliverable is complete and verified live on
+2026-08-11; the Open-Launch decision and submission kit are recorded in
+`ops/launch-venues.md` (this run's PR). Open-Launch hosts the exact category —
+10+ bank-statement-converter peers are live (AI Bank Statement, Bank Statement
+Boss, Bank PDF Converter, StatementSheet, Bank Statement Engine, BankScanPro,
+Bank Statement Converter AI, AIBankStatement, bank-statementconverter.com,
+Reconciliate Bank / Credit Card Statements with AI, ...) while aiconverter.app
+is absent (site search `q=aiconverter` and `q=ai converter` return zero
+results; all four slug probes 404). The remaining steps are Nish-held: the
+account (Google / GitHub / email sign-in), the $12 Premium Launch payment, and
+the form submission.**
+
+### Verification (all credential-free, live 2026-08-11)
+
+- Venue: https://open-launch.com — "Discover the Best Tech Products" launch/
+  upvote platform; open source (github.com/openlaunch-org/Open-Launch, "The
+  first complete open source alternative to Product Hunt", updated
+  2026-08-11, 314 stars).
+- Pricing page (/pricing, live 2026-08-11): **Premium Launch $12 / launch** —
+  "The only way to launch right now", "Launch Tomorrow - No Wait!",
+  guaranteed dofollow backlink from a DR 71 domain, only 10 premium slots
+  daily, immediate availability, featured on homepage. **Free Launch $0
+  fully booked into 2027** ("Want free? We'll email you when it reopens —
+  just start a launch."). SEO Growth Package $59 (was $199). FAQ: all
+  launches at 8:00 AM UTC; premium gets 10 dedicated priority slots daily;
+  premium launches open "as early as tomorrow, up to 60 days in advance".
+  Source confirms LAUNCH_LIMITS.PREMIUM_DAILY_LIMIT = 10 and the 8:00 UTC
+  launch hour; payment via a Stripe-style PREMIUM_PAYMENT_LINK inside the
+  signed-in flow.
+- Duplicate check (platform's own `/api/search`, the nav search query):
+  `q=aiconverter` → `{"results":[]}`; `q=ai converter` → zero results; slug
+  probes /projects/aiconverter, /projects/ai-converter,
+  /projects/aiconverter-app, /projects/ai-converter-app all 404.
+- Exact-category peers (search `q=bank` / `q=statement` + live pages, all
+  HTTP 200): AI Bank Statement, bank-statementconverter.com, BankScanPro |
+  PDF to Excel/CSV, Reconciliate Bank / Credit Card Statements with AI,
+  Bank Statement Boss, AIBankStatement, Bank PDF Converter, StatementSheet,
+  Bank Statement Converter AI, Bank Statement Engine (also on the live
+  `finance-tech` category page) — the venue hosts the category; only this
+  product's listing is missing.
+- Submission flow: /projects/submit renders the sign-in wall — Login with
+  Google, Login with GitHub, or email + password. robots.txt disallows
+  /api/, /projects/submit, /sign-in, /payment/, /dashboard.
+- ToS (https://open-launch.com/legal/terms, "Last updated: August 11,
+  2026"): generic template; section 2 Acceptable Use has **no
+  robot/spider/automated-access prohibition** (unlike Product Hunt's ToS and
+  Toolbit ToS §7) — flagged for the venue research desk; section 11: all
+  payments final and non-refundable.
+- Product baseline (aiconverter.app, 2026-08-11): `/`, `/llms.txt`,
+  `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/` all
+  HTTP 200; `/pricing/` and `/receipt-to-csv/` still 404 — the kit claims
+  none of those routes.
+
+### Decision recorded (dated 2026-08-11)
+- Open-Launch: **PAID listing at $12 (Premium Launch) recommended for
+  evaluation; declined for agent-executed submission** — the $12 spend, the
+  account creation, and the form submission are Nish's human actions; the
+  dated decision line flips to SUBMITTED or DECLINED once Nish decides. Kit
+  copy-paste ready in `ops/launch-venues.md` (Name, Tagline, Description,
+  category **finance-tech**, Platform Web, Pricing Freemium, launch type
+  Premium Launch, Website, canonical links, post-listing check at
+  /projects/aiconverter).
+
+### Why the item cannot be closed from a lane (unchanged policy)
+
+open-launch.com is `automation_disposition: unknown` in the fleet venue
+policy ledger (`agent-state/growth-loop/venue-policy.json`, allowlist empty),
+so `venue-claim claim` exits 4; the launch additionally requires an account
+(Google / GitHub / email sign-in) and a $12 payment. Per fleet policy, account
+actions and spend stay with Nish — the agent cannot create the account, pay,
+or drive the submission form.
+
+### Checks on this lane
+
+- Live checks for homepage, pricing page + FAQ, site-search duplicate check
+  and peer search, slug probes, six live peer pages, `finance-tech` category
+  page, /projects/submit sign-in wall, robots.txt, ToS, the open-source repo
+  constants, and the four canonical product links (2026-08-11) — all as
+  recorded above.- No code changed; docs only (`ops/launch-venues.md`, `.lane/report.md`).
