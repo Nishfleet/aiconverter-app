@@ -94,3 +94,66 @@ should clear — expect network idle ~1–2s on the fixed bundle.
 - `node --test tests/*.test.mjs` — 106 pass, 0 fail.
 - `npm run build` — green; fixed bundle `assets/index-7zU5-aJu.js`.
 - Live bundle re-fetched twice today — unchanged `assets/index-Dqg0j7kd.js`.
+
+## 2026-08-11 — WeLikeTools listing + xix.ai paid/decline decision (re-verification, item c716f1de42)
+
+**Verdict: the item's research deliverable is complete and re-verified live on
+2026-08-11; both venue decisions and kits are recorded in
+`ops/launch-venues.md` (this run's PR). Both venues still host exact-category
+competitor tools while aiconverter.app is absent. The remaining steps are
+Nish-held: the free WeLikeTools submission (Google sign-in) and the xix.ai
+$9.90 paid/decline spend decision. This supersedes PR #30, whose branch
+(`lane1/weliketools-xix-listing`) predates the #40 re-verification merge and
+never landed.**
+
+### Re-verification (all credential-free, live 2026-08-11)
+
+WeLikeTools:
+
+- Search `q=aiconverter` → "Found 0 results / No tools found" (HTTP 200) — no
+  duplicate, no aiconverter.app listing.
+- Exact-category competitor still live: Bank Statement Engine
+  (https://weliketools.com/tool/bankstatementengine, published 2026-07-12,
+  Category: Business & Finance, Pricing: Free).
+- `/submit` still gates behind Google sign-in ("Log in to Submit" /
+  "Log in with Google") — free, no fee or paid tier mentioned.
+
+xix.ai:
+
+- Site search `q=aiconverter` → "No results found in the search" (HTTP 200);
+  `/tool/ai-converter.html` → 404.
+- Exact-term category page still live and still competitor-occupied:
+  "PDF Bank Statements Converter"
+  (https://xix.ai/tool/pdf-bank-statements-converter.html, listed 2025-09-08,
+  current tool aibankparser.com; tags pdf-csv-converter /
+  bank-statement-parser / financial-data-processing-tool).
+- `/submit` still payment-gated: "$9.90", "no queue, listed within 48 hours",
+  account sign-in required (graphic captcha at payment step, scout-verified
+  2026-08-09).
+
+Product baseline (aiconverter.app, 2026-08-11): `/`, `/llms.txt`,
+`/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/` all HTTP
+200; `/pricing/` and `/receipt-to-csv/` still 404 (PR #42 for pricing still
+open, undeployed) — no kit claims those routes.
+
+### Decisions recorded (dated 2026-08-10, re-verified 2026-08-11)
+
+- WeLikeTools: **SUBMIT — manual submission by Nish (free, no fee)**; kit
+  copy-paste ready in `ops/launch-venues.md`.
+- xix.ai: **PAID listing at $9.90 recommended; declined for agent-executed
+  submission** — the $9.90 spend and the submission are Nish's human actions;
+  the dated decision line flips to SUBMITTED or DECLINED once Nish decides.
+
+### Why the item cannot be closed from a lane (unchanged policy)
+
+Both venues are `automation_disposition: unknown` in the fleet venue policy
+ledger (`agent-state/growth-loop/venue-policy.json`), so `venue-claim claim`
+exits 4 for each; the xix.ai listing additionally requires a $9.90 payment.
+Per fleet policy, account actions and spend stay with Nish.
+
+### Checks on this lane
+
+- Live HTTP checks for both venues' search/submit/category/competitor pages
+  (2026-08-11) — all as recorded above.
+- No code changed; docs only (`ops/launch-venues.md`,
+  `.lane/report.md`).
