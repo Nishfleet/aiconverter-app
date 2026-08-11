@@ -1,5 +1,90 @@
 # Lane evidence — aiconverter-app lane 1
 
+## 2026-08-12 — dogfood 3af46f8a2040: Slow rendered load on home (re-verification #2)
+
+**Verdict: the finding is STILL LIVE on production. The sendBeacon fix (PR
+#22, `88e3d3c`) is merged on origin/main and verified working locally
+(network idle ~0.8s), but production still serves the pre-fix bundle
+(`assets/index-Dqg0j7kd.js`: `keepalive` present, zero `sendBeacon`). Deploy
+remains impossible from a lane: the fleet Cloudflare token still lacks
+Account > Cloudflare Pages > Edit (403 re-verified today), and no wrangler
+OAuth session exists on this host. One change since 2026-08-11: the missing
+release baseline is RESOLVED (`release-state-aiconverter-app.json` recorded
+2026-08-12T00:33:54), so the fleet release machinery is armed and baselined —
+only the Pages:Edit credential is missing. The item closes after one human
+Pages:Edit deploy.**
+
+### Re-verification 2026-08-12 (Chromium headless 1.62.1, same engine semantics: `page.goto` `networkidle` wait, 25s cap)
+
+Live https://aiconverter.app/ — bundle still `assets/index-Dqg0j7kd.js`
+(280,475 bytes: `keepalive` present, zero `sendBeacon`):
+
+- 3/3 fresh runs: network idle **TIMED OUT at the 25s cap** (25,007 /
+  25,103 / 25,100 ms); `POST /api/funnel-event` returns HTTP 200 but its
+  `requestfinished` never fires — the same single in-flight request that
+  blocks network idle (documented root cause, 2026-08-11).
+
+Local build of origin/main at `175322d` (`assets/index-BVp--8SO.js`,
+282,031 bytes: `sendBeacon` present, zero `keepalive`):
+
+- 3/3 runs reach network idle at **793 / 848 / 772 ms** — the fixed bundle
+  clears the audit well inside the cap.
+- Repo gates green: `npm run check:pricing` consistent, `node --test
+  tests/*.test.mjs` 120/120 pass (incl. `tests/funnel-telemetry.test.mjs`,
+  which locks the sendBeacon / no-keepalive contract), `npm run build`
+  green.
+
+### Deploy path state (verified 2026-08-12)
+
+1. `wrangler whoami` → "You are not authenticated. Please run `wrangler
+   login`." — no OAuth session exists on this VPS and the environment is
+   non-interactive.
+2. Fleet `CLOUDFLARE_API_TOKEN` (loaded from `~/.config/fleet-console/
+   cf.env`): token verify succeeds and the account resolves, but
+   `GET /accounts/<acct>/pages/projects/aiconverter` still returns 403
+   `Authentication error [code: 10000]` — the token remains Workers-only,
+   no Pages:Edit. The fleet-release runner's own last wrangler deploy
+   attempt (log 2026-08-11T19:08:53) died on the same code-10000 error at
+   `/pages/projects/aiconverter`.
+3. **RESOLVED since 2026-08-11**: the "no known-good release baseline"
+   blocker is gone — `release-state-aiconverter-app.json` was recorded
+   2026-08-12T00:33:54 (live sha `48b098e`, marker
+   `assets/index-Dqg0j7kd.js`; evidence in
+   `aiconverter-baseline-evidence.json`). `release-policy-aiconverter-app.
+   txt` is still "on".
+4. `fleet-release-last-run.json` (2026-08-12T01:37) shows
+   `"action": "cannot-read-main"` for aiconverter-app — the release runner
+   could not read main at that tick (transient runner/git issue); even when
+   it reads main, any deploy reaching wrangler still 403s at the Pages API
+   without Pages:Edit.
+
+### Remaining step to close the item (Nish-held)
+
+One Cloudflare Pages:Edit deploy of a clean `origin/main` build, then rerun
+the dogfood batch:
+
+```bash
+# from a clean origin/main checkout, with a Pages:Edit credential
+SAFE_DEPLOY_APPROVED='pages deploy dist --project-name aiconverter --branch main' \
+  wrangler pages deploy dist --project-name aiconverter --branch main
+```
+
+Alternative: grant the fleet token Account > Cloudflare Pages > Edit. The
+release machinery is armed AND baselined now, so the next fleet-release tick
+that can read main would publish the merged fix (and all later merged fixes
+deploy automatically). After deploy, the rendered-load audit should clear —
+expect network idle <1s on the fixed bundle.
+
+### Checks on this lane
+
+- `npm run check:pricing` — Pricing is consistent.
+- `node --test tests/*.test.mjs` — 120 pass, 0 fail.
+- `npm run build` — green; fixed bundle `assets/index-BVp--8SO.js`.
+- Live bundle re-fetched 2026-08-12 — unchanged
+  `assets/index-Dqg0j7kd.js` (`keepalive`, zero `sendBeacon`).
+- Live rendered-load: 3/3 timeouts at the 25s cap; local fixed build 3/3
+  network idle ~0.8s.
+
 ## 2026-08-11 — Five observed intent-matched customer trials with free full export (scout item)
 
 **Verdict: the trial kit, grant decision, and free-export gate verification are
