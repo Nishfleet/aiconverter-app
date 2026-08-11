@@ -23,7 +23,10 @@ test("non-bank examples match families the catalog or public formats copy suppor
 test("bank upload input survives the two-choice redesign", () => {
   const labelStart = source.indexOf('<label className="upload-target">');
   const labelBlock = source.slice(labelStart, source.indexOf("</label>", labelStart));
-  assert.match(labelBlock, /private preview/);
+  const helperStart = source.indexOf("function uploadTargetCopyFor(");
+  const helperEnd = source.indexOf("function selectedRouteTitle(", helperStart);
+  const helperBlock = source.slice(helperStart, helperEnd);
+  assert.match(helperBlock, /private preview/, "bank upload CTA copy must keep the private preview promise");
   assert.match(labelBlock, /<input/);
   assert.match(labelBlock, /type="file"/);
   assert.match(labelBlock, /accept=\{allAcceptedTypes\(selectableConverters\)\}/);
