@@ -19,6 +19,13 @@ $9.90, Toolify.ai $99, Microlaunch Pro Launch $39, Uneed Skip the Waiting Line
 $29.99, and Open-Launch Premium Launch $12 spend decisions) stay with Nish.
 The kits below make each manual submission a copy-paste job.
 
+## Live-route change (2026-08-12)
+
+`/pricing/` now resolves to a live page (pricing nav route shipped 2026-08-12),
+so the dated "/pricing/ still returns 404" observations below no longer hold
+for new kits. `/receipt-to-csv/` remains 404 under markdown negotiation as a
+separate open lane item.
+
 ## Submission outcomes (2026-08-11)
 
 As of 2026-08-11 no venue has a live aiconverter.app listing and no submission
@@ -69,7 +76,8 @@ stand unchanged and both kits remain valid and copy-paste ready:
   aiconverter"; `Submit Startup` still redirects to `/sign_in` (account-gated).
 - Kit reference pages all live HTTP 200 (2026-08-10): `/`, `/llms.txt`,
   `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
-  `/pricing/` still returns 404, so the no-pricing-link note below still holds.
+  `/pricing/` now resolves to a live page (2026-08-12, pricing nav route),
+  so new kits may claim the pricing link.
 - **Blocked on a human account action:** Nish owns the manual submissions for
   both venues. After each submission, update this file with the public URL and
   flip the venue's status line to live.
@@ -98,8 +106,8 @@ copy-paste ready:
   still shows the $9.90 paid listing with "no queue, listed within 48 hours".
 - Kit reference pages all live HTTP 200 (2026-08-11): `/`, `/llms.txt`,
   `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
-  `/pricing/` and `/receipt-to-csv/` still return 404, so the no-pricing-link
-  note below still holds and no kit claims those routes.
+  `/pricing/` now resolves to a live page (2026-08-12, pricing nav route);
+  `/receipt-to-csv/` still returns 404, so no kit claims that route.
 - **Blocked on a human account action (and one $9.90 spend decision):** Nish
   owns the WeLikeTools submission and the xix.ai paid/decline decision. After
   each action, update this file with the public URL and flip the venue's status
@@ -137,8 +145,8 @@ copy-paste ready:
   prohibition; flag for the venue research desk.
 - Kit reference pages all live HTTP 200 (2026-08-11): `/`, `/llms.txt`,
   `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
-  `/pricing/` and `/receipt-to-csv/` still return 404, so the kit claims none
-  of those routes.
+  `/pricing/` now resolves to a live page (2026-08-12, pricing nav route);
+  `/receipt-to-csv/` still returns 404 and is not claimed in the kit.
 - **Blocked on a human account action:** Nish owns the free submission and the
   $29 paid decision. After each action, update this file with the public URL
   and flip the venue's status line to live.
@@ -179,8 +187,8 @@ copy-paste ready:
   Policy and Privacy Policy.
 - Kit reference pages all live HTTP 200 (2026-08-11): `/`, `/llms.txt`,
   `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
-  `/pricing/` and `/receipt-to-csv/` still return 404, so the kit claims none
-  of those routes.
+  `/pricing/` now resolves to a live page (2026-08-12, pricing nav route);
+  `/receipt-to-csv/` still returns 404 and is not claimed in the kit.
 - **Blocked on a human account action and a $99 spend decision:** Nish owns
   the paid submission (account creation, payment, form). After the action,
   update this file with the public URL and flip the venue's status line to
@@ -216,8 +224,8 @@ copy-paste ready:
   desk (the guard stays exit-4 either way).
 - Kit reference pages all live HTTP 200 (2026-08-11): `/`, `/llms.txt`,
   `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
-  `/pricing/` and `/receipt-to-csv/` still return 404, so the kit claims none
-  of those routes.
+  `/pricing/` now resolves to a live page (2026-08-12, pricing nav route);
+  `/receipt-to-csv/` still returns 404 and is not claimed in the kit.
 - **Blocked on a human account action (and one $39 spend decision):** Nish
   owns the regular-launch submission and the Pro Launch paid/decline
   decision. After each action, update this file with the public URL and flip
@@ -337,8 +345,8 @@ copy-paste ready:
   signed-in flow.
 - Kit reference pages all live HTTP 200 (2026-08-11): `/`, `/llms.txt`,
   `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
-  `/pricing/` and `/receipt-to-csv/` still return 404, so the kit claims none
-  of those routes.
+  `/pricing/` now resolves to a live page (2026-08-12, pricing nav route);
+  `/receipt-to-csv/` still returns 404 and is not claimed in the kit.
 - **Blocked on a human account action (and one $12 spend decision):** Nish
   owns the account creation (Google / GitHub / email sign-in) and the
   Premium Launch paid/decline decision. After the action, update this file
@@ -921,8 +929,9 @@ copy-paste ready:
   `/launch.txt` (official Agent Launch Guide + REST `/api/v1` flow,
   one-product waiting-line limit), the ToS page (2025-07-31; automated
   vote/comment manipulation prohibited, no blanket crawl ban), and the four
-  canonical product links (all HTTP 200 on 2026-08-11; /pricing/ and
-  /receipt-to-csv/ remain 404 and are not claimed in the kit).
+  canonical product links (all HTTP 200 on 2026-08-11; /pricing/ now resolves
+  to a live page as of 2026-08-12, /receipt-to-csv/ remains 404 and is not
+  claimed in the kit).
 - Open-Launch section verified live on 2026-08-11: the homepage (trending
   launch/upvote platform), the site search API duplicate checks
   (`q=aiconverter`, `q=ai converter` → zero results; `q=bank`,
@@ -939,5 +948,6 @@ copy-paste ready:
   the open-source repo (github.com/openlaunch-org/Open-Launch: 10 premium
   slots daily, 8:00 AM UTC launch hour, payment link inside the signed-in
   flow), and the four canonical product links (all HTTP 200 on 2026-08-11;
-  /pricing/ and /receipt-to-csv/ remain 404 and are not claimed in the kit).
+  /pricing/ now resolves to a live page as of 2026-08-12, /receipt-to-csv/
+  remains 404 and is not claimed in the kit).
 - Per fleet policy, submissions stay manual-only (account actions are human).
