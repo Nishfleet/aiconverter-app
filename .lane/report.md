@@ -157,3 +157,52 @@ Per fleet policy, account actions and spend stay with Nish.
   (2026-08-11) — all as recorded above.
 - No code changed; docs only (`ops/launch-venues.md`,
   `.lane/report.md`).
+
+---
+
+# 2026-08-11 — Toolbit.ai launch venue (re-verification packet)
+
+**Verdict: listing recorded as SUBMIT (free plan first, manual by Nish); the
+actual Toolbit submission is a human account action, same as the other four
+venues. Packet delivered the re-verified decision record + submission kit on
+main-track via PR #49.**
+
+### What was done (all live-verified 2026-08-11)
+
+- Fresh branch `lane1/toolbit-listing-20260811` from origin/main (405e3b2).
+- `ops/launch-venues.md`: added Toolbit.ai decision (dated 2026-08-10,
+  re-verified 2026-08-11) + manual submission kit + fleet re-verification
+  ledger section; header now covers all five venues.
+- Live checks: Toolbit search `q=aiconverter` → no aiconverter.app result
+  (unrelated only); `/ai-tool/ai-converter` 404; StatementSheet
+  (`/ai-tool/statementsheet`, Data Extraction, 9.5K visits, Paid) and Rocket
+  Statements (`/ai-tool/rocketstatements` — slug CHANGED since 2026-08-10,
+  old `/ai-tool/rocket-statements` now 404) both still live; `/submit` paid
+  plans unchanged (Launch Tool $29 one-time, Update $19, Advertise from $39,
+  Guest Post $39) + free FAQ "reviewed in up to 3 days"; `/submit/tool?plan=free`
+  renders sign-in wall; `/launch-badge` 404; ToS §7 (last updated 2026-07-20)
+  still prohibits robots/spiders/automatic access.
+- Policy: `agent-state/growth-loop/venue-policy.json` (updated 2026-08-08)
+  still has no toolbit.ai entry → `automation_disposition: unknown` →
+  `venue-claim` exits 4; ToS §7 is Product-Hunt-class prohibition — flagged
+  for the venue research desk in the doc (ledger not modified; outside this
+  worktree's scope).
+- Kit canonical links all HTTP 200; `/pricing/` and `/receipt-to-csv/` still
+  404 (not claimed).
+
+### Outcome
+
+- PR #49 (https://github.com/nish3451/aiconverter-app/pull/49): MERGEABLE,
+  all CI green (Build, Gitleaks, Pricing check, Unit tests, classify).
+- Stale PR #34 (`lane1/toolbit-listing`, conflicting, 2026-08-10 content)
+  annotated as superseded by #49.
+- Gates run: `npm run check:pricing` pass, `node --test tests/*.test.mjs`
+  106/106 pass, `npm run build` pass.
+
+### Nish-held next action
+
+Sign in at toolbit.ai (Google/email), submit via the kit (free Launch Tool $0
+first), embed the Launch Badge snippet on aiconverter.app (tiny deploy — note
+Pages:Edit deploy still blocked per the finding above), then update
+`ops/launch-venues.md` with the public tool URL. The $29 paid launch remains a
+deferred commercial decision.
