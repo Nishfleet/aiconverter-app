@@ -101,7 +101,7 @@ function converterIntentFromUrl() {
       requestedFormat ||
       (formats.some((format) => format.id === "csv") ? "csv" : "") ||
       formats[0]?.id ||
-      "";
+      "csv";
     return {
       converterId: converter.id,
       outputFormat,
