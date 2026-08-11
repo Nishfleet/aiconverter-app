@@ -582,3 +582,108 @@ or drive the submission form.
   page, /projects/submit sign-in wall, robots.txt, ToS, the open-source repo
   constants, and the four canonical product links (2026-08-11) — all as
   recorded above.- No code changed; docs only (`ops/launch-venues.md`, `.lane/report.md`).
+
+## 2026-08-11 — G2 free profile claim: eligibility verdict + submission kit (lane item)
+
+**Verdict: eligibility MET and the free-claim kit is delivered on this run's
+PR (`lane1/g2-profile-20260811`); the submission itself is NOT executable
+from a lane — G2's own ToS §9 prohibits automated access (explicitly binding
+on "automated agents"), the fleet venue policy guard exits 4 for unreviewed
+g2.com, and the flow is account-gated (my.g2.com login via LinkedIn /
+Facebook / Google / business email). The item closes when Nish submits the
+Product Submission Form and claims the profile using the kit.**
+
+### What was delivered (this PR, branch `lane1/g2-profile-20260811`)
+
+- `ops/launch-venues.md` — G2 section: dated decision (DECLINED for
+  agent-executed submission, eligibility MET), official eligibility evidence
+  (documentation.g2.com B2C/alpha-beta exclusion; Research FAQ rejection
+  list), category-fit evidence (Financial Reconciliation hosts same-category
+  peer DocuClipper), free-claim evidence (sell.g2.com/create-a-profile),
+  duplicate evidence (search `site:g2.com` zero results + Wayback CDX zero
+  captures), ToS §9 automated-access prohibition analysis, and a copy-paste
+  manual submission kit (form URL, name, website, truthful description,
+  category suggestion, pricing tag, canonical links, post-listing checks).
+  Outcome ledger updated: **G2 — NEEDS_NISH_STEP**.
+- Flag for the venue research desk (recorded in the doc): G2 ToS §9 is the
+  strongest automated-access prohibition observed in this file (explicitly
+  binds automated agents, covers headless browsers) — strong candidate for a
+  `prohibited` disposition in `venue-policy.json`, like producthunt.com.
+
+### Why the submission cannot be executed from a lane
+
+1. **G2 ToS §9 (legal.g2.com/terms-of-use, "Last Updated on July 9, 2026"):
+   "Prohibited Automated Access, Scraping, and Data Extraction"** — prohibits
+   accessing the Site "through automated, programmatic, or mechanical means
+   (including robots, spiders, crawlers, scrapers, headless browsers,
+   data-mining tools, or similar technologies)" without G2's express prior
+   written consent; "contractual terms governing access and use remain
+   binding on all users, visitors, and automated agents". Same class as
+   Product Hunt's ToS (reviewed `prohibited` in the policy ledger); a
+   submission form existing is NOT automation permission (Product Hunt
+   precedent, venue-policy.json notes).
+2. **Fleet venue policy guard**: g2.com is `automation_disposition: unknown`
+   in `agent-state/growth-loop/venue-policy.json` with an empty executable
+   allowlist → `venue-claim claim` exits 4 → no agent browser work.
+   (`venue-claim` is not installed on this VPS — exit 127 — same as the
+   previous cycle; the outcome is deterministic from the policy file.)
+3. **Account-gated flow**: Wayback CDX captures of `g2.com/products/new`
+   (2025-01 → 2026) are 302 redirects; official FAQ lists account methods
+   (LinkedIn, Facebook, Google, Business Email) — account creation and
+   email verification are human actions.
+4. **Direct VPS access to g2.com is 403-walled** (bot wall, verified
+   2026-08-11: homepage, product slug probes, and category page all 403) —
+   the decision rests on the official vendor pages (all live HTTP 200) and
+   Wayback/CDX evidence, same evidence posture as the Capterra lane.
+
+### Eligibility verdict (the packet condition — verified, evidence in the doc)
+
+- **B2B: MET** — bank-statement PDF → CSV / QuickBooks / Xero / Wave prep
+  and OCR fallback are marketed to bookkeepers and accounting workflows
+  (`/llms.txt` live: "Bank statement converter for bookkeepers...";
+  canonical /bank-statement-converter-for-bookkeepers/ HTTP 200); G2 hosts
+  the exact category (Financial Reconciliation, peer DocuClipper listed).
+  G2's only market-segment exclusion is B2C.
+- **Non-beta: MET** — `/llms.txt`: "Bank statement PDF to CSV is the first
+  production AI module"; the bank-statement modules are live while
+  receipt/invoice/screenshot/audio/document modules are explicitly labeled
+  beta. Live paid checkout: `/api/health` shows dodo products
+  starter/batch/pro configured; `npm run stress:live` baseline green.
+- **No duplicate: MET (bounded evidence)** — search `site:g2.com` zero
+  results; Wayback CDX zero captures for aiconverter/ai-converter product
+  pages. Final duplicate check is step 1 of the manual kit.
+- **Website accessible: MET** — `/`, `/llms.txt`,
+  `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/` all
+  HTTP 200 (2026-08-11); `/pricing/` and `/receipt-to-csv/` still 404 and
+  are not claimed in the kit.
+
+### Remaining step to close the item (Nish-held)
+
+1. Search https://www.g2.com/search?query=aiconverter — confirm no existing
+   profile (duplicate check).
+2. Fill the Product Submission Form at https://www.g2.com/products/new
+   (my.g2.com account via LinkedIn / Facebook / Google / business email)
+   with the kit copy in `ops/launch-venues.md` (Name **AI Converter**,
+   Website https://aiconverter.app, canonical description, category
+   suggestion Financial Reconciliation, pricing Freemium).
+3. After approval (~3-5 business days, official), claim the profile:
+   "Unclaimed" → "Claim this profile" (final approval 1-3 business days).
+4. Update `ops/launch-venues.md` with the public profile URL
+   (g2.com/products/{slug}) and flip the status line to live.
+
+### Checks on this lane
+
+- Official G2 pages live HTTP 200 (2026-08-11): sell.g2.com/create-a-profile,
+  documentation.g2.com/help/docs/finding-or-listing-a-product-on-g2,
+  research.g2.com/methodology/research-faq, legal.g2.com/terms-of-use.
+- Wayback CDX: zero captures for `g2.com/products/*aiconverter*` and
+  `g2.com/products/ai-converter*`; `g2.com/products/new` captures are 302s.
+- aiconverter.app kit pages HTTP 200 (2026-08-11): `/`, `/llms.txt`,
+  `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`,
+  `/bank-statement-converter-for-bookkeepers/`; `/pricing/` and
+  `/receipt-to-csv/` 404 (unchanged).
+- No code changed; docs only (`ops/launch-venues.md`, `.lane/report.md`).
+- Merge coordination note: branch `lane1/capterra-listing-20260811` (not yet
+  in main) edits the same intro/outcome-ledger sections of
+  `ops/launch-venues.md`; both PRs touch adjacent lines — the G2 PR includes
+  no Capterra content and is independent against origin/main.
