@@ -5,13 +5,17 @@ Live-production claims only: everything below is grounded in live pages and
 `/llms.txt` (verified 2026-08-09 for Product Hunt and BetaList, re-verified
 2026-08-10; WeLikeTools and xix.ai verified 2026-08-10 and re-verified
 2026-08-11; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11;
-Toolify.ai verified 2026-08-11; Microlaunch verified 2026-08-11).
-Automated submission is blocked for all seven venues by the fleet venue policy
+Toolify.ai verified 2026-08-11; Microlaunch verified 2026-08-11; Uneed
+(uneed.best) verified 2026-08-11).
+Automated submission is blocked for all eight venues by the fleet venue policy
 ledger (`agent-state/growth-loop/venue-policy.json` and the `venue-claim`
 guard): Product Hunt is reviewed as prohibiting automation; BetaList,
-WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, and Microlaunch are not yet
-reviewed (`automation_disposition: unknown`). Account actions (and the xix.ai
-$9.90, Toolify.ai $99, and Microlaunch Pro Launch $39 spend decisions) stay
+WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, Microlaunch, and uneed.best are not
+yet reviewed (`automation_disposition: unknown`). Uneed is the first venue that
+publishes its own official agent-launch API (`/launch.txt` + REST `/api/v1`) —
+strong positive evidence the venue research desk should weigh when reviewing
+uneed.best. Account actions (and the xix.ai $9.90, Toolify.ai $99, Microlaunch
+Pro Launch $39, and Uneed Skip the Waiting Line $29.99 spend decisions) stay
 with Nish. The kits below make each manual submission a copy-paste job.
 
 ## Status ledger (fleet re-verification 2026-08-10)
@@ -181,6 +185,74 @@ copy-paste ready:
   owns the regular-launch submission and the Pro Launch paid/decline
   decision. After each action, update this file with the public URL and flip
   the venue's status line to live.
+
+### Fleet re-verification 2026-08-11 (Uneed)
+
+The Uneed section below was added on 2026-08-11 and verified live on
+2026-08-11 — the decision stands as recorded and the kit remains valid and
+copy-paste ready:
+
+- The five exact-category peers are all live under Business, all with
+  non-premium (`premium: false`) listings in the public search API —
+  free-tier launches are real on this venue:
+  - StatementSheet (https://www.uneed.best/tool/statementsheet, "Convert PDF
+    Bank statements to Excel or CSV", launched 2025-11-16),
+  - Bank PDF Converter (https://www.uneed.best/tool/bank-pdf-converter,
+    "Convert Bank PDF Statements into Polished Excel, CSV, or JSON format.",
+    launched 2024-06-27),
+  - BankConv (https://www.uneed.best/tool/bankconv, "Convert PDF bank
+    statements from 1000+ banks worldwide into Excel/CSV instantly.", launch
+    records incl. 2026-08-08),
+  - PdfBuddy (https://www.uneed.best/tool/pdfbuddy, "Convert bank statement
+    and invoice PDFs to Excel or CSV files instantly.", launch records incl.
+    2026-08-09),
+  - BankScanPro (https://www.uneed.best/tool/bankscanpro, "Convert bank
+    statements from PDF to CSV with AI accuracy.", launch records incl.
+    2026-05-22).
+  The venue hosts the category; only this product's listing is missing.
+- No aiconverter.app duplicate (public search API, live 2026-08-11):
+  `q=aiconverter` → no aiconverter.app result; `q=AI Converter` → unrelated
+  converters only (Convert.ai, Heic Converter, SVG Converter, Convertology
+  AI, AI Cover, TailConverter, ConvertHub, File Converter — Iconscout, ...).
+  Slug probes /tool/ai-converter, /tool/aiconverter, /tool/ai-converter-app
+  all 404.
+- Free queue is long and honest about it: `GET /api/v1/launch-dates` (public,
+  live 2026-08-11) returns `free_next_available: 2027-01-31` (173 days out)
+  with Skip-the-Line dates bookable from 2026-08-13 — the ~5-month wait the
+  launch guide warns about is now ~6 months.
+- Agent path (the venue's own, official): https://www.uneed.best/launch.txt
+  is an "Agent Launch Guide" — AI agents may submit and schedule a product
+  launch end-to-end without a browser (email OTP auth, then a free queue
+  launch or a paid Skip-the-Waiting-Line on a chosen date) via
+  `POST /api/v1/auth/request-code` → `verify` → `POST /api/v1/products` →
+  `POST /api/v1/launches` (`tier: "free"` or `"stwl"` + date). Free accounts
+  may keep ONE product in the waiting line at a time
+  (`waiting_line_limit_reached`, 429). A public read-only MCP server
+  (https://mcp.uneed.best/mcp) and REST search API
+  (https://mcp.uneed.best/v1/search?q=...) expose the same product data to
+  agents. This is the first venue in this file with vendor-official agent
+  submission support — flag for the venue research desk as positive evidence
+  for a future `automation_disposition` review of uneed.best.
+- ToS (https://www.uneed.best/terms-of-use, "Last Updated: July 31, 2025",
+  Uneed Platform, Nantes, France): the prohibited-uses section targets
+  automated engagement abuse — "using scripts to send comments or messages"
+  and "bots, scripts, or automated tools to manipulate votes, rankings, or
+  any other metrics" — not product submission, and no blanket
+  robot/spider/crawl prohibition like Product Hunt's ToS or Toolbit.ai's ToS
+  §7. Combined with the venue-published launch.txt agent flow, the ToS does
+  not prohibit agent submission — still flag for the venue research desk
+  (the guard stays exit-4 until the ledger is updated).
+- Kit reference pages all live HTTP 200 (2026-08-11): `/`, `/llms.txt`,
+  `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+  `/pricing/` and `/receipt-to-csv/` still return 404, so the kit claims none
+  of those routes.
+- **Blocked on a human account action (and one $29.99 spend decision):** the
+  free flow needs an account (email OTP per launch.txt; the submit page says
+  "No account needed to start — we'll scrape your page first, then ask you to
+  sign up to save it"), and Skip the Waiting Line costs $29.99. Nish owns the
+  sign-up and the free-queue launch (or the STWL spend call). After each
+  action, update this file with the public URL and flip the venue's status
+  line to live.
 
 ## Product Hunt
 
@@ -587,6 +659,88 @@ copy-paste ready:
   returns 200 and appears in Microlaunch search, then update this file with
   the public URL.
 
+## Uneed
+
+### Decision (dated 2026-08-11)
+
+- **Decision: SUBMIT — free waiting-line launch ("Join the line") first,
+  manual by Nish (email-OTP account). The paid Skip the Waiting Line
+  ($29.99) is recorded and deferred to Nish's spend call.**
+- Reason: Uneed (uneed.best, "Uneed — Launch. Get seen. Grow.", 10,000+
+  digital tools ranked by community votes) is a live, category-relevant
+  launch directory that already hosts five exact-category peers — all under
+  Business, all with non-premium listings in the public search API, so free
+  launches are real on this venue: StatementSheet
+  (https://www.uneed.best/tool/statementsheet, launched 2025-11-16), Bank
+  PDF Converter (https://www.uneed.best/tool/bank-pdf-converter, launched
+  2024-06-27), BankConv (https://www.uneed.best/tool/bankconv, launch records
+  incl. 2026-08-08), PdfBuddy (https://www.uneed.best/tool/pdfbuddy, launch
+  records incl. 2026-08-09), and BankScanPro
+  (https://www.uneed.best/tool/bankscanpro, launch records incl.
+  2026-05-22). Search (public API, live 2026-08-11) returns no aiconverter.app
+  and no "AI Converter" product; /tool/ai-converter, /tool/aiconverter and
+  /tool/ai-converter-app all 404. The category is hosted; only this listing
+  is missing.
+- Free option first (pricing page live 2026-08-11): **New product — "Join
+  the line" — FREE** — "Get an automatic launch date at the next available
+  slot." The public `GET /api/v1/launch-dates` endpoint quotes the honest
+  current wait: **next free slot 2027-01-31** (173 days out, ~6 months — the
+  launch guide itself says "often ~5 months out"). One product per free
+  account in the waiting line (`waiting_line_limit_reached`, 429).
+- Paid options recorded (deferred): **Skip the line $29.99 / one-time** —
+  "Launch a new product and choose your launch date" (STWL dates bookable
+  from 2026-08-13; do-follow backlink from the 75-DR domain, daily-ranking
+  spot, award eligibility — per the launch guide). Also on the pricing page:
+  **Fast-track $14.99** ("we assign you a slot ~14 days out") and **Relaunch
+  $15**. Uneed Pro (early bird $99/year) bundles **1 free Skip the Line per
+  year (worth $29.99)**. Decision: the $29.99 STWL (or Pro's bundled credit)
+  is an optional commercial call by Nish — worth it if a ~6-month wait for
+  the free slot is too long — not required for the free listing.
+- Agent path (venue-official, noted for the desk): Uneed publishes
+  https://www.uneed.best/launch.txt, an Agent Launch Guide with a full REST
+  flow (email OTP → bearer → create product → schedule launch, tier
+  `free`/`stwl`) plus a read-only MCP server (https://mcp.uneed.best/mcp).
+  This is the first venue in this file that explicitly supports agent
+  submission — but uneed.best is not yet reviewed in the fleet venue policy
+  ledger (`automation_disposition: unknown`; `venue-policy.json` updated
+  2026-08-08 lists only producthunt.com as reviewed, allowlist empty), so
+  `venue-claim claim` still exits 4 and the agent must not execute the flow.
+  The ToS (https://www.uneed.best/terms-of-use, last updated 2025-07-31)
+  prohibits automated vote/ranking/comment manipulation, not product
+  submission, and has no blanket robot/spider/crawl ban — flag for the venue
+  research desk as positive evidence for a future `allowed` review.
+- Constraint: the free flow is account-gated (submit page: "No account
+  needed to start — we'll scrape your page first, then ask you to sign up to
+  save it"; launch.txt: email OTP auth). Account creation and spend stay with
+  Nish per fleet policy; the agent cannot receive the OTP or pay.
+- Next action: Nish signs up (email OTP), submits the free "Join the line"
+  launch using the kit below (or picks a Skip-the-Line date at $29.99), then
+  this file should be updated with the public tool URL
+  (uneed.best/tool/{slug}).
+
+### Manual submission kit (copy-paste ready)
+
+- Name: **AI Converter**
+- Website: https://aiconverter.app (real landing page — satisfies Uneed's
+  "no vercel.app / netlify.app" rule from the launch guide)
+- Short description (one line; optional — Uneed auto-classifies category,
+  tags, pricing and the rich description from name + URL):
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your
+  > browser, with a free preview you can review before paying.
+
+- Tier choice (the form / API asks explicitly; free queue quoted live
+  2026-08-11): **Free — "Join the line"** → next available slot 2027-01-31
+  (auto-assigned). Alternative: **Skip the line $29.99** → pick a date from
+  the STWL list (bookable from 2026-08-13); Fast-track $14.99 assigns a slot
+  ~14 days out instead.
+- Category: Business (where all five exact-category peers sit).
+- Pricing tag: Freemium (free preview + paid per-page extraction, matching
+  live checkout behavior).
+- Post-listing check: confirm https://www.uneed.best/tool/{slug} returns 200
+  and appears in Uneed search (`q=aiconverter`), then update this file with
+  the public URL.
+
 ## Verification notes
 
 - All copy claims only live production behavior (bank-statement PDF to CSV,
@@ -628,4 +782,20 @@ copy-paste ready:
   (Google / 𝕏), the ToS page (generic template, no automation prohibition),
   and the four canonical product links (all HTTP 200 on 2026-08-11; /pricing/
   and /receipt-to-csv/ remain 404 and are not claimed in the kit).
+- Uneed section verified live on 2026-08-11: the homepage ("Launch. Get
+  seen. Grow."), `/llms.txt` (10,000+ tools, MCP/API pointers), the pricing
+  page (free "Join the line" + Skip the line $29.99 / Fast-track $14.99 /
+  Relaunch $15 / Pro $99/yr with 1 free Skip), the submit page ("no account
+  needed to start..."), the public `GET /api/v1/launch-dates` (free slot
+  2027-01-31, STWL from 2026-08-13), the public search API duplicate check
+  (q=aiconverter and q=AI Converter — no aiconverter.app), the three slug
+  probes (/tool/ai-converter, /tool/aiconverter, /tool/ai-converter-app —
+  all 404), all five exact-category peer tool pages (StatementSheet, Bank
+  PDF Converter, BankConv, PdfBuddy, BankScanPro — all HTTP 200 with
+  `premium: false` search records and launch dates as recorded),
+  `/launch.txt` (official Agent Launch Guide + REST `/api/v1` flow,
+  one-product waiting-line limit), the ToS page (2025-07-31; automated
+  vote/comment manipulation prohibited, no blanket crawl ban), and the four
+  canonical product links (all HTTP 200 on 2026-08-11; /pricing/ and
+  /receipt-to-csv/ remain 404 and are not claimed in the kit).
 - Per fleet policy, submissions stay manual-only (account actions are human).
