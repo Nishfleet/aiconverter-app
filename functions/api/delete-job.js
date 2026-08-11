@@ -32,6 +32,18 @@ export async function onRequestPost({ request, env }) {
   if (!job) return badRequest("Unknown or expired conversion.");
 
   const deletedJob = await deleteJobData(env, job);
+  if (!deletedJob || deletedJob.deletionCompleted === false) {
+    // Honest receipt: the files still exist, nothing was marked deleted, and no
+    // pointers were cleared, so the user (or the expiry sweeper via
+    // enforceJobExpiry / sourceExpired, which still has the pointers it needs)
+    // can retry the cleanup later. Keep the access cookie so the user can retry.
+    return serverError(
+      "Deletion did not complete: the file storage service is temporarily unavailable and not all files could be removed. " +
+        "Nothing was marked as deleted and the stored file records were kept intact, so this conversion can be deleted again later; " +
+        "the automatic expiry cleanup will also re-attempt removal of retained files when they expire."
+    );
+  }
+
   const headers = tokenFromJobCookie(request, jobId) ? { "Set-Cookie": clearJobAccessCookie() } : {};
 
   return json(
