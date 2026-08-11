@@ -16,6 +16,10 @@ test("admin overview exposes preview funnel counts and safe issue rows", () => {
   assert.match(apiSource, /customerRefundDue/);
   assert.match(apiSource, /drillRefundDue/);
   assert.match(apiSource, /Drill refund retry needed/);
+  // Unmatched-payment noise filter: failed attempts without an app job and
+  // zero-amount succeeded sandbox events are excluded from the alert list.
+  assert.match(apiSource, /AND COALESCE\(amount, 0\) = 0/);
+  assert.match(apiSource, /isNonActionableTestEvent/);
 
   assert.match(adminSource, /renderFunnel/);
   assert.match(adminSource, /Preview funnel/);
@@ -23,7 +27,7 @@ test("admin overview exposes preview funnel counts and safe issue rows", () => {
   assert.match(adminSource, /Preview funnel issues/);
 });
 
-test("failed Dodo attempts without an app job do not block readiness", () => {
+test("failed Dodo attempts and zero-amount sandbox events without an app job do not block readiness", () => {
   assert.equal(
     isActionableUnmatchedPayment({
       event_type: "payment.failed",
@@ -33,12 +37,37 @@ test("failed Dodo attempts without an app job do not block readiness", () => {
     }),
     false
   );
+  // A zero-amount payment.succeeded with no app job is Dodo sandbox/test
+  // noise (decision 2026-08-10): no money moved, so it must not alert.
   assert.equal(
     isActionableUnmatchedPayment({
       event_type: "payment.succeeded",
       status: "succeeded",
       match_status: "job_not_found",
-      job_id: ""
+      job_id: "",
+      amount: 0
+    }),
+    false
+  );
+  // Any paid-but-unmatched succeeded event still alerts, including a
+  // zero-amount event that carries an app job id.
+  assert.equal(
+    isActionableUnmatchedPayment({
+      event_type: "payment.succeeded",
+      status: "succeeded",
+      match_status: "job_not_found",
+      job_id: "",
+      amount: 99900
+    }),
+    true
+  );
+  assert.equal(
+    isActionableUnmatchedPayment({
+      event_type: "payment.succeeded",
+      status: "succeeded",
+      match_status: "job_not_found",
+      job_id: "job_abc",
+      amount: 0
     }),
     true
   );
