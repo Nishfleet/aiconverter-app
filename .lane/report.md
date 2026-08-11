@@ -582,3 +582,93 @@ or drive the submission form.
   page, /projects/submit sign-in wall, robots.txt, ToS, the open-source repo
   constants, and the four canonical product links (2026-08-11) — all as
   recorded above.- No code changed; docs only (`ops/launch-venues.md`, `.lane/report.md`).
+
+---
+
+## 2026-08-11 — Capterra vendor profile: truthful profile or dated decline (packet item, scout 2026-08-09, risk: amber)
+
+**Verdict: agent-executed submission DECLINED and recorded as a dated decline
+in `ops/launch-venues.md` (this run's PR) with a truthful copy-paste kit —
+the item's acceptance branch "or record a dated decline" per the scout item's
+own verify criteria ("submission remains a manual external-account action").
+Capterra already hosts the exact category (live peer profile
+`Bank Statement Converter Software Review 2026` at
+https://www.capterra.com/p/10048907/Bank-Statement-Converter/, last updated
+2026-07-02) while aiconverter.app is absent — the listing is missing, not
+duplicate. The remaining step is Nish-held: account creation + submission
+through the official Gartner Digital Markets get-listed flow (email
+verification + editorial review). No money is involved in the listing itself;
+sponsored placement stays a separate spend call.**
+
+### Verification (2026-08-11, all credential-free; direct Capterra access is bot-walled)
+
+- Direct probes (2026-08-11): `https://www.capterra.com/` and
+  `/search/?q=aiconverter` both return HTTP 403 ("Performing security
+  verification") from this VPS — Capterra's Cloudflare-style challenge wall,
+  unchanged from the siterep lane's finding (2026-08-10). No live-page claim
+  is made; baseline rests on dated scout checks + Wayback/CDX.
+- Duplicate check: scout bounded site search (2026-08-09T15:30:58Z) for
+  `aiconverter.app` / `AI Converter` → no product profile. Wayback CDX (this
+  run): zero captures for `capterra.com/p/*aiconverter*` and
+  `capterra.com/p/*ai-converter*`. CDX also holds no capture of the peer URL
+  — the scout's live check is the peer evidence.
+- Category hosted: the peer Bank-Statement-Converter profile is an exact
+  PDF-bank-statement-to-Excel/CSV converter (scout live check 2026-08-09).
+- Official path (archived pages): capterra.com/vendors/ capture 2026-02-13
+  (HTTP 200) — "Capterra, powered by Gartner Digital Markets. Join the
+  world's largest platform connecting millions of in-market software buyers
+  with vendors like you." Primary CTA **"Get Your Product Listed"** →
+  https://digitalmarkets.gartner.com/get-listed/start; secondary "Log In" →
+  https://digitalmarkets.gartner.com/login. The `claim-bx` claim flow
+  (`/get-listed/claim-bx?url=...&name=...`) has archived captures through
+  2026-08-07 (SurveyMonkey, Pingdom, Koala AI, Intermapper, Factúrate,
+  QuickSigner) — active. Profile guidelines
+  (https://www.capterra.com/legal/listing-guidelines/, scout live check
+  2026-08-09; archived captures HTTP 200): vendors may create/update a
+  profile for packaged software, final copy subject to editorial review. No
+  public product-creation API and no agent-credential submission path —
+  reviewed vendor form, not a POST endpoint.
+- Gate: capterra.com is `automation_disposition: unknown` in
+  `agent-state/growth-loop/venue-policy.json` (executable `allowlist: {}`) →
+  `venue-claim claim capterra.com aiconverter-app` exits 4 → no browser
+  work. (`venue-claim` not installed on this VPS — exit 127, same as the
+  2026-08-09 cycle; outcome deterministic from the policy file. `venues.json`
+  holds zero capterra claims.) The only override is a root allowlist change.
+- Standing authorization (2026-08-11) considered: agents may now create
+  accounts / accept terms / clear CAPTCHAs for owner tasks, but the
+  root-owned venue guard is the operative block here, and the get-listed
+  flow's email verification + editorial review require the account owner.
+- Product baseline (aiconverter.app, 2026-08-11): `/`, `/llms.txt`,
+  `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/` all
+  HTTP 200; `/pricing/` and `/receipt-to-csv/` still 404 — the kit claims
+  none of those routes.
+
+### Decision recorded (dated 2026-08-11)
+
+- Capterra: **DECLINED for agent-executed submission. Truthful profile
+  creation is a manual external-account action by Nish via the official
+  Gartner Digital Markets get-listed flow** — kit copy-paste ready in
+  `ops/launch-venues.md` (Name, Tagline, truthful description using only
+  live bank-statement PDF-to-CSV / preview-first / short-retention /
+  fail-closed claims, key features, category guidance from the peer's
+  placement, Freemium pricing tag, canonical links, post-listing check
+  including the GetApp / Software Advice cross-listing note). The dated
+  decision line flips to SUBMITTED once Nish acts.
+
+### Why the item cannot be closed from a lane (unchanged policy)
+
+capterra.com is `automation_disposition: unknown` in the fleet venue policy
+ledger (`agent-state/growth-loop/venue-policy.json`, allowlist empty), so
+`venue-claim claim` exits 4; Capterra additionally bot-walls this VPS (403)
+and its official flow is a reviewed vendor form with email verification —
+no agent-credential submission path exists. The 2026-08-11 standing
+authorization (agents may create accounts for owner tasks) does not override
+the root-owned venue guard. Per the scout item's own acceptance criteria,
+"submission remains a manual external-account action" — this run delivers
+the dated decline + kit, which is the accepted outcome branch.
+
+### Checks on this lane
+
+- Wayback CDX duplicate + peer + official-path probes (2026-08-11) — all as
+  recorded above; direct Capterra homepage/search 403 re-verified 2026-08-11.
+- No code changed; docs only (`ops/launch-venues.md`, `.lane/report.md`).
