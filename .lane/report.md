@@ -94,3 +94,50 @@ should clear — expect network idle ~1–2s on the fixed bundle.
 - `node --test tests/*.test.mjs` — 106 pass, 0 fail.
 - `npm run build` — green; fixed bundle `assets/index-7zU5-aJu.js`.
 - Live bundle re-fetched twice today — unchanged `assets/index-Dqg0j7kd.js`.
+
+## 2026-08-11 — core-phrase SERP wedge evidence (re-verification)
+
+**Verdict: the free-anchor finding is STILL LIVE, and it got worse.** Page-1
+organic for `bank statement pdf to csv converter` is still 100%
+free-positioned (10/10) and aiconverter.app is still absent — but the
+exact-core-phrase landing page has now dropped OUT of the Google-backed
+`site:aiconverter.app` set (it was #1 on 2026-08-09; a stable 9-page set
+today, twice-confirmed). The page is still HTTP 200 and sitemap-listed; the
+deploy block is letting the product's last Google-side visibility floor
+decay. Fed the free-anchor question to the rethink epic (E2) in
+`ops/serp-wedge-evidence.md`.
+
+### Evidence captured live (2026-08-11T05:1xZ UTC)
+
+- Core phrase, Google-backed organic 1–10: bankstatementconverter.com
+  ("Accurately Convert..."), re-cap.com ("Free Convert..."),
+  bankstatementconverters.ai ("100% FREE"), FinanceFileConverter, Zamzar
+  ("Online and Free"), Reddit r/Bookkeeping thread, Razor Extract ("100% free
+  tool"), founderpath.com ("Free"), bankstatementmagic.com ("Free, fast,
+  secure"), ocr.ac ("Online OCR"). 100% free-positioned; no aiconverter.app.
+- Exact phrase `"bank statement pdf to csv converter"`: 10 organic, all
+  free/content-positioned (FinanceFileConverter, bank-statements.co, BankConv
+  "Free...", aibankstatementconverters.com "Free AI Tool Online", Nomi how-to,
+  BankToBooks, bankstatementpdftocsv.com, pdfbankstatementsconverter.com,
+  invoicedataextraction.com); no aiconverter.app.
+- `site:aiconverter.app`: 9 pages, twice-confirmed identical — landing page
+  `bank-statement-pdf-to-csv/` absent (was #1 on 2026-08-09). Live page HTTP
+  200, in sitemap.xml. Bing-backed DDG `site:` still zero results.
+- Product position unchanged: free preview + sample CSV; ₹399/₹799/₹1,399;
+  `/pricing/` still 404s; no free full-conversion anchor.
+- Capture method: google.com directly anti-bot-challenges this VPS IP, so the
+  snapshot was read from the rendered DOM of the Google-backed Startpage proxy
+  (unauthenticated, US/English), two runs per query, both agreeing. Recorded
+  in the evidence file.
+
+### Deliverable
+
+PR #45 (`lane1/serp-wedge-evidence-20260811`): `ops/serp-wedge-evidence.md`
+(dated 2026-08-11 snapshot + free-anchor question for epic E2), README index
+link, this lane report. Supersedes the unmerged PR #29 (2026-08-09) record.
+
+### Checks on this lane
+
+- `npm run check:pricing` — Pricing is consistent.
+- `node --test tests/*.test.mjs` — 106 pass, 0 fail.
+- `npm run build` — green (392ms).
