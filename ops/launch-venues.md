@@ -5,14 +5,14 @@ Live-production claims only: everything below is grounded in live pages and
 `/llms.txt` (verified 2026-08-09 for Product Hunt and BetaList, re-verified
 2026-08-10; WeLikeTools and xix.ai verified 2026-08-10 and re-verified
 2026-08-11; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11;
-Toolify.ai verified 2026-08-11).
-Automated submission is blocked for all six venues by the fleet venue policy
+Toolify.ai verified 2026-08-11; Microlaunch verified 2026-08-11).
+Automated submission is blocked for all seven venues by the fleet venue policy
 ledger (`agent-state/growth-loop/venue-policy.json` and the `venue-claim`
 guard): Product Hunt is reviewed as prohibiting automation; BetaList,
-WeLikeTools, xix.ai, Toolbit.ai, and Toolify.ai are not yet reviewed
-(`automation_disposition: unknown`). Account actions (and the xix.ai $9.90
-and Toolify.ai $99 spend decisions) stay with Nish. The kits below make each
-manual submission a copy-paste job.
+WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, and Microlaunch are not yet
+reviewed (`automation_disposition: unknown`). Account actions (and the xix.ai
+$9.90, Toolify.ai $99, and Microlaunch Pro Launch $39 spend decisions) stay
+with Nish. The kits below make each manual submission a copy-paste job.
 
 ## Status ledger (fleet re-verification 2026-08-10)
 
@@ -144,6 +144,43 @@ copy-paste ready:
   the paid submission (account creation, payment, form). After the action,
   update this file with the public URL and flip the venue's status line to
   live.
+
+### Fleet re-verification 2026-08-11 (Microlaunch)
+
+The Microlaunch section below was added on 2026-08-11 and verified live on
+2026-08-11 — the decision stands as recorded and the kit remains valid and
+copy-paste ready:
+
+- The two exact-category peers are live at their current slugs, both with
+  launch records carrying `is_premium: false` (regular, non-paid launches):
+  Bank Statement Converter (https://microlaunch.net/p/bankstatementconverter,
+  launched 2026-02-08, market analytics, "Free product", mvp-wip) and
+  Bankformats (https://microlaunch.net/p/bankformats, launched 2026-06-14,
+  market accounting, Subscription, growing). The venue hosts the category;
+  only this product's listing is missing.
+- No aiconverter.app duplicate: the full launches API (5,660 products)
+  contains no aiconverter / "AI Converter" codename or slug, and
+  /p/aiconverter, /p/ai-converter, /p/ai-converter-app, /p/aiconverter-app
+  all return no product.
+- "+ New Launch" (nav) opens the "Pick your Launch" modal — Pro Launch card
+  ($39, struck $49, code LAUNCH20, 40 spots/month, CTA "Go Pro Now!" →
+  /premium#stats); /submit redirects to /premium#pricing; the premium page
+  FAQ names a "Regular launch" tier and both peers' non-premium records
+  confirm it exists.
+- Sign-in gate: the header modal offers "Signup with Google" and "Signup
+  with 𝕏" — account-gated.
+- ToS (https://microlaunch.net/terms, "Last updated on 04/03/2023") is a
+  generic template with no robot/spider/automated-access prohibition (unlike
+  Product Hunt's ToS and Toolbit.ai's ToS §7) — flag for the venue research
+  desk (the guard stays exit-4 either way).
+- Kit reference pages all live HTTP 200 (2026-08-11): `/`, `/llms.txt`,
+  `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+  `/pricing/` and `/receipt-to-csv/` still return 404, so the kit claims none
+  of those routes.
+- **Blocked on a human account action (and one $39 spend decision):** Nish
+  owns the regular-launch submission and the Pro Launch paid/decline
+  decision. After each action, update this file with the public URL and flip
+  the venue's status line to live.
 
 ## Product Hunt
 
@@ -464,6 +501,92 @@ copy-paste ready:
   https://www.toolify.ai/tag/Bank%20Statement%20to%20CSV and that search
   `q=aiconverter` returns the listing; update this file with the public URL.
 
+## Microlaunch
+
+### Decision (dated 2026-08-11)
+
+- **Decision: SUBMIT — regular (free) launch first, manual by Nish. The paid
+  Pro Launch ($39) is recorded and deferred to Nish's spend call.**
+- Reason: Microlaunch is a live launch platform (homepage 2026-08-11: "The
+  Launch Platform for World-Class Startups", "August '26 — 138 products,
+  2001 daily visitors") that already hosts two exact-category peers — both
+  launched without premium (`is_premium: false`), proving regular (free)
+  launches work on this venue:
+  - Bank Statement Converter
+    (https://microlaunch.net/p/bankstatementconverter, launched 2026-02-08,
+    market analytics, Saas, "Free product", mvp-wip): "Instantly transform
+    PDF bank statements into clean, structured Excel, CSV, or JSON data".
+  - Bankformats (https://microlaunch.net/p/bankformats, launched 2026-06-14,
+    market accounting, Saas, Subscription, growing): "Bank Statement
+    Converter — Convert to Excel & CSV. PDF bank statements from 1000+
+    banks. EU servers, GDPR-compliant, first 3 pages free."
+  - No duplicate: the full launches API (5,660 products) contains no
+    aiconverter / "AI Converter" codename or slug; /p/aiconverter,
+    /p/ai-converter, /p/ai-converter-app, /p/aiconverter-app all return no
+    product. The category is hosted; only this listing is missing.
+- Free option first (verified live 2026-08-11): the "+ New Launch" nav
+  button opens a "Pick your Launch" modal that surfaces the **Pro Launch**
+  card — $39 one-time (struck $49; extra −20% with code LAUNCH20; "OSS
+  Projects & Students, get 50% OFF Now"), 40 spots/month, "Skip the Queue —
+  Launch Anytime", featured spots / 2x boosts, auto distribution to 4+ SEO
+  pages, marketplace spot, verified reviews & badge — with CTA "Go Pro
+  Now!" → /premium#stats. /submit redirects to /premium#pricing. A
+  **Regular launch** (the free tier) exists per the premium-page FAQ ("What's
+  the difference between Pro and Regular launch?") and is confirmed by both
+  peers' non-premium launch records; the anonymous UI shows Pro only, so the
+  free flow is inside the signed-in account.
+- Paid options recorded (deferred): **Pro Launch $39 / one-time** (above)
+  and the **Expert Feedback** pack at $129 (was $149; product review +
+  custom action plan, 2 startup slots/week, premium support). Decision: the
+  $39 Pro Launch is an optional commercial call by Nish, not required for
+  the free listing.
+- Constraint: sign-in required (the header modal offers "Signup with Google"
+  and "Signup with 𝕏"). microlaunch.net is not in the venue policy allowlist
+  (`automation_disposition: unknown`, not yet reviewed in
+  `venue-policy.json` as of 2026-08-11), so `venue-claim claim` exits 4 —
+  the agent must not drive a browser submission. ToS
+  (https://microlaunch.net/terms, "Last updated on 04/03/2023") is a generic
+  template with no robot/spider/crawl prohibition (unlike Product Hunt's ToS
+  and Toolbit.ai's ToS §7) — still flag for the venue research desk; the
+  guard stays exit-4 either way. Submission (create account, launch via the
+  account-gated flow, optionally upgrade to Pro at checkout) is a human
+  account action, same as the other venues.
+- Next action: Nish signs in (Google or 𝕏) and submits a Regular launch
+  using the kit below (the Pro Launch upgrade at checkout is his spend
+  call), then this file should be updated with the public product URL
+  (microlaunch.net/p/{slug}).
+
+### Manual submission kit (copy-paste ready)
+
+- Name: **AI Converter**
+- Tagline: **Bank statement PDFs to CSV you can review before paying**
+- Description:
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your
+  > browser. Review sample rows free, then unlock the full extraction only when
+  > the preview looks right. OCR fallback handles scanned statements; low
+  > confidence fails closed with no charge. No bank logins and no human review
+  > queue; source files are deleted after 24 hours.
+
+- Category suggestions: the exact-category peers sit in **Analytics & Data**
+  (https://microlaunch.net/category/analytics — Bank Statement Converter)
+  and **Accounting Tools**
+  (https://microlaunch.net/category/accounting — Bankformats); pick the
+  market the form's selector offers that fits best (AI Tools also exists at
+  /category/ai).
+- Product type: Saas (Web App) — matching both peers.
+- Offer type: Freemium (free preview + paid per-page extraction, matching
+  live checkout behavior); the peers use "Free product" and "Subscription".
+- Website: https://aiconverter.app
+- Canonical links for the listing (all verified live HTTP 200 on 2026-08-11):
+  - https://aiconverter.app/bank-statement-pdf-to-csv/
+  - https://aiconverter.app/sample-csv/
+  - https://aiconverter.app/trust/
+  - https://aiconverter.app/formats/
+- Post-listing check: confirm the product page at microlaunch.net/p/{slug}
+  returns 200 and appears in Microlaunch search, then update this file with
+  the public URL.
+
 ## Verification notes
 
 - All copy claims only live production behavior (bank-statement PDF to CSV,
@@ -492,4 +615,17 @@ copy-paste ready:
   no automation prohibition), and the four canonical product links (all HTTP
   200 on 2026-08-11; /pricing/ and /receipt-to-csv/ remain 404 and are not
   claimed in the kit).
+- Microlaunch section verified live on 2026-08-11: the homepage (138 products
+  in August 2026), both exact-category peer product pages (Bank Statement
+  Converter and Bankformats, with embedded launch records showing
+  `is_premium: false`), the full-launches API duplicate check (5,660
+  products, no aiconverter / "AI Converter"), the four slug probes
+  (/p/aiconverter, /p/ai-converter, /p/ai-converter-app, /p/aiconverter-app
+  — all no product), the "Pick your Launch" modal (Pro Launch $39 card, CTA
+  → /premium#stats), the /submit → /premium#pricing redirect, the premium
+  pricing page (Pro Launch $39 / Expert Feedback $129, FAQ naming the
+  Regular launch, code LAUNCH20, OSS/student 50% OFF), the sign-in modal
+  (Google / 𝕏), the ToS page (generic template, no automation prohibition),
+  and the four canonical product links (all HTTP 200 on 2026-08-11; /pricing/
+  and /receipt-to-csv/ remain 404 and are not claimed in the kit).
 - Per fleet policy, submissions stay manual-only (account actions are human).
