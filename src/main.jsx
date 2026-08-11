@@ -85,6 +85,33 @@ function converterById(converterId) {
   return data.converters.find((converter) => converter.id === converterId) || null;
 }
 
+function converterIntentFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const requestedId = String(params.get("converter") || "").trim().toLowerCase();
+    const requestedOutput = String(params.get("output") || "").trim().toLowerCase();
+    if (!requestedId) return null;
+    const converter = data.converters.find(
+      (candidate) => candidate.id === requestedId && isLiveConverter(candidate)
+    );
+    if (!converter) return null;
+    const formats = capableOutputFormats(converter, null);
+    const requestedFormat = requestedOutput ? formats.find((format) => format.id === requestedOutput)?.id : "";
+    const outputFormat =
+      requestedFormat ||
+      (formats.some((format) => format.id === "csv") ? "csv" : "") ||
+      formats[0]?.id ||
+      "";
+    return {
+      converterId: converter.id,
+      outputFormat,
+      showBankDetails: Boolean(converter.id === "bank" && isBankAdvancedFormat(outputFormat))
+    };
+  } catch {
+    return null;
+  }
+}
+
 function allAcceptedTypes(converters) {
   return [...new Set(converters.filter(isLiveConverter).flatMap((converter) => String(converter.accept || "").split(",")))]
     .filter(Boolean)
@@ -448,6 +475,64 @@ function selectedRouteDescription(converter, candidate) {
   return converter?.description || "";
 }
 
+function uploadTargetCopyFor(converter, outputFormat) {
+  const output = outputLabel(converter, outputFormat);
+  switch (converter?.id) {
+    case "bank":
+      return {
+        title: "Bank statement → accounting CSV",
+        detail:
+          "Upload a bank statement PDF for a private preview, review the rows, then export to QuickBooks, Xero, Wave, GnuCash, or CSV."
+      };
+    case "receipt":
+      return {
+        title: "Receipt → expense CSV",
+        detail: "Upload a receipt photo or PDF for a private preview, review the rows, then export to expense CSV."
+      };
+    case "screenshot":
+      return {
+        title: "Screenshot table → CSV",
+        detail: "Upload a screenshot or image of a table for a private preview, review the rows, then export to CSV."
+      };
+    case "invoice":
+      return {
+        title: "Invoice / bill → CSV",
+        detail: "Upload an invoice PDF or photo for a private preview, review the rows, then export to CSV."
+      };
+    case "image-format":
+    case "raster-vector":
+      return {
+        title: `Image → ${output}`,
+        detail: `Convert an image to ${output} privately in your browser. No upload needed.`
+      };
+    case "audio-transcript":
+      return {
+        title: "Audio → transcript",
+        detail: "Upload an audio file for a private preview, review the transcript, then export to TXT or JSON."
+      };
+    case "document-markdown":
+      return {
+        title: "Document → Markdown",
+        detail: "Upload a document or PDF for a private preview, review the result, then export to Markdown."
+      };
+    case "screenshot-code":
+      return {
+        title: "Screenshot → HTML",
+        detail: "Upload a screenshot or image for a private preview, review the result, then export to HTML."
+      };
+    case "universal-file":
+      return {
+        title: "Universal file conversion",
+        detail: "Upload a document, image, audio, video, or archive for a private preview, then export to your chosen format."
+      };
+    default:
+      return {
+        title: `${converter?.title || "File"} → ${output}`,
+        detail: "Upload a file for a private preview, review the result, then export when it looks useful."
+      };
+  }
+}
+
 function displayPriceForPlan(plan, pricingPreview) {
   const planId = typeof plan === "string" ? plan : plan?.id;
   return pricingPreview?.prices?.[planId]?.display || planById(planId)?.price || plan?.price || "₹399";
@@ -698,12 +783,13 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
 }
 
 function App() {
-  const [selectedId, setSelectedId] = useState("bank");
-  const [outputFormat, setOutputFormat] = useState("csv");
+  const urlIntent = useMemo(() => converterIntentFromUrl(), []);
+  const [selectedId, setSelectedId] = useState(urlIntent?.converterId || "bank");
+  const [outputFormat, setOutputFormat] = useState(urlIntent?.outputFormat || "csv");
   const [fileQueue, setFileQueue] = useState([]);
   const [activeFileId, setActiveFileId] = useState("");
   const [pageCount, setPageCount] = useState(25);
-  const [showBankDetails, setShowBankDetails] = useState(false);
+  const [showBankDetails, setShowBankDetails] = useState(Boolean(urlIntent?.showBankDetails));
   const [bankDetails, setBankDetails] = useState(defaultBankDetails);
   const [email, setEmail] = useState("");
   const [converting, setConverting] = useState(false);
@@ -838,6 +924,7 @@ function App() {
   );
   const isPdfFirstConverter = selectedId === "bank";
   const selectedOutputLabel = outputLabel(selected, outputFormat);
+  const uploadTargetCopy = uploadTargetCopyFor(selected, outputFormat);
   const needsBankDetailsForOutput = selectedId === "bank" && bankNativeNeedsDetails(outputFormat);
   const bankDetailsReady =
     !needsBankDetailsForOutput ||
@@ -909,9 +996,10 @@ function App() {
   useEffect(() => {
     trackFunnelEvent("page_view", {
       sessionId: funnelSessionIdRef.current,
-      routePath
+      routePath,
+      ...(urlIntent ? { intentConverter: urlIntent.converterId, intentOutput: urlIntent.outputFormat } : {})
     });
-  }, [routePath]);
+  }, [routePath, urlIntent]);
 
   useEffect(() => {
     activeFileIdRef.current = activeFileId;
@@ -1990,10 +2078,21 @@ function App() {
           <section className={classNames("converter-workspace", file && "has-file", result && "has-result")} aria-label="AI conversion workspace">
           <form className="conversion-flow" id="start" onSubmit={handleConvert}>
             <div className="workspace-console-bar" aria-hidden="true">
-              <span>Bank PDFs</span>
-              <span>Xero CSV</span>
-              <span>Wave CSV</span>
-              <span>QuickBooks CSV</span>
+              {selectedId === "bank" ? (
+                <>
+                  <span>Bank PDFs</span>
+                  <span>Xero CSV</span>
+                  <span>Wave CSV</span>
+                  <span>QuickBooks CSV</span>
+                </>
+              ) : (
+                <>
+                  <span>{selected?.title || "Files"}</span>
+                  <span>{selectedOutputLabel}</span>
+                  <span>Free preview</span>
+                  <span>Private</span>
+                </>
+              )}
             </div>
             {file && (
               <div className="flow-rail" aria-label="Conversion steps">
@@ -2021,8 +2120,8 @@ function App() {
                       <Upload size={26} />
                     </span>
                     <span>
-                      <strong>Bank statement → accounting CSV</strong>
-                      <small>Upload a bank statement PDF for a private preview, review the rows, then export to QuickBooks, Xero, Wave, GnuCash, or CSV.</small>
+                      <strong>{uploadTargetCopy.title}</strong>
+                      <small>{uploadTargetCopy.detail}</small>
                     </span>
                     <span className="upload-go" aria-hidden="true">
                       <ArrowRight size={20} />
