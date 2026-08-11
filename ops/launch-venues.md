@@ -6,12 +6,18 @@ Live-production claims only: everything below is grounded in live pages and
 2026-08-10; WeLikeTools and xix.ai verified 2026-08-10 and re-verified
 2026-08-11; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11;
 Toolify.ai verified 2026-08-11; Microlaunch verified 2026-08-11; Uneed
-(uneed.best) verified 2026-08-11; Open-Launch verified 2026-08-11).
-Automated submission is blocked for all nine venues by the fleet venue policy
+(uneed.best) verified 2026-08-11; Open-Launch verified 2026-08-11; G2
+verified 2026-08-11 via the official vendor pages (sell.g2.com,
+documentation.g2.com, research.g2.com — all live HTTP 200) and Wayback CDX;
+direct VPS access to g2.com remains 403-blocked (bot wall), so no live-page
+claim is made for it).
+Automated submission is blocked for all ten venues by the fleet venue policy
 ledger (`agent-state/growth-loop/venue-policy.json` and the `venue-claim`
 guard): Product Hunt is reviewed as prohibiting automation; BetaList,
-WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, Microlaunch, uneed.best, and
-Open-Launch are not yet reviewed (`automation_disposition: unknown`). Uneed is
+WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, Microlaunch, uneed.best,
+Open-Launch, and G2 are not yet reviewed (`automation_disposition: unknown`).
+G2 additionally publishes its own automated-access prohibition (ToS §9, see
+the G2 section below). Uneed is
 the first venue that publishes its own official agent-launch API
 (`/launch.txt` + REST `/api/v1`) — strong positive evidence the venue research
 desk should weigh when reviewing uneed.best. Account actions (and the xix.ai
@@ -54,6 +60,20 @@ copy source):
 - **Open-Launch — SKIPPED_PAID.** The current direct launch is paid ($12
   Premium Launch) and no usable free route exists now (free slots booked into
   2027); the spend was not made.
+- **G2 — NEEDS_NISH_STEP (agent-executed submission declined).** Eligibility
+  verdict: **MET** — the production bank-statement workflow is B2B, non-beta,
+  and absent from G2 (official criteria + evidence in the G2 section below),
+  and the profile claim is free. The submission itself is blocked for the
+  fleet: G2's ToS §9 "Prohibited Automated Access, Scraping, and Data
+  Extraction" (last updated 2026-07-09) prohibits automated/headless access
+  and binds "automated agents"; g2.com is unreviewed in the venue policy
+  ledger (`automation_disposition: unknown`, executable allowlist empty), so
+  `venue-claim claim` exits 4 — no agent browser work; the flow is
+  account-gated (my.g2.com login via LinkedIn / Facebook / Google / business
+  email), so account creation + form submission + claim is Nish's human
+  action using the G2 kit below. No listing fee surfaced in the
+  official-path evidence ("You can claim your profile for free"); sponsored
+  placement stays a separate spend call.
 
 ## Status ledger (fleet re-verification 2026-08-10)
 
@@ -343,6 +363,70 @@ copy-paste ready:
   owns the account creation (Google / GitHub / email sign-in) and the
   Premium Launch paid/decline decision. After the action, update this file
   with the public URL and flip the venue's status line to live.
+
+### Fleet re-verification 2026-08-11 (G2)
+
+The G2 section below was added on 2026-08-11 and grounded in the official
+vendor pages (live HTTP 200 on 2026-08-11), Wayback CDX, and dated scout
+checks — the decision stands as recorded and the kit remains valid and
+copy-paste ready:
+
+- Official eligibility criteria (documentation.g2.com
+  /help/docs/finding-or-listing-a-product-on-g2, published 2025-09-18, live
+  HTTP 200): "G2 does not accept business-to-consumer (B2C) products or
+  products that are currently in the alpha or beta stage of development."
+  The Research FAQ (research.g2.com/methodology/research-faq, live HTTP 200)
+  rejection list: "It's a B2C product. G2 only lists business-to-business
+  (B2B) software and services", an existing listing (duplicates rejected),
+  extension/integration-only products, an inaccessible website, and
+  restricted-region companies.
+- G2 hosts the exact category: Financial Reconciliation
+  (https://www.g2.com/categories/financial-reconciliation — "It automates
+  the comparison of various financial data sets, such as bank statements,
+  invoices, and accounting records") lists same-category peer DocuClipper (a
+  PDF-bank-statement-to-Excel converter) alongside DualEntry and Prophix
+  (official category page snippet via search, 2026-08-11; direct access
+  403-walled from this VPS). The venue hosts the category; only this
+  product's listing is missing.
+- No aiconverter.app duplicate: search engine `site:g2.com "aiconverter" OR
+  "ai converter"` returns zero results (2026-08-11), and Wayback CDX holds
+  zero captures for `g2.com/products/*aiconverter*` and
+  `g2.com/products/ai-converter*` (this run, 2026-08-11). Direct slug probes
+  from this VPS are impossible (403 bot wall); the final duplicate check is
+  step 1 of the manual kit.
+- Free claim confirmed (official): sell.g2.com/create-a-profile (live HTTP
+  200) documents the flow — request form → conditionally approved → "our G2
+  research team verifies your product or service — in about 3-5 business
+  days" → profile live and ready to be claimed → claim reviewed "within 1-3
+  business days" — and states "You can claim your profile for free."
+  Account access methods (official FAQ): LinkedIn, Facebook, Google, or
+  Business Email.
+- Automated submission prohibited (official): G2 Terms of Use
+  (https://legal.g2.com/terms-of-use, "Last Updated on July 9, 2026") §9
+  "Prohibited Automated Access, Scraping, and Data Extraction" prohibits
+  accessing the Site "through automated, programmatic, or mechanical means
+  (including robots, spiders, crawlers, scrapers, headless browsers,
+  data-mining tools, or similar technologies)" without G2's express prior
+  written consent, and states the restrictions are "binding on all users,
+  visitors, and automated agents" — same class of prohibition as Product
+  Hunt's ToS (reviewed `prohibited` in `venue-policy.json`); a submission
+  form existing is NOT automation permission.
+- The submission form is account-gated: Wayback CDX captures of
+  `g2.com/products/new` (2025-01 through 2026) are 302 redirects; the
+  official flow requires a my.g2.com account.
+- Gate unchanged: g2.com is `automation_disposition: unknown` in
+  `venue-policy.json` with an empty executable allowlist → `venue-claim
+  claim` exits 4 → no browser work. (`venue-claim` is not installed on this
+  VPS — same as the previous cycle; the outcome is deterministic from the
+  policy file.)
+- Kit reference pages all live HTTP 200 (2026-08-11): `/`, `/llms.txt`,
+  `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+  `/pricing/` and `/receipt-to-csv/` still return 404, so the kit claims none
+  of those routes.
+- **Blocked on a human account action:** Nish owns the account creation,
+  form submission, and profile claim (business email verification + G2
+  research-team review). After the action, update this file with the public
+  URL and flip the venue's status line to live.
 
 ## Product Hunt
 
@@ -941,3 +1025,125 @@ copy-paste ready:
   flow), and the four canonical product links (all HTTP 200 on 2026-08-11;
   /pricing/ and /receipt-to-csv/ remain 404 and are not claimed in the kit).
 - Per fleet policy, submissions stay manual-only (account actions are human).
+
+## G2
+
+### Decision (dated 2026-08-11)
+
+- **Decision: DECLINED for agent-executed submission. Eligibility verdict
+  MET — a truthful free profile claim is worth making, but it is a manual
+  external-account action by Nish via the official G2 product submission +
+  claim flow; the kit below is copy-paste ready and truthful, and this line
+  becomes SUBMITTED (or stays DECLINED) once Nish acts.**
+- Reason: the production bank-statement workflow meets G2's published B2B /
+  non-beta eligibility (evidence below), G2 hosts the exact category with a
+  same-category peer (DocuClipper in Financial Reconciliation), no
+  aiconverter.app profile exists on G2, and the claim is free — so the
+  listing is a real, free, category-relevant opportunity. The fleet cannot
+  execute the submission: G2's Terms of Use §9 prohibits automated access
+  (explicitly binding on "automated agents", no express written consent
+  exists), g2.com is unreviewed in the venue policy ledger
+  (`automation_disposition: unknown`, executable allowlist empty) so
+  `venue-claim claim` exits 4, and the flow is account-gated (my.g2.com
+  login via LinkedIn / Facebook / Google / business email; archived
+  `g2.com/products/new` captures are 302 redirects). Direct VPS access to
+  g2.com is 403-walled (bot wall), so this decision rests on the official
+  vendor pages and Wayback/CDX evidence, not live-page access — same
+  evidence posture as Capterra.
+- Flag for the venue research desk: G2 ToS §9 is the strongest
+  automated-access prohibition observed in this file — it explicitly binds
+  automated agents and covers headless browsers, unlike Product Hunt's
+  crawl/scrape clause — a strong candidate for a `prohibited` disposition
+  in `venue-policy.json` (like producthunt.com), ahead of any allowlist
+  consideration.
+- Money boundary: none for the claim itself ("You can claim your profile
+  for free"). G2's commercial tiers (my.g2 upgrades, G2 Ads, sponsored
+  placements) are optional later spend decisions by Nish, not part of the
+  free claim.
+
+### Eligibility evidence (official G2 criteria, verified 2026-08-11)
+
+- Official criteria: documentation.g2.com
+  (/help/docs/finding-or-listing-a-product-on-g2, published 2025-09-18):
+  "G2 does not accept business-to-consumer (B2C) products or products that
+  are currently in the alpha or beta stage of development." Research FAQ
+  (research.g2.com/methodology/research-faq) rejection reasons: B2C
+  ("G2 only lists business-to-business (B2B) software and services"),
+  existing listing, extension/integration-only, inaccessible website,
+  restricted-region company.
+- **B2B: MET.** The production bank-statement workflow — PDF → CSV /
+  QuickBooks / Xero / Wave CSV prep and scanned-statement OCR — is marketed
+  to bookkeepers and accounting workflows (/llms.txt live: "Bank statement
+  converter for bookkeepers who need reviewable CSV rows for cleanup and
+  accounting-system prep"; canonical URL
+  /bank-statement-converter-for-bookkeepers/) and sold per-page for
+  business extraction jobs. G2 hosts the exact category: Financial
+  Reconciliation (category page: "It automates the comparison of various
+  financial data sets, such as bank statements, invoices, and accounting
+  records") with same-category peer DocuClipper, a PDF-bank-statement
+  converter, listed among its products. Not a B2C product.
+- **Non-beta: MET.** /llms.txt (live 2026-08-11): "Bank statement PDF to
+  CSV is the first production AI module." The bank-statement modules (PDF →
+  CSV, QuickBooks/Xero/Wave prep, scanned → Excel-readable CSV, credit card
+  statement → CSV) are listed as live; the receipt, invoice, screenshot,
+  audio, document-Markdown, and screenshot-to-HTML modules are explicitly
+  labeled beta. Live paid checkout verified 2026-08-11: /api/health
+  `dodo.products: starter/batch/pro configured`, `dodo.apiConfigured: true`;
+  this repo's `npm run stress:live` baseline is green.
+- **No duplicate: MET (bounded evidence).** Search `site:g2.com
+  "aiconverter" OR "ai converter"` → zero results (2026-08-11); Wayback CDX
+  has zero captures for `g2.com/products/*aiconverter*` and
+  `g2.com/products/ai-converter*` (this run). Direct slug probes from this
+  VPS are impossible (403 bot wall); step 1 of the manual kit re-checks
+  this before submission.
+- **Website accessible: MET.** aiconverter.app and all kit reference pages
+  HTTP 200 (2026-08-11): `/`, `/llms.txt`, `/bank-statement-pdf-to-csv/`,
+  `/sample-csv/`, `/trust/`, `/formats/`. `/pricing/` and `/receipt-to-csv/`
+  still return 404, so the kit claims none of those routes.
+- Free claim confirmed (official): sell.g2.com/create-a-profile — "You can
+  claim your profile for free"; flow: Product Submission Form →
+  conditionally approved → research team verifies in ~3-5 business days →
+  profile live → claim the listing → final approval within 1-3 business
+  days.
+
+### Manual submission kit (copy-paste ready)
+
+- Official path (the only product-creation route; no product-creation API,
+  no agent-credential path): fill the **Product Submission Form** at
+  https://www.g2.com/products/new (requires a my.g2.com account — log in
+  with LinkedIn, Facebook, Google, or a business email per G2's official
+  FAQ), then once the profile is live claim it: navigate to the profile,
+  hover **Unclaimed**, select **Claim this profile** (documentation.g2.com;
+  final approval within 1-3 business days).
+- Name: **AI Converter**
+- Website: https://aiconverter.app
+- Description (truthful, matches live behavior — same canonical text as the
+  other kits):
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in
+  > your browser. Review sample rows free, then unlock the full extraction
+  > only when the preview looks right. OCR fallback handles scanned
+  > statements; low confidence fails closed with no charge. No bank logins
+  > and no human review queue; source files are deleted after 24 hours.
+
+- Category suggestion: **Financial Reconciliation** (the evidence-backed
+  category hosting the same-category peer DocuClipper; the G2 research team
+  makes the final categorization decision — "Decisions on whether to
+  categorize a product in a certain category ... are based on eligibility
+  and market fit", Research FAQ).
+- Pricing: Freemium (free preview + paid per-page extraction, matching live
+  checkout behavior).
+- Account email: use a business email for the my.g2.com account (G2's
+  official account methods: LinkedIn, Facebook, Google, or Business Email).
+- Canonical links for the listing (all verified live HTTP 200 on 2026-08-11):
+  - https://aiconverter.app/bank-statement-pdf-to-csv/
+  - https://aiconverter.app/sample-csv/
+  - https://aiconverter.app/trust/
+  - https://aiconverter.app/formats/
+- Post-listing checks (in order): (1) confirm
+  https://www.g2.com/search?query=aiconverter returns no existing profile
+  (duplicate rejection criterion) before submitting; (2) after approval,
+  claim the profile ("Unclaimed" → "Claim this profile"); (3) confirm the
+  public profile URL https://www.g2.com/products/{slug} returns 200 and the
+  profile is editable in my.g2.com; then update this file with the public
+  URL and flip the venue's status line to live.
