@@ -582,3 +582,66 @@ or drive the submission form.
   page, /projects/submit sign-in wall, robots.txt, ToS, the open-source repo
   constants, and the four canonical product links (2026-08-11) — all as
   recorded above.- No code changed; docs only (`ops/launch-venues.md`, `.lane/report.md`).
+
+---
+
+## 2026-08-11 — Baseline launch venues: Product Hunt + BetaList (lane item "List the product on Product Hunt and record a submit-or-decline decision for BetaList")
+
+**Verdict: both baseline venues remain NOT live after live re-verification
+2026-08-11. Product Hunt cannot be listed from a lane (root-owned policy
+prohibits automation, no official product-creation API exists); the
+submit-or-decline decision for BetaList is now recorded as **DECLINE**
+(paid-only venue; spend decisions stay with Nish). Both manual kits remain
+copy-paste ready in `ops/launch-venues.md`. The item closes only when Nish
+performs the manual actions below.**
+
+### Live re-verification (2026-08-11, all live-page checks this run)
+
+- Product Hunt search `q=aiconverter` (`/search?q=aiconverter`): still zero
+  aiconverter.app result — Coval, Wingman City Guide, Sibyl AI, ChatGPT
+  Prompt Generator, Convo, OpenMemory Chrome Extension, Infinite Convo,
+  Aistro, Slashspace AI, Super Grok. Exact-category competitors remain live
+  (receipt-ai, ledgerbox): category hosted, listing missing.
+- Product Hunt API 2.0 docs (https://api.producthunt.com/v2/docs): GraphQL
+  read API only — "By default all apps are read-only (public scope)"; write
+  scope granted case-by-case for user actions; no product-creation endpoint;
+  API non-commercial by default. Listing creation is the account-gated web
+  launch flow only.
+- BetaList search `q=aiconverter`: "No results found for aiconverter";
+  `/submit` redirects to `/sign_in` (account-gated).
+- BetaList Support (https://betalist.com/support): "All submissions are
+  paid. There is no free submission option." / "No. BetaList used to offer
+  free submissions, but all submissions now require payment." Full automatic
+  refund if not selected; plans/prices at the end of the sign-in-gated
+  submission form.
+- Kit reference pages all live HTTP 200: `/`, `/llms.txt`,
+  `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+  `/pricing/` still 404 (kit claims none of those routes).
+
+### Decisions recorded (dated 2026-08-11) in `ops/launch-venues.md`
+
+- Product Hunt: **NEEDS_NISH_STEP — agent-executed submission declined**
+  (unchanged since 2026-08-09, now re-verified). Root-owned venue policy
+  ledger marks producthunt.com `automation_disposition: prohibited` (ToS
+  prohibit access "through use of manual or automated means" and unattended
+  processes); API 2.0 has no product-creation endpoint; the web launch flow
+  is account-gated. Nish chooses/confirms the launch date and publishes
+  manually with the kit.
+- BetaList: **DECLINE (submit-or-decline decision recorded 2026-08-11)** —
+  paid-only, no free option per the official support page; the fleet does
+  not make spend decisions. The old 2026-08-09 "SUBMIT" decision is marked
+  superseded; the kit stays as copy source for a manual paid submission if
+  Nish approves the spend (full refund if not selected).
+
+### Why the items cannot be closed from a lane (unchanged policy)
+
+- Product Hunt: `automation_disposition: prohibited` in the root-owned
+  policy ledger — the ONLY override is a ledger change, which is
+  root-owned; the lane cannot modify it, and the ToS ban is independent.
+- BetaList: paid-only submission = a spend decision that stays with Nish;
+  also `automation_disposition: unknown` (allowlist empty) so
+  `venue-claim claim` exits 4 for any agent-driven browser submission.
+
+### Checks on this lane
+
+- No code changed; docs only (`ops/launch-venues.md`, `.lane/report.md`).

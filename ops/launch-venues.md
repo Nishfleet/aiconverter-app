@@ -3,10 +3,10 @@
 Durable record of launch-venue decisions and submission kits for aiconverter.app.
 Live-production claims only: everything below is grounded in live pages and
 `/llms.txt` (verified 2026-08-09 for Product Hunt and BetaList, re-verified
-2026-08-10; WeLikeTools and xix.ai verified 2026-08-10 and re-verified
-2026-08-11; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11;
-Toolify.ai verified 2026-08-11; Microlaunch verified 2026-08-11; Uneed
-(uneed.best) verified 2026-08-11; Open-Launch verified 2026-08-11).
+2026-08-10 and 2026-08-11; WeLikeTools and xix.ai verified 2026-08-10 and
+re-verified 2026-08-11; Toolbit.ai verified 2026-08-10 and re-verified
+2026-08-11; Toolify.ai verified 2026-08-11; Microlaunch verified 2026-08-11;
+Uneed (uneed.best) verified 2026-08-11; Open-Launch verified 2026-08-11).
 Automated submission is blocked for all nine venues by the fleet venue policy
 ledger (`agent-state/growth-loop/venue-policy.json` and the `venue-claim`
 guard): Product Hunt is reviewed as prohibiting automation; BetaList,
@@ -25,13 +25,24 @@ As of 2026-08-11 no venue has a live aiconverter.app listing and no submission
 was made from the fleet. Status per venue (the kits below remain the prepared
 copy source):
 
-- **Product Hunt — NEEDS_NISH_STEP.** Copy is prepared (kit below). Nish must
-  choose/confirm the launch date and publish manually: Product Hunt prohibits
-  automated access, so no agent action is possible on this venue.
-- **BetaList — SKIPPED_PAID.** BetaList's official Support page (verified
-  2026-08-11) now states all submissions are paid and no free option exists.
-  This supersedes the stale prepared text below claiming the standard
-  submission is free; the kit is retained as copy reference only.
+- **Product Hunt — NEEDS_NISH_STEP (agent-executed submission declined,
+  re-verified 2026-08-11).** Copy is prepared (kit below). The fleet cannot
+  list this venue: the root-owned venue policy ledger marks producthunt.com
+  `automation_disposition: prohibited` (ToS prohibit access "through use of
+  manual or automated means" and unattended processes), the Product Hunt API
+  2.0 is read-only with no product-creation endpoint (write scope is granted
+  case-by-case for user actions only), and creation goes through the
+  account-gated web launch flow. Nish must choose/confirm the launch date and
+  publish manually: no agent action is possible on this venue.
+- **BetaList — DECLINE (submit-or-decline decision recorded 2026-08-11,
+  re-verified live).** BetaList's official Support page (re-verified live
+  2026-08-11) states all submissions are paid and no free option exists:
+  "All submissions are paid. There is no free submission option." and "No.
+  BetaList used to offer free submissions, but all submissions now require
+  payment." The fleet declines the paid submission (spend decisions stay
+  with Nish); the kit below is retained as copy source if Nish chooses to
+  pay and submit manually. This supersedes the stale prepared text below
+  claiming the standard submission is free.
 - **WeLikeTools — NEEDS_NISH_STEP.** Free submission is available, but the
   submit page requires Google login/OAuth. Nish must approve/complete the
   Google sign-in, then the prepared copy can be submitted.
@@ -344,6 +355,50 @@ copy-paste ready:
   Premium Launch paid/decline decision. After the action, update this file
   with the public URL and flip the venue's status line to live.
 
+### Fleet re-verification 2026-08-11 (Product Hunt + BetaList)
+
+The baseline venue sections below were added on 2026-08-09, re-verified on
+2026-08-10, and re-verified live again on 2026-08-11 — both decisions stand
+unchanged (Product Hunt: declined for automated submission, manual kit ready;
+BetaList: submit-or-decline decision recorded as DECLINE, paid-only) and
+both kits remain valid and copy-paste ready:
+
+- Product Hunt search `q=aiconverter` (2026-08-11): still zero aiconverter.app
+  result; unrelated tools only (Coval, Wingman City Guide, Sibyl AI, ChatGPT
+  Prompt Generator, Convo, OpenMemory Chrome Extension, Infinite Convo,
+  Aistro, Slashspace AI, Super Grok). The category is hosted
+  (exact-category competitors like receipt-ai and ledgerbox are live); the
+  listing is missing.
+- Product Hunt API 2.0 (https://api.producthunt.com/v2/docs, live
+  2026-08-11): GraphQL read API only — "By default all apps are read-only
+  (public scope)"; partial write access is granted case-by-case for
+  user-action scopes, and there is no product-creation endpoint. Listing
+  creation is the account-gated web launch flow only, so there is no
+  agent-executable route even aside from the ToS prohibition. The API is
+  also non-commercial by default ("The Product Hunt API must not be used for
+  commercial purposes"), which independently bars a listing pipeline on it.
+- BetaList search `q=aiconverter` (2026-08-11): still "No results found for
+  aiconverter"; `Submit Startup` still redirects to `/sign_in`
+  (account-gated).
+- BetaList Support page (https://betalist.com/support, live 2026-08-11):
+  "How much does it cost to submit a startup?" → "All submissions are paid.
+  There is no free submission option." and "Is there a free submission
+  option?" → "No. BetaList used to offer free submissions, but all
+  submissions now require payment." Plans/prices are shown at the end of the
+  sign-in-gated submission form; full automatic refund if not selected. This
+  confirms the 2026-08-11 SKIPPED_PAID finding and grounds the recorded
+  submit-or-decline decision: **DECLINE** — the fleet does not make spend
+  decisions, so BetaList submission happens only as Nish's manual paid
+  action using the kit below.
+- Kit reference pages all live HTTP 200 (2026-08-11): `/`, `/llms.txt`,
+  `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+  `/pricing/` still returns 404, so the no-pricing-link note below still
+  holds.
+- **Blocked on a human account action:** Nish owns both venues' submissions
+  (Product Hunt: manual publish incl. launch-date choice; BetaList: paid
+  submission decision + account + payment). After each action, update this
+  file with the public URL and flip the venue's status line to live.
+
 ## Product Hunt
 
 ### Decision (dated 2026-08-09)
@@ -361,8 +416,11 @@ copy-paste ready:
   aiconverter.app result (unrelated tools only: Coval, Wingman City Guide, Sibyl
   AI, ...). Exact-category competitors are listed (receipt-ai, ledgerbox), so the
   venue hosts the category — the listing itself is missing.
-- Next action: Nish submits manually using the kit below, then this file should
-  be updated with the public product URL.
+- Next action (re-verified 2026-08-11 — search `q=aiconverter` still returns
+  no aiconverter.app listing, and API 2.0 remains a read-only GraphQL API
+  with no product-creation endpoint; see the 2026-08-11 re-verification
+  block above): Nish submits manually using the kit below, then this file
+  should be updated with the public product URL.
 
 ### Manual submission kit (copy-paste ready)
 
@@ -399,10 +457,12 @@ copy-paste ready:
 
 ## BetaList
 
-### Decision (dated 2026-08-09)
+### Decision (dated 2026-08-09, superseded 2026-08-11 — see DECLINE below)
 
-- **Decision: SUBMIT — manual submission by Nish.**
-- Reason: BetaList is a free, live, category-relevant launch directory (AI Tools,
+- ~~**Decision: SUBMIT — manual submission by Nish.**~~ (Superseded: no free
+  submission option exists; fleet decision is now DECLINE, see below.)
+- Reason (historical, superseded): BetaList is a free, live,
+  category-relevant launch directory (AI Tools,
   Personal Finance, Productivity categories all fit; daily startup posts confirm
   activity). Search `q=aiconverter` returns "No results found", so there is no
   duplicate. aiconverter.app meets eligibility: working website on its own domain
@@ -412,12 +472,20 @@ copy-paste ready:
   `venue-claim claim` exits 4 — the agent must not drive a browser submission.
   Submission is a human account action, same as Product Hunt.
 - **Superseded 2026-08-11:** the 2026-08-09 claim that the standard submission
-  is free is stale — BetaList's official Support page now states all
-  submissions are paid and no free option exists (outcome: SKIPPED_PAID, see
-  the submission outcomes ledger above). The kit below is retained as copy
-  reference only.
-- Next action: Nish signs in and submits using the kit below, then this file
-  should be updated with the public startup URL.
+  is free is stale — BetaList's official Support page (re-verified live
+  2026-08-11) states all submissions are paid and no free option exists.
+- **Submit-or-decline decision (recorded 2026-08-11): DECLINE — no paid
+  submission from the fleet.** All BetaList submissions are paid
+  (support page: "All submissions are paid. There is no free submission
+  option."), and spend decisions stay with Nish, so the fleet declines the
+  spend. The kit below is retained as copy source for a manual paid
+  submission if Nish chooses to spend (full automatic refund if not
+  selected; plans/prices shown at the end of the sign-in-gated submission
+  form). The 2026-08-09 "SUBMIT" decision is thus recorded as declined in
+  the fleet's name; the venue remains submittable by Nish at his call.
+- Next action (if the spend is approved): Nish signs in, pays, and submits
+  using the kit below, then this file should be updated with the public
+  startup URL.
 
 ### Manual submission kit (copy-paste ready)
 
