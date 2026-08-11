@@ -1,5 +1,76 @@
 # Lane evidence — aiconverter-app lane 1
 
+## 2026-08-12 — Eliminate the blank first paint on the Formats route (research-desk item, risk amber)
+
+**Verdict: the code fix is complete and already merged on main (#20, `0f1392e`,
+plus the live gate #25, `7310424`); the blank first paint is STILL LIVE on
+production because the fixed bundle has never been deployed — production still
+serves the pre-fix 8,301-byte page (verified again today, cache-busted). The
+deploy remains blocked from lanes (fleet Cloudflare token still lacks
+Pages:Edit; re-verified today). The item closes only after one human
+Pages:Edit deploy of a clean `origin/main` build.**
+
+### What this run delivered (branch `lane1/formats-first-paint-closeout`)
+
+- Merged the last unmerged source-side guard for this item: the inline-style
+  coverage test from stale PR #41 (`843a9f0`) onto a fresh `origin/main` base.
+  The test enumerates every class the formats body uses and asserts each is
+  defined in the inline critical `<style>`, so any future edit to
+  `public/formats/index.html` that would silently regress into an unstyled /
+  blank first paint fails CI. Structural check (inline styles present, no
+  render-blocking stylesheet in head) + coverage guard now both live in
+  `tests/seo-static-regression.test.mjs`, matching what the live stress gate
+  checks against production.
+
+### Live verification 2026-08-12 (credential-free)
+
+- `https://aiconverter.app/formats/` (cache-busted `?cb=1`): HTTP 200, body
+  exactly 8,301 bytes — the pre-`0f1392e` page. No inline `<style>` anywhere,
+  `<link rel="stylesheet" href="/legal.css">` present in the head
+  (render-blocking), ETag `0201e52a74fc5b07991fcddd1d592e38` unchanged.
+- `npm run stress:live` (2 rounds): 2/2 rounds fail with
+  `formats-blank-first-paint` on `/formats`; every other checked route (/, 
+  /api/config, /api/health, /llms.txt, /about, /security, /privacy,
+  /data-retention) passes.
+- Local source `public/formats/index.html` (14,135 bytes): inline critical
+  styles cover all 18 unique body classes; no stylesheet in head; `/legal.css`
+  loaded after content; `font-display: swap` in legal.css (no invisible-text
+  window). Local gates green: `npm run check:pricing`, `node --test
+  tests/*.test.mjs` (121/121), `npm run build`.
+
+### Why the item cannot be closed from a lane (re-verified 2026-08-12)
+
+1. The source fix is merged; nothing left to change in the repo — the live
+   gap is purely the stale production bundle.
+2. `wrangler` is not installed on this VPS and no OAuth session exists
+   (non-interactive environment); the fleet `CLOUDFLARE_API_TOKEN` (from
+   `~/.config/fleet-console/cf.env`) verifies active but
+   `GET /accounts/<acct>/pages/projects/aiconverter` still returns
+   `{"errors":[{"code":10000,"message":"Authentication error"}]}` — the token
+   still lacks Account > Cloudflare Pages > Edit.
+3. Per fleet release policy, the first release needs a supervised baseline and
+   would be refused regardless; deploy remains Nish-held.
+
+### Remaining step to close the item (Nish-held)
+
+One Cloudflare Pages:Edit deploy of a clean `origin/main` build, then rerun
+`npm run stress:live` and confirm no `formats-blank-first-paint` failure:
+
+```bash
+# from a clean origin/main checkout, with a Pages:Edit credential
+SAFE_DEPLOY_APPROVED='pages deploy dist --project-name aiconverter --branch main' \
+  wrangler pages deploy dist --project-name aiconverter --branch main
+```
+
+### Checks on this lane
+
+- `npm run check:pricing` — Pricing is consistent.
+- `node --test tests/*.test.mjs` — 121 pass, 0 fail (118 prior + 3
+  seo-static-regression, incl. the new drift-guard test).
+- `npm run build` — green.
+- Live `/formats/` — still the pre-fix page (2026-08-12, cache-busted).
+
+
 ## 2026-08-11 — Five observed intent-matched customer trials with free full export (scout item)
 
 **Verdict: the trial kit, grant decision, and free-export gate verification are
