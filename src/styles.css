@@ -686,6 +686,25 @@ a {
   border: 0;
 }
 
+.sr-only a:focus-visible {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 10px 14px;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  border: 1px solid rgba(18, 18, 15, 0.12);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 18px 44px rgba(18, 18, 15, 0.16);
+  z-index: 60;
+}
+
 .conversion-route {
   display: flex;
   align-items: center;
@@ -1457,6 +1476,11 @@ tbody tr:last-child td {
   mask-image: linear-gradient(to right, transparent, #000 86px, #000 calc(100% - 86px), transparent);
 }
 
+.conversion-ticker:hover .conversion-ticker-track,
+.conversion-ticker:focus-within .conversion-ticker-track {
+  animation-play-state: paused;
+}
+
 .conversion-ticker-track {
   width: max-content;
   display: flex;
@@ -1485,6 +1509,14 @@ tbody tr:last-child td {
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
+  transition: color 160ms ease;
+}
+
+.ticker-chip:hover {
+  color: var(--green-dark);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: rgba(49, 77, 5, 0.45);
 }
 
 .ticker-chip::before {
