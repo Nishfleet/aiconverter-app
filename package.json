@@ -18,7 +18,7 @@
     "drill:failover": "node scripts/drill-failover-live.mjs",
     "readiness:live": "node scripts/readiness-live.mjs",
     "stress:all": "npm run stress:converters && npm run stress:live && npm run readiness:live",
-    "release:gate": "npm run check:pricing && node --test tests/*.test.mjs && npm run corpus:private && npm audit --audit-level=moderate && npm run build && npm run stress:converters && npm run stress:live && AICONVERTER_MONITOR_STRICT=true npm run monitor:live && npm run readiness:live",
+    "release:gate": "npm run check:pricing && node --test tests/*.test.mjs && AICONVERTER_PRIVATE_CORPUS_REQUIRED=true npm run corpus:private && npm audit --audit-level=moderate && npm run build && npm run stress:converters && npm run stress:live && AICONVERTER_MONITOR_STRICT=true npm run monitor:live && npm run readiness:live",
     "preview": "vite preview --host 0.0.0.0",
     "db:migrations:list": "wrangler d1 migrations list aiconverter --remote",
     "db:migrate:remote": "wrangler d1 migrations apply aiconverter --remote",
