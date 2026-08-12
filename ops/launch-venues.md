@@ -42,10 +42,14 @@ copy source):
   Nish must complete the manual login/submission and decide whether to install
   the badge. No submission is claimed for this venue.
 - **Toolify.ai — SKIPPED_PAID.** Current listing is paid only ($99); the spend
-  was not made.
+  was not made. (Lane attempt 2026-08-12: NOT EXECUTED — venue still not
+  allowlisted in the fleet venue policy, and the $99 spend is a Nish-only
+  decision; see the Toolify.ai section below.)
 - **Microlaunch — NEEDS_NISH_STEP.** A free regular submission exists, but
   sign-in (Google or X) is required. Nish must approve/complete the OAuth
-  sign-in, then the prepared copy can be submitted.
+  sign-in, then the prepared copy can be submitted. (Lane attempt 2026-08-12:
+  NOT EXECUTED — venue still not allowlisted in the fleet venue policy, so the
+  agent must not drive the submission; see the Microlaunch section below.)
 - **Uneed — NEEDS_NISH_STEP.** A public preview for AI Converter was generated
   in Nish's browser (2026-08-11), but the venue scraped noncanonical copy —
   preview only, NOT a submission. The next step requires account
@@ -665,6 +669,59 @@ copy-paste ready:
   https://www.toolify.ai/tag/Bank%20Statement%20to%20CSV and that search
   `q=aiconverter` returns the listing; update this file with the public URL.
 
+### Fleet lane attempt 2026-08-12 (Toolify.ai — NOT EXECUTED)
+
+- Attempted by lane 2 (packet: "List the product on Toolify.ai (paid $99
+  submit path)"). The listing was **not submitted and the $99 was not paid**:
+  the decision above still binds. `agent-state/growth-loop/venue-policy.json`
+  (updated 2026-08-08) has no toolify.ai entry — `automation_disposition:
+  unknown`, not in the allowlist — so `venue-claim claim` exits 4 and the
+  agent must not drive the browser submission. The $99 one-time fee is a
+  spend decision only Nish can make ("Money boundary" above), and the
+  Fulfillment Policy requires account registration (human account action).
+  No spend authorization exists in `agent-state` (authorizations/ holds only
+  the sol-xhigh worker grant; the dispatch ledger has no Toolify entry). The
+  `venue-claim` binary is not installed in the lane environment, but the
+  policy JSON is the authoritative guard and is unchanged; this record is the
+  honest NOT-EXECUTED lane outcome the packet requires.
+- Live re-verification (2026-08-12, headless Chromium JS-rendered; curl is
+  Cloudflare-challenged):
+  - Exact-category tag page live and updated today:
+    https://www.toolify.ai/tag/Bank%20Statement%20to%20CSV — "Discover Best AI
+    Tools for Bank Statement to CSV", "The best ai tools for Bank Statement to
+    CSV are: LedgerBox.", "Number of Als: 2", "Updated time: August 12 2026".
+    No AI Converter on the page.
+  - Competitor listing live: https://www.toolify.ai/tool/ledgerbox — HTTP 200,
+    "LedgerBox: AI-powered bank statement converter from PDF to Excel and CSV."
+  - No duplicate: https://www.toolify.ai/tool/ai-converter → HTTP 404 "Page
+    not found"; site search API (the autocomplete endpoint)
+    `GET https://www.toolify.ai/self-api/v1/best-for-professions?search=aiconverter`
+    → `{"total": 0, "data": []}`; `search=ai-converter` and
+    `search=ai converter` → also total 0. The 2026-08-11 JS-rendered search
+    record ("Sorry, there are no tools containing your keywords at the
+    moment") still stands.
+  - Submit page live, HTTP 200: https://www.toolify.ai/submit — "Total:
+    $ 99", "Pay $ 99", "No queue, listed within 48 hours".
+  - Fulfillment Policy live, HTTP 200: https://www.toolify.ai/fulfillment-policy
+    — "Last updated on August 30, 2024"; "you must register for a paid
+    one-time payment program"; "Toolify may reject your application for an
+    Account for any reason, in our sole discretion"; fee non-refundable
+    ("non-refundable, even if you cancel or do not use any of the benefits");
+    no robot/spider/automated-access prohibition (unchanged from the
+    2026-08-11 record).
+  - Kit reference pages all live HTTP 200: `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Next action (unchanged): Nish signs in, pays $99, and submits using the kit
+  above; the only route to an agent-executed submission would be Nish's dated
+  approval of the $99 spend AND the venue research desk reviewing toolify.ai
+  (its Fulfillment Policy has no robot/spider/automated-access prohibition)
+  and adding it to the policy allowlist. After the listing, confirm the tool
+  appears on https://www.toolify.ai/tag/Bank%20Statement%20to%20CSV and that
+  search `q=aiconverter` returns the listing, then flip this venue's status
+  line to live.
+
 ## Microlaunch
 
 ### Decision (dated 2026-08-11)
@@ -750,6 +807,48 @@ copy-paste ready:
 - Post-listing check: confirm the product page at microlaunch.net/p/{slug}
   returns 200 and appears in Microlaunch search, then update this file with
   the public URL.
+
+### Fleet lane attempt 2026-08-12 (Microlaunch — NOT EXECUTED)
+
+- Attempted by lane 3 (packet: "List the product on Microlaunch via + New
+  Launch"). The listing was **not submitted**: the decision above still binds.
+  `agent-state/growth-loop/venue-policy.json` (updated 2026-08-08) has no
+  microlaunch.net entry — `automation_disposition: unknown`, not in the
+  allowlist — so `venue-claim claim` exits 4 and the agent must not drive the
+  browser submission. Submission also requires a human account action (the
+  "Signup" gate is Google/𝕏 OAuth only), which stays with Nish per the
+  decision above. The `venue-claim` binary is not installed in the lane
+  environment, but the policy JSON is the authoritative guard and is
+  unchanged; this record is the honest NOT-EXECUTED lane outcome the packet
+  requires.
+- Live re-verification (all HTTP 200 unless noted, checked 2026-08-12):
+  - Homepage: "The Launch Platform for World-Class Startups"; August '26 —
+    139 products, 1767 daily visitors; nav still shows "+ New Launch" and
+    "Signup".
+  - Both exact-category peers still live at their recorded slugs: Bank
+    Statement Converter (https://microlaunch.net/p/bankstatementconverter,
+    Analytics & Data, Saas, "Free product") and Bankformats
+    (https://microlaunch.net/p/bankformats, Accounting Tools, Saas,
+    Subscription).
+  - No duplicate: the full launches/products API
+    (https://api.microlaunch.net/api/launches, `authorized_mode: false`, 222
+    launches + 222 products in the current slice) has zero hits for
+    aiconverter / "AI Converter" / ai-converter across every field including
+    `codename` and `slug`; /p/aiconverter, /p/ai-converter,
+    /p/ai-converter-app, /p/aiconverter-app all return no product (500).
+  - /submit still redirects to /premium#pricing; the premium page still names
+    the "Regular launch" tier (FAQ) and "Pro Launch — Limited to 40 spots per
+    month" with the LAUNCH20 code.
+  - Kit reference pages all live HTTP 200: `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+- Next action (unchanged): Nish signs in (Google or 𝕏) and submits the
+  Regular launch using the kit above; the Pro Launch $39 upgrade stays his
+  spend call. The only route to an agent-executed submission would be the
+  venue research desk reviewing microlaunch.net (its ToS has no
+  robot/spider/automated-access prohibition) and adding it to the policy
+  allowlist. After the listing, confirm microlaunch.net/p/{slug} returns 200
+  and appears in Microlaunch search, then flip this venue's status line to
+  live.
 ## Uneed
 
 ### Decision (dated 2026-08-11)
