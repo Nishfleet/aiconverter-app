@@ -57,6 +57,9 @@ copy source):
   preview only, NOT a submission. The next step requires account
   creation/login; before scheduling the launch, replace the scraped
   description with the exact approved description in the Uneed kit below.
+  (Lane attempt 2026-08-12: NOT EXECUTED — venue still not allowlisted in the
+  fleet venue policy, and the free flow needs email-OTP sign-up, so the agent
+  must not drive the submission; see the Uneed section below.)
 - **Open-Launch — SKIPPED_PAID.** The current direct launch is paid ($12
   Premium Launch) and no usable free route exists now (free slots booked into
   2027); the spend was not made.
@@ -942,6 +945,77 @@ copy-paste ready:
 - Post-listing check: confirm https://www.uneed.best/tool/{slug} returns 200
   and appears in Uneed search (`q=aiconverter`), then update this file with
   the public URL.
+
+### Fleet lane attempt 2026-08-12 (Uneed — NOT EXECUTED)
+
+- Attempted by lane 1 (packet: "List the product on Uneed via free
+  waiting-line submit (record paid skip-the-line decision)"). The listing was
+  **not submitted**: the decision above still binds. Two independent gates
+  block the agent:
+  1. **Venue policy ledger blocks agent submission.**
+     `agent-state/growth-loop/venue-policy.json` (updated 2026-08-08) has no
+     uneed.best entry — `automation_disposition: unknown`, not in the
+     allowlist — so per the `venue-claim` contract, `claim` exits 4 and "A
+     blocked exit means NO browser work." Repo runbook `ops/launch-venues.md`
+     (2026-08-11) states explicitly: "uneed.best is not yet reviewed in the
+     fleet venue policy ledger ... so `venue-claim claim` still exits 4 and
+     the agent must not execute the flow." The `venue-claim` binary is not
+     installed in the lane environment (same as the Toolify lane-2 and
+     Microlaunch lane-3 attempts today), but the policy JSON is the
+     authoritative guard and it has not been updated.
+  2. **Email-OTP account gate (human account action).** The free flow
+     requires email-OTP sign-up (launch.txt: `POST /api/v1/auth/request-code`
+     → user pastes the code → verify). launch.txt is explicit: "Never guess,
+     prefill, or reuse an email from context — ask, wait, accept what they
+     type." No fleet inbox exists in this environment (the only email tooling
+     is send-only `notify-email`), so the agent cannot receive or paste the
+     OTP; account creation stays with Nish per the 2026-08-11 decision
+     ("Nish signs up (email OTP)").
+- Paid skip-the-line decision recorded (the packet's "record paid
+  skip-the-line decision"): **Skip the Waiting Line $29.99 remains DEFERRED to
+  Nish's spend call.** No spend authorization exists in `agent-state`
+  (authorizations/ holds only the sol-xhigh worker grant; the dispatch ledger
+  has no Uneed entry). The free tier costs nothing — the blocker is the
+  account gate, not money — but STWL dates are bookable and the launch guide
+  text is unchanged.
+- Live re-verification 2026-08-12 (all grounded in live HTTP fetches; Uneed
+  is curl-friendly, unlike Toolify):
+  - `GET /api/v1/launch-dates` (public): `free_next_available: 2027-02-03`
+    (175 days out — the honest wait is now ~6 months, up from 173 days /
+    2027-01-31 on 2026-08-11); STWL dates bookable from 2026-08-14 (soonest).
+  - No duplicate (public search API, live): `q=aiconverter` → no
+    aiconverter.app result (unrelated converters only: TailConverter, Heic
+    Converter, SVG Converter, Convertology AI, ...). Slug probes
+    /tool/ai-converter, /tool/aiconverter, /tool/ai-converter-app → all 404.
+  - All five exact-category peers still live, HTTP 200: StatementSheet
+    (/tool/statementsheet), Bank PDF Converter (/tool/bank-pdf-converter),
+    BankConv (/tool/bankconv), PdfBuddy (/tool/pdfbuddy), BankScanPro
+    (/tool/bankscanpro).
+  - https://www.uneed.best/launch.txt live, unchanged: official Agent Launch
+    Guide (email OTP → bearer → `POST /api/v1/products` →
+    `POST /api/v1/launches`, tier `free`/`stwl`; free accounts keep ONE
+    product in the waiting line at a time). Still positive evidence for the
+    venue research desk to review uneed.best; the guard stays exit-4 until
+    the policy ledger is updated.
+  - ToS (https://www.uneed.best/terms-of-use, "Last Updated: July 31, 2025")
+    unchanged: the prohibited-uses section targets automated engagement abuse
+    ("scripts to send comments or messages", "bots, scripts, or automated
+    tools to manipulate votes, rankings, or any other metrics"), not product
+    submission; no blanket robot/spider/crawl prohibition.
+  - Submit page live, HTTP 200: https://www.uneed.best/submit-a-tool — "No
+    account needed to start — we'll scrape your page first, then ask you to
+    sign up to save it" (unchanged).
+  - Kit reference pages all live HTTP 200: `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Next action (unchanged): Nish signs up (email OTP) and submits the free
+  "Join the line" launch using the kit above (or picks a Skip-the-Line date
+  at $29.99 on his spend call), then this file should be updated with the
+  public tool URL (uneed.best/tool/{slug}). The only route to an
+  agent-executed submission would be the venue research desk reviewing
+  uneed.best (its launch.txt is the venue's own official agent flow and its
+  ToS has no blanket crawl ban) and adding it to the policy allowlist.
 
 ## Open-Launch
 
