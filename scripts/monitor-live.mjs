@@ -87,11 +87,14 @@ async function checkAdminOverview(token) {
   if (warningAlerts.length) warnings.push({ check: "admin-alerts", warningAlerts });
 
   const cloudConvert = body.cloudConvert || {};
+  const previewFunnel = Array.isArray(body.previewFunnel) ? body.previewFunnel : [];
   return {
     ok: criticalAlerts.length === 0,
     status: response.status,
     generatedAt: body.generatedAt || "",
     alerts,
+    funnel: summarizeFunnel(previewFunnel),
+    previewFunnel,
     cloudConvert: {
       configured: Boolean(cloudConvert.configured),
       dailyLimit: cloudConvert.dailyLimit,
@@ -108,4 +111,18 @@ async function checkAdminOverview(token) {
     },
     usage24h: body.usage24h || null
   };
+}
+
+// Named live funnel visit counts for the last 24 hours, derived from the
+// admin overview's per-event rows (page_view, preview_success, checkout_click,
+// finalize_success, download_success, ...). Keys are camelCase event types.
+function summarizeFunnel(rows) {
+  const summary = {};
+  for (const row of rows || []) {
+    const eventType = String(row.event_type || "").replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    if (!eventType) continue;
+    const count = Number(row.count);
+    summary[eventType] = Number.isFinite(count) ? count : 0;
+  }
+  return summary;
 }
