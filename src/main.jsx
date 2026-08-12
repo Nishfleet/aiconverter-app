@@ -26,6 +26,7 @@ import {
   buildConversionCatalog,
   capableOutputFormats,
   confidenceDetailsForConverter,
+  conversionRequestHref,
   isLiveConverter,
   isLocalConverter,
   isProviderConverter
@@ -850,10 +851,15 @@ function App() {
   );
   const popularConversions = useMemo(
     () => [
-      ...TOP_CONVERSION_REQUESTS
-        .filter((request) => request.qaPriority === "core" || universalProviderReady)
-        .map((request) => request.label),
-      ...(universalProviderReady ? ["Docs, images, audio, video, archives", "Many more formats available"] : [])
+      ...TOP_CONVERSION_REQUESTS.filter((request) => request.qaPriority === "core" || universalProviderReady).map(
+        (request) => ({ label: request.label, href: conversionRequestHref(request) })
+      ),
+      ...(universalProviderReady
+        ? [
+            { label: "Docs, images, audio, video, archives", href: "/formats/" },
+            { label: "Many more formats available", href: "/formats/" }
+          ]
+        : [])
     ],
     [universalProviderReady]
   );
@@ -2729,9 +2735,15 @@ function App() {
                     ref={copyIndex === 0 ? tickerGroupRef : null}
                   >
                     {popularConversions.map((item) => (
-                      <span className="ticker-chip" key={`${copyIndex}-${item}`}>
-                        {item}
-                      </span>
+                      <a
+                        className="ticker-chip"
+                        href={item.href}
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        key={`${copyIndex}-${item.label}`}
+                      >
+                        {item.label}
+                      </a>
                     ))}
                   </div>
                 ))}
@@ -2744,7 +2756,9 @@ function App() {
           </div>
           <ul className="sr-only">
             {popularConversions.map((item) => (
-              <li key={item}>{item}</li>
+              <li key={item.label}>
+                <a href={item.href}>{item.label}</a>
+              </li>
             ))}
             <li>{popularConversionsSummary.title}. {popularConversionsSummary.detail}</li>
           </ul>
