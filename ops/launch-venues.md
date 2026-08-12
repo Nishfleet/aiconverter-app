@@ -40,7 +40,9 @@ copy source):
 - **Toolbit.ai — NEEDS_NISH_STEP.** The free community listing requires an
   account and the Launch Badge, and the venue terms prohibit automated access.
   Nish must complete the manual login/submission and decide whether to install
-  the badge. No submission is claimed for this venue.
+  the badge. No submission is claimed for this venue. (Lane attempt 2026-08-12:
+  NOT EXECUTED — venue still not allowlisted in the fleet venue policy, so the
+  agent must not drive the submission; see the Toolbit.ai section below.)
 - **Toolify.ai — SKIPPED_PAID.** Current listing is paid only ($99); the spend
   was not made. (Lane attempt 2026-08-12: NOT EXECUTED — venue still not
   allowlisted in the fleet venue policy, and the $99 spend is a Nish-only
@@ -601,6 +603,77 @@ copy-paste ready:
   - https://aiconverter.app/sample-csv/
   - https://aiconverter.app/trust/
   - https://aiconverter.app/formats/
+
+### Fleet lane attempt 2026-08-12 (Toolbit.ai — NOT EXECUTED)
+
+- Attempted by lane 1 (packet: "List the product on Toolbit.ai (free plan
+  first; record paid/verified decision)"). The listing was **not submitted**:
+  the decision above still binds. `agent-state/growth-loop/venue-policy.json`
+  (updated 2026-08-08) has no toolbit.ai entry — `automation_disposition:
+  unknown`, not in the allowlist — so `venue-claim claim` exits 4 and the
+  agent must not drive the browser submission. The free flow is also a human
+  account action (sign-in wall at `/submit/tool?plan=free`) and its
+  verification step (embedding the Launch Badge) is account-gated too, and
+  ToS section 7 prohibits automated access (same class of language as Product
+  Hunt's prohibition). No spend authorization exists in `agent-state`
+  (authorizations/ holds only the sol-xhigh worker grant; the dispatch
+  ledger has no Toolbit entry). The `venue-claim` binary is not installed in
+  the lane environment, but the policy JSON is the authoritative guard and is
+  unchanged; this record is the honest NOT-EXECUTED lane outcome the packet
+  requires.
+- Live re-verification (2026-08-12, plain HTTPS GETs — toolbit.ai serves
+  curl without a Cloudflare challenge):
+  - No duplicate: site search `q=aiconverter`
+    (https://toolbit.ai/search?q=aiconverter, "aiconverter - AI Tools
+    Search") returns only the same unrelated tools as the 2026-08-11 record —
+    ConvertFiles.ai (/ai-tool/convertfiles-ai), ipic.ai (/ai-tool/ipic-ai),
+    AICoverGen (/ai-tool/ai-cover-generator), and "AI Convert"
+    (/ai-tool/ai-to-human-text-converter) — and zero `aiconverter.app`
+    mentions in the results.
+    https://toolbit.ai/ai-tool/ai-converter still serves a soft-404 page
+    (HTTP 200 shell, `<title>Page Not Found - 404 Error | Toolbit.ai</title>`).
+  - Exact-category competitors still live: StatementSheet
+    (https://toolbit.ai/ai-tool/statementsheet — "Convert PDF bank
+    statements to Excel or CSV", Data Extraction, 9.5K monthly visits;
+    `visits":9455` in the page data) and Rocket Statements
+    (https://toolbit.ai/ai-tool/rocketstatements — "Convert Bank Statements
+    to Excel, CSV & JSON", Document Analysis / OCR). The venue hosts the
+    category; only this product's listing is missing.
+  - Submit page live, HTTP 200: https://toolbit.ai/submit ("Submit Center") —
+    FAQ still: "Free community listings require embedding our Launch Badge on
+    your website and are reviewed in up to 3 days."; the paid **Launch Tool
+    $29 / One-time** plan is still offered on the page.
+  - `/submit/tool?plan=free` still renders the sign-in wall ("Sign In -
+    Toolbit.ai"); `/launch-badge` still 404 — the badge snippet stays
+    account-gated.
+  - ToS (https://toolbit.ai/terms-and-conditions, "Last updated: July 20,
+    2026", re-read live 2026-08-12): section 7 "Prohibited Uses" still
+    prohibits "any robot, spider, or other automatic device, process, or
+    means to access Service for any purpose, including monitoring or copying
+    any of the material on Service" — same class of language as Product
+    Hunt's prohibition; flag for the venue research desk.
+  - Kit reference pages all live HTTP 200 (2026-08-12): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+    `/pricing/` and `/receipt-to-csv/` still 404, so the kit claims none of
+    those routes.
+- Paid/verified decision (re-recorded 2026-08-12, unchanged): **free
+  community listing first** — "Launch Tool $0 / Forever" with Launch Badge
+  verification, reviewed in up to 3 days, permanent directory listing. The
+  paid **Launch Tool $29 / One-time** (listed within 24h, blue verified
+  badge, sidebar featured 1 day, one X post) stays deferred to Nish's spend
+  call. The free listing's "verified" step — embedding Toolbit's Launch
+  Badge snippet on aiconverter.app — is a follow-up owner action that needs
+  a tiny deploy once Nish has the snippet from the submission flow (the
+  snippet is account-gated and `/launch-badge` still 404).
+- Next action (unchanged): Nish signs in (Google or email) and submits using
+  the kit above, embeds the Launch Badge snippet on aiconverter.app (tiny
+  deploy) to complete the free-verified listing, then this file should be
+  updated with the public tool URL. The only route to an agent-executed
+  submission would be the venue research desk reviewing toolbit.ai's ToS §7
+  (which, like Product Hunt's, prohibits automated access) and adding the
+  venue to the policy allowlist. After the listing, confirm the tool appears
+  in search `q=aiconverter` on toolbit.ai and flip this venue's status line
+  to live.
 
 ## Toolify.ai
 
