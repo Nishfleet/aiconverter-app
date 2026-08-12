@@ -1,5 +1,83 @@
 # Lane evidence — aiconverter-app lane 1
 
+## 2026-08-12 — Bing/DuckDuckGo zero-indexation: land the IndexNow key file + allowlist + durable doc on main-track (packet item: Bing/DuckDuckGo indexation is zero for an 18-month-old domain; no Bing Webmaster ownership or sitemap-submission evidence exists)
+
+**Verdict: the agent-executable half of this item is now shipped on main-track
+via this run's PR — the IndexNow key file
+(`public/e141d4be-837e-442e-9336-989051af9596.txt`), its Gitleaks allowlist
+(`.gitleaks.toml`), and the refreshed durable record + manual kit
+(`ops/bing-indexation.md`). The durable fix remains Nish-held: Bing Webmaster
+ownership verification and sitemap submission are account actions (Microsoft
+sign-in) with no API credential, no DNS write path, and no Pages deploy path
+available to any lane (re-verified 2026-08-12). The item closes when (1) the
+next Pages deploy publishes the key file, (2) Nish runs the kit steps, and
+(3) `site:aiconverter.app` returns the domain on Bing and DDG.**
+
+### Why this lane re-ships what the 2026-08-11 lanes produced
+
+- The 2026-08-10/2026-08-11 bing-indexation work (`ops/bing-indexation.md`,
+  the IndexNow key file, `.gitleaks.toml`) was committed on
+  `lane1/bing-indexation`, `lane1/bing-indexation-20260811` and
+  `lane1/indexnow-gitleaks-unblock` but **never landed on main** — no merged
+  PR. Live check 2026-08-12:
+  `https://aiconverter.app/e141d4be-837e-442e-9336-989051af9596.txt` returns
+  404, so the site is still not IndexNow-ready and the one-shot submission
+  cannot run. This lane merges those artifacts onto a fresh branch from
+  `origin/main` so the next deploy carries them.
+
+### What was delivered (this PR, branch `lane1/bing-indexation-20260812`)
+
+- `public/e141d4be-837e-442e-9336-989051af9596.txt` — IndexNow key file
+  (content: `e141d4be-837e-442e-9336-989051af9596`). IndexNow keys are
+  owner-generated UUIDs (no Microsoft account involved) and the key file is
+  public by protocol design, so committing it is not an ownership claim.
+- `.gitleaks.toml` — allowlists exactly that UUID (Gitleaks' default
+  `generic-api-key` rule flags it in the doc and submission curl) plus the
+  key-file path; verified with the same config semantics the CI secret-scan
+  gate uses.
+- `ops/bing-indexation.md` — refreshed durable record: 2026-08-12
+  re-verification (key file 404 live; robots.txt 200 + sitemap reference;
+  sitemap.xml 200 with 22 URLs, `receipt-to-csv/` still missing live on the
+  stale deploy; DDG html endpoint still 202 anomaly-challenge for agents;
+  Bing `site:` query still captcha-challenged from this datacenter IP), the
+  dated decision (manual submission by Nish; automated submission declined),
+  the copy-paste manual kit, and the one-shot IndexNow submission command to
+  run once the key file is live.
+
+### Verification (2026-08-12)
+
+- Live: key file 404 (confirms it never deployed); `robots.txt` 200 with
+  `Sitemap: https://aiconverter.app/sitemap.xml`; `sitemap.xml` 200, valid
+  XML, 22 URLs; DDG `html` endpoint 202 anomaly-challenge; Bing `site:` page
+  contains captcha/challenge markup (agent-side reading blocked).
+- Local gates: `npm run check:pricing` pass; `node --test tests/*.test.mjs`
+  pass; `npm run build` pass; gitleaks detect clean with the allowlisted
+  config (no leak findings on the branch).
+- CI gates on the PR: pricing, unit tests, build, secret scan (all required
+  by branch protection).
+
+### Why the item cannot close from a lane (re-verified 2026-08-12)
+
+- Bing Webmaster ownership + sitemap submission need a Microsoft account
+  (account action = Nish-held, per fleet policy).
+- No Bing Webmaster API / Microsoft Graph credential in the lane environment.
+- No Porkbun (DNS TXT) write path — DNS is authoritative at Porkbun and no
+  API credential is available.
+- No deploy path: no `wrangler` on PATH, no `CLOUDFLARE_API_TOKEN` in the
+  environment; fleet token still lacks Pages:Edit and the releaser still
+  refuses the first release without a known-good baseline. The key file stays
+  inert until the next Pages deploy of `main`.
+
+### Next action (Nish or a future lane after deploy)
+
+Run the one-shot IndexNow submission (curl in `ops/bing-indexation.md`) once
+`https://aiconverter.app/e141d4be-837e-442e-9336-989051af9596.txt` returns
+200 — credential-free, no account — then Nish performs the Bing Webmaster kit
+steps. Update `ops/bing-indexation.md` with the verification receipt and
+submission date after.
+
+---
+
 ## 2026-08-11 — Five observed intent-matched customer trials with free full export (scout item)
 
 **Verdict: the trial kit, grant decision, and free-export gate verification are
