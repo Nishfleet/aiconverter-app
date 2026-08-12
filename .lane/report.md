@@ -582,3 +582,33 @@ or drive the submission form.
   page, /projects/submit sign-in wall, robots.txt, ToS, the open-source repo
   constants, and the four canonical product links (2026-08-11) — all as
   recorded above.- No code changed; docs only (`ops/launch-venues.md`, `.lane/report.md`).
+
+## 2026-08-12 — self-directed walk: pricing/security "Upload file" CTAs leave the workspace out of view (UX dead-end)
+
+**Verdict: fixed on PR #72 (`lane1/pricing-upload-feedback-20260812`).** The
+pricing-card and security-section **Upload file** buttons open the native
+file picker, but after choosing a file the page stayed scrolled at the
+bottom while the conversion workspace (file name, format picker, instant
+price, and the "Generate free preview" button) sat ~1900px above the
+viewport — zero feedback, dead-end-looking flow.
+
+### What was delivered
+
+- `src/main.jsx`: `scrollWorkspaceIntoView()` helper — smooth-scrolls the
+  `#start` workspace into view only when its top is outside the viewport
+  (guarded, so normal uploads from the workspace itself never jump);
+  `handleFileChange` calls it after applying the new file.
+- `tests/pricing-upload-feedback.test.mjs`: 4 regression tests locking the
+  helper, the visibility guard, the `handleFileChange` wiring, and the
+  CTA → picker path.
+
+### Verification (2026-08-12, Chromium vs `vite preview` build)
+
+- File picked from the pricing section → page lands on the workspace with
+  the preview button visible (scrollY 2030 → 590).
+- File picked at the top of the page → scrollY stays 0 (guard prevents jumps).
+- Mobile (390×844): no horizontal overflow; upload flow works end-to-end.
+- Repo gates: `npm run check:pricing` pass, `node --test tests/*.test.mjs`
+  124/124 pass (120 baseline + 4 new), `npm run build` green,
+  `npm audit` 0 vulnerabilities. PR #72 CI: pricing / unit tests / build /
+  gitleaks / classify all green.
