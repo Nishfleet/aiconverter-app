@@ -5,7 +5,6 @@ Live-production claims only: everything below is grounded in live pages and
 `/llms.txt` (verified 2026-08-09 for Product Hunt and BetaList, re-verified
 2026-08-10; WeLikeTools and xix.ai verified 2026-08-10 and re-verified
 2026-08-11; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11;
-2026-08-11; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11;
 Toolify.ai verified 2026-08-11; Microlaunch verified 2026-08-11; Uneed
 (uneed.best) verified 2026-08-11; Open-Launch verified 2026-08-11).
 Automated submission is blocked for all nine venues by the fleet venue policy
@@ -19,6 +18,42 @@ desk should weigh when reviewing uneed.best. Account actions (and the xix.ai
 $9.90, Toolify.ai $99, Microlaunch Pro Launch $39, Uneed Skip the Waiting Line
 $29.99, and Open-Launch Premium Launch $12 spend decisions) stay with Nish.
 The kits below make each manual submission a copy-paste job.
+
+## Submission outcomes (2026-08-11)
+
+As of 2026-08-11 no venue has a live aiconverter.app listing and no submission
+was made from the fleet. Status per venue (the kits below remain the prepared
+copy source):
+
+- **Product Hunt — NEEDS_NISH_STEP.** Copy is prepared (kit below). Nish must
+  choose/confirm the launch date and publish manually: Product Hunt prohibits
+  automated access, so no agent action is possible on this venue.
+- **BetaList — SKIPPED_PAID.** BetaList's official Support page (verified
+  2026-08-11) now states all submissions are paid and no free option exists.
+  This supersedes the stale prepared text below claiming the standard
+  submission is free; the kit is retained as copy reference only.
+- **WeLikeTools — NEEDS_NISH_STEP.** Free submission is available, but the
+  submit page requires Google login/OAuth. Nish must approve/complete the
+  Google sign-in, then the prepared copy can be submitted.
+- **xix.ai — SKIPPED_PAID.** Current listing is paid only ($9.90); the spend
+  was not made.
+- **Toolbit.ai — NEEDS_NISH_STEP.** The free community listing requires an
+  account and the Launch Badge, and the venue terms prohibit automated access.
+  Nish must complete the manual login/submission and decide whether to install
+  the badge. No submission is claimed for this venue.
+- **Toolify.ai — SKIPPED_PAID.** Current listing is paid only ($99); the spend
+  was not made.
+- **Microlaunch — NEEDS_NISH_STEP.** A free regular submission exists, but
+  sign-in (Google or X) is required. Nish must approve/complete the OAuth
+  sign-in, then the prepared copy can be submitted.
+- **Uneed — NEEDS_NISH_STEP.** A public preview for AI Converter was generated
+  in Nish's browser (2026-08-11), but the venue scraped noncanonical copy —
+  preview only, NOT a submission. The next step requires account
+  creation/login; before scheduling the launch, replace the scraped
+  description with the exact approved description in the Uneed kit below.
+- **Open-Launch — SKIPPED_PAID.** The current direct launch is paid ($12
+  Premium Launch) and no usable free route exists now (free slots booked into
+  2027); the spend was not made.
 
 ## Status ledger (fleet re-verification 2026-08-10)
 
@@ -376,9 +411,11 @@ copy-paste ready:
   is not in the venue policy allowlist (`automation_disposition: unknown`), so
   `venue-claim claim` exits 4 — the agent must not drive a browser submission.
   Submission is a human account action, same as Product Hunt.
-- Standard submission is free; "Priority listing" is an optional paid upsell
-  (faster review queue, no acceptance guarantee). Editorial discretion applies:
-  featuring is not guaranteed.
+- **Superseded 2026-08-11:** the 2026-08-09 claim that the standard submission
+  is free is stale — BetaList's official Support page now states all
+  submissions are paid and no free option exists (outcome: SKIPPED_PAID, see
+  the submission outcomes ledger above). The kit below is retained as copy
+  reference only.
 - Next action: Nish signs in and submits using the kit below, then this file
   should be updated with the public startup URL.
 
@@ -902,4 +939,5 @@ copy-paste ready:
   the open-source repo (github.com/openlaunch-org/Open-Launch: 10 premium
   slots daily, 8:00 AM UTC launch hour, payment link inside the signed-in
   flow), and the four canonical product links (all HTTP 200 on 2026-08-11;
-  /pricing/ and /receipt-to-csv/ remain 404 and are not claimed in the kit).- Per fleet policy, submissions stay manual-only (account actions are human).
+  /pricing/ and /receipt-to-csv/ remain 404 and are not claimed in the kit).
+- Per fleet policy, submissions stay manual-only (account actions are human).
