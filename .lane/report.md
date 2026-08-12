@@ -667,3 +667,87 @@ or drive the submission form.
   page, /projects/submit sign-in wall, robots.txt, ToS, the open-source repo
   constants, and the four canonical product links (2026-08-11) — all as
   recorded above.- No code changed; docs only (`ops/launch-venues.md`, `.lane/report.md`).
+
+---
+
+# 2026-08-12 — Stale unmatched Dodo payment event: code acknowledgment merged; live warning still red because production runs pre-fix code (item 5fd1b106f5, scout 2026-08-09)
+
+**Verdict: the item's code half is COMPLETE and MERGED (PR #47, commit
+`405e3b2`, identical to the two stale unmerged attempts
+`lane1/ack-stale-unmatched-dodo-event` and `lane1/unmatched-dodo-warning-green`).
+The live monitor warning is STILL RED on 2026-08-12 — re-verified live — because
+production runs pre-fix code. The remaining step is a Cloudflare Pages deploy,
+which no credential or mechanism on this VPS can perform today (verified below,
+all live). No D1 cleanup is needed: the merged filter excludes the zero-amount
+sandbox event, so a deploy alone turns the warning green.**
+
+### Item recap
+
+The live monitor has warned `Unmatched Dodo payments: 1 payment event did not
+match cleanly` since 2026-07-19 for `pay_0NjXVYhB1zUB8cvHx15cO`
+(checkout `cks_0NjXV87kao4KZT53vWL41`, `payment.succeeded`, amount **0** USD,
+no job_id, `match_status job_not_found`). No customer money moved, so it is
+Dodo sandbox/test noise, not a reconcilable payment. Decision 2026-08-10
+(accept path a) = exclude zero-amount `payment.succeeded` events with no app
+job from the actionable unmatched-payment filter, mirroring the existing
+`payment.failed` exemption. Real paid-but-unmatched events (amount > 0, or any
+job_id present) still alert.
+
+### Live re-verification 2026-08-12 (private monitor + admin overview)
+
+- `AICONVERTER_MONITOR_STRICT` run against https://aiconverter.app with the
+  private admin token: health `ok/ready`, no critical alerts, but
+  `severity: warning` → "Unmatched Dodo payments: 1 payment event did not
+  match cleanly." — **warning still red**.
+- Admin overview `unmatchedPayments` still returns the 2026-07-19 zero-amount
+  event row, and the row **lacks the `amount` column** that merged fix
+  `405e3b2` adds to the unmatched-payments SQL — direct proof production
+  functions are pre-fix.
+- Live HTML still serves `assets/index-Dqg0j7kd.js` (the pre-sendBeacon
+  bundle, per the earlier finding in this file) vs `assets/index-BVp--8SO.js`
+  from a fresh `origin/main` build — production is many merges behind main.
+
+### Why the deploy cannot be done from a lane (all verified 2026-08-12)
+
+1. `wrangler whoami` → "You are not authenticated." — no OAuth session.
+2. Fleet `CLOUDFLARE_API_TOKEN` (`~/.config/fleet-console/cf.env`) is
+   **Workers-only**: `GET /accounts/<id>/pages/projects/aiconverter/deployments`
+   → `10000 Authentication error`; D1 query
+   `POST /accounts/<id>/d1/database/376080eb…/query` → `7403 not authorized`;
+   Workers scripts list succeeds. Pages:Edit and D1 are both absent.
+3. No deploy workflow exists in the repo: `.github/workflows/` on `main`,
+   `ci/pr-checks`, `ci/vps-verify-runners`, and `review-gate` contain only
+   `ci.yml`, `review-gate.yml`, `secret-scan.yml`; `deploy-production.yml`
+   (and `d1-remote-restore-evidence.yml`) referenced by the fleet
+   `auto-deploy.py` return HTTP 404 from GitHub Actions.
+4. Fleet release tracking is reporting phantom deploys (fleet-infra defect,
+   outside this worktree): `last-good-release.json` records sha
+   `95ab18588c0d14f33013df3c693c52e1b7b6ca94` and run 31555365351 as
+   "shipped" 2026-08-12T07:56, but that sha and run do not exist on GitHub,
+   and the fleet's own `release-state-aiconverter-app.json` still pins the
+   live marker to the old bundle `assets/index-Dqg0j7kd.js`. The auto-deploy
+   "shipped 2 change(s)" claim did not update production.
+
+### Remaining step to close the item (Nish-held)
+
+One Cloudflare Pages deploy of a clean `origin/main` build with a
+Pages:Edit-capable credential:
+
+```bash
+# from a clean origin/main checkout, with a Pages:Edit credential
+SAFE_DEPLOY_APPROVED='pages deploy dist --project-name aiconverter --branch main' \
+  wrangler pages deploy dist --project-name aiconverter --branch main
+```
+
+After deploy the monitor warning goes green automatically (the merged
+zero-amount filter drops the stale sandbox event; no D1 DELETE/UPDATE is
+needed and no such admin surface exists). Also flag the fleet release-tracking
+defect in step 4 for the lane manager / release desk.
+
+### Checks on this lane (2026-08-12, clean `origin/main` checkout)
+
+- `npm run check:pricing` — Pricing is consistent.
+- `node --test tests/*.test.mjs` — 120 pass, 0 fail.
+- `npm run build` — green; bundle `assets/index-BVp--8SO.js`.
+- Live monitor (strict) — health green; the one unmatched-payment warning
+  persists (pre-fix production), as recorded above.
