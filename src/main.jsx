@@ -45,6 +45,20 @@ const TICKER_MIN_COPY_COUNT = 8;
 const BRAND_NAME = "AI Converter";
 const BATCH_RETURN_KEY = "aiconverter_batch_return";
 
+// Brings the conversion workspace back into view after a file is picked from a
+// distant CTA (e.g. the pricing-card or security-section "Upload file" buttons).
+// Guarded so normal uploads from the workspace itself never cause a scroll jump.
+function scrollWorkspaceIntoView() {
+  const workspace = document.getElementById("start");
+  if (!workspace) return;
+  const rect = workspace.getBoundingClientRect();
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  const workspaceTopVisible = rect.top >= 0 && rect.top < viewportHeight * 0.75;
+  if (!workspaceTopVisible) {
+    workspace.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
 function BrandName({ className = "" }) {
   return <strong className={classNames("brand-name", className)}>{BRAND_NAME}</strong>;
 }
@@ -1395,6 +1409,7 @@ function App() {
       turnstileState: "idle"
     });
     event.target.value = "";
+    scrollWorkspaceIntoView();
   }
 
   function handleUploadAnotherFile() {
