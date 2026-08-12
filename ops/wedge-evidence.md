@@ -11,10 +11,11 @@ evidence item, deliberately, per the backlog item's accept:
 > paid-quality wedge vs another wedge); no code or payment changes in this
 > item.
 
-Snapshot method: real rendered browser (camofox anti-detection Chromium engine,
-the same browser class the 2026-08-08 scout evidence used), Google `hl=en`,
-logged 2026-08-12 ~12:02Z. Every result below is the resolved destination URL
-(followed through Google's `/goto` redirect), not a redirect token.
+Snapshot method: real rendered browser (camofox anti-detection browser —
+Firefox-based engine, the same browser class the 2026-08-08 scout evidence
+used), Google `hl=en`, logged 2026-08-12 ~12:02Z. Every result below is the
+resolved destination URL (followed through Google's `/goto` redirect), not a
+redirect token.
 
 ## Fresh snapshot (2026-08-12, ~12:02Z) — core phrase, page 1
 
