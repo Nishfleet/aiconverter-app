@@ -49,7 +49,9 @@ copy source):
   Nish must complete the manual login/submission and decide whether to install
   the badge. No submission is claimed for this venue.
 - **Toolify.ai — SKIPPED_PAID.** Current listing is paid only ($99); the spend
-  was not made.
+  was not made. (Lane attempt 2026-08-12: NOT EXECUTED — venue still not
+  allowlisted in the fleet venue policy, and the $99 spend is a Nish-only
+  decision; see the Toolify.ai section below.)
 - **Microlaunch — NEEDS_NISH_STEP.** A free regular submission exists, but
   sign-in (Google or X) is required. Nish must approve/complete the OAuth
   sign-in, then the prepared copy can be submitted.
@@ -672,6 +674,59 @@ copy-paste ready:
 - Post-listing check: confirm the tool appears on
   https://www.toolify.ai/tag/Bank%20Statement%20to%20CSV and that search
   `q=aiconverter` returns the listing; update this file with the public URL.
+
+### Fleet lane attempt 2026-08-12 (Toolify.ai — NOT EXECUTED)
+
+- Attempted by lane 2 (packet: "List the product on Toolify.ai (paid $99
+  submit path)"). The listing was **not submitted and the $99 was not paid**:
+  the decision above still binds. `agent-state/growth-loop/venue-policy.json`
+  (updated 2026-08-08) has no toolify.ai entry — `automation_disposition:
+  unknown`, not in the allowlist — so `venue-claim claim` exits 4 and the
+  agent must not drive the browser submission. The $99 one-time fee is a
+  spend decision only Nish can make ("Money boundary" above), and the
+  Fulfillment Policy requires account registration (human account action).
+  No spend authorization exists in `agent-state` (authorizations/ holds only
+  the sol-xhigh worker grant; the dispatch ledger has no Toolify entry). The
+  `venue-claim` binary is not installed in the lane environment, but the
+  policy JSON is the authoritative guard and is unchanged; this record is the
+  honest NOT-EXECUTED lane outcome the packet requires.
+- Live re-verification (2026-08-12, headless Chromium JS-rendered; curl is
+  Cloudflare-challenged):
+  - Exact-category tag page live and updated today:
+    https://www.toolify.ai/tag/Bank%20Statement%20to%20CSV — "Discover Best AI
+    Tools for Bank Statement to CSV", "The best ai tools for Bank Statement to
+    CSV are: LedgerBox.", "Number of Als: 2", "Updated time: August 12 2026".
+    No AI Converter on the page.
+  - Competitor listing live: https://www.toolify.ai/tool/ledgerbox — HTTP 200,
+    "LedgerBox: AI-powered bank statement converter from PDF to Excel and CSV."
+  - No duplicate: https://www.toolify.ai/tool/ai-converter → HTTP 404 "Page
+    not found"; site search API (the autocomplete endpoint)
+    `GET https://www.toolify.ai/self-api/v1/best-for-professions?search=aiconverter`
+    → `{"total": 0, "data": []}`; `search=ai-converter` and
+    `search=ai converter` → also total 0. The 2026-08-11 JS-rendered search
+    record ("Sorry, there are no tools containing your keywords at the
+    moment") still stands.
+  - Submit page live, HTTP 200: https://www.toolify.ai/submit — "Total:
+    $ 99", "Pay $ 99", "No queue, listed within 48 hours".
+  - Fulfillment Policy live, HTTP 200: https://www.toolify.ai/fulfillment-policy
+    — "Last updated on August 30, 2024"; "you must register for a paid
+    one-time payment program"; "Toolify may reject your application for an
+    Account for any reason, in our sole discretion"; fee non-refundable
+    ("non-refundable, even if you cancel or do not use any of the benefits");
+    no robot/spider/automated-access prohibition (unchanged from the
+    2026-08-11 record).
+  - Kit reference pages all live HTTP 200: `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Next action (unchanged): Nish signs in, pays $99, and submits using the kit
+  above; the only route to an agent-executed submission would be Nish's dated
+  approval of the $99 spend AND the venue research desk reviewing toolify.ai
+  (its Fulfillment Policy has no robot/spider/automated-access prohibition)
+  and adding it to the policy allowlist. After the listing, confirm the tool
+  appears on https://www.toolify.ai/tag/Bank%20Statement%20to%20CSV and that
+  search `q=aiconverter` returns the listing, then flip this venue's status
+  line to live.
 
 ## Microlaunch
 
