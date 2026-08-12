@@ -28,6 +28,8 @@ The monitor fails on:
 - any critical private admin alert
 - any private warning when strict mode is enabled
 
+With an admin token configured, the monitor output also includes live funnel visit counts for the last 24 hours (`overview.funnel` with named counts such as `pageView`, `previewSuccess`, `checkoutClick`, `finalizeSuccess`, `downloadSuccess`, plus `overview.previewFunnel` with the raw per-event rows).
+
 Run the controlled provider failover drill after deploys that touch provider routing:
 
 ```bash
