@@ -3,8 +3,8 @@
 Durable record of launch-venue decisions and submission kits for aiconverter.app.
 Live-production claims only: everything below is grounded in live pages and
 `/llms.txt` (verified 2026-08-09 for Product Hunt and BetaList, re-verified
-2026-08-10; WeLikeTools and xix.ai verified 2026-08-10 and re-verified
-2026-08-11; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11;
+2026-08-10; WeLikeTools and xix.ai verified 2026-08-10, re-verified
+2026-08-11 and 2026-08-12; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11;
 Toolify.ai verified 2026-08-11; Microlaunch verified 2026-08-11; Uneed
 (uneed.best) verified 2026-08-11; Open-Launch verified 2026-08-11; SaaSHub
 verified 2026-08-12).
@@ -36,9 +36,14 @@ copy source):
   submission is free; the kit is retained as copy reference only.
 - **WeLikeTools — NEEDS_NISH_STEP.** Free submission is available, but the
   submit page requires Google login/OAuth. Nish must approve/complete the
-  Google sign-in, then the prepared copy can be submitted.
+  Google sign-in, then the prepared copy can be submitted. (Lane attempt
+  2026-08-12: NOT EXECUTED — venue still not allowlisted in the fleet venue
+  policy, and the submit flow is Google-sign-in-gated; see the WeLikeTools
+  section below.)
 - **xix.ai — SKIPPED_PAID.** Current listing is paid only ($9.90); the spend
-  was not made.
+  was not made. (Lane attempt 2026-08-12: NOT EXECUTED — venue still not
+  allowlisted in the fleet venue policy, and the $9.90 spend is a Nish-only
+  decision; see the xix.ai section below.)
 - **Toolbit.ai — NEEDS_NISH_STEP.** The free community listing requires an
   account and the Launch Badge, and the venue terms prohibit automated access.
   Nish must complete the manual login/submission and decide whether to install
@@ -456,7 +461,7 @@ copy-paste ready:
 
 ## WeLikeTools
 
-### Decision (dated 2026-08-10, re-verified 2026-08-11)
+### Decision (dated 2026-08-10, re-verified 2026-08-11 and 2026-08-12)
 
 - **Decision: SUBMIT — manual submission by Nish (free, no fee).**
 - Reason: WeLikeTools is a free, live, category-relevant tools directory with
@@ -499,9 +504,58 @@ copy-paste ready:
   - No bank login and no human review queue; source files deleted after 24 hours.
   - Paid jobs get one automatic stronger redo.
 
+### Fleet lane attempt 2026-08-12 (WeLikeTools — NOT EXECUTED)
+
+- Attempted by lane 1 (packet item c716f1de42: "List the product on the free
+  WeLikeTools directory"). The listing was **not submitted**: the decision
+  above still binds. `agent-state/growth-loop/venue-policy.json` (updated
+  2026-08-08) has no weliketools.com entry — `automation_disposition: unknown`,
+  not in the allowlist — so `venue-claim claim` exits 4 and the agent must not
+  drive the browser submission. Submission also requires a human account
+  action: `https://weliketools.com/submit` renders "Log in to Submit" /
+  "Log in with Google" (re-verified live 2026-08-12), and Google OAuth stays
+  with Nish. The `venue-claim` binary is not installed in the lane
+  environment, but the policy JSON is the authoritative guard and is
+  unchanged; this record is the honest NOT-EXECUTED lane outcome the packet
+  requires.
+- Live re-verification (2026-08-12, plain HTTP; the site is not
+  Cloudflare-challenged for curl):
+  - No duplicate: search `q=aiconverter`
+    (https://weliketools.com/search?q=aiconverter) — "Found 0 results" /
+    "No tools found" (HTTP 200), only the echoed query matches
+    "aiconverter" in the page; no aiconverter.app listing anywhere.
+  - Exact-category competitor still live and still free:
+    https://weliketools.com/tool/bankstatementengine — HTTP 200, "Bank
+    Statement Engine", `datePublished` 2026-07-12, Category: Business &
+    Finance (also APIs, Dev Tools), "Pricing: Free" (free tier: no account,
+    no credit card, 10 pages/day anonymous; free registered account
+    unlimited — no paid subscriptions).
+  - Submit page live, HTTP 200: https://weliketools.com/submit — "Log in to
+    Submit" / "Log in with Google" gate; no fee or paid tier mentioned
+    anywhere on the page.
+  - robots.txt (live 2026-08-12) — `Disallow: /api/`, `Disallow: /auth/`:
+    no public submission API exists; the auth/submit flows are explicitly
+    disallowed for automated access.
+  - Terms (https://weliketools.com/terms, HTTP 200, read live 2026-08-12):
+    prohibited content includes "Using automated tools to scrape or harvest
+    data from our website" — a scraping prohibition (same class of language
+    as Product Hunt's ToS and Toolbit.ai's ToS §7, scoped to data
+    scraping/harvesting rather than listing submission) — flag for the venue
+    research desk; the guard stays exit-4 either way.
+  - Kit reference pages all live HTTP 200: `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Next action (unchanged): Nish signs in with Google and submits using the
+  kit above. The only route to an agent-executed submission would be the
+  venue research desk reviewing weliketools.com and adding it to the policy
+  allowlist (and Nish providing an account or approving the flow). After the
+  listing, confirm search `q=aiconverter` returns the tool and update this
+  file with the public URL, then flip this venue's status line to live.
+
 ## xix.ai
 
-### Decision (dated 2026-08-10, re-verified 2026-08-11)
+### Decision (dated 2026-08-10, re-verified 2026-08-11 and 2026-08-12)
 
 - **Decision: PAID listing at $9.90 recommended; declined for agent-executed
   submission. The $9.90 spend and the submission are Nish's human actions — the
@@ -541,6 +595,44 @@ copy-paste ready:
 - Product type/category: pick the Finance/Productivity tool category in the
   form's category selector.
 - Contact email: use the fleet plus-address for this venue.
+
+### Fleet lane attempt 2026-08-12 (xix.ai — decision recorded, NOT EXECUTED)
+
+- Attempted by lane 1 (packet item c716f1de42: "record a paid/decline
+  decision for xix.ai"). The dated decision stands as recorded above: **PAID
+  listing at $9.90 recommended for evaluation; declined for agent-executed
+  submission** — the $9.90 spend and the account creation are Nish's human
+  actions, and no spend authorization exists (`agent-state/authorizations/`
+  holds only the sol-xhigh-worker-grant; the dispatch ledger has no xix.ai
+  entry). `agent-state/growth-loop/venue-policy.json` (updated 2026-08-08)
+  has no xix.ai entry — `automation_disposition: unknown`, not in the
+  allowlist — so `venue-claim claim` exits 4 and the agent must not drive the
+  browser submission. The `venue-claim` binary is not installed in the lane
+  environment, but the policy JSON is the authoritative guard and is
+  unchanged; this record is the honest NOT-EXECUTED lane outcome the packet
+  requires (the dated decision line above flips to SUBMITTED or DECLINED only
+  after Nish decides on the spend).
+- Live re-verification (2026-08-12, plain HTTP):
+  - No duplicate: site search `q=aiconverter`
+    (https://xix.ai/search?q=aiconverter) — "No results found" (HTTP 200);
+    https://xix.ai/tool/ai-converter.html — HTTP 404.
+  - Exact-term category page still live and still competitor-occupied:
+    https://xix.ai/tool/pdf-bank-statements-converter.html — HTTP 200,
+    "PDF Bank Statements Converter", current tool aibankparser.com
+    (unchanged from the 2026-08-11 record).
+  - Submit page still payment-gated, HTTP 200: https://xix.ai/submit —
+    "$9.90", "No queue, listed within 48 hours", sign-in required
+    ("Sign In" ×8 on page), graphic captcha at the payment step
+    ("captcha" ×9) — unchanged.
+  - Kit reference pages all live HTTP 200: `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Next action (unchanged): Nish decides on the $9.90 spend (SUBMITTED or
+  DECLINED), signs in, and submits using the kit above. After the listing,
+  confirm the tool appears on the "PDF Bank Statements Converter" category
+  page and update this file with the public URL, then flip this venue's
+  status line to live.
 
 ## Toolbit.ai
 
