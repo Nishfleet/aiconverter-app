@@ -1,5 +1,62 @@
 # Lane evidence — aiconverter-app lane 1
 
+## 2026-08-12 — Wedge evidence: core-phrase SERP top-10 is 100% free-positioned, product absent (packet item, fed to the rethink epic)
+
+**Verdict: the evidence item's deliverable is complete and verified live on
+2026-08-12; the dated SERP snapshot and the free-anchor question are recorded
+in `ops/wedge-evidence.md` (this run's PR). The remaining step is the loop's
+rethink epic (E2, `agent-state/aiconverter-app-improvement-loop/epics.md` —
+outside this worktree's scope) recording the evidence and reaching the
+explicit positioning decision, per the item's accept line.**
+
+### Fresh validation (all credential-free, live 2026-08-12, camofox anti-detection browser, Google hl=en)
+
+- Core phrase `bank statement pdf to csv converter` (unquoted), page 1: 9/9
+  organic results free-positioned — bankstatementconverter.com, re-cap.com,
+  bankstatementconverters.ai, financefileconverter.com, zamzar.com,
+  razorextract.com, founderpath.com, r/Bookkeeping thread, ocr.ac. Whole-SERP
+  HTML scan: zero `aiconverter` occurrences (page 1 AND page 2 = 19 organic
+  results total, all free-positioned; quoted variant also zero).
+- Page 1 is a near-verbatim match to the scout's 2026-08-08 snapshot (same
+  titles: "Accurately Convert PDF Bank Statements to CSV", "Free Convert PDF
+  Bank Statements to CSV", "Bank Statement Converter PDF to CSV/Excel (100%
+  FREE)", "FinanceFileConverter", "Bank Statement Converter to CSV - Online and
+  Free", "Razor Extract", "Free Bank Statement Converter — PDF to CSV") — the
+  free-anchored SERP is stable across two runs four days apart, not a sampling
+  artifact.
+- `site:aiconverter.app` (2026-08-12): 10 indexed pages, incl. the exact-topic
+  landing `/convert-bank-statement-to-csv/` (HTTP 200) — indexed but ranking
+  nowhere in pages 1–2 of the core phrase. Product position unchanged:
+  pay-after-preview ₹399/₹799/₹1,399, no free full-conversion anchor.
+- Live product: `/`, `/convert-bank-statement-to-csv/`, `/bank-statement-pdf-to-csv/`
+  all HTTP 200.
+
+### Deliverable
+
+- `ops/wedge-evidence.md` — dated snapshot tables (page 1, page 2, quoted
+  variant), the indexed-presence list, the product's current position, and the
+  explicit free-anchor question for the rethink epic with the three wedge
+  shapes (honest free anchor / paid-quality wedge / another wedge) and the
+  evidence-grounded recommendation to weigh.
+- `ops/wedge-evidence-core-phrase-screenshot-20260812.png` — rendered page-1
+  screenshot artifact.
+- No code or payment changes, per the item's accept.
+
+### Why the epic decision itself cannot be written from a lane
+
+The rethink epic lives in `agent-state/aiconverter-app-improvement-loop/epics.md`
+(loop-owned, outside this worktree's scope — same precedent as the venue
+policy ledger in prior runs). The lane's contract is the evidence feed; the
+loop's next pass records the snapshot and writes the decision line in E2.
+
+### Checks on this lane
+
+- Live SERP checks, site: check, destination resolutions, product HTTP checks
+  (2026-08-12) — all as recorded above.
+- No code changed; docs only (`ops/wedge-evidence.md`,
+  `ops/wedge-evidence-core-phrase-screenshot-20260812.png`, `.lane/report.md`);
+  `git diff --check` clean.
+
 ## 2026-08-11 — Five observed intent-matched customer trials with free full export (scout item)
 
 **Verdict: the trial kit, grant decision, and free-export gate verification are
