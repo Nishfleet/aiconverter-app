@@ -2079,6 +2079,10 @@ function App() {
               Upload a bank statement PDF, choose a Xero, Wave, QuickBooks, or spreadsheet CSV,
               review the rows, and download a free sample before unlocking the full export.
             </p>
+            <p>
+              Built for accountants, bookkeepers, and finance operators preparing
+              accounting imports from bank statements.
+            </p>
           </div>
 
           <section className={classNames("converter-workspace", file && "has-file", result && "has-result")} aria-label="AI conversion workspace">
