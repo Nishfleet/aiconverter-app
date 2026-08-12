@@ -4,6 +4,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "bank",
     input: "PDF",
     output: "QuickBooks CSV",
+    outputId: "quickbooks-csv",
     category: "Data extraction",
     qaPriority: "core"
   },
@@ -12,6 +13,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "bank",
     input: "PDF",
     output: "Xero CSV",
+    outputId: "xero-csv",
     category: "Data extraction",
     qaPriority: "core"
   },
@@ -20,6 +22,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "receipt",
     input: "Image / PDF",
     output: "Expense CSV",
+    outputId: "csv",
     category: "Data extraction",
     qaPriority: "core"
   },
@@ -28,6 +31,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "invoice",
     input: "PDF",
     output: "JSON",
+    outputId: "json",
     category: "Data extraction",
     qaPriority: "core"
   },
@@ -36,6 +40,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "screenshot",
     input: "PNG / JPG",
     output: "CSV",
+    outputId: "csv",
     category: "Data extraction",
     qaPriority: "core"
   },
@@ -44,6 +49,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "image-format",
     input: "JPG",
     output: "PNG",
+    outputId: "png",
     category: "Images",
     qaPriority: "core"
   },
@@ -52,6 +58,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "image-format",
     input: "PNG",
     output: "JPG",
+    outputId: "jpeg",
     category: "Images",
     qaPriority: "core"
   },
@@ -60,6 +67,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "image-format",
     input: "WEBP",
     output: "PNG",
+    outputId: "png",
     category: "Images",
     qaPriority: "core"
   },
@@ -68,6 +76,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "audio-transcript",
     input: "MP3 / WAV / M4A",
     output: "TXT",
+    outputId: "txt",
     category: "Audio",
     qaPriority: "core"
   },
@@ -76,6 +85,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "document-markdown",
     input: "PDF / DOCX / XLSX / HTML",
     output: "MD",
+    outputId: "md",
     category: "Documents",
     qaPriority: "core"
   },
@@ -84,6 +94,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "PDF",
     output: "DOCX",
+    outputId: "docx",
     category: "Documents",
     qaPriority: "provider"
   },
@@ -92,6 +103,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "DOCX",
     output: "PDF",
+    outputId: "pdf",
     category: "Documents",
     qaPriority: "provider"
   },
@@ -100,6 +112,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "PDF",
     output: "JPG",
+    outputId: "jpg",
     category: "Documents",
     qaPriority: "provider"
   },
@@ -108,6 +121,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "HEIC",
     output: "JPG",
+    outputId: "jpg",
     category: "Images",
     qaPriority: "provider"
   },
@@ -116,6 +130,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "SVG",
     output: "PNG",
+    outputId: "png",
     category: "Images",
     qaPriority: "provider"
   },
@@ -124,6 +139,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "MP4",
     output: "MP3",
+    outputId: "mp3",
     category: "Audio",
     qaPriority: "provider"
   },
@@ -132,6 +148,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "MOV",
     output: "MP4",
+    outputId: "mp4",
     category: "Video",
     qaPriority: "provider"
   },
@@ -140,6 +157,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "GIF",
     output: "MP4",
+    outputId: "mp4",
     category: "Video",
     qaPriority: "provider"
   },
@@ -148,6 +166,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "WAV",
     output: "MP3",
+    outputId: "mp3",
     category: "Audio",
     qaPriority: "provider"
   },
@@ -156,6 +175,7 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "XLSX",
     output: "CSV",
+    outputId: "csv",
     category: "Spreadsheets",
     qaPriority: "provider"
   },
@@ -164,10 +184,22 @@ export const TOP_CONVERSION_REQUESTS = [
     converterId: "universal-file",
     input: "CSV",
     output: "XLSX",
+    outputId: "xlsx",
     category: "Spreadsheets",
     qaPriority: "provider"
   }
 ];
+
+/**
+ * Intent deep-link for a highlighted conversion request.
+ * Uses the same `?converter=&output=` parameters the landing pages carry,
+ * so a chip click preselects the exact converter and output in the app.
+ */
+export function conversionRequestHref(request) {
+  if (!request?.converterId) return "/formats/";
+  const params = new URLSearchParams({ converter: request.converterId, output: request.outputId || "" });
+  return `/?${params.toString()}`;
+}
 
 const DIRECT_CONVERSION_PAIRS = {
   bank: [
