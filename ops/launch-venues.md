@@ -6,12 +6,14 @@ Live-production claims only: everything below is grounded in live pages and
 2026-08-10; WeLikeTools and xix.ai verified 2026-08-10 and re-verified
 2026-08-11; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11;
 Toolify.ai verified 2026-08-11; Microlaunch verified 2026-08-11; Uneed
-(uneed.best) verified 2026-08-11; Open-Launch verified 2026-08-11).
-Automated submission is blocked for all nine venues by the fleet venue policy
+(uneed.best) verified 2026-08-11; Open-Launch verified 2026-08-11; SaaSHub
+verified 2026-08-12).
+Automated submission is blocked for all ten venues by the fleet venue policy
 ledger (`agent-state/growth-loop/venue-policy.json` and the `venue-claim`
 guard): Product Hunt is reviewed as prohibiting automation; BetaList,
-WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, Microlaunch, uneed.best, and
-Open-Launch are not yet reviewed (`automation_disposition: unknown`). Uneed is
+WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, Microlaunch, uneed.best,
+Open-Launch, and saashub.com are not yet reviewed
+(`automation_disposition: unknown`). Uneed is
 the first venue that publishes its own official agent-launch API
 (`/launch.txt` + REST `/api/v1`) — strong positive evidence the venue research
 desk should weigh when reviewing uneed.best. Account actions (and the xix.ai
@@ -63,6 +65,15 @@ copy source):
 - **Open-Launch — SKIPPED_PAID.** The current direct launch is paid ($12
   Premium Launch) and no usable free route exists now (free slots booked into
   2027); the spend was not made.
+- **SaaSHub — NEEDS_NISH_STEP.** The free submission is available
+  (https://www.saashub.com/services/submit, URL-only form, then SaaSHub
+  crawls the site and an approval queue applies), but saashub.com is not in
+  the fleet venue policy allowlist (`automation_disposition: unknown`), so
+  the agent must not drive the submission. The optional paid promo (featured
+  listing, $99/month recurring) is a Nish-only spend decision. Nish must
+  complete the manual submission, then the prepared copy below can be
+  submitted. (Lane attempt 2026-08-12: NOT EXECUTED — venue not allowlisted
+  in the fleet venue policy; see the SaaSHub section below.)
 
 ## Status ledger (fleet re-verification 2026-08-10)
 
@@ -1187,3 +1198,180 @@ copy-paste ready:
   flow), and the four canonical product links (all HTTP 200 on 2026-08-11;
   /pricing/ and /receipt-to-csv/ remain 404 and are not claimed in the kit).
 - Per fleet policy, submissions stay manual-only (account actions are human).
+
+## SaaSHub
+
+### Decision (dated 2026-08-12)
+
+- **Decision: SUBMIT — free listing at https://www.saashub.com/services/submit,
+  manual by Nish. The paid promo (featured listing at $99/month, recurring)
+  is recorded and deferred to Nish's spend call — not required for the free
+  listing.**
+- Reason: SaaSHub (https://www.saashub.com, "an independent software
+  marketplace... helping software professionals since 2014", ~564,000 page
+  views/month per the featured-products page) is a live, category-relevant
+  alternatives directory that already hosts the exact category — site search
+  `q=bank statement to csv` returns 1,000+ results including BankScanPro
+  (https://www.saashub.com/bankscanpro-alternatives), Bank Statement
+  Converter (https://www.saashub.com/bank-statement-converter-alternatives),
+  AI Bank Statement (https://www.saashub.com/ai-bank-statement-alternatives,
+  "Convert your bank statements to CSV and Excel format instantly with AI"),
+  Bank-Statement-Conversion, Convert My Bank Statement, Bank Statement Sheet,
+  and Import Bank Statement — so the venue hosts the category; only this
+  product's listing is missing. Search `q=aiconverter` returns "Top 20
+  products relevant to aiconverter" (366+ results) with no aiconverter.app
+  anywhere in the results, and slug probes /aiconverter, /aiconverter-app,
+  /ai-converter-app, and /aiconverter-alternatives all 404 — no duplicate.
+  (Note: /ai-converter redirects to /ai-converter-alternatives, a DIFFERENT
+  product — a generic offline file converter "AI converter", File Management
+  / File Converter categories, marked "Not approved" — not a duplicate of
+  aiconverter.app.)
+- Free option (verified live 2026-08-12): the submit page
+  (https://www.saashub.com/services/submit, form action `/services/new`,
+  GET) takes a single **Website URL** field — "Continue" makes SaaSHub crawl
+  the site and create the listing draft; "all submitted products go through
+  an approval process". Acceptance rules (same page): SaaS/IaaS/PaaS, most
+  software products and apps, mobile apps with decent websites, niche leaders
+  are accepted; dev agencies, email-form landing pages, unreleased products
+  (rejected immediately), free-subdomain sites, and non-English products are
+  not. aiconverter.app qualifies (own domain, released, English). Submission
+  advice on the page: list a few relevant categories (check competitors'
+  categories); list competitors ("The submission will be slowed down and put
+  to the bottom of the queue if there are not listed competitors"); verify
+  the product for higher priority ("You will need an email address on the
+  product's domain"). A second free surface exists: the Startup Directory
+  (https://www.saashub.com/startups — "List your product to our Startup
+  Directory").
+- Paid option recorded (deferred): **Featured listing — $99 / Month ·
+  cancel anytime** ("Feature My Product", https://www.saashub.com/featured-products)
+  — "Shown on your competitors' pages and in your exact categories",
+  estimated 10–18 targeted referrals/month, live in minutes, cancel in one
+  click, no contract, Stripe checkout, "Join 111+ products already featured".
+  The page itself argues the ROI ("One new customer pays for months of
+  featuring"). Decision: this recurring $99/month spend is an optional
+  commercial call by Nish, not required for the free listing; the free
+  submission is the primary action.
+- Money boundary and constraint: saashub.com is not in the fleet venue policy
+  allowlist (`automation_disposition: unknown`; `venue-policy.json` updated
+  2026-08-08 lists only producthunt.com as reviewed, allowlist empty), so
+  `venue-claim claim` exits 4 — the agent must not drive the browser
+  submission, including not triggering the `/services/new` crawl with
+  aiconverter.app's URL (this lane documented the flow from the public
+  submit page only and did NOT start a submission). The optional verification
+  step needs an email address on the product's domain (aiconverter.app) —
+  Nish needs a mailbox on the domain or must skip verification (lower
+  priority, slower queue). ToS (https://www.saashub.com/site/terms, latest
+  update 2023-10-13, copyright New Atlantis Pty Ltd) is a short generic
+  template: SaaSHub "reserves the right to edit or remove software and
+  listings at our own discretion", estimates are not guarantees, alternatives
+  lists are CC BY-SA 4.0 — **no robot/spider/automated-access prohibition**
+  (unlike Product Hunt's ToS and Toolbit.ai's ToS §7); robots.txt (live
+  2026-08-12) only disallows /do-not-crawl/ for Amazonbot and everything for
+  MJ12bot, nothing else — flag for the venue research desk. SaaSHub also
+  publishes a public API (footer "API", https://www.saashub.com/site/api)
+  — positive evidence for a future `automation_disposition` review, like
+  Uneed's launch.txt; the guard stays exit-4 until the ledger is updated.
+  Submission (run the URL form, pick categories, list competitors, optional
+  domain verification) is a human account action, same as the other venues.
+- Next action: Nish opens https://www.saashub.com/services/submit, enters
+  https://aiconverter.app, completes the follow-up steps (categories,
+  competitors, optional verification) using the kit below, then this file
+  should be updated with the public product URL
+  (saashub.com/{slug}-alternatives) once the listing is approved.
+
+### Manual submission kit (copy-paste ready)
+
+- Website URL (the only first-step field): **https://aiconverter.app**
+- Name: **AI Converter**
+- Category suggestions (competitor categories checked 2026-08-12 — the
+  exact-category peers sit under File Management / File Converter and
+  Finance; the site's Finance menu has Personal Finance, Banking, Budgeting,
+  Financial Reporting): **Finance → Banking, File Management → File
+  Converter, Productivity** (pick what the form's selector offers; SaaSHub
+  categories are curated, so choose the closest live ones).
+- Competitors to list (the peers returned by `q=bank statement to csv` —
+  listing them avoids the "bottom of the queue" slowdown): BankScanPro
+  (https://www.saashub.com/bankscanpro-alternatives), Bank Statement
+  Converter (https://www.saashub.com/bank-statement-converter-alternatives),
+  AI Bank Statement (https://www.saashub.com/ai-bank-statement-alternatives),
+  Convert My Bank Statement
+  (https://www.saashub.com/convert-my-bank-statement-alternatives), Bank
+  Statement Sheet (https://www.saashub.com/bank-statement-sheet-alternatives).
+- Description (the crawler will mostly extract from the site; keep this for
+  the review/claim step):
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your
+  > browser. Review sample rows free, then unlock the full extraction only when
+  > the preview looks right. OCR fallback handles scanned statements; low
+  > confidence fails closed with no charge. No bank logins and no human review
+  > queue; source files are deleted after 24 hours.
+
+- Pricing tag suggestion: Freemium (free preview + paid per-page extraction,
+  matching live checkout behavior).
+- Verification (optional, higher priority): SaaSHub asks for an email address
+  on the product's domain — use a mailbox on aiconverter.app if Nish has one,
+  or skip (submission stays valid, just lower priority).
+- Canonical links for the listing (all verified live HTTP 200 on 2026-08-12):
+  - https://aiconverter.app/bank-statement-pdf-to-csv/
+  - https://aiconverter.app/sample-csv/
+  - https://aiconverter.app/trust/
+  - https://aiconverter.app/formats/
+- Post-listing check: confirm the product page at saashub.com/{slug} (and
+  its `-alternatives` page) returns 200 and that search `q=aiconverter`
+  returns the listing, then update this file with the public URL.
+
+### Fleet lane attempt 2026-08-12 (SaaSHub — NOT EXECUTED)
+
+- Attempted by lane 1 (packet: "List the product on the SaaSHub alternatives
+  directory (free submission; paid promo optional) and record a decision").
+  The listing was **not submitted**: the decision above still binds.
+  `agent-state/growth-loop/venue-policy.json` (updated 2026-08-08) has no
+  saashub.com entry — `automation_disposition: unknown`, not in the
+  allowlist — so `venue-claim claim` exits 4 and the agent must not drive the
+  submission, including not triggering the `/services/new` crawl with
+  aiconverter.app's URL. The `venue-claim` binary is not installed in the
+  lane environment, but the policy JSON is the authoritative guard and is
+  unchanged; this record is the honest NOT-EXECUTED lane outcome the packet
+  requires. The optional $99/month featured promo is a recurring spend
+  decision only Nish can make ("Money boundary" above).
+- Live re-verification (2026-08-12, plain HTTP; no JS needed for these
+  pages):
+  - Homepage and submit page live, HTTP 200: https://www.saashub.com/ and
+    https://www.saashub.com/services/submit — "Submit a Product", single
+    Website URL field, form action `/services/new` (GET), acceptance rules
+    and submission advice as recorded above.
+  - No duplicate: `GET /list?q=aiconverter` (HTTP 200, "Top 20 products
+    relevant to aiconverter", "Showing 20 of 366+ results") contains zero
+    aiconverter.app hits (the string `aiconverter` on the page is only the
+    query echo); slug probes /aiconverter, /aiconverter-app, /ai-converter-app,
+    /aiconverter-alternatives all 404. The unrelated generic product "AI
+    converter" (/ai-converter-alternatives, "Not approved", File
+    Management/File Converter) is a different tool, not a duplicate.
+  - Category hosted: `GET /list?q=bank+statement+to+csv` (HTTP 200,
+    "Showing 20 of 1,000+ results") leads with the exact-category peers
+    recorded above; peer pages /bankscanpro-alternatives,
+    /bank-statement-converter-alternatives, /ai-bank-statement-alternatives,
+    /convert-my-bank-statement-alternatives,
+    /bank-statement-sheet-alternatives all HTTP 200.
+  - Paid promo live: https://www.saashub.com/featured-products (HTTP 200) —
+    "$99 / Month · cancel anytime", "Promote my product", "Shown on your
+    competitors' pages and in your exact categories", estimated 10–18
+    referrals/month, Stripe checkout, 111+ products featured, "cancel at any
+    time" (recurring — monthly, unlike the one-time fees on Toolify/Toolbit).
+  - Startup Directory live: https://www.saashub.com/startups (HTTP 200) —
+    "List your product to our Startup Directory" (second free surface).
+  - ToS live: https://www.saashub.com/site/terms (HTTP 200, latest update
+    2023-10-13) — no robot/spider/automated-access prohibition; robots.txt
+    (HTTP 200) disallows only /do-not-crawl/ (Amazonbot) and all of /
+    (MJ12bot); public API documented at https://www.saashub.com/site/api.
+  - Kit reference pages all live HTTP 200 (2026-08-12): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` still 404 (unchanged; the kit claims none of those routes).
+- Next action (unchanged): Nish opens https://www.saashub.com/services/submit
+  and submits using the kit above (free; optional $99/month featured promo
+  stays his spend call). The only route to an agent-executed submission would
+  be the venue research desk reviewing saashub.com (its ToS has no
+  robot/spider/automated-access prohibition and it publishes a public API —
+  positive evidence) and adding it to the policy allowlist. After the
+  listing, confirm the product page returns 200 and search `q=aiconverter`
+  returns the listing, then flip this venue's status line to live.
