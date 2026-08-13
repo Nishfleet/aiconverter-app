@@ -51,6 +51,7 @@ DNS notes: [ops/dns.md](ops/dns.md)
 Monitoring notes: [ops/monitoring.md](ops/monitoring.md)
 Private corpus notes: [ops/private-corpus.md](ops/private-corpus.md)
 Launch venue notes: [ops/launch-venues.md](ops/launch-venues.md)
+Wedge evidence notes: [ops/serp-wedge-evidence.md](ops/serp-wedge-evidence.md)
 
 Deploy:
 
