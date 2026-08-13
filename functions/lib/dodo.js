@@ -516,18 +516,20 @@ async function applyDodoPayment(env, payment, options = {}) {
     return { ok: false, ignored: true, reason: "missing_payment_id" };
   }
 
-  const existing = options.explicitJob
-    ? await env.AICONVERTER_DB.prepare("SELECT id FROM jobs WHERE payment_id = ? AND id != ?")
-        .bind(normalized.paymentId, options.explicitJob.id)
-        .first()
-    : null;
+  if (normalized.metadataBatchId) {
+    return applyDodoBatchPayment(env, normalized, options);
+  }
+
+  // A payment id may only ever credit one job. The explicit job is excluded so
+  // finalize/verify flows stay idempotent for the job the payment belongs to;
+  // with no explicit job (the webhook path) every job is checked, so a payment
+  // id already attached to another job can never unlock a second one.
+  const existing = await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE payment_id = ? AND id != ?")
+    .bind(normalized.paymentId, options.explicitJob?.id || "")
+    .first();
   if (existing?.id) {
     await recordDodoPaymentEvent(env, normalized, { ...options, matchStatus: "payment_id_reused" });
     return { ok: false, ignored: true, reason: "payment_id_reused" };
-  }
-
-  if (normalized.metadataBatchId) {
-    return applyDodoBatchPayment(env, normalized, options);
   }
 
   const match = await matchJobForDodoPayment(env, normalized, options.explicitJob);
