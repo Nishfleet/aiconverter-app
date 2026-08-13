@@ -21,13 +21,15 @@ function makeJob(overrides = {}) {
   };
 }
 
-function makeEnv() {
+function makeEnv({ failKeys = new Set(), failUpdate = false } = {}) {
   const deletes = [];
   const updates = [];
+  const state = { failKeys, failUpdate };
   const env = {
     AICONVERTER_BUCKET: {
       delete: async (key) => {
         deletes.push(key);
+        if (state.failKeys.has(key)) throw new Error(`R2 delete failed for ${key}`);
       }
     },
     AICONVERTER_DB: {
@@ -36,6 +38,7 @@ function makeEnv() {
           bind(...values) {
             return {
               run: async () => {
+                if (state.failUpdate) throw new Error("DB update failed");
                 updates.push({ sql, values });
               }
             };
@@ -44,7 +47,7 @@ function makeEnv() {
       }
     }
   };
-  return { env, deletes, updates };
+  return { env, deletes, updates, state };
 }
 
 test("resultExpired is true only once the result retention window has passed", () => {
@@ -113,4 +116,109 @@ test("non-expired jobs are returned untouched with no bucket or DB writes", asyn
   assert.equal(result, job);
   assert.equal(deletes.length, 0);
   assert.equal(updates.length, 0);
+});
+
+test("source-only expiry does not stamp source_deleted_at when the R2 delete fails", async () => {
+  const job = makeJob({
+    created_at: new Date(Date.now() - (SOURCE_RETENTION_SECONDS * 1000 + 60_000)).toISOString(),
+    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  });
+  const { env, deletes, updates } = makeEnv({ failKeys: new Set([job.source_key]) });
+
+  const result = await enforceJobExpiry(env, job);
+
+  assert.equal(result.expiryCompleted, false, "sweep must report it did not complete");
+  assert.deepEqual(result.failedKeys, [job.source_key]);
+  assert.ok(!result.source_deleted_at, "source_deleted_at must not be stamped");
+  assert.equal(result.status, "complete", "job status must be untouched");
+  assert.equal(updates.length, 0, "no DB write means the job row stays retryable");
+  assert.deepEqual(deletes, [job.source_key], "the source delete was still attempted");
+});
+
+test("result expiry does not mark the job expired when any required R2 delete fails", async () => {
+  const job = makeJob({ expires_at: new Date(Date.now() - 60_000).toISOString() });
+  const failingKey = `jobs/${job.id}/result.csv`;
+  const { env, deletes, updates } = makeEnv({ failKeys: new Set([failingKey]) });
+
+  const result = await enforceJobExpiry(env, job);
+
+  assert.notEqual(result, null, "a failed sweep must not look like a completed fire-and-forget sweep");
+  assert.equal(result.expiryCompleted, false, "sweep must report it did not complete");
+  assert.deepEqual(result.failedKeys, [failingKey]);
+  assert.equal(result.status, "complete", "status must not become expired");
+  assert.ok(!result.source_deleted_at, "source_deleted_at must not be stamped");
+  assert.equal(result.source_key, job.source_key, "source pointer preserved for retry");
+  assert.equal(result.preview_key, job.preview_key, "preview pointer preserved for retry");
+  assert.equal(result.result_key, job.result_key, "result pointer preserved for retry");
+  assert.equal(updates.length, 0, "no DB write on a failed sweep");
+  assert.deepEqual(
+    deletes.sort(),
+    [`jobs/${job.id}/preview.csv`, `jobs/${job.id}/result.csv`, `sources/${job.id}/source.pdf`],
+    "every stored object was still attempted"
+  );
+});
+
+test("result expiry with every R2 delete failing leaves the job row untouched", async () => {
+  const job = makeJob({ expires_at: new Date(Date.now() - 60_000).toISOString() });
+  const { env, deletes, updates } = makeEnv({
+    failKeys: new Set([
+      `sources/${job.id}/source.pdf`,
+      `jobs/${job.id}/preview.csv`,
+      `jobs/${job.id}/result.csv`
+    ])
+  });
+
+  const result = await enforceJobExpiry(env, job);
+
+  assert.notEqual(result, null, "a failed sweep must not look like a completed fire-and-forget sweep");
+  assert.equal(result.expiryCompleted, false);
+  assert.deepEqual(
+    result.failedKeys.sort(),
+    [`jobs/${job.id}/preview.csv`, `jobs/${job.id}/result.csv`, `sources/${job.id}/source.pdf`]
+  );
+  assert.equal(result.status, "complete", "status must not become expired");
+  assert.ok(!result.source_deleted_at, "source_deleted_at must not be stamped");
+  assert.equal(updates.length, 0, "no DB write on a failed sweep");
+  assert.equal(deletes.length, 3, "all three deletes were attempted");
+});
+
+test("expiry sweep retries and completes once R2 is healthy again", async () => {
+  const job = makeJob({
+    created_at: new Date(Date.now() - (SOURCE_RETENTION_SECONDS * 1000 + 60_000)).toISOString(),
+    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  });
+  const { env, deletes, updates, state } = makeEnv({ failKeys: new Set([job.source_key]) });
+
+  const first = await enforceJobExpiry(env, job);
+  assert.equal(first.expiryCompleted, false);
+  assert.equal(updates.length, 0, "the failed attempt must not be recorded as complete");
+
+  state.failKeys.clear();
+  const second = await enforceJobExpiry(env, job);
+
+  assert.ok(second.source_deleted_at, "retry stamps source_deleted_at");
+  assert.equal(second.status, "complete", "source-only sweep keeps the job status");
+  assert.equal(updates.length, 1);
+  assert.equal(deletes.length, 2, "retry re-attempted the delete");
+});
+
+test("expiry sweep fails closed and is retryable when the DB update fails", async () => {
+  const job = makeJob({
+    created_at: new Date(Date.now() - (SOURCE_RETENTION_SECONDS * 1000 + 60_000)).toISOString(),
+    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  });
+  const { env, updates, state } = makeEnv({ failUpdate: true });
+
+  await assert.rejects(
+    enforceJobExpiry(env, job),
+    /DB update failed/,
+    "DB update failure must propagate instead of being swallowed"
+  );
+  assert.equal(updates.length, 0, "no partial record was written");
+
+  state.failUpdate = false;
+  const result = await enforceJobExpiry(env, job);
+
+  assert.ok(result.source_deleted_at, "retry completes the sweep");
+  assert.equal(updates.length, 1);
 });
