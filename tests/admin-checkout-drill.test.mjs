@@ -79,6 +79,69 @@ test("admin checkout drill can return a real operator checkout URL and token whe
   }
 });
 
+test("admin checkout drill rejects a missing token with 401 and zero Dodo/provider calls", async () => {
+  const originalFetch = globalThis.fetch;
+  const jobs = new Map();
+  const objects = new Map();
+  let fetchCalls = 0;
+  globalThis.fetch = async () => {
+    fetchCalls += 1;
+    assert.fail("no Dodo/provider call may happen for an unauthenticated request");
+  };
+
+  try {
+    const response = await checkoutDrill({
+      env: fakeEnv(jobs, objects),
+      request: new Request("https://aiconverter.app/api/admin/checkout-drill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}"
+      })
+    });
+
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { error: "Unauthorized." });
+    assert.equal(fetchCalls, 0, "Dodo/provider must not be called without a token");
+    assert.equal(jobs.size, 0, "no job may be inserted without a token");
+    assert.equal(objects.size, 0, "no object may be written without a token");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("admin checkout drill rejects a wrong token with 401 and zero Dodo/provider calls", async () => {
+  const originalFetch = globalThis.fetch;
+  const jobs = new Map();
+  const objects = new Map();
+  let fetchCalls = 0;
+  globalThis.fetch = async () => {
+    fetchCalls += 1;
+    assert.fail("no Dodo/provider call may happen for an unauthenticated request");
+  };
+
+  try {
+    const response = await checkoutDrill({
+      env: fakeEnv(jobs, objects),
+      request: new Request("https://aiconverter.app/api/admin/checkout-drill", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${"b".repeat(32)}`,
+          "Content-Type": "application/json"
+        },
+        body: "{}"
+      })
+    });
+
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { error: "Unauthorized." });
+    assert.equal(fetchCalls, 0, "Dodo/provider must not be called with a wrong token");
+    assert.equal(jobs.size, 0, "no job may be inserted with a wrong token");
+    assert.equal(objects.size, 0, "no object may be written with a wrong token");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 function fakeEnv(jobs, objects) {
   return {
     ADMIN_TOKEN: "a".repeat(32),
