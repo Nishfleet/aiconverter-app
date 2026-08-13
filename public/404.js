@@ -36,8 +36,11 @@
   const allIntentIds = {
     statement: [
       "bank-statement-pdf-to-csv",
+      "convert-bank-statement-to-csv",
       "scanned-bank-statement-to-excel",
       "credit-card-statement-pdf-to-csv",
+      "bank-statement-converter-for-bookkeepers",
+      "sample-csv",
       "formats"
     ],
     accounting: [
@@ -47,7 +50,17 @@
       "bank-statement-pdf-to-csv",
       "formats"
     ],
-    policy: ["security", "privacy", "data-retention", "refund", "formats"]
+    policy: [
+      "security",
+      "privacy",
+      "about",
+      "trust",
+      "terms",
+      "support",
+      "data-retention",
+      "refund",
+      "formats"
+    ]
   };
 
   let selectedIntent = inferIntent(attempted);
@@ -94,7 +107,7 @@
   function inferIntent(value) {
     const normalized = normalize(value);
     if (/\b(quickbook|quickbooks|xero|wave|accounting|import)\b/.test(normalized)) return "accounting";
-    if (/\b(privacy|security|retention|refund|policy|delete|data)\b/.test(normalized)) return "policy";
+    if (/\b(privacy|security|retention|refund|policy|delete|data|about|trust|terms|support)\b/.test(normalized)) return "policy";
     return "statement";
   }
 
