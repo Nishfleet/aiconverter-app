@@ -4,6 +4,9 @@ import { readFileSync } from "node:fs";
 
 const expectedRoutes = [
   "/bank-statement-pdf-to-csv/",
+  "/convert-bank-statement-to-csv/",
+  "/bank-statement-converter-for-bookkeepers/",
+  "/sample-csv/",
   "/pdf-bank-statement-to-quickbooks-csv/",
   "/pdf-bank-statement-to-xero-csv/",
   "/pdf-bank-statement-to-wave-csv/",
@@ -11,6 +14,10 @@ const expectedRoutes = [
   "/credit-card-statement-pdf-to-csv/",
   "/formats/",
   "/privacy/",
+  "/about/",
+  "/trust/",
+  "/terms/",
+  "/support/",
   "/security/",
   "/data-retention/",
   "/refund/"
@@ -18,6 +25,9 @@ const expectedRoutes = [
 
 const expectedLabels = [
   "bank statement PDF to CSV",
+  "convert bank statement to CSV",
+  "bank statement converter for bookkeepers",
+  "sample bank statement CSV",
   "PDF bank statement to QuickBooks CSV",
   "PDF bank statement to Xero CSV",
   "PDF bank statement to Wave CSV",
@@ -25,6 +35,10 @@ const expectedLabels = [
   "credit card statement PDF to CSV",
   "formats page",
   "privacy policy",
+  "about page",
+  "trust center",
+  "terms of service",
+  "support page",
   "security notes",
   "data retention policy",
   "refund policy"
