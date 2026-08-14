@@ -7,6 +7,36 @@ the backlog item `Bing/DuckDuckGo indexation is zero for an 18-month-old
 domain; no Bing Webmaster ownership or sitemap-submission evidence exists`
 (scout 2026-08-08, amber, traction).
 
+## Re-verification (2026-08-14, lane re-run)
+
+- Bing `site:aiconverter.app` (live SERP fetch 2026-08-14) returns **zero
+  aiconverter.app result URLs** — the organic result block contains unrelated
+  domains only (e.g. jeuxvideo.com). No aiconverter.app link anywhere in the
+  SERP HTML; the finding is still live.
+- DuckDuckGo `site:aiconverter.app` (html.duckduckgo.com, followed the 302)
+  renders **"No results"** — zero-indexation symptom unchanged.
+- No ownership evidence still: `https://aiconverter.app/BingSiteAuth.xml` →
+  HTTP 404; no `msvalidate.01` / `bing-site-verification` meta tag in live
+  homepage HTML (re-checked 2026-08-14).
+- Live crawler surfaces still healthy: `/robots.txt` 200, `/sitemap.xml` 200
+  (22 `<url>` entries, all valid).
+- Blockers re-verified 2026-08-14, all unchanged:
+  - Fleet `CLOUDFLARE_API_TOKEN` still **Workers-only**:
+    `GET /accounts/<acct>/pages/projects/aiconverter` → `10000 Authentication
+    error` (re-checked live).
+  - `wrangler whoami` → not authenticated; no OAuth session on this VPS.
+  - No Bing Webmaster API key, no Microsoft Graph credential, no Porkbun API
+    credential, no IndexNow key in the environment (checked).
+  - DNS still authoritative at Porkbun (`ops/dns.md`); no Porkbun API
+    credential available.
+- **IndexNow key now prepared in-repo (2026-08-14):** key file
+  `public/{key}.txt` + `public/IndexNow.txt` hold a real freshly generated
+  UUID key (`1bc751e6-ead3-48da-96d3-722f77cc4464`). The key is not yet live —
+  it needs the same Cloudflare Pages deploy that is still blocked — and no
+  IndexNow submission has been sent (the key is not live, so a submission
+  would be rejected). Once a Pages:Edit deploy exists, the key goes live with
+  the deploy and step 4 below can run immediately.
+
 ## Current State (verified 2026-08-10)
 
 - DuckDuckGo `site:aiconverter.app` renders **"No results found for
@@ -44,9 +74,11 @@ domain; no Bing Webmaster ownership or sitemap-submission evidence exists`
   account. Per the fleet venue-policy pattern used for Product Hunt and
   BetaList (`ops/launch-venues.md`), account actions stay with Nish; an agent
   must not drive an authenticated browser session.
-- **No API credentials.** No Bing Webmaster API key and no Microsoft Graph /
-  IndexNow key exist in this lane's environment (checked at runtime), so there
-  is no credential-free programmatic submission path.
+- **No API credentials.** No Bing Webmaster API key and no Microsoft Graph
+  credential exist in this lane's environment (checked at runtime), so there
+  is no credential-free programmatic submission path. A fresh IndexNow key is
+  now prepared in-repo (2026-08-14, see re-verification section) but is not
+  live until a deploy exists.
 - **No DNS write path.** Verification via DNS TXT needs Porkbun access; DNS is
   authoritative at Porkbun (`ops/dns.md`) and no Porkbun API credential is
   available in this lane's environment.
@@ -55,9 +87,10 @@ domain; no Bing Webmaster ownership or sitemap-submission evidence exists`
   Pages production. Deploy remains blocked (open red backlog item: release
   policy disarmed, no Cloudflare Pages Edit token, live bundle predates
   merged PRs), so a repo-added verification artifact would not go live.
-- **No fabrication.** Inventing a verification token or an IndexNow key file
-  without a real Bing-issued token would be a false ownership claim and is not
-  done.
+- **No fabrication.** A verification token or meta tag would need to be
+  Bing-issued to be a true ownership claim; none is invented here. The
+  IndexNow key in this repo is a real freshly generated UUID (IndexNow keys
+  are self-issued by design), and it is explicitly not live until deployed.
 
 ## Decision (dated 2026-08-10)
 
@@ -82,11 +115,13 @@ domain; no Bing Webmaster ownership or sitemap-submission evidence exists`
    exists, but a repo-only artifact cannot reach production today.
 3. **Submit the sitemap.** In Bing Webmaster Tools → Sitemaps, submit
    `https://aiconverter.app/sitemap.xml` and confirm it reports valid/200.
-4. **(Optional, free, faster discovery) IndexNow.** Generate a key (any UUID),
-   host it as `https://aiconverter.app/{key}.txt`, and submit the sitemap URLs
-   via https://api.indexnow.org/ (key + urlList). Caveat: the key file needs
-   the same deploy path as step 2's alternatives, so this lands when deploy
-   unlocks.
+4. **(Optional, free, faster discovery) IndexNow.** The key is already
+   prepared in this repo: `https://aiconverter.app/1bc751e6-ead3-48da-96d3-722f77cc4464.txt`
+   (and `https://aiconverter.app/IndexNow.txt`). Both go live with the next
+   Pages deploy. Once the key returns 200, submit the sitemap URLs via
+   https://api.indexnow.org/ (key `1bc751e6-ead3-48da-96d3-722f77cc4464` +
+   urlList) — or use the same key in the Bing Webmaster IndexNow settings.
+   Do not submit before the key file is live (a non-live key is rejected).
 5. **Request indexing** for the homepage and the two bank landing pages
    (`/bank-statement-pdf-to-csv/`, `/convert-bank-statement-to-csv/`) via URL
    submission once the property is verified.
