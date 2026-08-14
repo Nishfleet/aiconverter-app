@@ -422,6 +422,49 @@ copy-paste ready:
   - https://aiconverter.app/trust/
   - https://aiconverter.app/formats/
 
+### Fleet lane attempt 2026-08-14 (Product Hunt + BetaList — NOT EXECUTED, decisions re-verified)
+
+- Attempted by lane 1 (packet item 7133745c8e: "List the product on Product
+  Hunt and record a submit-or-decline decision for BetaList — baseline launch
+  venue never live"). Neither listing was submitted and neither is live; the
+  decisions below stand unchanged and both kits remain valid and copy-paste
+  ready:
+  - **Product Hunt — submit declined by the fleet (NEEDS_NISH_STEP).** The
+    venue policy ledger (`agent-state/growth-loop/venue-policy.json`, updated
+    2026-08-08) still marks `producthunt.com` `automation_disposition:
+    prohibited` — ToS prohibit crawling/scraping "through use of manual or
+    automated means" and unattended processes — so `venue-claim claim` exits 4
+    and the agent must not drive the submission. The `venue-claim` binary is
+    not installed in the lane environment, but the policy JSON is the
+    authoritative guard and is unchanged. The launch flow is account-gated
+    (sign-in required) and publishing is a human account action that stays
+    with Nish.
+  - **BetaList — DECLINE (SKIPPED_PAID, re-verified 2026-08-14).** BetaList's
+    official Support page (https://www.betalist.com/support) still states all
+    submissions are paid and no free option exists. The fleet declines the
+    paid submission (spend decisions stay with Nish); the kit below is
+    retained as copy reference only.
+- Live re-verification (2026-08-14):
+  - Product Hunt search `q=aiconverter`
+    (https://www.producthunt.com/search?q=aiconverter, rendered via Camoufox
+    browser — the page is Cloudflare-challenged for plain HTTP): still **no
+    aiconverter.app result** — unrelated products only (Coval, Wingman City
+    Guide, Sibyl AI, ChatGPT Prompt Generator, Convo, OpenMemory Chrome
+    Extension, Infinite Convo, Aistro, Slashspace AI, Super Grok). Screenshot
+    reviewed; no "AI Converter" product and no aiconverter.app anywhere. The
+    venue hosts the category; the listing is missing.
+  - BetaList search `q=aiconverter` (https://www.betalist.com/search?q=aiconverter,
+    HTTP 200): still "No results found for aiconverter" — no duplicate, no
+    listing.
+  - BetaList support page (https://www.betalist.com/support, HTTP 200):
+    "All submissions are paid. There is no free submission option."
+  - Kit reference pages all live HTTP 200 (2026-08-14): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+- Next action (unchanged): Nish submits manually using the kits below (Product
+  Hunt: choose/confirm the launch date and publish; BetaList: decide whether to
+  pay and submit), then this file should be updated with the public URL and the
+  venue's status line flipped to live.
+
 ## BetaList
 
 ### Decision (dated 2026-08-09)
