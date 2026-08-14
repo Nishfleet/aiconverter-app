@@ -7,18 +7,20 @@ Live-production claims only: everything below is grounded in live pages and
 2026-08-11, 2026-08-12 and 2026-08-14; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11 and 2026-08-14;
 Toolify.ai verified 2026-08-11; Microlaunch verified 2026-08-11; Uneed
 (uneed.best) verified 2026-08-11; Open-Launch verified 2026-08-11; SaaSHub
-verified 2026-08-12 and re-verified 2026-08-14).
-Automated submission is blocked for all ten venues by the fleet venue policy
-ledger (`agent-state/growth-loop/venue-policy.json` and the `venue-claim`
-guard): Product Hunt is reviewed as prohibiting automation; BetaList,
-WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, Microlaunch, uneed.best,
-Open-Launch, and saashub.com are not yet reviewed
-(`automation_disposition: unknown`). Uneed is
+verified 2026-08-12 and re-verified 2026-08-14; Futurepedia, TAAFT
+(theresanaiforthat.com) and Dang.ai verified 2026-08-14).
+Automated submission is blocked for all thirteen venues by the fleet venue
+policy ledger (`agent-state/growth-loop/venue-policy.json` and the
+`venue-claim` guard): Product Hunt is reviewed as prohibiting automation;
+BetaList, WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, Microlaunch, uneed.best,
+Open-Launch, saashub.com, futurepedia.io, theresanaiforthat.com, and dang.ai
+are not yet reviewed (`automation_disposition: unknown`). Uneed is
 the first venue that publishes its own official agent-launch API
 (`/launch.txt` + REST `/api/v1`) — strong positive evidence the venue research
 desk should weigh when reviewing uneed.best. Account actions (and the xix.ai
 $9.90, Toolify.ai $99, Microlaunch Pro Launch $39, Uneed Skip the Waiting Line
-$29.99, and Open-Launch Premium Launch $12 spend decisions) stay with Nish.
+$29.99, Open-Launch Premium Launch $12, Futurepedia Verified Listing $497,
+and TAAFT launch $49/$347 spend decisions) stay with Nish.
 The kits below make each manual submission a copy-paste job.
 
 ## Submission outcomes (2026-08-11)
@@ -1720,3 +1722,300 @@ copy-paste ready:
   it to the policy allowlist. After the listing, confirm the product page
   returns 200 and search `q=aiconverter` returns the listing, then flip this
   venue's status line to live.
+
+## Futurepedia
+
+### Decision (dated 2026-08-14)
+
+- **Decision: DECLINE — free path does not exist; paid-only venue. No kit
+  prepared for submission (paid tiers are a Nish-only spend decision and the
+  spend was not made).**
+- Reason: Futurepedia (https://www.futurepedia.io, "The #1 collection of AI
+  tools for work", 4,000+ curated tools, "400k proactive professionals every
+  month") is a live, category-relevant AI tools directory that hosts Finance
+  and Productivity categories. Site search and slug probe
+  https://www.futurepedia.io/tool/aiconverter (HTTP 404) return no
+  aiconverter.app listing — no duplicate exists.
+- Free option: **does not exist.** The submit page
+  (https://www.futurepedia.io/submit-tool, live 2026-08-14) FAQ "Do you offer
+  free listings?" answers verbatim: **"We are no longer offering free
+  submissions. It's very important to us to maintain the quality of our
+  directory and it became unmanageable to do so."** This supersedes any older
+  "free submit-tool path" assumption: the venue has no free listing route.
+- Paid options (recorded, deferred): **Basic Listing $247 (Sold Out)** —
+  "Published within 7 days", ability to add a video, Tutorials placement; and
+  **Verified Listing $497 (one-time)** — "Published within 2 business days",
+  Enhanced Listing Page ($999 value), Verified Check Mark ($250 value), video
+  + tutorials. Enterprise Packages are custom-priced (book a call). All
+  submissions subject to editorial approval; full automatic refund if not
+  accepted by the editorial team, no refund once published.
+- Money boundary: $247/$497 are spend decisions only Nish can make; the agent
+  cannot pay or create the account. futurepedia.io is not in the fleet venue
+  policy allowlist (`automation_disposition: unknown`), so `venue-claim
+  claim` exits 4 — no agent-driven browser submission.
+- ToS (https://www.futurepedia.io/terms-of-service, live 2026-08-14): section
+  1.2 Acceptable Use accepts "AI tools only", no NSFW/dating tools, AI
+  newsletters and directories rejected; section 2.2 "No Refunds" (except
+  editorial rejection). **No robot/spider/automated-access prohibition** found
+  (unlike Product Hunt's ToS and Toolbit.ai's ToS §7) — flag for the venue
+  research desk; the guard stays exit-4 either way.
+- Next action: Nish decides whether to pay for a listing (Verified $497 or
+  Basic $247 when available) via https://www.futurepedia.io/verified, then
+  this file should be updated with the public tool URL
+  (futurepedia.io/tool/{slug}).
+
+### Manual submission kit (copy-paste ready, if a paid listing is approved)
+
+- Name: **AI Converter**
+- Website: https://aiconverter.app
+- Description:
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your
+  > browser. Review sample rows free, then unlock the full extraction only when
+  > the preview looks right. OCR fallback handles scanned statements; low
+  > confidence fails closed with no charge. No bank logins and no human review
+  > queue; source files are deleted after 24 hours.
+
+- Category suggestions: Finance, Productivity (live Futurepedia categories;
+  the form offers a category selector).
+- Pricing tag suggestion: Freemium (free preview + paid per-page extraction,
+  matching live checkout behavior).
+- Canonical links for the listing (all verified live HTTP 200 on 2026-08-14):
+  - https://aiconverter.app/bank-statement-pdf-to-csv/
+  - https://aiconverter.app/sample-csv/
+  - https://aiconverter.app/trust/
+  - https://aiconverter.app/formats/
+
+### Fleet lane attempt 2026-08-14 (Futurepedia — NOT EXECUTED, decision recorded)
+
+- Attempted by lane 1 (packet item 7967b43c89: "List the product on
+  Futurepedia (free submit-tool path)"). The listing was **not submitted**:
+  the free submit-tool path does not exist (see Decision). The only current
+  options are paid: **Basic Listing $247 (Sold Out)** and **Verified Listing
+  $497 (one-time)** at https://www.futurepedia.io/submit-tool (live
+  2026-08-14); FAQ states "We are no longer offering free submissions."
+  `agent-state/growth-loop/venue-policy.json` (updated 2026-08-08) has no
+  futurepedia.io entry — `automation_disposition: unknown`, not in the
+  allowlist — so `venue-claim claim` exits 4 and the agent must not drive a
+  browser submission. The `venue-claim` binary is not installed in the lane
+  environment, but the policy JSON is the authoritative guard and is
+  unchanged; this record is the honest NOT-EXECUTED lane outcome the packet
+  requires (the dated decision line above flips to SUBMITTED or stays
+  DECLINED only after Nish decides on the spend).
+- Live re-verification (2026-08-14):
+  - No duplicate: https://www.futurepedia.io/tool/aiconverter — HTTP 404
+    (Next.js 404 page); site search returns no aiconverter.app result.
+  - Submit page live, HTTP 200: https://www.futurepedia.io/submit-tool —
+    tiers exactly as recorded; FAQ "Do you offer free listings?" →
+    "We are no longer offering free submissions."
+  - ToS live, HTTP 200: https://www.futurepedia.io/terms-of-service — no
+    robot/spider/automated-access prohibition; AI tools only, NSFW/dating
+    tools, AI newsletters and directories rejected.
+  - Kit reference pages all live HTTP 200 (2026-08-14): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Next action (unchanged): Nish decides whether to pay for a listing
+  (Verified $497 or Basic $247 when available). After the listing, confirm
+  the tool page returns 200 and search returns the listing, then flip this
+  venue's status line to live.
+
+## There's An AI For That (TAAFT)
+
+### Decision (dated 2026-08-14)
+
+- **Decision: DECLINE — paid-only launch; free path is a monthly X-thread
+  lottery, not a listing route. No kit prepared for a paid submission (the
+  spend is a Nish-only decision and the spend was not made).**
+- Reason: TAAFT (https://theresanaiforthat.com, "The front page of AI", "Used
+  by 90M+ humans") is a live, category-relevant AI tools directory. Search
+  `q=aiconverter` returns no aiconverter.app tool (the search page
+  https://theresanaiforthat.com/search/?q=aiconverter shows only unrelated
+  "Featured matches" and the exact-category peer "Stmt: Bank Statement
+  Converter" at /ai/stmt-bank-statement-converter — so the venue hosts the
+  category; only this product's listing is missing). The
+  https://theresanaiforthat.com/ai/aiconverter/ slug is absent.
+- Free option: **does not exist as a listing route.** The launch page
+  (https://theresanaiforthat.com/launch/) FAQ "Is there any way to submit my
+  tool for free?" answers: "We run a thread on X once a month where indie
+  makers can submit their tool for free. We choose one tool from each thread
+  and list it for free." That is a monthly contest/thread, not a standard
+  submission path.
+- Paid options (recorded, deferred): **Website only $49 one-time review fee**
+  — permanent listing, 50–100 estimated clicks first week, 100+ long-term,
+  basic analytics, standard support, $100 PPC bonus; and **Everything you
+  need $347 one-time** — everything in Website only, 700–10,000+ estimated
+  clicks, guaranteed spot in the 2.5M+ subscriber newsletter, priority review
+  & support, enhanced analytics, **$300 PPC bonus** for launching on TAAFT
+  first (tool must not appear on any other platform before the launch).
+  Average processing 1–2 days; full automatic refund if not published; no
+  refund after publication.
+- Money boundary: $49/$347 are spend decisions only Nish can make; the agent
+  cannot pay or create the account. theresanaiforthat.com is not in the fleet
+  venue policy allowlist (`automation_disposition: unknown`), so `venue-claim
+  claim` exits 4 — no agent-driven browser submission.
+- ToS (https://theresanaiforthat.com/terms/, "Last updated on March 19th,
+  2026", live 2026-08-14): section 2 prohibits "mass or automated posting"
+  and "mass or automated engagement with content"; section 8-A "Automated
+  Data Extraction" prohibits scraping/crawling/harvesting the Site's database
+  by automated means with liquidated damages of **EUR 100,000 per violation**
+  — same class of prohibition as Product Hunt's ToS and Toolbit.ai's ToS §7;
+  flag for the venue research desk (the guard stays exit-4 either way).
+- Next action: Nish decides whether to pay for a launch ($49 Website only or
+  $347 Maximum exposure) via https://theresanaiforthat.com/launch/, then this
+  file should be updated with the public tool URL
+  (theresanaiforthat.com/ai/{slug}).
+
+### Manual submission kit (copy-paste ready, if a paid launch is approved)
+
+- Tool URL (the only first-step field on /launch/): **https://aiconverter.app**
+- Name: **AI Converter**
+- Description (the URL populates the tool page; keep for the review step):
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your
+  > browser. Review sample rows free, then unlock the full extraction only when
+  > the preview looks right. OCR fallback handles scanned statements; low
+  > confidence fails closed with no charge. No bank logins and no human review
+  > queue; source files are deleted after 24 hours.
+
+- Pricing tag suggestion: Freemium (free preview + paid per-page extraction,
+  matching live checkout behavior).
+- Package choice (if approved): **Website only $49** (basic) or **Everything
+  you need $347** (newsletter feature + priority review; $300 PPC bonus only
+  if aiconverter.app has not appeared on any other platform before launch).
+- Canonical links for the listing (all verified live HTTP 200 on 2026-08-14):
+  - https://aiconverter.app/bank-statement-pdf-to-csv/
+  - https://aiconverter.app/sample-csv/
+  - https://aiconverter.app/trust/
+  - https://aiconverter.app/formats/
+
+### Fleet lane attempt 2026-08-14 (TAAFT — NOT EXECUTED, decision recorded)
+
+- Attempted by lane 1 (packet item 7967b43c89: "record a submit-or-decline
+  decision for TAAFT"). The listing was **not submitted**: the only standard
+  path is paid (see Decision), and the free path is a monthly X-thread
+  contest, not a listing route. `agent-state/growth-loop/venue-policy.json`
+  (updated 2026-08-08) has no theresanaiforthat.com entry —
+  `automation_disposition: unknown`, not in the allowlist — so `venue-claim
+  claim` exits 4 and the agent must not drive a browser submission. The
+  `venue-claim` binary is not installed in the lane environment, but the
+  policy JSON is the authoritative guard and is unchanged; this record is the
+  honest NOT-EXECUTED lane outcome the packet requires (the dated decision
+  line above flips to SUBMITTED or stays DECLINED only after Nish decides on
+  the spend).
+- Live re-verification (2026-08-14, Camoufox JS-rendered):
+  - No duplicate: search `q=aiconverter`
+    (https://theresanaiforthat.com/s/aiconverter/) — no aiconverter.app tool
+    anywhere; "Featured matches" are unrelated (LumiMusic, Audio To Text
+    Converter, Line Drawing Converter, PDFtoMD Converter, ASCII Art
+    Converter, InstantMind, ...) and "Verified tools" includes the
+    exact-category peer "Stmt: Bank Statement Converter"
+    (https://theresanaiforthat.com/ai/stmt-bank-statement-converter, "PDF
+    Bank Statements to Spreadsheets with High Accuracy AI & Security", Free
+    + from $14.99/mo). The venue hosts the category; only this product's
+    listing is missing.
+  - Launch page live, HTTP 200: https://theresanaiforthat.com/launch/ —
+    "Tool URL" field (the URL populates the tool page; edit access upon
+    email verification; all submissions manually reviewed), pricing cards
+    **Website only $49** and **Everything you need $347**, "Pay & Launch
+    Tool", "Secure payment powered by Stripe", FAQ "Is there any way to
+    submit my tool for free?" → monthly X-thread, one tool chosen per
+    thread. Average processing 1–2 days; full automatic refund if not
+    published.
+  - ToS live, HTTP 200: https://theresanaiforthat.com/terms/ — section 2
+    "mass or automated posting" prohibition; section 8-A "Automated Data
+    Extraction" — no scraping/crawling/harvesting by automated means, EUR
+    100,000 liquidated damages per violation.
+  - Kit reference pages all live HTTP 200 (2026-08-14): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Next action (unchanged): Nish decides whether to pay for a launch ($49
+  Website only or $347 Maximum exposure) via https://theresanaiforthat.com/launch/.
+  After the listing, confirm the tool page returns 200 and search returns the
+  listing, then flip this venue's status line to live.
+
+## Dang.ai
+
+### Decision (dated 2026-08-14)
+
+- **Decision: DECLINE — no free path found; submission and pricing are
+  behind an email-magic-link account gate. No kit prepared for a paid
+  submission (any spend is a Nish-only decision and the spend was not
+  made).**
+- Reason: Dang.ai (https://dang.ai, "AI Tools Directory", "A directory of
+  good AI tools & services since 2022") is a live, category-relevant AI tools
+  directory (6,490 tool URLs in sitemap.xml). The sitemap contains zero
+  aiconverter.app / "AI Converter" tool URL, and slug probes
+  /tool/aiconverter, /tool/ai-converter, /tool/ai-converter-app,
+  /tool/aiconverter-app all return 404 — no duplicate exists. The directory
+  hosts converter peers (e.g. bank-statement-engine, bankstatementconverter),
+  so the category is hosted; only this product's listing is missing.
+- Free option: **not found.** https://dang.ai/login?next=%2Fpricing
+  redirects to a "Sign in to Dang.ai" wall ("Manage listings, submissions and
+  billing through a secure email link") — submission and pricing pages are
+  account-gated behind an email magic link; no public free-submission form
+  exists.
+- Money boundary: any Dang.ai listing spend is a decision only Nish can
+  make; the agent cannot create the account (email magic link stays with
+  Nish) or pay. dang.ai is not in the fleet venue policy allowlist
+  (`automation_disposition: unknown`), so `venue-claim claim` exits 4 — no
+  agent-driven browser submission.
+- Next action: Nish signs in via the email magic link and reviews the
+  pricing/submission options behind the gate, then this file should be
+  updated with the public tool URL (dang.ai/tool/{slug}) if a listing is
+  made.
+
+### Manual submission kit (copy-paste ready, if a listing is approved)
+
+- Name: **AI Converter**
+- Website: https://aiconverter.app
+- Description:
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your
+  > browser. Review sample rows free, then unlock the full extraction only when
+  > the preview looks right. OCR fallback handles scanned statements; low
+  > confidence fails closed with no charge. No bank logins and no human review
+  > queue; source files are deleted after 24 hours.
+
+- Category suggestions: Finance / Business / Productivity (live Dang.ai
+  categories; exact-category peers sit under converter categories).
+- Canonical links for the listing (all verified live HTTP 200 on 2026-08-14):
+  - https://aiconverter.app/bank-statement-pdf-to-csv/
+  - https://aiconverter.app/sample-csv/
+  - https://aiconverter.app/trust/
+  - https://aiconverter.app/formats/
+
+### Fleet lane attempt 2026-08-14 (Dang.ai — NOT EXECUTED, decision recorded)
+
+- Attempted by lane 1 (packet item 7967b43c89: "record a submit-or-decline
+  decision for Dang"). The listing was **not submitted**: no public free
+  path exists and the submission/pricing flow is account-gated (see
+  Decision). `agent-state/growth-loop/venue-policy.json` (updated
+  2026-08-08) has no dang.ai entry — `automation_disposition: unknown`, not
+  in the allowlist — so `venue-claim claim` exits 4 and the agent must not
+  drive a browser submission. The `venue-claim` binary is not installed in
+  the lane environment, but the policy JSON is the authoritative guard and is
+  unchanged; this record is the honest NOT-EXECUTED lane outcome the packet
+  requires (the dated decision line above flips to SUBMITTED or stays
+  DECLINED only after Nish acts).
+- Live re-verification (2026-08-14):
+  - No duplicate: sitemap.xml (HTTP 200) contains 6,490 tool URLs with zero
+    aiconverter / "AI Converter" hit (converter-like tools are all other
+    products, e.g. ai-file-converter-tool-aiconverthub-com,
+    bank-statement-engine-pdf-bank-statement-converter, bankstatementconverter);
+    slug probes /tool/aiconverter, /tool/ai-converter, /tool/ai-converter-app,
+    /tool/aiconverter-app — all HTTP 404 ("This page is not listed").
+  - Account gate live: https://dang.ai/login?next=%2Fpricing — "Sign in to
+    Dang.ai", "Manage listings, submissions and billing through a secure
+    email link", single "Email address" field, "Email me a secure link".
+    https://dang.ai/pricing redirects to the same login. No public free
+    submission form found.
+  - Kit reference pages all live HTTP 200 (2026-08-14): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Next action (unchanged): Nish signs in via the email magic link, reviews
+  the pricing/submission options behind the gate, and (if a listing is made)
+  this file should be updated with the public tool URL (dang.ai/tool/{slug}),
+  then flip this venue's status line to live.
