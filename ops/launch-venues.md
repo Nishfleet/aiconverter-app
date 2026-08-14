@@ -4,7 +4,7 @@ Durable record of launch-venue decisions and submission kits for aiconverter.app
 Live-production claims only: everything below is grounded in live pages and
 `/llms.txt` (verified 2026-08-09 for Product Hunt and BetaList, re-verified
 2026-08-10; WeLikeTools and xix.ai verified 2026-08-10, re-verified
-2026-08-11 and 2026-08-12; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11;
+2026-08-11, 2026-08-12 and 2026-08-14; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11;
 Toolify.ai verified 2026-08-11; Microlaunch verified 2026-08-11; Uneed
 (uneed.best) verified 2026-08-11; Open-Launch verified 2026-08-11; SaaSHub
 verified 2026-08-12).
@@ -569,6 +569,47 @@ copy-paste ready:
   environment, but the policy JSON is the authoritative guard and is
   unchanged; this record is the honest NOT-EXECUTED lane outcome the packet
   requires.
+
+### Fleet lane attempt 2026-08-14 (WeLikeTools — NOT EXECUTED, re-verified)
+
+- Attempted by lane 1 (packet item c716f1de42, re-run: "List the product on
+  the free WeLikeTools directory"). The listing was **still not submitted**:
+  the decision above still binds and no policy change occurred since
+  2026-08-12. `agent-state/growth-loop/venue-policy.json` (updated
+  2026-08-08) still has no weliketools.com entry — `automation_disposition:
+  unknown`, allowlist still empty — so `venue-claim claim` exits 4 and the
+  agent must not drive the browser submission. The Google sign-in gate also
+  stands (re-verified live 2026-08-14: `https://weliketools.com/submit` still
+  renders h1 "Log in to Submit" / "Log in with Google"). The `venue-claim`
+  binary is not installed in the lane environment, but the policy JSON is the
+  authoritative guard and is unchanged; this record is the honest
+  NOT-EXECUTED lane outcome the packet requires.
+- Live re-verification (2026-08-14, plain HTTP):
+  - No duplicate: search `q=aiconverter`
+    (https://weliketools.com/search?q=aiconverter) — "Found 0 results" /
+    "No tools found" (HTTP 200, og:description "There are 0 tools found for
+    aiconverter.") — no aiconverter.app listing anywhere.
+  - Exact-category competitor still live and still free:
+    https://weliketools.com/tool/bankstatementengine — HTTP 200, Bank
+    Statement Engine, `datePublished` 2026-07-12, Category: Business &
+    Finance, "Pricing: Free" (unchanged).
+  - Submit page live, HTTP 200: https://weliketools.com/submit — "Log in to
+    Submit" / "Log in with Google" gate; no fee or paid tier mentioned
+    anywhere on the page (unchanged).
+  - Terms (https://weliketools.com/terms, HTTP 200): prohibited conduct
+    still includes "Using automated tools to scrape or harvest data from our
+    website" (unchanged; flag for the venue research desk, guard stays
+    exit-4 either way).
+  - Kit reference pages all live HTTP 200 (2026-08-14): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Next action (unchanged): Nish signs in with Google and submits using the
+  kit above. The only route to an agent-executed submission would be the
+  venue research desk reviewing weliketools.com and adding it to the policy
+  allowlist (and Nish providing an account or approving the flow). After the
+  listing, confirm search `q=aiconverter` returns the tool and update this
+  file with the public URL, then flip this venue's status line to live.
 - Live re-verification (2026-08-12, plain HTTP; the site is not
   Cloudflare-challenged for curl):
   - No duplicate: search `q=aiconverter`
@@ -675,6 +716,46 @@ copy-paste ready:
     "$9.90", "No queue, listed within 48 hours", sign-in required
     ("Sign In" ×8 on page), graphic captcha at the payment step
     ("captcha" ×9) — unchanged.
+  - Kit reference pages all live HTTP 200: `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Next action (unchanged): Nish decides on the $9.90 spend (SUBMITTED or
+  DECLINED), signs in, and submits using the kit above. After the listing,
+  confirm the tool appears on the "PDF Bank Statements Converter" category
+  page and update this file with the public URL, then flip this venue's
+  status line to live.
+
+### Fleet lane attempt 2026-08-14 (xix.ai — decision re-recorded, NOT EXECUTED)
+
+- Attempted by lane 1 (packet item c716f1de42, re-run: "record a
+  paid/decline decision for xix.ai"). The dated decision stands as recorded
+  above — **PAID listing at $9.90 recommended for evaluation; declined for
+  agent-executed submission** — and no policy or authorization change
+  occurred since 2026-08-12: `agent-state/growth-loop/venue-policy.json`
+  (updated 2026-08-08) still has no xix.ai entry (`automation_disposition:
+  unknown`, allowlist still empty), so `venue-claim claim` exits 4 and the
+  agent must not drive the browser submission; the $9.90 spend and the
+  account creation remain Nish's human actions, and
+  `agent-state/authorizations/` still holds only the sol-xhigh-worker-grant
+  (no xix.ai entry). The `venue-claim` binary is not installed in the lane
+  environment, but the policy JSON is the authoritative guard and is
+  unchanged; this record is the honest NOT-EXECUTED lane outcome the packet
+  requires (the dated decision line above flips to SUBMITTED or DECLINED only
+  after Nish decides on the spend).
+- Live re-verification (2026-08-14, plain HTTP):
+  - No duplicate: site search `q=aiconverter`
+    (https://xix.ai/search?q=aiconverter) — HTTP 200, no aiconverter hit in
+    the page; https://xix.ai/tool/ai-converter.html — HTTP 404.
+  - Exact-term category page still live and still competitor-occupied:
+    https://xix.ai/tool/pdf-bank-statements-converter.html — HTTP 200,
+    "PDF Bank Statements Converter" (schema.org `datePublished`
+    2025-09-08T18:00:59+08:00, `sameAs` https://aibankparser.com — current
+    tool unchanged from the 2026-08-11/12 record).
+  - Submit page still payment-gated, HTTP 200: https://xix.ai/submit —
+    "Total: $ 9.90", "No queue, listed within 48 hours", "Pay $ 9.90",
+    "Amount: $ 9.90", sign-in required (Sign In links + login tab), graphic
+    captcha at the login/payment step (`.login_forms_captcha`) — unchanged.
   - Kit reference pages all live HTTP 200: `/`, `/llms.txt`,
     `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
     `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
