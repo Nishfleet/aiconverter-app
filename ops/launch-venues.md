@@ -7,7 +7,7 @@ Live-production claims only: everything below is grounded in live pages and
 2026-08-11, 2026-08-12 and 2026-08-14; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11;
 Toolify.ai verified 2026-08-11; Microlaunch verified 2026-08-11; Uneed
 (uneed.best) verified 2026-08-11; Open-Launch verified 2026-08-11; SaaSHub
-verified 2026-08-12).
+verified 2026-08-12 and re-verified 2026-08-14).
 Automated submission is blocked for all ten venues by the fleet venue policy
 ledger (`agent-state/growth-loop/venue-policy.json` and the `venue-claim`
 guard): Product Hunt is reviewed as prohibiting automation; BetaList,
@@ -77,8 +77,8 @@ copy source):
   the agent must not drive the submission. The optional paid promo (featured
   listing, $99/month recurring) is a Nish-only spend decision. Nish must
   complete the manual submission, then the prepared copy below can be
-  submitted. (Lane attempt 2026-08-12: NOT EXECUTED — venue not allowlisted
-  in the fleet venue policy; see the SaaSHub section below.)
+  submitted. (Lane attempts 2026-08-12 and 2026-08-14: NOT EXECUTED — venue
+  not allowlisted in the fleet venue policy; see the SaaSHub section below.)
 
 ## Status ledger (fleet re-verification 2026-08-10)
 
@@ -1591,3 +1591,64 @@ copy-paste ready:
   positive evidence) and adding it to the policy allowlist. After the
   listing, confirm the product page returns 200 and search `q=aiconverter`
   returns the listing, then flip this venue's status line to live.
+
+### Fleet lane attempt 2026-08-14 (SaaSHub — NOT EXECUTED, re-verified)
+
+- Attempted by lane 1 (packet item cb5bc34efc: "List the product on the
+  SaaSHub alternatives directory (free submission; paid promo optional) and
+  record a decision"). The listing was **still not submitted**: the decision
+  above still binds and no policy change occurred since 2026-08-12.
+  `agent-state/growth-loop/venue-policy.json` (updated 2026-08-08) still has
+  no saashub.com entry — `automation_disposition: unknown`, allowlist still
+  empty — so `venue-claim claim` exits 4 and the agent must not drive the
+  submission, including not triggering the `/services/new` crawl with
+  aiconverter.app's URL. The `venue-claim` binary is not installed in the
+  lane environment, but the policy JSON is the authoritative guard and is
+  unchanged; this record is the honest NOT-EXECUTED lane outcome the packet
+  requires. The optional $99/month featured promo remains a recurring spend
+  decision only Nish can make ("Money boundary" above).
+- Live re-verification (2026-08-14, plain HTTP; no JS needed for these
+  pages):
+  - Homepage and submit page live, HTTP 200: https://www.saashub.com/ and
+    https://www.saashub.com/services/submit — "Submit a Product", single
+    Website URL field, form action `/services/new` (GET), acceptance rules
+    and submission advice unchanged (add categories; list competitors to
+    avoid the bottom-of-queue slowdown; optional verification with an email
+    on the product's domain; dev agencies, waiting-list landing pages,
+    unreleased products, free subdomains, non-English products rejected).
+  - No duplicate: `GET /list?q=aiconverter` (HTTP 200, "Top 20 products
+    relevant to aiconverter", "Showing 20 of 370+ results" — was 366+ on
+    2026-08-12) contains zero aiconverter.app hits (the string `aiconverter`
+    on the page is only the query echo); slug probes /aiconverter,
+    /aiconverter-app, /ai-converter-app, /aiconverter-alternatives all 404.
+    The unrelated generic product "AI converter" (/ai-converter-alternatives,
+    "Not approved", File Management/File Converter) is a different tool, not
+    a duplicate.
+  - Category hosted: `GET /list?q=bank+statement+to+csv` (HTTP 200, "Showing
+    20 of 1,000+ results") still leads with the exact-category peers recorded
+    above (BankScanPro, Bank Statement Converter, AI Bank Statement,
+    Convert My Bank Statement, Bank Statement Sheet, ...); a new exact-
+    category peer surfaced in the top results this run — ConvertMyStatement
+    AI (https://www.saashub.com/convertmystatement-ai-alternatives,
+    "AI-powered bank statement converter. Transform PDF to Excel or CSV in
+    seconds."). Peer pages all HTTP 200.
+  - Paid promo live: https://www.saashub.com/featured-products (HTTP 200) —
+    "$99 / Month · cancel anytime", "Promote my product", "Shown on your
+    competitors' pages and in your exact categories", estimated 10–18
+    referrals/month (FAQ dated 14 Aug 2026), Stripe checkout, cancel in one
+    click (recurring — monthly, unlike the one-time fees on
+    Toolify/Toolbit). Small drift vs 2026-08-12: "Join **109+** products
+    already featured" (was 111+).
+  - Kit reference pages all live HTTP 200 (2026-08-14): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Next action (unchanged): Nish opens
+  https://www.saashub.com/services/submit and submits using the kit above
+  (free; optional $99/month featured promo stays his spend call). The only
+  route to an agent-executed submission would be the venue research desk
+  reviewing saashub.com (its ToS has no robot/spider/automated-access
+  prohibition and it publishes a public API — positive evidence) and adding
+  it to the policy allowlist. After the listing, confirm the product page
+  returns 200 and search `q=aiconverter` returns the listing, then flip this
+  venue's status line to live.
