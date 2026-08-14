@@ -5,7 +5,7 @@ Live-production claims only: everything below is grounded in live pages and
 `/llms.txt` (verified 2026-08-09 for Product Hunt and BetaList, re-verified
 2026-08-10; WeLikeTools and xix.ai verified 2026-08-10, re-verified
 2026-08-11, 2026-08-12 and 2026-08-14; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11 and 2026-08-14;
-Toolify.ai verified 2026-08-11; Microlaunch verified 2026-08-11; Uneed
+Toolify.ai verified 2026-08-11 and re-verified 2026-08-12 and 2026-08-15; Microlaunch verified 2026-08-11; Uneed
 (uneed.best) verified 2026-08-11; Open-Launch verified 2026-08-11; SaaSHub
 verified 2026-08-12 and re-verified 2026-08-14; Futurepedia, TAAFT
 (theresanaiforthat.com) and Dang.ai verified 2026-08-14).
@@ -53,9 +53,9 @@ copy source):
   NOT EXECUTED — venue still not allowlisted in the fleet venue policy, so the
   agent must not drive the submission; see the Toolbit.ai section below.)
 - **Toolify.ai — SKIPPED_PAID.** Current listing is paid only ($99); the spend
-  was not made. (Lane attempt 2026-08-12: NOT EXECUTED — venue still not
-  allowlisted in the fleet venue policy, and the $99 spend is a Nish-only
-  decision; see the Toolify.ai section below.)
+  was not made. (Lane attempts 2026-08-12 and 2026-08-15: NOT EXECUTED —
+  venue still not allowlisted in the fleet venue policy, and the $99 spend is
+  a Nish-only decision; see the Toolify.ai section below.)
 - **Microlaunch — NEEDS_NISH_STEP.** A free regular submission exists, but
   sign-in (Google or X) is required. Nish must approve/complete the OAuth
   sign-in, then the prepared copy can be submitted. (Lane attempt 2026-08-12:
@@ -1083,6 +1083,69 @@ copy-paste ready:
     no robot/spider/automated-access prohibition (unchanged from the
     2026-08-11 record).
   - Kit reference pages all live HTTP 200: `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Next action (unchanged): Nish signs in, pays $99, and submits using the kit
+  above; the only route to an agent-executed submission would be Nish's dated
+  approval of the $99 spend AND the venue research desk reviewing toolify.ai
+  (its Fulfillment Policy has no robot/spider/automated-access prohibition)
+  and adding it to the policy allowlist. After the listing, confirm the tool
+  appears on https://www.toolify.ai/tag/Bank%20Statement%20to%20CSV and that
+  search `q=aiconverter` returns the listing, then flip this venue's status
+  line to live.
+
+### Fleet lane attempt 2026-08-15 (Toolify.ai — NOT EXECUTED)
+
+- Attempted by lane 1 (packet: "List the product on Toolify.ai (paid $99
+  submit path) — exact-category tag page already lists LedgerBox and
+  search"). The listing was **not submitted and the $99 was not paid**: the
+  decision above still binds. `agent-state/growth-loop/venue-policy.json`
+  (updated 2026-08-08) still has no toolify.ai entry — `automation_disposition:
+  unknown`, not in the allowlist — so `venue-claim claim` exits 4 and the
+  agent must not drive the browser submission. The $99 one-time fee remains a
+  spend decision only Nish can make ("Money boundary" above), and the
+  Fulfillment Policy still requires account registration (human account
+  action). No spend authorization exists for Toolify in `agent-state`
+  (authorizations/ holds only the sol-xhigh worker grant; the dispatch ledger
+  has no Toolify entry), and the `venue-claim` binary is still not installed
+  in the lane environment — the policy JSON is the authoritative guard and is
+  unchanged; this record is the honest NOT-EXECUTED lane outcome the packet
+  requires.
+- Live re-verification (2026-08-15, Camoufox anti-detection browser
+  JS-rendered; curl is Cloudflare-challenged):
+  - Site search `q=aiconverter` (https://www.toolify.ai/search/aiconverter,
+    JS-rendered): heading "aiconverter"; results are unrelated converter
+    tools only — Wondershare UniConverter, AICodeConvert, Mp3Converter AI,
+    Code Converter AI, AIConvert, ConvertFiles.ai, Aiconly, PDF Converter,
+    AudioConvert, Image to Excel, etc. No aiconverter.app listing, no
+    duplicate.
+  - Exact-category tag page live and updated today:
+    https://www.toolify.ai/tag/Bank%20Statement%20to%20CSV — "Discover Best AI
+    Tools for Bank Statement to CSV", "The best ai tools for Bank Statement
+    to CSV are: LedgerBox.", "Number of Als: 2", "Updated time: August 14
+    2026". No AI Converter on the page.
+  - Competitor listing live: https://www.toolify.ai/tool/ledgerbox —
+    "LedgerBox: AI-powered bank statement converter from PDF to Excel and
+    CSV."
+  - No duplicate: https://www.toolify.ai/tool/ai-converter → HTTP 404 "Page
+    not found" (JS-rendered), unchanged from the 2026-08-11/2026-08-12
+    records.
+  - Submit page live, HTTP 200: https://www.toolify.ai/submit — "Total:
+    $ 99", "Pay $ 99", "No queue, listed within 48 hours". Form: *Name +
+    *Website URL + *Choose how to generate tool information (radio:
+    "Generated by Toolify" / "Do it myself"). Benefits: "Appeared in Listing
+    and Just Launched within 48 hours, no queue. Border Highlight."; "no
+    less than 6 quality dofollow links"; "Listing & Traffic Forever"; "Get
+    toolify AI Launch embeds." (unchanged from the 2026-08-11 record).
+  - Fulfillment Policy link live in the site footer
+    (https://www.toolify.ai/fulfillment-policy); the 2026-08-12 archived
+    reading stands — "Last updated on August 30, 2024"; "you must register
+    for a paid one-time payment program"; "Toolify may reject your
+    application for an Account for any reason, in our sole discretion"; fee
+    non-refundable ("non-refundable, even if you cancel or do not use any of
+    the benefits"); no robot/spider/automated-access prohibition found.
+  - Kit reference pages all live HTTP 200 (curl): `/`, `/llms.txt`,
     `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
     `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
     none of those routes).
