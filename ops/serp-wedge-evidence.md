@@ -3,8 +3,11 @@
 Dated record of the core-phrase search results page (SERP) for the traction
 rethink, feeding the free-anchor question into the rethink epic (E2 in the
 improvement-loop `epics.md`). Live-production claims only: everything below was
-re-observed live on 2026-08-09 (UTC). This record carries no code or payment
-changes; it exists so the rethink epic can decide positioning on evidence.
+re-observed live on 2026-08-09 (UTC) and re-verified live on 2026-08-14 (UTC).
+This record carries no code or payment changes; it exists so the rethink epic
+can decide positioning on evidence. The epic reached its explicit positioning
+decision (paid-quality wedge, "B") on 2026-08-14 — the re-verification below
+confirms the SERP evidence that decision rests on is still live.
 
 ## Snapshot (dated 2026-08-09T19:1xZ, live re-run)
 
@@ -92,3 +95,69 @@ This record feeds the free-anchor question into the traction rethink epic:
   Extract - and aiconverter.app was nowhere in the top 10.
 - This file is evidence only: no code, pricing, or payment behavior was
   changed to produce it.
+
+## Re-verification 2026-08-14 (live, fresh anti-detection session)
+
+The full claim was re-observed live on 2026-08-14 (UTC) in a fresh
+anti-detection browser session, Google English/US (unauthenticated). The
+free-positioning pattern and aiconverter.app absence are unchanged from
+2026-08-09.
+
+### Core phrase — `bank statement pdf to csv converter` (unquoted)
+
+Page-1 organic composition, read from the rendered DOM (`gbv=2` variant):
+
+| Slot | Result | Position |
+| --- | --- | --- |
+| 1 | "Accurately Convert PDF Bank Statements to CSV" - bankstatementconverter.com | organic 1 |
+| 2 | "Converting pdf bank statements to csv" - Reddit r/Bookkeeping thread | organic 2 |
+| 3 | "Free Bank Statement Converter — PDF to CSV" - founderpath.com | organic 3 |
+| 4 | "Convert PDF Bank Statements to CSV or Excel" - statementconvert.com | organic 4 |
+| 5 | "Free Convert PDF Bank Statements to CSV" - re-cap.com | organic 5 |
+| 6 | "Razor Extract - Convert PDF Statements to Excel or CSV" - razorextract.com | organic 6 |
+| 7 | "Bank Statement Converter to CSV - Online and Free" - zamzar.com | organic 7 |
+| 8 | "BankStatementWizard: Bank Statement Converter" - bankstatementwizard.com | organic 8 |
+| 9 | "PDF to CSV Converter Bank Statement or Credit Card" - YouTube | organic 9 |
+
+- No sponsored/ad slots rendered on this page; the 2026-08-09 DocuClipper ad
+  slot was not present in this session (SERPs are session-variable; the
+  organic free-positioning claim is what matters).
+- AI Overview rendered (vision-confirmed: sources Reddit, Microsoft Learn,
+  Tabula, DocuClipper, Smallpdf, Microsoft Excel — never aiconverter.app).
+- "People also ask" rendered; "Is there a free online converter that can
+  convert PDF bank statements to CSV?" remains the third question.
+- `aiconverter.app` appears nowhere in the page body (`hasAiconverter: false`
+  from the rendered DOM).
+
+### Exact-phrase variant — `"bank statement pdf to csv converter"` (quoted)
+
+Nine results, all free-positioned, neither aiconverter.app nor any
+paid-after-preview product holds a slot: BankConv, koody.com, Apify (input
+schema), Reddit r/SideProject, bankstatementpdftocsv.com, Nomi, banktobooks,
+LinkedIn (ExtractFast), Rocket Statements. `aiconverter.app` absent
+(`hasAiconverter: false`).
+
+### Indexed-but-absent still holds
+
+`site:aiconverter.app bank statement` (2026-08-14) returns ten indexed pages
+with `https://aiconverter.app/bank-statement-pdf-to-csv/` first — the product's
+exact-core-phrase page is still Google-indexed, yet still appears nowhere on
+page 1 for the core phrase. Absence is still a positioning problem, not an
+indexation problem.
+
+### Product position unchanged
+
+Live `https://aiconverter.app/bank-statement-pdf-to-csv/` (2026-08-14, HTTP
+200) still leads with "Pricing starts at ₹399 for up to 25 pages" and
+"Preview before payment" — free preview and sample CSV download, paid full
+export (₹399/25, ₹799/100, ₹1,399/500). There is still no free full-conversion
+anchor to enter this SERP.
+
+### Status of the question the record feeds
+
+The rethink epic (E2) reached its explicit positioning decision on 2026-08-14:
+**paid-quality wedge** (option "B", per the improvement-loop `epics.md`
+POSITIONING DECISION entry) — aiconverter.app leads as a professional
+converter at a real price, free tier only as a taste. This re-verification
+confirms the SERP evidence supporting that decision is still live as of
+2026-08-14; no decision change is warranted by this run.
