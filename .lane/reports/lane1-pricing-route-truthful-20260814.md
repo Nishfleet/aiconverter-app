@@ -66,3 +66,11 @@ code before shipping:
   stale dated pricing-route note would conflict with newer content. The
   pricing-route doc claim lives in llms/sitemap instead.
 - The route goes live only after deploy; this branch is the change.
+
+## PR
+
+Opened: https://github.com/nish3451/aiconverter-app/pull/97
+State: OPEN, MERGEABLE. Branch `lane1/pricing-route-truthful-20260814`
+(commits `65ca8ca`, `a9eff87`). Route ships to production when the PR merges
+and deploys.
+
