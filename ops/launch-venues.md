@@ -2598,3 +2598,151 @@ copy-paste ready:
   the pricing/submission options behind the gate, and (if a listing is made)
   this file should be updated with the public tool URL (dang.ai/tool/{slug}),
   then flip this venue's status line to live.
+
+## G2
+
+### Decision (dated 2026-08-15)
+
+- **Decision: DECLINED for agent-executed submission; SUBMIT (manual, by
+  Nish) — free G2 profile.** Truthful profile creation is a manual
+  external-account action by Nish via G2's official Product Submission Form
+  — the kit below is copy-paste ready and truthful, and this line becomes
+  SUBMITTED (or stays DECLINED) once Nish acts.
+- Reason: the packet's condition is met — the production bank-statement
+  workflow is G2-eligible (released, non-beta, B2B document-conversion tool;
+  official rule: "G2 does not accept business-to-consumer (B2C) products or
+  products that are currently in the alpha or beta stage of development",
+  https://documentation.g2.com/help/docs/finding-or-listing-a-product-on-g2,
+  live 2026-08-15). G2 already hosts the exact category via a live peer
+  profile (`Bank Statement Converter AI Online`,
+  https://www.g2.com/products/bank-statement-converter-ai-online/reviews —
+  surfaced 2026-08-15 via search; direct fetch timed out, G2 is
+  bot-walled/slow from this VPS) while no g2.com profile exists for
+  aiconverter.app / "AI Converter" (web search 2026-08-15; Wayback
+  availability API: no snapshots for g2.com/products/aiconverter,
+  /products/ai-converter, /aiconverter, /ai-converter). The venue hosts the
+  category; only this listing is missing.
+- Official reviewed path (verified live 2026-08-15): sell.g2.com's
+  "Create a Profile" (https://sell.g2.com/create-a-profile) — request form
+  → product conditionally approved after G2's research team verifies
+  eligibility/categorization (~3-5 business days) → profile live and
+  unclaimed → vendor claims the listing ("You can claim your profile for
+  free") → final claim review within 1-3 business days. No public
+  product-creation API and no agent-credential submission path — the listing
+  flow is a reviewed vendor form, not a POST endpoint.
+- Constraint (gate): g2.com sits in `venue-policy.json` `reviewed_venues`
+  with `automation_disposition: "unknown"` and the executable `allowlist` is
+  empty → `venue-claim claim g2.com aiconverter-app` exits 4 (allowlist/
+  policy block), and a blocked exit means NO browser work (no automated
+  submission, no account creation). `venue-claim` is not installed on this
+  VPS (exit 127, same as recorded for the other venues); the outcome is
+  deterministic from the authoritative files (`venue-policy.json`:
+  `"allowlist": {}`, g2.com unknown; `venues.json`: zero g2 claims). The
+  only override is a root change to the allowlist. Direct access from this
+  VPS is additionally 403-blocked by G2's bot wall (homepage, `/products/new`,
+  `/sellers`), so agent-side verification rests on the dated
+  credential-free fetch/search evidence and the official documentation.
+- Money boundary: no listing fee surfaced for the free profile path —
+  sell.g2.com states "You can claim your profile for free." G2's paid
+  Marketing Solutions (profile upgrades) are optional and stay Nish's spend
+  call — no money is spent without a separate decision. No spend
+  authorization exists in `agent-state/authorizations/` (only the
+  sol-xhigh worker grant — expired 2026-08-14).
+- Next action: Nish fills out the official Product Submission Form (linked
+  from https://documentation.g2.com/help/docs/finding-or-listing-a-product-on-g2
+  and https://sell.g2.com/create-a-profile), waits for conditional approval,
+  claims the profile, then this file should be updated with the public
+  profile URL (g2.com/products/{slug}) and the venue's status line flipped
+  to live. Root may also add the allowlist one-liner for record-keeping,
+  but the submission itself stays the account owner's step.
+
+### Fleet lane attempt 2026-08-15 (G2 — NOT EXECUTED, decision recorded)
+
+- Attempted by lane 1 (packet item 4eb99c12cf: "Submit and claim a truthful
+  free G2 profile if the production bank-statement workflow meets G2's
+  B2B/non-beta eligibility"). The profile was **not created**: the
+  eligibility condition is MET, but the venue policy guard and the reviewed
+  vendor form block agent-executed submission. `agent-state/growth-loop/
+  venue-policy.json` (re-read 2026-08-15, updated 2026-08-08) lists g2.com
+  with `automation_disposition: unknown` and the executable `allowlist` is
+  still empty — so per the `venue-claim` contract, `claim` exits 4 and
+  "A blocked exit means NO browser work." The `venue-claim` binary is still
+  not installed in the lane environment
+  (`/home/nish/.local/bin/venue-claim: No such file or directory`), but the
+  policy JSON is the authoritative guard and it has not been updated.
+- Live re-verification (2026-08-15, credential-free):
+  - Production workflow live, all HTTP 200: `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`,
+    `/robots.txt` — the kit is truthful to live behavior. The
+    bank-statement page copy confirms released/non-beta/B2B framing
+    ("Turn bank statement PDFs into spreadsheet-ready CSV... Pricing starts
+    at ₹399 for up to 25 pages... No bank login, no email intake, no manual
+    review queue").
+  - G2 eligibility rule live: https://documentation.g2.com/help/docs/
+    finding-or-listing-a-product-on-g2 → HTTP 200 ("G2 does not accept
+    business-to-consumer (B2C) products or products that are currently in
+    the alpha or beta stage of development.").
+  - Official flow live: https://sell.g2.com/create-a-profile → HTTP 200
+    (request form → conditional approval ~3-5 business days → claim free →
+    final review 1-3 business days); https://sell.g2.com/claim-your-profile
+    ("Claim that thing for free").
+  - No duplicate: web search 2026-08-15 finds no g2.com profile for
+    aiconverter.app / "AI Converter"; Wayback availability API returns no
+    snapshots for g2.com/products/aiconverter, /products/ai-converter,
+    /aiconverter, /ai-converter. The venue hosts the category only via the
+    live peer profile g2.com/products/bank-statement-converter-ai-online/
+    reviews (surfaced in search results 2026-08-15; direct fetch timed
+    out — G2 pages are slow/bot-walled from this VPS).
+  - Kit reference pages all live HTTP 200 (2026-08-15): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Paid decision (recorded 2026-08-15): **no listing fee surfaced** for the
+  free profile path; optional G2 Marketing Solutions / profile upgrades stay
+  deferred to Nish's spend call. No spend authorization exists in
+  `agent-state/authorizations/` (only the sol-xhigh worker grant — expired
+  2026-08-14).
+- Next action (unchanged, human-owned): Nish fills out the official Product
+  Submission Form and claims the profile using the kit below, then this file
+  should be updated with the public profile URL and the venue's status line
+  flipped to live. The only route to an agent-executed submission would be
+  the venue research desk reviewing g2.com and adding it to the policy
+  allowlist — and even then the reviewed vendor form's email verification
+  stays with the account owner.
+
+### Manual submission kit (copy-paste ready; truthful — live claims only)
+
+- Name: **AI Converter**
+- Tagline: **Bank statement PDFs to CSV you can review before paying**
+- Website: https://aiconverter.app
+- Description:
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your
+  > browser. Review sample rows free, then unlock the full extraction only when
+  > the preview looks right. OCR fallback handles scanned statements; low
+  > confidence fails closed with no charge. No bank logins and no human review
+  > queue; source files are deleted after 24 hours.
+
+- Key features (3-5 bullets):
+  - Bank statement PDF to CSV with a built-in parser first, OCR fallback for scans.
+  - Free preview: review sample rows and download a sample CSV before paying.
+  - Fail-closed extraction: low-confidence conversions are not charged.
+  - No bank login and no human review queue; source files deleted after 24 hours.
+  - Paid jobs get one automatic stronger redo.
+- Category: match the live peer's placement — read the peer profile's
+  breadcrumb/categories live at submission time and pick the closest category
+  the form offers (the peer is an exact PDF-bank-statement-to-Excel/CSV
+  converter, so a document-conversion / financial-adjacent category fits).
+  Do not invent a category slug.
+- Pricing tag: Freemium (free preview + paid per-page extraction, matching
+  live checkout behavior).
+- Canonical links for the listing (all verified live HTTP 200 on 2026-08-15):
+  - https://aiconverter.app/bank-statement-pdf-to-csv/
+  - https://aiconverter.app/sample-csv/
+  - https://aiconverter.app/trust/
+  - https://aiconverter.app/formats/
+- Post-listing check: the public profile resolves and links
+  https://aiconverter.app/ and a live canonical bank-statement page; copy
+  avoids blanket accuracy/bank-support claims and never references
+  undeployed `/pricing/` or `/receipt-to-csv/`; then update this file with
+  the public URL (g2.com/products/{slug}).
