@@ -12,13 +12,15 @@ verified 2026-08-12 and re-verified 2026-08-14; Futurepedia, TAAFT
 (theresanaiforthat.com) and Dang.ai verified 2026-08-14; Capterra verified
 2026-08-15 via Wayback/CDX (direct VPS access remains 403-blocked by
 Capterra's bot wall, so no live-page claim is made for it — see the Capterra
-section).
-Automated submission is blocked for all fourteen venues by the fleet venue
+section); G2 verified 2026-08-15 (g2.com itself is bot-walled from this VPS —
+the eligibility rule and official create-a-profile flow were verified via
+credential-free fetch/search evidence, see the G2 section).
+Automated submission is blocked for all fifteen venues by the fleet venue
 policy ledger (`agent-state/growth-loop/venue-policy.json` and the
 `venue-claim` guard): Product Hunt is reviewed as prohibiting automation;
 BetaList, WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, Microlaunch, uneed.best,
-Open-Launch, saashub.com, futurepedia.io, theresanaiforthat.com, dang.ai, and
-capterra.com
+Open-Launch, saashub.com, futurepedia.io, theresanaiforthat.com, dang.ai,
+capterra.com, and g2.com
 are not yet reviewed (`automation_disposition: unknown`). Uneed is
 the first venue that publishes its own official agent-launch API
 (`/launch.txt` + REST `/api/v1`) — strong positive evidence the venue research
@@ -102,6 +104,22 @@ copy source):
   action using the Capterra kit below. No listing fee surfaced in the
   official-path evidence; sponsored placement stays a separate spend call.
   (Lane attempt 2026-08-15: NOT EXECUTED — see the Capterra section below.)
+- **G2 — NEEDS_NISH_STEP (agent-executed submission declined).** The
+  production bank-statement workflow meets G2's B2B/non-beta eligibility
+  (official rule fetched live 2026-08-15: G2 does not accept B2C or
+  alpha/beta products), and G2 hosts the exact category via a live peer
+  profile (g2.com/products/bank-statement-converter-ai-online/reviews) with
+  no aiconverter.app profile — the listing is missing, not duplicate. g2.com
+  is unreviewed in the venue policy ledger (`automation_disposition: unknown`,
+  executable allowlist empty), so `venue-claim claim` exits 4 — no agent
+  browser work; direct VPS access is additionally 403-walled. The official
+  path is a reviewed vendor form (Product Submission Form → G2 research team
+  verifies ~3-5 business days → claim profile free → final review 1-3 days;
+  no product-creation API, no agent-credential path), so account creation +
+  submission is Nish's human action using the G2 kit below. No listing fee
+  surfaced for the free profile; paid Marketing Solutions stay a separate
+  spend call. (Lane attempt 2026-08-15: NOT EXECUTED — see the G2 section
+  below.)
 
 ## Status ledger (fleet re-verification 2026-08-10)
 
