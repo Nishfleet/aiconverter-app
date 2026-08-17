@@ -9,7 +9,8 @@ Toolify.ai verified 2026-08-11 and re-verified 2026-08-12 and 2026-08-15; Microl
 (uneed.best) verified 2026-08-11 and re-verified 2026-08-12, 2026-08-15 and 2026-08-16; Open-Launch verified
 2026-08-11 and re-verified 2026-08-15, 2026-08-16 and 2026-08-17; SaaSHub
 verified 2026-08-12 and re-verified 2026-08-14; Futurepedia, TAAFT
-(theresanaiforthat.com) and Dang.ai verified 2026-08-14; Capterra verified
+(theresanaiforthat.com) and Dang.ai verified 2026-08-14 and re-verified
+2026-08-17; Capterra verified
 2026-08-15 via Wayback/CDX (direct VPS access remains 403-blocked by
 Capterra's bot wall, so no live-page claim is made for it — see the Capterra
 section); G2 verified 2026-08-15 (g2.com itself is bot-walled from this VPS —
@@ -2541,6 +2542,38 @@ copy-paste ready:
   the tool page returns 200 and search returns the listing, then flip this
   venue's status line to live.
 
+### Fleet lane attempt 2026-08-17 (Futurepedia — NOT EXECUTED, decision re-verified)
+
+- Attempted by lane 1 (packet item 7967b43c89 re-dispatch: "List the product
+  on Futurepedia (free submit-tool path)"). The listing was **not submitted**
+  and the decision stays **DECLINE — free path does not exist; paid-only
+  venue**: the free submit-tool path is still absent on 2026-08-17, so the
+  packet's free-path condition cannot be met without a spend decision that is
+  Nish's alone. `agent-state/growth-loop/venue-policy.json` still has no
+  futurepedia.io entry (`automation_disposition: unknown`), so `venue-claim
+  claim` still exits 4 — no agent-driven browser submission. This record is
+  the honest NOT-EXECUTED lane outcome for the re-dispatch; the dated decision
+  line flips to SUBMITTED or stays DECLINED only after Nish decides on the
+  spend.
+- Live re-verification (2026-08-17):
+  - Submit page live, HTTP 200: https://www.futurepedia.io/submit-tool —
+    tiers unchanged: **Basic Listing $247 (Sold Out)** and **Verified
+    Listing $497 (one-time)**, Enterprise Packages custom-priced. FAQ "Do
+    you offer free listings?" → verbatim: **"We are no longer offering free
+    submissions. It's very important to us to maintain the quality of our
+    directory"** — the free submit-tool path does not exist (confirmed via
+    page HTML on 2026-08-17).
+  - No duplicate: https://www.futurepedia.io/tool/aiconverter — HTTP 404
+    (unchanged).
+  - Kit reference pages all live HTTP 200 (2026-08-17): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Next action (unchanged): Nish decides whether to pay for a listing
+  (Verified $497 or Basic $247 when available). After the listing, confirm
+  the tool page returns 200 and search returns the listing, then flip this
+  venue's status line to live.
+
 ## There's An AI For That (TAAFT)
 
 ### Decision (dated 2026-08-14)
@@ -2656,6 +2689,47 @@ copy-paste ready:
   After the listing, confirm the tool page returns 200 and search returns the
   listing, then flip this venue's status line to live.
 
+### Fleet lane attempt 2026-08-17 (TAAFT — NOT EXECUTED, decision re-verified)
+
+- Attempted by lane 1 (packet item 7967b43c89 re-dispatch: "record a
+  submit-or-decline decision for TAAFT"). The submit-or-decline decision is
+  re-recorded **DECLINE — paid-only launch; free path is a monthly X-thread
+  lottery, not a listing route**. The listing was **not submitted**: the only
+  standard path is paid (Website only $49 / Everything you need $347), the
+  free path remains a once-a-month X thread from which one tool per thread is
+  chosen (not a submission route an agent can drive), and `venue-claim claim`
+  still exits 4 (`theresanaiforthat.com` remains `automation_disposition:
+  unknown` in the venue policy ledger). This record is the honest NOT-EXECUTED
+  lane outcome for the re-dispatch; the dated decision line flips to SUBMITTED
+  or stays DECLINED only after Nish decides on the spend.
+- Live re-verification (2026-08-17):
+  - Launch page live, HTTP 200: https://theresanaiforthat.com/launch/ —
+    unchanged: pricing cards **Website only $49** (one-time review fee) and
+    **Everything you need $347** (one-time), "Tool URL" field, "Secure
+    payment powered by Stripe", "$300 PPC bonus" for launching on TAAFT
+    first, and a new prepaid-code entry ("Use a prepaid submission code from
+    your organization — no payment required", still a Nish-held code, not an
+    agent path). FAQ "Is there any way to submit my tool for free?" →
+    verbatim: "We run a thread on X once a month where indie makers can
+    submit their tool for free. We choose one tool from each thread and list
+    it for free." — the free path is still a monthly one-tool-per-thread
+    contest, not a listing route.
+  - No duplicate: theresanaiforthat.com search and sitemap remain
+    Cloudflare-challenged from this VPS (HTTP 403 "Just a moment...",
+    2026-08-17) — consistent with TAAFT ToS §8-A prohibiting automated data
+    extraction (EUR 100k liquidated damages). The 2026-08-14 Camoufox
+    JS-rendered search (`q=aiconverter`) finding stands unchanged: no
+    aiconverter.app tool anywhere; exact-category peer "Stmt: Bank Statement
+    Converter" is the only category host.
+  - Kit reference pages all live HTTP 200 (2026-08-17): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Next action (unchanged): Nish decides whether to pay for a launch ($49
+  Website only or $347 Maximum exposure) via https://theresanaiforthat.com/launch/.
+  After the listing, confirm the tool page returns 200 and search returns the
+  listing, then flip this venue's status line to live.
+
 ## Dang.ai
 
 ### Decision (dated 2026-08-14)
@@ -2733,6 +2807,36 @@ copy-paste ready:
     https://dang.ai/pricing redirects to the same login. No public free
     submission form found.
   - Kit reference pages all live HTTP 200 (2026-08-14): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Next action (unchanged): Nish signs in via the email magic link, reviews
+  the pricing/submission options behind the gate, and (if a listing is made)
+  this file should be updated with the public tool URL (dang.ai/tool/{slug}),
+  then flip this venue's status line to live.
+
+### Fleet lane attempt 2026-08-17 (Dang.ai — NOT EXECUTED, decision re-verified)
+
+- Attempted by lane 1 (packet item 7967b43c89 re-dispatch: "record a
+  submit-or-decline decision for Dang"). The submit-or-decline decision is
+  re-recorded **DECLINE — no free path found; submission and pricing are
+  behind an email-magic-link account gate**. The listing was **not
+  submitted**: no public free submission form exists, the pricing/submission
+  flow remains account-gated, and `venue-claim claim` still exits 4
+  (`dang.ai` remains `automation_disposition: unknown` in the venue policy
+  ledger). This record is the honest NOT-EXECUTED lane outcome for the
+  re-dispatch; the dated decision line flips to SUBMITTED or stays DECLINED
+  only after Nish acts.
+- Live re-verification (2026-08-17):
+  - No duplicate: https://dang.ai/sitemap.xml (HTTP 200) now lists **6,774
+    tool URLs** (up from 6,490 on 2026-08-14) with still **zero**
+    aiconverter / "AI Converter" / "ai-converter" hit — no aiconverter.app
+    listing exists.
+  - Account gate live: https://dang.ai/login?next=%2Fpricing — "Sign in to
+    Dang.ai", "Manage listings, submissions and billing through a secure
+    email link", single "Email address" field, "Email me a secure link".
+    No public free submission form found (unchanged).
+  - Kit reference pages all live HTTP 200 (2026-08-17): `/`, `/llms.txt`,
     `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
     `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
     none of those routes).
