@@ -7,6 +7,39 @@ the backlog item `Bing/DuckDuckGo indexation is zero for an 18-month-old
 domain; no Bing Webmaster ownership or sitemap-submission evidence exists`
 (scout 2026-08-08, amber, traction).
 
+## Re-verification (2026-08-17, lane re-run)
+
+- DuckDuckGo `site:aiconverter.app` (lite.duckduckgo.com, clean page, no
+  challenge) renders **"No results found for site:aiconverter.app"** —
+  zero-indexation symptom still live. The exact brand query
+  `"aiconverter.app"` was bot-challenged agent-side on both the lite and html
+  endpoints this run (anomaly redirect), so the brand-query row was not
+  re-readable; the `site:` query is the clean signal and is unchanged.
+- Bing.com `site:aiconverter.app` is **still human-verification challenged**
+  agent-side: the SERP HTML contains only challenge and query-echo strings,
+  zero organic aiconverter.app result links. Bing's own index state remains
+  unreadable from a lane (same blocker as 2026-08-08, 2026-08-10, 2026-08-14).
+  DuckDuckGo results are Bing-index-derived, so the DDG zero-result state is
+  the observable symptom of the Bing gap.
+- No ownership evidence still (re-checked 2026-08-17):
+  `https://aiconverter.app/BingSiteAuth.xml` → HTTP 404; no `msvalidate.01` /
+  `bing-site-verification` meta tag in live homepage HTML.
+- Live crawler surfaces still healthy: `/robots.txt` 200 and references the
+  sitemap; `/sitemap.xml` 200 with 22 `<url>` entries (this run: the live XML
+  still omits `receipt-to-csv/` — the live bundle still predates merged PRs,
+  i.e. the deploy path is still blocked).
+- IndexNow key still **not live**: `https://aiconverter.app/1bc751e6-ead3-48da-96d3-722f77cc4464.txt`
+  and `https://aiconverter.app/IndexNow.txt` both → HTTP 404. No IndexNow
+  submission has been sent (a non-live key is rejected by the protocol).
+- Deploy path re-checked 2026-08-17, still blocked: no Cloudflare/Pages token
+  in this lane's environment and `wrangler whoami` → not authenticated.
+- **IndexNow key prep carried forward:** the 2026-08-14 run left the key files
+  in an unmerged PR (#99); the gitleaks allowlist for the by-design-public key
+  values landed on main in #123 (2026-08-15), so the Secret Scan gate no
+  longer blocks them. This branch re-carries `public/1bc751e6-ead3-48da-96d3-722f77cc4464.txt`
+  + `public/IndexNow.txt` (same key, unchanged) onto fresh main so the free
+  IndexNow discovery path can run the moment a Cloudflare Pages deploy exists.
+
 ## Re-verification (2026-08-14, lane re-run)
 
 - Bing `site:aiconverter.app` (live SERP fetch 2026-08-14) returns **zero
