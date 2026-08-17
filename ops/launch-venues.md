@@ -7,7 +7,7 @@ Live-production claims only: everything below is grounded in live pages and
 2026-08-11, 2026-08-12 and 2026-08-14; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11 and 2026-08-14;
 Toolify.ai verified 2026-08-11 and re-verified 2026-08-12 and 2026-08-15; Microlaunch verified 2026-08-11; Uneed
 (uneed.best) verified 2026-08-11 and re-verified 2026-08-12, 2026-08-15 and 2026-08-16; Open-Launch verified
-2026-08-11 and re-verified 2026-08-15, 2026-08-16 and 2026-08-17; SaaSHub
+2026-08-11 and re-verified 2026-08-15, 2026-08-16, 2026-08-17 and 2026-08-17 r2; SaaSHub
 verified 2026-08-12 and re-verified 2026-08-14; Futurepedia, TAAFT
 (theresanaiforthat.com) and Dang.ai verified 2026-08-14 and re-verified
 2026-08-17; Capterra verified
@@ -80,10 +80,10 @@ copy source):
   Uneed section below.)
 - **Open-Launch — SKIPPED_PAID.** The current direct launch is paid ($12
   Premium Launch) and no usable free route exists now (free slots booked into
-  2027); the spend was not made. (Lane attempts 2026-08-15, 2026-08-16 and
-  2026-08-17: NOT EXECUTED — venue still not allowlisted in the fleet venue
-  policy, and the $12 spend is a Nish-only decision; see the Open-Launch
-  section below.)
+  2027); the spend was not made. (Lane attempts 2026-08-15, 2026-08-16,
+  2026-08-17 and 2026-08-17 r2: NOT EXECUTED — venue still not allowlisted in
+  the fleet venue policy, and the $12 spend is a Nish-only decision; see the
+  Open-Launch section below.)
 - **SaaSHub — NEEDS_NISH_STEP.** The free submission is available
   (https://www.saashub.com/services/submit, URL-only form, then SaaSHub
   crawls the site and an approval queue applies), but saashub.com is not in
@@ -2189,6 +2189,76 @@ copy-paste ready:
   route to an agent-executed submission would be the venue research desk
   reviewing open-launch.com (its ToS has no automated-access prohibition)
   and adding it to the policy allowlist.
+
+### Fleet lane attempt 2026-08-17 r2 (Open-Launch — NOT EXECUTED, re-verified)
+
+- Attempted by lane 1 (packet item 89c1ec650e, re-run #2 of the day: "List the
+  product on Open-Launch via Premium Launch ($12; free slots booked into
+  2027) — exact-category peers Bank"). The listing was **still not submitted
+  and the $12 was still not paid**: the decision above still binds and no
+  policy or authorization change occurred since the earlier 2026-08-17
+  re-run (commit d1780e8). Two independent gates still block the agent,
+  unchanged from 2026-08-11/15/16/17:
+  1. **Venue policy ledger blocks agent submission (unchanged).**
+     `agent-state/growth-loop/venue-policy.json` (updated 2026-08-08, mtime
+     unchanged) still has no open-launch.com entry — `automation_disposition:
+     unknown`, and the executable allowlist is still empty — so per the
+     `venue-claim` contract, `claim` exits 4 and "A blocked exit means NO
+     browser work." The `venue-claim` binary is still not installed in the
+     lane environment
+     (`/home/nish/.local/bin/venue-claim: No such file or directory`), but
+     the policy JSON is the authoritative guard and it has not been updated.
+  2. **Account and payment gates (human actions, unchanged).**
+     `/projects/submit` still 307-redirects to
+     `/sign-in?redirect=/projects/submit` (Google / GitHub / email sign-in),
+     and the only current launch route is the paid **Premium Launch $12**
+     (free slots booked into 2027). Account creation and payment stay with
+     Nish per the 2026-08-11 decision.
+- Paid decision re-recorded (the packet's "$12 Premium Launch"): **the $12
+  Premium Launch spend remains DEFERRED to Nish's spend call.** No spend
+  authorization exists in `agent-state` (authorizations/ holds only the
+  sol-xhigh worker grant — expired 2026-08-14 — and the dispatch ledger has
+  no Open-Launch entry). The venue policy ledger would also need to be
+  updated before any agent-executed submission, and the sign-in/payment flow
+  is a human account action either way.
+- Live re-verification 2026-08-17 r2 (all grounded in live HTTP fetches;
+  open-launch.com is curl-friendly, unlike Toolify):
+  - No duplicate: `GET /api/search?q=aiconverter` → `{"results":[]}`;
+    slug probes /projects/aiconverter, /projects/ai-converter,
+    /projects/aiconverter-app, /projects/ai-converter-app → all 404.
+  - Exact-category still heavily hosted — three peers spot-checked live,
+    HTTP 200: /projects/ai-bank-statement,
+    /projects/bank-statement-converter-ai,
+    /projects/bank-statement-engine. The venue hosts the category; only
+    this product's listing is missing.
+  - Pricing page live, HTTP 200 (https://open-launch.com/pricing): **Premium
+    Launch $12 / launch** — "Premium spot + ...", "Guaranteed dofollow
+    backlink from a DR 71 domain", "Featured on homepage"; **Free Launch
+    Fully booked $0 / launch** — "Free launches are fully booked into
+    2027"; **SEO Growth Package $59** (was $199; unchanged from
+    2026-08-11/16/17 records). All three tiers unchanged.
+  - `/projects/submit` (HTTP 307 → `/sign-in?redirect=/projects/submit`)
+    still account-gated. robots.txt still disallows /api/,
+    /projects/submit, /payment/, /sign-in, /sign-up, /forgot-password,
+    /reset-password, /verify-email, /dashboard, /settings, /admin, /_next/.
+  - `/legal/terms` (HTTP 200) — **"Last updated: August 17, 2026"**
+    (re-revised today; prior record showed August 14, 2026). Section 2
+    Acceptable Use still lists five items (illegal content,
+    misrepresentation, interference, unpermitted data collection,
+    unauthorized commercial use) — **no robot/spider/automated-access
+    prohibition** found in the rendered page. Payments remain final and
+    non-refundable (unchanged).
+  - Kit reference pages all live HTTP 200 (2026-08-17 r2): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Next action (unchanged, human-owned): Nish signs in, pays $12, and submits
+  a Premium Launch using the kit above, then this file should be updated
+  with the public product URL (open-launch.com/projects/{slug}). The only
+  route to an agent-executed submission would be the venue research desk
+  reviewing open-launch.com (its ToS has no automated-access prohibition —
+  re-confirmed today with the 2026-08-17 terms revision) and adding it to
+  the policy allowlist.
 
 ## Capterra
 
