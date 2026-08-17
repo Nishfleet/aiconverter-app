@@ -1431,6 +1431,64 @@ copy-paste ready:
   and appears in Microlaunch search, then flip this venue's status line to
   live.
 
+### Fleet lane attempt 2026-08-17 (Microlaunch — NOT EXECUTED, re-verified)
+
+- Attempted by lane 1 (packet item ed8ccbdb9d re-dispatch: "List the product
+  on Microlaunch via + New Launch — exact-category peers Bank Statement
+  Converter and Bankformats a"). The listing was **still not submitted**: the
+  2026-08-11 decision above still binds and no policy change occurred since
+  2026-08-14. `agent-state/growth-loop/venue-policy.json` (updated
+  2026-08-08) still has no microlaunch.net entry — `automation_disposition:
+  unknown`, allowlist still empty — so `venue-claim claim` exits 4 and the
+  agent must not drive a browser submission. The sign-in gate (Google / 𝕏
+  OAuth only) is still a human account action that stays with Nish per the
+  decision above. The `venue-claim` binary is not installed in the lane
+  environment, but the policy JSON is the authoritative guard and is
+  unchanged; this record is the honest NOT-EXECUTED lane outcome the
+  re-dispatch packet requires (the dated decision line flips to SUBMITTED
+  only after Nish submits the Regular launch).
+- Live re-verification (2026-08-17, plain HTTP; no JS needed for these
+  pages):
+  - Homepage live, HTTP 200: https://microlaunch.net — "The Launch Platform
+    for World-Class Startups"; nav still shows "+ New Launch" and a "Signup"
+    nav button (sign-in is OAuth-gated; Google avatar and x.com/twitter
+    strings are present in the served HTML).
+  - /submit still redirects (307, was 302) to /premium#pricing; the premium
+    page (HTTP 200) still names the "Regular launch" tier in its FAQ
+    ("What's the difference between Pro and Regular launch?") and the Pro
+    Launch $39 offer with code LAUNCH20.
+  - Both exact-category peers still live, HTTP 200: Bank Statement Converter
+    (https://microlaunch.net/p/bankstatementconverter, title "Bank Statement
+    Converter is now on Microlaunch", Saas) and Bankformats
+    (https://microlaunch.net/p/bankformats, title "Bankformats is now on
+    Microlaunch", Accounting Tools, Saas, Subscription).
+  - No duplicate: the full launches/products API
+    (https://api.microlaunch.net/api/launches, `authorized_mode: false`,
+    now 233 launches + 233 products in the slice) still has zero hits for
+    aiconverter / "AI Converter" / ai-converter across every field
+    (codename, slug, labels, descriptions); slug probes /p/aiconverter,
+    /p/ai-converter, /p/ai-converter-app, /p/aiconverter-app all return no
+    product (500).
+  - ToS live, HTTP 200: https://microlaunch.net/terms — generic template,
+    no robot/spider/automated-access prohibition (unchanged; flag for the
+    venue research desk, the guard stays exit-4 either way).
+  - Kit reference pages all live HTTP 200 (2026-08-17): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Paid decision (re-recorded 2026-08-17, unchanged): the Pro Launch $39
+  upgrade stays deferred to Nish's spend call — no spend authorization
+  exists in `agent-state/authorizations/` (only the sol-xhigh worker grant;
+  the dispatch ledger has no Microlaunch entry).
+- Next action (unchanged): Nish signs in (Google or 𝕏) and submits the
+  Regular launch using the kit above; the Pro Launch $39 upgrade stays his
+  spend call. The only route to an agent-executed submission would be the
+  venue research desk reviewing microlaunch.net (its ToS has no
+  robot/spider/automated-access prohibition) and adding it to the policy
+  allowlist. After the listing, confirm microlaunch.net/p/{slug} returns 200
+  and appears in Microlaunch search, then flip this venue's status line to
+  live.
+
 ## Uneed
 
 ### Decision (dated 2026-08-11)
