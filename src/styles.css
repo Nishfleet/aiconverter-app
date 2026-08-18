@@ -3711,7 +3711,7 @@ tbody tr:last-child td {
   }
 
   .site-nav a[href="/support/"],
-  .site-nav a[href="#pricing"],
+  .site-nav a[href="/pricing/"],
   .site-nav .nav-proof {
     display: none;
   }
