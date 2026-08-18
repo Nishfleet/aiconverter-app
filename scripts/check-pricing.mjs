@@ -18,6 +18,14 @@ const landingPageTexts = await Promise.all([
   readFile(path.join(root, "public/bank-statement-pdf-to-csv/index.html"), "utf8"),
   readFile(path.join(root, "public/bank-statement-pdf-to-csv/index.md"), "utf8")
 ]);
+// The pricing route page repeats the pack prices in both the HTML plan cards
+// and the agent-readable markdown alternate (which is byte-identical to the
+// middleware's negotiated pricing markdown). Guard both so a pricing change
+// cannot silently drift from the live /pricing/ surface.
+const pricingPageTexts = await Promise.all([
+  readFile(path.join(root, "public/pricing/index.html"), "utf8"),
+  readFile(path.join(root, "public/pricing/index.md"), "utf8")
+]);
 
 const failures = [];
 
@@ -48,6 +56,21 @@ for (const plan of data.pricing) {
   }
   if (plan.id === "starter" && !landingPageTexts[0].includes(landingExpected)) {
     failures.push(`Bank landing page index.html hero note is missing "${landingExpected}".`);
+  }
+
+  pricingPageTexts.forEach((text, index) => {
+    if (!text.includes(expected)) {
+      failures.push(`Pricing page text ${index + 1} is missing "${expected}".`);
+    }
+  });
+
+  const offerPrice = String(plan.amount / 100);
+  const pricingPageHtml = pricingPageTexts[0];
+  if (!pricingPageHtml.includes(`"price": "${offerPrice}"`)) {
+    failures.push(`Pricing page JSON-LD offer is missing price "${offerPrice}" for ${plan.id}.`);
+  }
+  if (!pricingPageHtml.includes(`"description": "${plan.pages} pages or images"`)) {
+    failures.push(`Pricing page JSON-LD offer is missing the ${plan.pages}-page description for ${plan.id}.`);
   }
 }
 
