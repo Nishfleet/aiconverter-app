@@ -2059,7 +2059,7 @@ function App() {
         </a>
         <nav className="site-nav" aria-label="Primary navigation">
           <a href="/formats/">All formats</a>
-          <a href="#pricing">Pricing</a>
+          <a href="/pricing/">Pricing</a>
           <a href="/support/">Support</a>
           <a className="nav-proof" href="#security">Private</a>
           <a className="nav-cta" href="#start">Start private preview</a>
