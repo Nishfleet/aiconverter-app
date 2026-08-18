@@ -66,3 +66,21 @@ test("every landing page advertising an index.md alternate is served by the mark
   assert.deepEqual(missing, [], "every advertised markdown alternate must resolve through the middleware negotiation map");
   assert.ok(registeredRoutes.has("/receipt-to-csv"), "receipt-to-csv markdown negotiation route should exist");
 });
+
+test("formats page inline critical styles cover every class the body uses", () => {
+  const html = readFileSync("public/formats/index.html", "utf8");
+  const style = html.slice(html.indexOf("<style>"), html.indexOf("</style>"));
+  const body = html.slice(html.indexOf("<body>"));
+  const usedClasses = [...body.matchAll(/class="([^"]+)"/g)]
+    .flatMap((match) => match[1].split(/\s+/))
+    .filter(Boolean);
+  assert.ok(usedClasses.length > 0, "formats body should use some classes");
+  for (const className of usedClasses) {
+    const escaped = className.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    assert.match(
+      style,
+      new RegExp(`\\.${escaped}(?=[\\s.,:{[])`),
+      `inline critical styles should define .${className} so the first paint is never unstyled`
+    );
+  }
+});

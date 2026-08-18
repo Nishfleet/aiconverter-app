@@ -42,6 +42,7 @@ Opening pricing:
 - Starter: ₹399 for 25 pages or images.
 - Standard: ₹799 for 100 pages or images.
 - Bulk: ₹1,399 for 500 pages or images.
+- Full pricing and terms page: https://aiconverter.app/pricing/
 
 Upcoming module:
 - AI-monitored email intake after the secure direct upload workflow is stable.
