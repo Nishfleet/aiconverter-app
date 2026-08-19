@@ -765,7 +765,7 @@ async function insertDodoRefundEvent(env, refund) {
     `INSERT INTO dodo_refund_events (
       id, provider_event_id, event_type, job_id, payment_id, refund_id, status,
       reason, amount, currency, business_id, payload_hash, error, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?)`
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       id,
@@ -780,6 +780,7 @@ async function insertDodoRefundEvent(env, refund) {
       normalizeCurrency(refund.currency),
       refund.businessId || "",
       refund.payloadHash || "",
+      String(refund.error || "").slice(0, 1000),
       now,
       now
     )
@@ -819,6 +820,35 @@ async function markRefundDue(env, job, status) {
     refund_status: status,
     refund_requested_at: new Date().toISOString()
   });
+}
+
+export async function recordDrillWriteOff(env, job, reason) {
+  const now = new Date().toISOString();
+  await insertDodoRefundEvent(env, {
+    job,
+    reason: String(reason || "Operator write-off decision.").slice(0, 3000),
+    status: "written_off",
+    paymentId: job.payment_id || "",
+    refundId: job.refund_id || "",
+    amount: 0,
+    currency: expectedDodoCurrency(env),
+    error: "Operator write-off decision; no cash refund."
+  });
+  await recordJobAttempt(env, {
+    jobId: job.id,
+    attemptType: "refund",
+    status: "written_off",
+    error: "Operator write-off decision; no cash refund.",
+    metadata: {
+      payment_id: job.payment_id || "",
+      reason: String(reason || "").slice(0, 300)
+    }
+  });
+  await updateJob(env, job.id, {
+    refund_status: "written_off",
+    refund_requested_at: now
+  });
+  return { status: "written_off", refundId: job.refund_id || "" };
 }
 
 function normalizeDodoPayment(payment = {}) {

@@ -49,6 +49,24 @@ test("formats page paints useful content without waiting for the full stylesheet
   assert.match(body, /<link[^>]+rel="stylesheet"[^>]+href="\/legal\.css"/, "formats page should load the full stylesheet after the content");
 });
 
+test("every landing page advertising an index.md alternate is served by the markdown negotiation map", () => {
+  const middleware = readFileSync("functions/_middleware.js", "utf8");
+  const mapSection = middleware.slice(middleware.indexOf("const markdownByRoute"));
+  const registeredRoutes = new Set(
+    [...mapSection.matchAll(/^\s*\["(\/[a-z0-9-]+)"/gm)].map((match) => match[1])
+  );
+  const missing = [];
+  for (const page of pages) {
+    const html = readFileSync(page, "utf8");
+    const alternate = html.match(/<link\s+rel="alternate"\s+type="text\/markdown"\s+href="https:\/\/aiconverter\.app([^"]*index\.md)"/);
+    if (!alternate) continue;
+    const route = alternate[1].replace(/\/index\.md$/, "");
+    if (!registeredRoutes.has(route)) missing.push(`${route} (advertised by ${page})`);
+  }
+  assert.deepEqual(missing, [], "every advertised markdown alternate must resolve through the middleware negotiation map");
+  assert.ok(registeredRoutes.has("/receipt-to-csv"), "receipt-to-csv markdown negotiation route should exist");
+});
+
 test("formats page inline critical styles cover every class the body uses", () => {
   const html = readFileSync("public/formats/index.html", "utf8");
   const style = html.slice(html.indexOf("<style>"), html.indexOf("</style>"));
