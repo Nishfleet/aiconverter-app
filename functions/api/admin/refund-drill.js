@@ -1,5 +1,5 @@
 import { requireAdmin } from "../../lib/admin-auth.js";
-import { requestDodoRefund } from "../../lib/dodo.js";
+import { recordDrillWriteOff, requestDodoRefund } from "../../lib/dodo.js";
 import { badRequest, json, methodNotAllowed, serverError } from "../../lib/http.js";
 import { hasRequiredBindings } from "../../lib/jobs.js";
 
@@ -34,6 +34,10 @@ export async function onRequestPost({ request, env }) {
     return badRequest("The drill job is not paid yet.");
   }
 
+  if (body.writeOff === true || body.writeOff === "true") {
+    return writeOffDrillJob(env, job, body);
+  }
+
   const refund = await requestDodoRefund(
     {
       ...env,
@@ -63,6 +67,29 @@ function isRefundableDrillJob(job) {
     String(job.email || "") === DRILL_EMAIL &&
     String(job.original_file_name || "") === DRILL_FILE
   );
+}
+
+async function writeOffDrillJob(env, job, body) {
+  const reason = String(body.reason || "").trim();
+  if (!reason.toUpperCase().includes("WRITE-OFF")) {
+    return badRequest("A write-off requires the reason to contain the explicit WRITE-OFF acknowledgment.");
+  }
+
+  const currentStatus = String(job.refund_status || "").toLowerCase();
+  if (currentStatus !== "refund_due" && currentStatus !== "credit_due") {
+    return badRequest("Only refund-due or credit-due drill jobs can be written off.");
+  }
+
+  const writeOff = await recordDrillWriteOff(env, job, reason);
+
+  return json({
+    ok: true,
+    jobId: job.id,
+    paymentId: job.payment_id,
+    refundStatus: writeOff.status,
+    refundId: writeOff.refundId,
+    message: "Drill refund written off and removed from the refund-due queue."
+  });
 }
 
 async function readJsonBody(request) {
