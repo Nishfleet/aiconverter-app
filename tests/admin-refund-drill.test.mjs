@@ -128,6 +128,201 @@ test("admin refund drill retries a refund-due drill job after operator confirmat
   }
 });
 
+test("admin refund drill records an explicit write-off for a refund-due drill job", async () => {
+  const job = {
+    id: "checkout_drill_writeoff123",
+    email: "admin-drill@aiconverter.app",
+    original_file_name: "checkout-drill-statement.pdf",
+    paid_at: "2026-05-18T00:00:00.000Z",
+    payment_id: "pay_drill_writeoff",
+    plan_id: "starter",
+    download_count: 1,
+    refund_status: "refund_due",
+    refund_id: ""
+  };
+  const events = [];
+  const attempts = [];
+  const updates = [];
+  const response = await refundDrill({
+    env: fakeEnv({ job, events, attempts, updates }),
+    request: new Request("https://aiconverter.app/api/admin/refund-drill", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${"a".repeat(32)}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        jobId: job.id,
+        confirmJobId: job.id,
+        writeOff: true,
+        reason: "Operator write-off decision: WRITE-OFF the blocked ₹299 drill refund."
+      })
+    })
+  });
+  assert.equal(response.status, 200);
+  const payload = await response.json();
+  assert.equal(payload.ok, true);
+  assert.equal(payload.refundStatus, "written_off");
+  assert.equal(payload.refundId, "");
+  assert.equal(payload.message, "Drill refund written off and removed from the refund-due queue.");
+  assert.equal(job.refund_status, "written_off");
+  assert.equal(events.length, 1);
+  assert.equal(events[0].values[6], "written_off");
+  assert.match(String(events[0].values[12]), /write-off decision/i);
+  assert.equal(attempts.length, 1);
+  assert.equal(attempts[0].values[3], "written_off");
+  assert.ok(updates.length >= 1);
+});
+
+test("admin refund drill requires the explicit WRITE-OFF acknowledgment in the reason", async () => {
+  const job = {
+    id: "checkout_drill_writeoff_ack",
+    email: "admin-drill@aiconverter.app",
+    original_file_name: "checkout-drill-statement.pdf",
+    paid_at: "2026-05-18T00:00:00.000Z",
+    payment_id: "pay_drill_writeoff_ack",
+    plan_id: "starter",
+    download_count: 1,
+    refund_status: "refund_due",
+    refund_id: ""
+  };
+  const response = await refundDrill({
+    env: fakeEnv({ job }),
+    request: new Request("https://aiconverter.app/api/admin/refund-drill", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${"a".repeat(32)}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        jobId: job.id,
+        confirmJobId: job.id,
+        writeOff: true,
+        reason: "Operator decides not to refund."
+      })
+    })
+  });
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /WRITE-OFF/);
+});
+
+test("admin refund drill refuses write-off for jobs that are not refund-due or credit-due", async () => {
+  const job = {
+    id: "checkout_drill_writeoff_done",
+    email: "admin-drill@aiconverter.app",
+    original_file_name: "checkout-drill-statement.pdf",
+    paid_at: "2026-05-18T00:00:00.000Z",
+    payment_id: "pay_drill_writeoff_done",
+    plan_id: "starter",
+    download_count: 1,
+    refund_status: "succeeded",
+    refund_id: "ref_already_done"
+  };
+  const response = await refundDrill({
+    env: fakeEnv({ job }),
+    request: new Request("https://aiconverter.app/api/admin/refund-drill", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${"a".repeat(32)}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        jobId: job.id,
+        confirmJobId: job.id,
+        writeOff: true,
+        reason: "Operator write-off decision: WRITE-OFF this drill refund."
+      })
+    })
+  });
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /refund-due or credit-due/);
+});
+
+test("admin refund drill rejects a missing token with 401 and zero Dodo refund calls", async () => {
+  const originalFetch = globalThis.fetch;
+  const job = {
+    id: "checkout_drill_auth123",
+    email: "admin-drill@aiconverter.app",
+    original_file_name: "checkout-drill-statement.pdf",
+    paid_at: "2026-05-18T00:00:00.000Z",
+    payment_id: "pay_drill_auth",
+    plan_id: "starter",
+    download_count: 1
+  };
+  const events = [];
+  const attempts = [];
+  const updates = [];
+  let refundCalls = 0;
+  globalThis.fetch = async () => {
+    refundCalls += 1;
+    assert.fail("no Dodo refund call may happen for an unauthenticated request");
+  };
+
+  try {
+    const response = await refundDrill({
+      env: fakeEnv({ job, events, attempts, updates }),
+      request: new Request("https://aiconverter.app/api/admin/refund-drill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: job.id, confirmJobId: job.id })
+      })
+    });
+
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { error: "Unauthorized." });
+    assert.equal(refundCalls, 0, "Dodo must not be called without a token");
+    assert.equal(events.length, 0, "no refund event may be recorded without a token");
+    assert.equal(attempts.length, 0, "no attempt may be recorded without a token");
+    assert.equal(updates.length, 0, "no job update may happen without a token");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("admin refund drill rejects a wrong token with 401 and zero Dodo refund calls", async () => {
+  const originalFetch = globalThis.fetch;
+  const job = {
+    id: "checkout_drill_auth456",
+    email: "admin-drill@aiconverter.app",
+    original_file_name: "checkout-drill-statement.pdf",
+    paid_at: "2026-05-18T00:00:00.000Z",
+    payment_id: "pay_drill_auth456",
+    plan_id: "starter",
+    download_count: 1
+  };
+  const events = [];
+  const attempts = [];
+  const updates = [];
+  let refundCalls = 0;
+  globalThis.fetch = async () => {
+    refundCalls += 1;
+    assert.fail("no Dodo refund call may happen for an unauthenticated request");
+  };
+
+  try {
+    const response = await refundDrill({
+      env: fakeEnv({ job, events, attempts, updates }),
+      request: new Request("https://aiconverter.app/api/admin/refund-drill", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${"b".repeat(32)}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ jobId: job.id, confirmJobId: job.id })
+      })
+    });
+
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { error: "Unauthorized." });
+    assert.equal(refundCalls, 0, "Dodo must not be called with a wrong token");
+    assert.equal(events.length, 0, "no refund event may be recorded with a wrong token");
+    assert.equal(attempts.length, 0, "no attempt may be recorded with a wrong token");
+    assert.equal(updates.length, 0, "no job update may happen with a wrong token");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 function fakeEnv({ job, events = [], attempts = [], updates = [] }) {
   return {
     ADMIN_TOKEN: "a".repeat(32),
