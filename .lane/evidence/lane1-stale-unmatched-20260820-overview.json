@@ -1,0 +1,70 @@
+{
+  "fetchedAt": "2026-08-20T14:17:34.011Z",
+  "alerts": [
+    {
+      "severity": "warning",
+      "title": "Unmatched Dodo payments",
+      "detail": "1 payment event did not match cleanly."
+    }
+  ],
+  "unmatchedPayments": [
+    {
+      "event_type": "payment.succeeded",
+      "job_id": "",
+      "payment_id": "pay_0NjXVYhB1zUB8cvHx15cO",
+      "checkout_session_id": "cks_0NjXV87kao4KZT53vWL41",
+      "plan_id": "",
+      "status": "succeeded",
+      "match_status": "job_not_found",
+      "created_at": "2026-07-19T18:23:05.601Z"
+    }
+  ],
+  "operationalQueues": {
+    "failedJobs": 5,
+    "stuckProvider": 0,
+    "paymentHandoffs": 0,
+    "stalePaymentHandoffs": 0,
+    "unmatchedPayments": 1,
+    "refundDue": 0,
+    "customerRefundDue": 0,
+    "drillRefundDue": 0,
+    "openSupport": 1,
+    "webhookFailures": 0,
+    "previewErrors": 0,
+    "turnstileFailures": 0
+  },
+  "usage24h": {
+    "total": 0,
+    "preview_ready": 0,
+    "complete": 0,
+    "failed": 0,
+    "converting": 0,
+    "provider_total": 0,
+    "provider_complete": 0,
+    "provider_failed": 0,
+    "provider_converting": 0,
+    "cloudconvert_total": 0,
+    "cloudconvert_complete": 0,
+    "cloudconvert_failed": 0,
+    "cloudconvert_converting": 0,
+    "convertio_total": 0,
+    "convertio_complete": 0,
+    "convertio_failed": 0,
+    "convertio_converting": 0
+  },
+  "monitorStrict": {
+    "ok": false,
+    "warnings": [
+      {
+        "check": "admin-alerts",
+        "warningAlerts": [
+          {
+            "severity": "warning",
+            "title": "Unmatched Dodo payments",
+            "detail": "1 payment event did not match cleanly."
+          }
+        ]
+      }
+    ]
+  }
+}
