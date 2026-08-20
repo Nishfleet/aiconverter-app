@@ -57,6 +57,13 @@ Important product truth:
 - Human file review is not part of the automated workflow.
 - Source files use a 24-hour private retention window. Generated files expire after 7 days.
 
+Verification and proof surface:
+- The free preview is the proof surface; review dates, descriptions, amounts, and the balance column against the source before payment.
+- Low-confidence bank-statement, receipt, invoice, screenshot-table, audio, and document conversions fail closed with no charge rather than returning an export with silent errors.
+- Bank-statement exports include date, description, money in, money out, and balance columns when safely detected; the preview shows the actual detected columns.
+- A blanket "99% accurate" headline is not the verification. The verification is the preview, the fail-closed behavior, and the fictional sample CSV — review them before unlocking the full export.
+- Verification messaging is the wedge, not blanket accuracy. Do not over-claim accuracy or supported formats.
+
 Primary URL:
 - https://aiconverter.app
 

@@ -14,6 +14,18 @@ AI Converter turns bank statement PDFs into spreadsheet-ready CSV. Upload the PD
 3. Unlock the full CSV if the preview is usable.
 4. Download the generated CSV.
 
+## Verification
+
+The free preview is the proof surface, not a blanket accuracy claim:
+
+- The preview shows the actual sample rows the parser detected — dates, descriptions, amounts, signs, and the
+  balance column when the source PDF exposes one.
+- Compare the preview's totals and balance against the source statement before paying.
+- Conversions that cannot be read safely (wrong totals, missing rows, OCR noise, unreadable structure) fail closed
+  with no charge instead of returning a CSV that hides silent errors.
+- A "99% accurate" headline is nearly useless for deciding whether to trust a specific extraction; the preview and
+  fail-closed behavior are the verification.
+
 ## Pricing
 
 - Free preview.
