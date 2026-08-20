@@ -63,6 +63,8 @@ Primary URL:
 Useful pages:
 - https://aiconverter.app/formats/
 - https://aiconverter.app/about/
+- https://aiconverter.app/pricing/
+- https://aiconverter.app/receipt-to-csv/
 - https://aiconverter.app/bank-statement-pdf-to-csv/
 - https://aiconverter.app/convert-bank-statement-to-csv/
 - https://aiconverter.app/pdf-bank-statement-to-quickbooks-csv/
