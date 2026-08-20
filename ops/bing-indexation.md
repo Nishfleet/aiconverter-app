@@ -7,6 +7,32 @@ the backlog item `Bing/DuckDuckGo indexation is zero for an 18-month-old
 domain; no Bing Webmaster ownership or sitemap-submission evidence exists`
 (scout 2026-08-08, amber, traction).
 
+## Re-verification (2026-08-20, lane re-run)
+
+- Bing `site:aiconverter.app` (live SERP fetch 2026-08-20) — **cleanest
+  agent-side read to date: no human-verification challenge.** The SERP renders
+  "About 50 results" that are all unrelated fallback hits (zhihu.com, etc.);
+  zero aiconverter.app URLs anywhere in the HTML. The zero-indexation finding
+  is still live on Bing's own index, not just DDG's derivative view.
+- DuckDuckGo `site:aiconverter.app` (lite.duckduckgo.com) — bot-challenged
+  agent-side this run (duck-select challenge), so no clean DDG row; the Bing
+  SERP above is the clean signal and Bing's index is what DDG serves from.
+- No ownership evidence: `https://aiconverter.app/BingSiteAuth.xml` → HTTP 404;
+  no `msvalidate.01` / `bing-site-verification` meta tag in live homepage HTML
+  (re-checked 2026-08-20).
+- Crawler surfaces healthy: `/robots.txt` 200 (references sitemap, no Bing
+  blocking); `/sitemap.xml` 200 with 22 `<url>` entries, all valid.
+- IndexNow key files **still on main, still not live**: the key file
+  `https://aiconverter.app/1bc751e6-ead3-48da-96d3-722f77cc4464.txt` → HTTP 404
+  (needs a Pages deploy); no IndexNow submission sent (non-live key).
+- **Deploy path unblock in progress:** PR #135
+  (`lane1/deploy-workflow-20260820`, open 2026-08-20) adds a fail-closed
+  Cloudflare Pages deploy workflow (push to main + daily schedule). When it
+  merges and the Pages token is provisioned, the first deploy makes the
+  IndexNow key files go live. This run adds `scripts/indexnow-submit.mjs` so
+  the moment the key file returns 200, the sitemap URLs can be pinged with one
+  command (no account, no credentials — IndexNow is self-issued by design).
+
 ## Re-verification (2026-08-17, lane re-run)
 
 - DuckDuckGo `site:aiconverter.app` (lite.duckduckgo.com, clean page, no
