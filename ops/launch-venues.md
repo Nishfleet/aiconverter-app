@@ -1420,6 +1420,102 @@ copy-paste ready:
   the tool appears in search `q=aiconverter` on toolbit.ai and flip this
   venue's status line to live.
 
+### Fleet lane attempt 2026-08-20 (Toolbit.ai — NOT EXECUTED, re-verified)
+
+- Attempted by lane 1 (packet item c9b3592b7b re-dispatch: "List the
+  product on Toolbit.ai (free plan first; record paid/verified decision) —
+  venue already lists exact-category peers"). The listing was **still not
+  submitted**: the 2026-08-17 decision above still binds and no policy or
+  authorization change occurred since 2026-08-17.
+  `agent-state/growth-loop/venue-policy.json` (updated 2026-08-08, mtime
+  unchanged at 2026-08-08T06:35:38Z) still has no toolbit.ai entry —
+  `automation_disposition: unknown`, allowlist still empty (only the legacy
+  producthunt.com | seo-fix-kit claim, with `status: expired`, is in the
+  ledger; reviewed_venues holds only producthunt.com (prohibited), g2.com,
+  capterra.com, getapp.com, alternativeto.net, startupsubmit.app (all
+  `unknown`)) — so per the `venue-claim` contract, `claim` exits 4 and "A
+  blocked exit means NO browser work." The free flow is also still a human
+  account action (sign-in wall at `/submit/tool?plan=free`, redirecting to
+  `/login?redirect=%2Fsubmit%2Ftool`) whose verification step (embedding
+  the Launch Badge) is account-gated too, and the ToS still prohibits
+  automated access (clause 0.2 in the rendered HTML — "Use any robot,
+  spider, or other automatic device, process, or means to access Service
+  for any purpose, including monitoring or copying any of the material on
+  Service" — same class of language as Product Hunt's prohibition). The
+  `venue-claim` binary is not installed in the lane environment
+  (`/home/nish/.local/bin/venue-claim: No such file or directory`), but the
+  policy JSON is the authoritative guard and is unchanged; this record is
+  the honest NOT-EXECUTED lane outcome the packet requires.
+- Live re-verification 2026-08-20 (plain HTTPS GETs — toolbit.ai apex
+  still 301s to `https://www.toolbit.ai/`, server `cloudflare`; the `www.`
+  host serves curl without a Cloudflare challenge):
+  - No duplicate: site search `q=aiconverter`
+    (https://www.toolbit.ai/search?q=aiconverter, HTTP 200, `<title>aiconverter
+    - AI Tools Search</title>`) returns zero `aiconverter.app` mentions in
+    the rendered HTML — the only `aiconverter` strings are the query echo,
+    the title, and the meta description "Compare features, pricing, and
+    reviews of tools matching your search."
+    https://www.toolbit.ai/ai-tool/ai-converter still serves the soft-404
+    page (HTTP 200 shell, `<title>Page Not Found - 404 Error |
+    Toolbit.ai</title>`).
+  - Exact-category competitors still live, HTTP 200:
+    StatementSheet (https://www.toolbit.ai/ai-tool/statementsheet) and
+    Rocket Statements (https://www.toolbit.ai/ai-tool/rocketstatements) —
+    the venue still hosts the category; only this product's listing is
+    missing.
+  - Submit page live, HTTP 200: https://www.toolbit.ai/submit — the
+    rendered HTML still advertises both **Launch Tool $29 / One-time**
+    ("24 Hours", "Verified Badge") and **Update Tool $19 / One-time**, plus
+    the **Free Plans** track. The free community listing's "verified"
+    step (embedding the Launch Badge) remains the account-gated
+    verification path.
+  - `/submit/tool?plan=free` (HTTP 307) still redirects to
+    `https://www.toolbit.ai/login?redirect=%2Fsubmit%2Ftool`; the login
+    page (HTTP 200) renders the sign-in wall with **"Continue with
+    Google"** rendered in the static HTML (the 2026-08-17 record also
+    noted GitHub; today's static render surfaces Google only, the rest of
+    the OAuth row is JS-rendered). Either way, the sign-in wall is
+    account-gated and stays a human account action.
+  - `/launch-badge` still 404 — the badge snippet stays account-gated.
+  - ToS (https://www.toolbit.ai/terms-and-conditions, HTTP 200): clause
+    0.2 still says "Use any robot, spider, or other automatic device,
+    process, or means to access Service for any purpose, including
+    monitoring or copying any of the material on Service" — same class
+    of language as Product Hunt's prohibition; flag for the venue
+    research desk (the guard stays exit-4 either way).
+  - Kit reference pages all live HTTP 200 (2026-08-20): `/`,
+    `/llms.txt`, `/bank-statement-pdf-to-csv/`, `/sample-csv/`,
+    `/trust/`, `/formats/`. `/pricing/` and `/receipt-to-csv/` still
+    404 (unchanged; the kit claims none of those routes).
+- Policy ledger unchanged (re-read 2026-08-20): `venue-policy.json`
+  updated 2026-08-08; allowlist EMPTY; `reviewed_venues` holds only
+  producthunt.com (prohibited), g2.com, capterra.com, getapp.com,
+  alternativeto.net, startupsubmit.app (all `unknown`) — toolbit.ai is in
+  neither list.
+- `agent-state/authorizations/` holds only
+  `sol-xhigh-worker-grant-20260811.json` — no toolbit.ai spend
+  authorization exists.
+- Paid/verified decision (re-recorded 2026-08-20, unchanged): **free
+  community listing first** — "Launch Tool $0 / Forever" with Launch
+  Badge verification, reviewed in up to 3 days, permanent directory
+  listing. The paid **Launch Tool $29 / One-time** (listed within 24h,
+  blue verified badge, sidebar featured 1 day, one X post) stays
+  deferred to Nish's spend call. The free listing's "verified" step —
+  embedding Toolbit's Launch Badge snippet on aiconverter.app — is a
+  follow-up owner action that needs a tiny deploy once Nish has the
+  snippet from the submission flow (the snippet is account-gated and
+  `/launch-badge` still 404).
+- Next action (unchanged, human-owned): Nish signs in (Google or
+  GitHub) and submits using the kit above, embeds the Launch Badge
+  snippet on aiconverter.app (tiny deploy) to complete the free-verified
+  listing, then this file should be updated with the public tool URL.
+  The only route to an agent-executed submission would be the venue
+  research desk reviewing toolbit.ai's ToS (which, like Product Hunt's,
+  prohibits automated access) and adding the venue to the policy
+  allowlist. After the listing, confirm the tool appears in search
+  `q=aiconverter` on toolbit.ai and flip this venue's status line to
+  live.
+
 ## Toolify.ai
 
 ### Decision (dated 2026-08-11)
