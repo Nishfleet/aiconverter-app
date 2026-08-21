@@ -62,17 +62,39 @@ function makeJob(overrides = {}) {
 //   jobsById            map of job id -> job for "SELECT * FROM jobs WHERE id = ?"
 //   jobsByPayment       map of payment_id -> job for "SELECT * FROM jobs WHERE payment_id = ?"
 //   reusedPaymentJobId  id returned by the payment-id reuse guard query
+//   selectBarrier       { webhookId, waitFor } — holds the first waitFor-1
+//                       reservation SELECTs for webhookId until the waitFor-th
+//                       arrives, reproducing the production both-miss race
 //   env                 extra AICONVERTER_DB-adjacent bindings (DODO_BUSINESS_ID, ...)
-function makeEnv({ job, jobsById, jobsByPayment, reusedPaymentJobId, env: extraEnv = {} } = {}) {
+function makeEnv({ job, jobsById, jobsByPayment, reusedPaymentJobId, selectBarrier, env: extraEnv = {} } = {}) {
   const webhookRows = new Map();
   const mutations = [];
+  let barrierSelects = 0;
+  let barrierWaiters = [];
   const db = {
     prepare(sql) {
       return {
         bind(...values) {
           if (sql.startsWith("SELECT status FROM dodo_webhook_events")) {
-            const row = webhookRows.get(values[0]);
-            return { first: async () => (row ? { status: row.status } : null) };
+            return {
+              first: async () => {
+                // The row is captured before any barrier wait: a query that
+                // raced and saw no row must keep seeing "no row", exactly as
+                // D1 would have returned it at execution time.
+                const row = webhookRows.get(values[0]);
+                if (selectBarrier && values[0] === selectBarrier.webhookId && !row) {
+                  barrierSelects += 1;
+                  if (barrierSelects < selectBarrier.waitFor) {
+                    await new Promise((resolve) => barrierWaiters.push(resolve));
+                  } else {
+                    const pending = barrierWaiters;
+                    barrierWaiters = [];
+                    for (const resolve of pending) resolve();
+                  }
+                }
+                return row ? { status: row.status } : null;
+              }
+            };
           }
           if (sql.includes("UPDATE dodo_webhook_events") && sql.includes("received_count")) {
             return {
@@ -90,6 +112,9 @@ function makeEnv({ job, jobsById, jobsByPayment, reusedPaymentJobId, env: extraE
           if (sql.startsWith("INSERT INTO dodo_webhook_events")) {
             return {
               run: async () => {
+                if (webhookRows.has(values[0])) {
+                  throw new Error("UNIQUE constraint failed: dodo_webhook_events.webhook_id");
+                }
                 webhookRows.set(values[0], {
                   webhook_id: values[0],
                   event_type: values[1],
@@ -310,6 +335,37 @@ test("replayed webhook id is not processed twice and never credits the customer 
   const webhookRow = webhookRows.get(webhookId);
   assert.equal(webhookRow.status, "processed");
   assert.equal(webhookRow.received_count, 1, "replay must not bump the received count");
+});
+
+test("concurrent deliveries of the same webhook id both answer 200 and credit the job once", async () => {
+  const job = makeJob();
+  const payload = paidEventPayload(job);
+  const webhookId = "msg_webhook_concurrent";
+  const { env, mutations, webhookRows } = makeEnv({
+    job,
+    selectBarrier: { webhookId, waitFor: 2 }
+  });
+
+  // Two independent signed deliveries racing on one event id: production D1
+  // lets both reservation SELECTs observe the missing row before either INSERT
+  // commits, so the losing INSERT must surface as a duplicate 200, never an
+  // uncaught 5xx.
+  const deliveries = await Promise.all([
+    postSigned({ env, payload, webhookId }),
+    postSigned({ env, payload, webhookId })
+  ]);
+
+  for (const { response, body } of deliveries) {
+    assert.equal(response.status, 200, "a lost reservation race must never surface as a 5xx");
+    assert.notEqual(body.error, "Webhook processing failed.", "no uncaught-error body shape");
+  }
+
+  const processed = deliveries.filter(({ body }) => body.ok === true && body.duplicate !== true);
+  const duplicates = deliveries.filter(({ body }) => body.duplicate === true && body.received === true);
+  assert.equal(processed.length, 1, "exactly one delivery owns processing");
+  assert.equal(duplicates.length, 1, "the losing delivery is reported as a duplicate");
+  assert.equal(jobCreditMutations(mutations).length, 1, "the job is credited exactly once across the race");
+  assert.equal(webhookRows.get(webhookId)?.status, "processed");
 });
 
 test("payment from a foreign Dodo business is rejected and never credits the job", async () => {

@@ -289,6 +289,10 @@ export async function verifyDodoWebhookSignature({ payload, webhookId, webhookTi
     .some((part) => timingSafeEqual(part.startsWith("v1,") ? part.slice(3) : part.replace(/^v1=/, ""), expected));
 }
 
+function isDodoWebhookUniqueConstraintError(error) {
+  return /UNIQUE constraint failed/i.test(String(error?.message || error || ""));
+}
+
 export async function reserveDodoWebhookEvent(env, { webhookId, eventType, payloadHash, payload }) {
   const now = new Date().toISOString();
   const existing = await env.AICONVERTER_DB.prepare("SELECT status FROM dodo_webhook_events WHERE webhook_id = ?")
@@ -310,24 +314,33 @@ export async function reserveDodoWebhookEvent(env, { webhookId, eventType, paylo
     return { duplicate: false };
   }
 
-  await env.AICONVERTER_DB.prepare(
-    `INSERT INTO dodo_webhook_events (
-      webhook_id, event_type, payload_hash, business_id, provider_object_id, status,
-      error, received_count, first_received_at, last_received_at, processed_at, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, 'received', '', 1, ?, ?, '', ?, ?)`
-  )
-    .bind(
-      webhookId,
-      eventType,
-      payloadHash,
-      String(payload?.business_id || payload?.data?.business_id || ""),
-      providerObjectId(payload?.data || {}),
-      now,
-      now,
-      now,
-      now
+  try {
+    await env.AICONVERTER_DB.prepare(
+      `INSERT INTO dodo_webhook_events (
+        webhook_id, event_type, payload_hash, business_id, provider_object_id, status,
+        error, received_count, first_received_at, last_received_at, processed_at, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, 'received', '', 1, ?, ?, '', ?, ?)`
     )
-    .run();
+      .bind(
+        webhookId,
+        eventType,
+        payloadHash,
+        String(payload?.business_id || payload?.data?.business_id || ""),
+        providerObjectId(payload?.data || {}),
+        now,
+        now,
+        now,
+        now
+      )
+      .run();
+  } catch (error) {
+    if (!isDodoWebhookUniqueConstraintError(error)) throw error;
+    const lost = await env.AICONVERTER_DB.prepare("SELECT status FROM dodo_webhook_events WHERE webhook_id = ?")
+      .bind(webhookId)
+      .first();
+    if (!lost) throw error;
+    return { duplicate: true };
+  }
 
   return { duplicate: false };
 }
