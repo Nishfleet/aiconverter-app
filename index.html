@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Preview private files before checkout. Convert bank statements, receipts, invoices, documents, audio, images, and archives into clean exports."
+      content="Preview before checkout, verify the extraction before paying. Convert statements, receipts, invoices, documents, audio, images, and archives."
     />
     <link rel="canonical" href="https://aiconverter.app/" />
     <meta property="og:title" content="AI Converter - Useful file conversion" />
     <meta
       property="og:description"
-      content="Preview private files before checkout. Convert statements, receipts, invoices, documents, audio, images, and archives into clean exports."
+      content="Preview before checkout, verify the extraction before paying. Convert statements, receipts, invoices, documents, audio, images, and archives."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://aiconverter.app/" />
@@ -22,7 +22,7 @@
     <meta name="twitter:title" content="AI Converter - Useful file conversion" />
     <meta
       name="twitter:description"
-      content="Preview private files before checkout. Convert statements, receipts, invoices, documents, audio, images, and archives into clean exports."
+      content="Preview before checkout, verify the extraction before paying. Convert statements, receipts, invoices, documents, audio, images, and archives."
     />
     <meta name="twitter:image" content="https://aiconverter.app/og-image.png" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -69,7 +69,7 @@
         "operatingSystem": "Web",
         "url": "https://aiconverter.app",
         "image": "https://aiconverter.app/og-image.png",
-        "description": "AI Converter previews private files before checkout and converts bank statements, receipts, invoices, documents, audio, images, and archives into clean exports.",
+        "description": "AI Converter previews private files before checkout, verifies the extraction before payment, and converts bank statements, receipts, invoices, documents, audio, images, and archives into clean exports.",
         "offers": [
           {
             "@type": "Offer",
@@ -124,6 +124,19 @@
           <a href="/data-retention/">data retention policy</a>, and <a href="/refund/">refund policy</a> before
           using the service for important records.
         </p>
+        <h2>How do you know the extraction is right?</h2>
+        <p>
+          A bank-statement, receipt, invoice, or document export is only as useful as the verification behind it. AI
+          Converter puts the proof surface in front of payment instead of behind it: the
+          <a href="/bank-statement-pdf-to-csv/">bank statement preview</a> shows the actual sample rows the parser
+          detected, including the date, description, money in, money out, and balance columns where the source PDF
+          exposes them; the
+          <a href="/sample-csv/">fictional sample CSV</a> shows the output shape in advance; and any conversion that
+          cannot read the source safely — wrong totals, missing rows, OCR noise, or unreadable structure — fails closed
+          with no charge instead of returning a CSV that hides silent errors. The preview is the verification; use it
+          before you unlock the full file.
+        </p>
+
         <h2>Accounting import references</h2>
         <p>
           Review every export before importing it into bookkeeping software. Official product guidance is available
