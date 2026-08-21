@@ -8,6 +8,17 @@ The production AI module is bank statement PDF to CSV. Receipt, invoice, screens
 
 Accounting SEO pages explain truthful CSV preparation use cases for QuickBooks, Xero, Wave, Excel, credit card statements, and bookkeepers. These pages must not claim official accounting-platform support, direct bank feeds, guaranteed imports, reconciliation, categorization, SOC 2, GDPR, accounting advice, or tax advice.
 
+### Verification is the wedge, not blanket accuracy
+
+A "99% accurate" headline is nearly useless for deciding whether to trust a specific extraction. The real question buyers ask is "how would I know, right now, if this particular extraction dropped a row or misread an amount?" AI Converter answers that with the proof surface, not with a blanket accuracy claim:
+
+- The free preview is the verification. It shows the actual sample rows the parser detected — dates, descriptions, amounts, signs, and the balance column when the source PDF exposes one.
+- Compare the preview's totals and balance against the source statement before paying.
+- Conversions that cannot be read safely (wrong totals, missing rows, OCR noise, unreadable structure) fail closed with no charge instead of returning a CSV that hides silent errors.
+- The fictional sample CSV shows the output shape in advance; your real preview is the verification.
+- One automatic stronger redo is included for paid jobs when the route is AI-extraction based.
+- The verification message owns the wedge. Do not over-claim accuracy, supported formats, or bank coverage.
+
 Live behavior:
 - Direct browser upload for bank statement PDFs.
 - PDF bank statement to QuickBooks CSV preparation, with explicit limits: not official QuickBooks Web Connect, no QuickBooks connection, and no guaranteed import.
@@ -25,6 +36,7 @@ Live behavior:
 - Paid full extraction and CSV download.
 - One automatic stronger redo for paid jobs.
 - Low-confidence conversions fail closed.
+- Bank-statement exports include date, description, money in, money out, and balance columns when safely detected; the preview shows the actual detected columns.
 - No human file review queue.
 - No emailed bank statements in the live bank-statement workflow.
 - Receipt image or PDF to expense CSV is beta. It can export vendor, date, category, total, tax, payment method, and notes when safely detected.
