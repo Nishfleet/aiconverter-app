@@ -11,18 +11,21 @@ Toolify.ai verified 2026-08-11 and re-verified 2026-08-12 and 2026-08-15; Microl
 2026-08-11 and re-verified 2026-08-15, 2026-08-16 and 2026-08-17; SaaSHub
 verified 2026-08-12 and re-verified 2026-08-14; Futurepedia, TAAFT
 (theresanaiforthat.com) and Dang.ai verified 2026-08-14 and re-verified
-2026-08-17; Capterra verified
+2026-08-17; TinyLaunch verified 2026-08-21 (positive evidence: vendor-
+published `/llms.txt`, `/openapi.json`, and `/.well-known/agents.json` plus
+a ToS with no blanket robot/spider/automated-access prohibition — flagged
+for the venue research desk); Capterra verified
 2026-08-15 via Wayback/CDX (direct VPS access remains 403-blocked by
 Capterra's bot wall, so no live-page claim is made for it — see the Capterra
 section); G2 verified 2026-08-15 (g2.com itself is bot-walled from this VPS —
 the eligibility rule and official create-a-profile flow were verified via
 credential-free fetch/search evidence, see the G2 section).
-Automated submission is blocked for all fifteen venues by the fleet venue
+Automated submission is blocked for all sixteen venues by the fleet venue
 policy ledger (`agent-state/growth-loop/venue-policy.json` and the
 `venue-claim` guard): Product Hunt is reviewed as prohibiting automation;
 BetaList, WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, Microlaunch, uneed.best,
 Open-Launch, saashub.com, futurepedia.io, theresanaiforthat.com, dang.ai,
-capterra.com, and g2.com
+tinylaunch.com, capterra.com, and g2.com
 are not yet reviewed (`automation_disposition: unknown`). Uneed is
 the first venue that publishes its own official agent-launch API
 (`/launch.txt` + REST `/api/v1`) — strong positive evidence the venue research
@@ -3294,3 +3297,378 @@ copy-paste ready:
   avoids blanket accuracy/bank-support claims and never references
   undeployed `/pricing/` or `/receipt-to-csv/`; then update this file with
   the public URL (g2.com/products/{slug}).
+
+## TinyLaunch
+
+### Decision (dated 2026-08-21)
+
+- **Outcome: NOT EXECUTED on 2026-08-21. 3 exact-category competitors
+  launched on TinyLaunch in the last 30 days verified live; the free
+  submission kit is ready below; the listing is blocked on (a) a venue-policy
+  review — `tinylaunch.com` is not in `agent-state/growth-loop/venue-policy.json`
+  (`automation_disposition: unknown`, allowlist empty, ledger updated
+  2026-08-08) so the lane does not drive the API directly — and (b) Nish's
+  email + OTP for the agent-friendly API below. TinyLaunch publishes the
+  strongest positive agent-submission evidence of any venue in this file —
+  flag for the venue research desk.**
+- Reason: TinyLaunch is a live indie-startup launch directory with weekly
+  launch windows and an explicit, vendor-published AI-agent submission API
+  (https://www.tinylaunch.com/.well-known/agents.json → base_url
+  `https://www.tinylaunch.com/api/v1`, bearer-JWT auth via
+  `/auth/request-code` + `/auth/verify` email OTP). The companion docs are
+  `https://www.tinylaunch.com/llms.txt` ("TinyLaunch — Agent Guide", a
+  narrative end-to-end guide with eight endpoints) and
+  `https://www.tinylaunch.com/openapi.json` (full OpenAPI 3.0.3 schema).
+  This is the first venue in this file with a vendor-published agent flow —
+  strong positive evidence for the venue research desk to weigh against the
+  current `unknown` disposition. The packet's verification ask (3
+  exact-category competitors launched in the last 30 days) is satisfied
+  below; AI Converter's listing itself remains the lane's blocked action.
+- Three exact-category competitors launched on TinyLaunch in the last 30
+  days (all verified live 2026-08-21, all under the Finance & FinTech /
+  PDF-bank-statement-to-spreadsheet exact category — the same category
+  AI Converter's primary workflow targets):
+  1. **Bank Statement Engine**
+     (https://www.tinylaunch.com/launch/16986-bank-statement-engine,
+     launched 2026-07-27, archive page
+     https://www.tinylaunch.com/launch-archive/2026/7/27): "Free PDF bank
+     statement converter. No signup needed. Bank Statement Engine is a
+     free tool that converts PDF bank statements into Excel, CSV, JSON…"
+     — exact-term, exact-output match to AI Converter's primary
+     bank-statement PDF → CSV workflow.
+  2. **Statement Flow**
+     (https://www.tinylaunch.com/launch/16996-statement-flow, launched
+     2026-07-27, archive page
+     https://www.tinylaunch.com/launch-archive/2026/7/27): "Convert any
+     bank statement — even scans & photos. StatementFlow uses AI vision
+     to convert PDF, scanned, or photographed bank statements into clean
+     structured data." — same category, AI-vision variant.
+  3. **Clearly Ledger**
+     (https://www.tinylaunch.com/launch/17071-clearly-ledger, launched
+     2026-08-03, archive page
+     https://www.tinylaunch.com/launch-archive/2026/8/3): "Bank Statement
+     Converter — Free PDF to Excel & CSV. Upload a PDF bank statement and
+     get structured Excel/CSV." — same category, free, accountant-targeted.
+- Other category-adjacent launches in the same 30-day window (verified live
+  2026-08-21) that confirm TinyLaunch hosts the conversion/finance space
+  even if they are not the exact peer for AI Converter's primary
+  bank-statement workflow: invoicelaunch
+  (/launch/16373-invoicelaunch, 2026-08-10, "Invoice, pay, clients"),
+  Snapreceipt.co (/launch/17531-snapreceiptco, 2026-08-10, CRA-ready receipt
+  to Google Sheet), TapTax (/launch/17485-taptax, 2026-08-10, UK Making
+  Tax Digital filing), EmLedger (/launch/16033-emledger, 2026-08-03,
+  multi-entity accounting), CSVtoSheets (/launch/16846-csvtosheets,
+  2026-07-27, CSV to Google Sheets Mac app), Smash Invoices iOS
+  (/launch/18141-smash-invoices-ios, 2026-07-27, voice to invoice), Receiptum
+  (/launch/15409-receiptum, 2026-07-20, custom-receipt generator — listed
+  just outside the 30-day window from today, included for context only).
+- No aiconverter.app duplicate (verified live 2026-08-21, plain HTTPS):
+  slug probes `/launch/aiconverter`, `/launch/ai-converter`,
+  `/launch/aiconverter-app`, `/launch/ai-converter-app` all HTTP 404 on
+  the `https://www.tinylaunch.com/` host. The full launch archive pages
+  for 2026-07-20, 2026-07-27, 2026-08-03, 2026-08-10, 2026-08-17 contain
+  zero `aiconverter.app` mentions. The exact-name peer above
+  (Bank Statement Engine) and the venue's name-collision pattern confirm
+  this listing is missing, not duplicate.
+- Schedule (live `GET https://www.tinylaunch.com/api/v1/launch-dates`, HTTP
+  200, 2026-08-21): the **next free launch slot is 2026-09-21** (100 free
+  slots, `premium_only: false`, `bookable_free: true`). Slots for
+  2026-08-24, 2026-08-31, 2026-09-07, 2026-09-14 are listed as `full,
+  premium_only: true` — premium-only launch windows, paid via the
+  `payment_url` returned by `POST /api/v1/launches`. Premium pricing on
+  https://www.tinylaunch.com/pricing (HTTP 200, 2026-08-21): free launches
+  and premium-launch upgrades, plus directory submissions, private
+  feedback, public reviews, and featured spots (paid amounts not surfaced
+  on the public pricing page text; the `POST /api/v1/launches` response
+  carries the live `payment_url`).
+- ToS (https://www.tinylaunch.com/tos, HTTP 200, 2026-08-21): only one
+  mention of "Robot" in the rendered page — the venue has **no blanket
+  robot/spider/automated-access prohibition** in its Terms of Service
+  (contrast with Product Hunt's ToS and Toolbit.ai's ToS §7 which both
+  explicitly prohibit automated access). Combined with the vendor-published
+  agent flow, this is the strongest case in this file for a positive
+  `automation_disposition` review.
+- Constraint: the lane does not drive the submission because
+  `tinylaunch.com` is not in `agent-state/growth-loop/venue-policy.json`
+  (`automation_disposition: unknown`, executable allowlist empty, ledger
+  updated 2026-08-08) — `venue-claim claim` would exit 4 and the agent must
+  not drive browser/API submission until the venue research desk reviews
+  the venue and adds it to the allowlist. Even with the policy cleared, the
+  `/auth/request-code` step requires Nish's email (the 6-digit OTP is
+  emailed to the user; the agent must paste the code back to the verify
+  step) and any premium launch needs a paid `payment_url` decision. The
+  free launch only requires an email + OTP — same human-supervised flow
+  pattern as Uneed and Microlaunch. Submission is therefore a Nish
+  action (email + OTP) with the prepared copy below; the agent may drive
+  the API once the venue research desk updates the ledger.
+- Next action (two parallel paths): **(A) venue research desk reviews
+  `tinylaunch.com`** and (if approved) adds it to the policy allowlist with
+  `automation_disposition: allowed` referencing the `/llms.txt`,
+  `/openapi.json`, `/agents.json` evidence and the lack of a blanket
+  robot/spider prohibition in ToS — the strongest positive-evidence case
+  in this file. **(B) Nish decides on the spend** (free launch = no
+  money boundary; premium launch = paid via `payment_url`, separate spend
+  call) **and provides an email + receives the 6-digit OTP** for the
+  `/auth/request-code` → `/auth/verify` flow. After either path, run
+  the agent submission flow below, confirm the public `/launch/{id}-…` page
+  resolves and links https://aiconverter.app/, then update this file with
+  the public URL and flip the venue's status line to live.
+
+### Manual / agent submission kit (copy-paste ready)
+
+**Per `/llms.txt` "TinyLaunch — Agent Guide" + `/openapi.json` schema** —
+the eight endpoints needed for an end-to-end agent submission, in order:
+
+1. `POST https://www.tinylaunch.com/api/v1/auth/request-code` — body
+   `{"email": "<Nish's email>"}`. Returns `{status: "sent"}`; a 6-digit
+   OTP is emailed. **No auth header.**
+2. `POST https://www.tinylaunch.com/api/v1/auth/verify` — body
+   `{"email": "<Nish's email>", "code": "<6-digit OTP>"}`. Returns
+   `{access_token, refresh_token, user_id, email}`. **No auth header.**
+   Token lasts ~1 hour.
+3. `GET https://www.tinylaunch.com/api/v1/maker` with `Authorization:
+   Bearer <access_token>` — returns the existing maker profile if any
+   (404 means create one).
+4. `POST https://www.tinylaunch.com/api/v1/maker` with Bearer token —
+   body `MakerInput`: `firstName` (1–20), `lastName` (≤20, optional),
+   `handle` (5–20, `[a-zA-Z0-9_]`), `xHandle` (≤20, optional, `@`-prefixed).
+   Skip if step 3 returned an existing maker.
+5. `POST https://www.tinylaunch.com/api/v1/startups` with Bearer token —
+   body `StartupInput`:
+   - `name`: "AI Converter" (≤30)
+   - `tagline`: "Bank statement PDFs to CSV you can review before paying"
+   - `description`: see below
+   - `url`: "https://aiconverter.app"
+   - `category_id`: 5 (Finance & FinTech, the closest live category to
+     the bank-statement-to-CSV exact-category peers above; pulled live
+     from `GET https://www.tinylaunch.com/api/v1/categories`, HTTP 200,
+     2026-08-21)
+   - `logo`: `LogoInput` — a 200 KB-cap PNG/JPG/JPEG/WEBP base64
+     (use the existing aiconverter.app wordmark; pull from
+     `public/` at submission time and base64-encode).
+6. `POST https://www.tinylaunch.com/api/v1/launches` with Bearer token —
+   body `{startup_id: <id>, date: "<2026-09-21 for free>", tier: "free"}`
+   (or `tier: "premium"` with the `payment_url` from the response).
+   - Free slots (live 2026-08-21): the next bookable free date is
+     **2026-09-21**, then weekly 2026-09-28, 2026-10-05, 2026-10-12,
+     2026-10-19, 2026-10-26. Earlier dates (2026-08-24, 2026-08-31,
+     2026-09-07, 2026-09-14) are premium-only with `status: "full"`.
+7. **No probe other endpoints** — the `/llms.txt` guide is explicit:
+   "Don't probe other endpoints or guess values." Errors share
+   `{"error": "<machine_code>", "detail"?: "<human msg>"}`; branch on
+   the code (`invalid_token` → redo steps 1–2; `waiting_line_limit_reached`
+   → use a different free date; etc.).
+8. After the launch window fires, confirm the public page
+   `https://www.tinylaunch.com/launch/<id>-ai-converter` resolves with
+   the kit copy below, links https://aiconverter.app/, and that search
+   for "aiconverter" on the site surfaces the new launch. Then update
+   this file with the public URL and flip the venue's status line to
+   live.
+
+**Copy (verbatim, copy-paste ready):**
+
+- **Name (≤30):** `AI Converter`
+- **Tagline:** `Bank statement PDFs to CSV you can review before paying`
+- **Description:**
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in
+  > your browser. Review sample rows free, then unlock the full
+  > extraction only when the preview looks right. OCR fallback handles
+  > scanned statements; low confidence fails closed with no charge. No
+  > bank logins and no human review queue; source files are deleted
+  > after 24 hours.
+
+- **Category id:** `5` (Finance & FinTech, Business & Finance group —
+  live from `GET /api/v1/categories` 2026-08-21).
+- **URL:** `https://aiconverter.app`
+- **Canonical links for the listing** (all verified live HTTP 200 on
+  2026-08-21, except `/pricing/` and `/receipt-to-csv/` which are not
+  claimed in this kit):
+  - https://aiconverter.app/bank-statement-pdf-to-csv/
+  - https://aiconverter.app/sample-csv/
+  - https://aiconverter.app/trust/
+  - https://aiconverter.app/formats/
+- **Maker profile** (step 4): `firstName` "Nish", `handle` "nish3451"
+  (matches the GitHub org owner), `xHandle` "@nish3451" if available.
+  Pulled live at submission time — adjust if the email account is
+  registered to a different maker handle.
+
+**Post-listing check (same pattern as other venues in this file):** the
+public `/launch/{id}-ai-converter` page resolves and links
+https://aiconverter.app/ and a live canonical bank-statement page;
+copy avoids blanket accuracy/bank-support claims and never references
+undeployed `/pricing/` or `/receipt-to-csv/`; the launch slot date
+matches the chosen date (free = 2026-09-21 earliest; premium = any
+slot from 2026-08-24 with `payment_url` checkout); then update this
+file with the public URL and flip the venue's status line to live.
+
+### Fleet lane attempt 2026-08-21 (TinyLaunch — 3 exact-category peers verified, listing NOT EXECUTED)
+
+- Attempted by lane 1 (packet item 84b2e7b871: "List the product on
+  TinyLaunch — 3 exact-category competitors launched there in the last
+  30 days and AI Converter"). The verification half of the packet
+  (3 exact-category competitors in the last 30 days) is **satisfied**
+  — Bank Statement Engine (2026-07-27), Statement Flow (2026-07-27),
+  and Clearly Ledger (2026-08-03) are all live on the venue, all
+  under the bank-statement-PDF-to-spreadsheet exact category, and all
+  documented above with live URLs, descriptions, and launch dates.
+  The submission half (the AI Converter listing) is **NOT EXECUTED**
+  for the two reasons below; the kit is copy-paste ready and the
+  path-to-live is documented.
+- **Reason 1 — venue policy guard (blocks lane-driven submission).**
+  `agent-state/growth-loop/venue-policy.json` (updated 2026-08-08, well
+  within the 90-day freshness window) still has no `tinylaunch.com`
+  entry — `automation_disposition: unknown`, executable allowlist
+  empty — so `venue-claim claim` exits 4 and the agent must not drive
+  the `/api/v1/*` submission directly. The `venue-claim` binary is not
+  installed in the lane environment, but the policy JSON is the
+  authoritative guard and is unchanged. TinyLaunch publishes the
+  strongest positive agent-submission evidence of any venue in this
+  file — `/llms.txt`, `/openapi.json`, `/agents.json`, and a ToS with
+  no blanket robot/spider prohibition — and the venue research desk is
+  the right path to flip the disposition to `allowed`.
+- **Reason 2 — human OTP / spend boundary.** Even with the policy
+  cleared, `/auth/request-code` emails a 6-digit OTP to the user's
+  email and `/auth/verify` requires pasting that code back. The free
+  launch only requires an email; a premium launch adds a `payment_url`
+  checkout (a Nish spend decision — no authorization exists in
+  `agent-state/authorizations/`; only the sol-xhigh worker grant — expired
+  2026-08-14 — and the dispatch ledger has no TinyLaunch entry). This
+  matches the pattern at Uneed (agent API + email-OTP), Microlaunch
+  (OAuth + optional paid Pro Launch), and Open-Launch (account + optional
+  paid Premium Launch).
+- Live re-verification (2026-08-21, plain HTTPS GETs):
+  - Homepage (https://www.tinylaunch.com/, HTTP 200): 19 launches
+    listed, none aiconverter.app; the homepage is JS-rendered and the
+    launch IDs were pulled from the rendered HTML href attributes
+    rather than from the JSON API (the venue has no public search
+    endpoint — search is the JS-driven homepage form).
+  - Launch-archive weekly pages (HTTP 200): 2026-07-20, 2026-07-27,
+    2026-08-03, 2026-08-10, 2026-08-17 all rendered. Slug probes
+    `/launch/aiconverter`, `/launch/ai-converter`,
+    `/launch/aiconverter-app`, `/launch/ai-converter-app` all HTTP
+    404; zero `aiconverter.app` mentions in any archive page.
+  - The three exact-category peers above (Bank Statement Engine,
+    Statement Flow, Clearly Ledger) all rendered the expected
+    bank-statement-PDF-to-spreadsheet descriptions live 2026-08-21.
+  - `/api/v1/categories` (HTTP 200): Finance & FinTech is `id: 5`,
+    Business & Finance group — closest live category for the
+    bank-statement-to-CSV exact-category peer set; no narrower
+    "Bank Statement" subcategory exists.
+  - `/api/v1/launch-dates` (HTTP 200): next free slot is 2026-09-21;
+    earlier dates 2026-08-24 / 2026-08-31 / 2026-09-07 / 2026-09-14
+    are full and `premium_only: true`.
+  - `/llms.txt` (HTTP 200): the eight-endpoint agent flow above is
+    documented verbatim.
+  - `/openapi.json` (HTTP 200): full OpenAPI 3.0.3 schema; bearer-JWT
+    auth; endpoints `/auth/request-code`, `/auth/verify`, `/me`,
+    `/maker` (GET/POST/PATCH), `/startups` (GET/POST),
+    `/startups/{id}` (GET/PATCH), `/launches` (POST).
+  - `/.well-known/agents.json` (HTTP 200): `schema_version: v1`,
+    `name: TinyLaunch`, `description: "Launch directory for indie
+    startups. Agents can sign up users, manage maker profiles,
+    register startups, and schedule launches over a JSON API."`,
+    `legal_info_url: https://www.tinylaunch.com/tos`.
+  - `/pricing` (HTTP 200): free launches, premium launches, directory
+    submissions, private feedback, public reviews, featured spots —
+    specific premium prices are not surfaced on the public pricing
+    page; the `POST /launches` response carries the live `payment_url`.
+  - `/tos` (HTTP 200, 2026-08-21): only one mention of "Robot" in the
+    rendered page — the venue has **no blanket robot/spider/
+    automated-access prohibition** in its Terms of Service (contrast
+    with Product Hunt's ToS and Toolbit.ai's ToS §7). Strong positive
+    evidence for the venue research desk.
+  - Kit reference pages all live HTTP 200 (2026-08-21): `/`,
+    `/llms.txt`, `/bank-statement-pdf-to-csv/`, `/sample-csv/`,
+    `/trust/`, `/formats/`. `/pricing/` and `/receipt-to-csv/` still
+    404; the kit claims none of those routes (consistent with the
+    /pricing/ 404 regression noted in the 2026-08-20 Product Hunt +
+    BetaList section).
+- Next action (unchanged): **(A)** venue research desk reviews
+  `tinylaunch.com` against the positive evidence above (the strongest
+  case in this file) and updates the ledger to `automation_disposition:
+  allowed`. **(B)** Nish provides an email for the agent API and
+  decides on the launch tier (free = no money boundary, 2026-09-21
+  earliest; premium = paid via the live `payment_url`, separate spend
+  call). The kit above is copy-paste / curl-paste ready. After the
+  listing, confirm the `/launch/{id}-…` page resolves and update this
+  file with the public URL, then flip the venue's status line to
+  live.
+
+### Fleet re-attempt 2026-08-21 (TinyLaunch — re-verified, listing still NOT EXECUTED)
+
+- Re-attempted by lane 1 (packet item 84b2e7b871, re-dispatch: "List the
+  product on TinyLaunch — 3 exact-category competitors launched there
+  in the last 30 days and AI Converter"). The decision and the kit
+  above are unchanged: the listing is still NOT EXECUTED for the same
+  two reasons, and the verification half (3 exact-category competitors
+  in the last 30 days) is re-confirmed live below. The free submission
+  kit is copy-paste / curl-paste ready and remains valid.
+- **Reason 1 — venue policy guard (still blocks lane-driven
+  submission).** `agent-state/growth-loop/venue-policy.json` (updated
+  2026-08-08, well within the 90-day freshness window) still has no
+  `tinylaunch.com` entry — `automation_disposition: unknown`,
+  executable allowlist empty — so `venue-claim claim` would still exit
+  4 and the agent must not drive the `/api/v1/*` submission directly.
+  The `venue-claim` binary is still not installed in the lane
+  environment (`/home/nish/.local/bin/venue-claim: No such file or
+  directory`), but the policy JSON is the authoritative guard and is
+  unchanged. TinyLaunch still publishes the strongest positive
+  agent-submission evidence in this file — `/llms.txt`,
+  `/openapi.json`, `/agents.json`, and a ToS with no blanket
+  robot/spider prohibition — and the venue research desk remains the
+  right path to flip the disposition to `allowed`.
+- **Reason 2 — human OTP / spend boundary (still blocks lane-driven
+  submission).** Even with the policy cleared, `/auth/request-code`
+  emails a 6-digit OTP to the user's email and `/auth/verify`
+  requires pasting that code back. The free launch only requires an
+  email; a premium launch adds a `payment_url` checkout (a Nish spend
+  decision — no authorization exists in `agent-state/authorizations/`;
+  only the sol-xhigh worker grant — expired 2026-08-14 — and the
+  dispatch ledger has no TinyLaunch entry). This matches the pattern
+  at Uneed (agent API + email-OTP), Microlaunch (OAuth + optional
+  paid Pro Launch), and Open-Launch (account + optional paid Premium
+  Launch).
+- Live re-verification (2026-08-21, plain HTTPS GETs — same day, same
+  evidence set as the prior attempt; re-checked):
+  - The three exact-category peers (Bank Statement Engine,
+    Statement Flow, Clearly Ledger) all still HTTP 200 with the same
+    bank-statement-PDF-to-spreadsheet descriptions and launch dates:
+    `/launch/16986-bank-statement-engine` (launched 2026-07-27),
+    `/launch/16996-statement-flow` (launched 2026-07-27),
+    `/launch/17071-clearly-ledger` (launched 2026-08-03) — all under
+    30 days from today (2026-08-21). The verification half of the
+    packet stands satisfied.
+  - `/api/v1/launch-dates` (HTTP 200, 2026-08-21) still returns the
+    same schedule: 2026-08-24 / 2026-08-31 / 2026-09-07 / 2026-09-14
+    are full and `premium_only: true`; the next free slot is still
+    **2026-09-21** (100 free slots,
+    `premium_only: false, bookable_free: true`); weekly free slots
+    continue 2026-09-28, 2026-10-05, 2026-10-12, 2026-10-19,
+    2026-10-26.
+  - `/api/v1/categories` (HTTP 200): Finance & FinTech is still
+    `id: 5`, Business & Finance group — no narrower "Bank Statement"
+    subcategory exists.
+  - `/llms.txt`, `/openapi.json`, `/.well-known/agents.json`,
+    `/pricing`, `/tos` all still HTTP 200 with the same content as
+    the prior attempt; the venue still publishes no blanket
+    robot/spider prohibition in its ToS.
+  - Slug probes `/launch/aiconverter`, `/launch/ai-converter`,
+    `/launch/aiconverter-app`, `/launch/ai-converter-app` all still
+    HTTP 404; zero `aiconverter.app` mentions in any of the
+    launch-archive weekly pages (2026-07-20, 2026-07-27, 2026-08-03,
+    2026-08-10, 2026-08-17). The listing is missing, not duplicate.
+  - Kit reference pages all still live HTTP 200: `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`,
+    `/formats/`. `/pricing/` and `/receipt-to-csv/` still 404; the
+    kit still claims none of those routes.
+- Outcome (re-affirmed 2026-08-21): **verification half satisfied,
+  submission half NOT EXECUTED.** The venue policy guard and the
+  email-OTP/spend boundary both still bind; no policy or
+  authorization change has occurred since the prior attempt. The kit
+  above remains copy-paste / curl-paste ready for Nish (email + OTP
+  for `/auth/request-code` → `/auth/verify`, then steps 3–6) or for an
+  agent run once the venue research desk clears the policy. Once the
+  launch slot date is chosen (free = 2026-09-21 earliest; premium =
+  any slot from 2026-08-24 with `payment_url` checkout), the listing
+  becomes a 5–10 minute end-to-end flow.
