@@ -30,6 +30,7 @@
 ## Security Controls
 
 - Bank statement uploads are PDF-only. Receipt, invoice, screenshot-table, and screenshot-to-HTML beta uploads accept PDF, PNG, JPG, JPEG, and WEBP. Audio transcript beta uploads accept MP3, WAV, M4A, AAC, OGG, and WEBM up to 25 MB. Document-to-Markdown beta uploads accept the Cloudflare-supported Markdown conversion formats wired in `supportedConverters()`. Local image-format and raster-to-SVG conversion accepts PNG, JPG, JPEG, and WEBP in the browser.
+- Password-protected PDFs are supported. The upload form accepts an optional PDF password; the password is used to decrypt the PDF locally during preview and is never written to private storage or stored beyond the single upload request. The built-in PDF parser unlocks protected PDFs through PDF.js when the password matches; the OCR fallback paths (Mistral, Azure, Cloudflare) only attempt pages they can render or decode, and surface a clear `pdf_incorrect_password` error when the supplied password cannot unlock the file.
 - 50 MB file limit.
 - 500 page hard limit; larger PDFs are rejected with a split-file instruction.
 - PDF and image magic-byte validation.
