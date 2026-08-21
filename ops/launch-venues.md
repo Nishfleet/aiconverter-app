@@ -7,7 +7,9 @@ Live-production claims only: everything below is grounded in live pages and
 regressed to 404 between 2026-08-15 and 2026-08-20 and was still 404 on
 2026-08-21; kits no longer claim that route); WeLikeTools and xix.ai verified 2026-08-10, re-verified
 2026-08-11, 2026-08-12 and 2026-08-14; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11 and 2026-08-14;
-Toolify.ai verified 2026-08-11 and re-verified 2026-08-12 and 2026-08-15; Microlaunch verified 2026-08-11; Uneed
+Toolify.ai verified 2026-08-11 and re-verified 2026-08-12 and 2026-08-15
+(2026-08-20 re-check is archive-only — the venue is Cloudflare-403 to this VPS
+and the venue guard forbade browser work); Microlaunch verified 2026-08-11; Uneed
 (uneed.best) verified 2026-08-11 and re-verified 2026-08-12, 2026-08-15 and 2026-08-16; Open-Launch verified
 2026-08-11 and re-verified 2026-08-15, 2026-08-16 and 2026-08-17; SaaSHub
 verified 2026-08-12 and re-verified 2026-08-14; Futurepedia, TAAFT
@@ -43,6 +45,22 @@ so the dated "/pricing/ still returns 404" observations below no longer hold
 for new kits. `/receipt-to-csv/` remains 404 under markdown negotiation as a
 separate open lane item.
 
+### Correction (2026-08-20): the `/pricing/` claim above no longer holds
+
+`https://aiconverter.app/pricing/` returns **HTTP 404 in production again** as
+of 2026-08-20. Verified by plain curl from the VPS with four request shapes —
+`/pricing`, `/pricing/`, `/pricing/index.html`, and a browser-like
+`User-Agent` + `Accept: text/html,...` pair — all 404, with `vary: Accept` on
+the response, so this is not a content-negotiation artifact. `public/pricing/
+index.html` is present in `main` (shipped by df944db, "ux: resolve the Pricing
+nav to a truthful live /pricing/ page"), so source and production disagree:
+this looks like a deploy/routing gap, not a missing page. Note that the
+2026-08-15 lane records already observed "/pricing/ still 404" while this
+section claimed the opposite; that contradiction is resolved here in favour of
+the live observation. **No venue kit in this file claims `/pricing/`**, so no
+kit copy changes. Fixing the deploy gap is outside this lane's packet and is
+left as an open item.
+
 ## Submission outcomes (2026-08-11)
 
 As of 2026-08-11 no venue has a live aiconverter.app listing and no submission
@@ -73,9 +91,13 @@ copy source):
   NOT EXECUTED — venue still not allowlisted in the fleet venue policy, so the
   agent must not drive the submission; see the Toolbit.ai section below.)
 - **Toolify.ai — SKIPPED_PAID.** Current listing is paid only ($99); the spend
-  was not made. (Lane attempts 2026-08-12 and 2026-08-15: NOT EXECUTED —
-  venue still not allowlisted in the fleet venue policy, and the $99 spend is
-  a Nish-only decision; see the Toolify.ai section below.)
+  was not made. (Lane attempts 2026-08-12, 2026-08-15 and 2026-08-20: NOT
+  EXECUTED — venue still not allowlisted in the fleet venue policy, and the
+  $99 spend is a Nish-only decision; on 2026-08-20 the `venue-claim` binary
+  was present for the first time and `claim toolify.ai aiconverter-app`
+  returned **exit 4** with no ledger record created, so the block is now
+  machine-proved rather than inferred from the policy JSON; see the
+  Toolify.ai section below.)
 - **Microlaunch — NEEDS_NISH_STEP.** A free regular submission exists, but
   sign-in (Google or X) is required. Nish must approve/complete the OAuth
   sign-in, then the prepared copy can be submitted. (Lane attempt 2026-08-12:
@@ -1676,6 +1698,104 @@ copy-paste ready:
   appears on https://www.toolify.ai/tag/Bank%20Statement%20to%20CSV and that
   search `q=aiconverter` returns the listing, then flip this venue's status
   line to live.
+
+### Fleet lane attempt 2026-08-20 (Toolify.ai — NOT EXECUTED, guard block machine-proved)
+
+- Attempted by lane 1 (packet item f8e79adbf9: "List the product on Toolify.ai
+  (paid $99 submit path) — exact-category tag page already lists LedgerBox and
+  search"). The listing was **not submitted and the $99 was not paid**: the
+  2026-08-11 decision still binds. This is the fourth lane to reach the same
+  conclusion (2026-08-11 kit + SKIPPED_PAID, 2026-08-12, 2026-08-15,
+  2026-08-20).
+- **New this run — the guard was actually executed, not inferred.** Every
+  previous Toolify lane recorded that the `venue-claim` binary was "not
+  installed in the lane environment" and fell back to reading
+  `venue-policy.json`. The binary is now present
+  (`/home/nish/.local/bin/venue-claim`, 42409 bytes, mtime 2026-08-20 15:49),
+  so this lane ran the real gate with full arguments:
+
+  ```
+  $ venue-claim check toolify.ai aiconverter-app
+  policy disposition for toolify.ai: unknown (not reviewed)
+  exit 0                      # no duplicate record — policy is NOT checked by `check`
+
+  $ venue-claim claim toolify.ai aiconverter-app \
+      --account nishant345+toolify@gmail.com --policy-date 2026-08-20 \
+      --policy-url https://www.toolify.ai/fulfillment-policy \
+      --copy "..." --evidence-path .lane/reports/lane1-toolify-listing-20260820.md \
+      --removal-route "email Toolify support to request delisting" \
+      --verification-state pending
+  ERROR: ALLOWLIST/POLICY BLOCK: venue toolify.ai is unknown (not allowlisted,
+  not reviewed). No current official policy evidence permits automated action.
+  Route to NEEDS-NISH/research.
+  exit 4                      # allowlist/policy block
+
+  $ venue-claim validate
+  OK: ledger valid (1 claim(s)), policy valid, registry valid.
+  executable allowlist: EMPTY - no venue automation-allowed
+  ```
+
+  The block is raised before any ledger write (source: the `entry is None`
+  branch precedes the `with locked():` block), and `validate` confirms the
+  ledger still holds exactly the one legacy `producthunt.com|seo-fix-kit`
+  record — no Toolify record was created by the attempt.
+- **No venue browser work was performed this run.** `venue-claim.md` states
+  the claim command is "called before ANY venue browser creation/navigation"
+  and that "a blocked exit means NO browser work". Earlier Toolify lanes
+  re-verified with the Camoufox browser *after* concluding the venue was
+  blocked; with the gate now executable and returning exit 4, this lane
+  honored the block literally and gathered evidence only from non-browser,
+  credential-free sources. That is a deliberate difference from the
+  2026-08-12 and 2026-08-15 records, not an omission.
+- **$99 spend is still a Nish-only decision (money boundary).**
+  `agent-state/authorizations/` holds only
+  `sol-xhigh-worker-grant-20260811.json` — there is no Toolify spend grant —
+  and the Fulfillment Policy still requires account registration (a human
+  account action) with a non-refundable fee.
+- Evidence gathered 2026-08-20 without touching the venue in a browser:
+  - Direct HTTP to toolify.ai is Cloudflare-walled from this VPS: plain curl
+    to `/submit`, `/fulfillment-policy`, `/tool/ai-converter` and
+    `/tag/Bank%20Statement%20to%20CSV` all return **HTTP 403**, and the
+    `self-api/v1/best-for-professions` autocomplete endpoint that answered
+    with JSON on 2026-08-12 now returns the "Just a moment..." interstitial.
+    So no live-page claim is made for Toolify in this record.
+  - Offer terms unchanged (Wayback, latest 200 capture of `/submit`,
+    2026-07-04, fetched via `web.archive.org/web/<ts>id_/`): "Total: $ 99",
+    "Pay $ 99", "No queue, listed within 48 hours", "Just Launched", "no less
+    than 6 quality dofollow links", and the two content modes "Generated by
+    Toolify" / "Do it myself". The kit below therefore still matches the
+    live form fields as last archived.
+  - Fulfillment Policy unchanged (Wayback, latest 200 capture 2026-08-11):
+    "Last updated on August 30, 2024"; "you must register for a paid one-time
+    payment program"; "reject your application for an Account for any reason,
+    in our sole discretion"; fee "non-refundable, even if you cancel or do not
+    use any of the benefits". A grep of that capture for `robot`, `spider` and
+    `crawler` returns **zero matches** — the no-automated-access-prohibition
+    reading from 2026-08-11/12 still holds and remains the strongest argument
+    for the research desk to review this venue.
+  - Duplicate check is **inconclusive this run** and is honestly recorded as
+    such: the Wayback CDX index has no captures for
+    `www.toolify.ai/tool/ai-converter`, but it also has none for
+    `www.toolify.ai/tool/ledgerbox` — a page known to be live — so an empty
+    CDX result proves nothing here. A DuckDuckGo `site:toolify.ai aiconverter`
+    cross-check returned DDG's bot-anomaly page (HTTP 202, zero results
+    parsed), so it is not evidence either. The last positive no-duplicate
+    readings remain 2026-08-15 (site search + `/tool/ai-converter` 404) and
+    2026-08-12 (autocomplete API `{"total": 0, "data": []}`).
+- Kit reference pages (aiconverter.app, plain curl 2026-08-20): `/`,
+  `/llms.txt`, `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`,
+  `/formats/` all **HTTP 200**. `/receipt-to-csv/` still **404**.
+  **`/pricing/` is also 404 again** — see the correction note under
+  "Live-route change (2026-08-12)" above. The Toolify kit claims none of
+  those two routes, so the kit is unaffected.
+- Next action (unchanged, human-owned): Nish signs in, pays $99, and submits
+  using the kit above. An agent could only execute this after **both** (a)
+  Nish's dated approval of the $99 spend and (b) the venue research desk
+  reviewing toolify.ai and adding it to the executable allowlist in
+  `venue-policy.json` (the tool has no override flag by design). After the
+  listing, confirm the tool appears on
+  https://www.toolify.ai/tag/Bank%20Statement%20to%20CSV and that search
+  `q=aiconverter` returns it, then flip this venue's status line to live.
 
 ## Microlaunch
 
