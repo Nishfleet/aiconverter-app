@@ -174,7 +174,7 @@ AI Converter turns bank statement PDFs into spreadsheet-ready CSV. Upload the PD
 
 ## Limits
 
-Files can fail when they are password-protected, corrupted, unusual, low quality, or too large. AI Converter currently accepts PDFs up to 50 MB and does not claim every bank format is supported.
+Password-protected PDFs are supported when the PDF password is provided on upload. The password is decrypted in this request only and is not written to private storage. Files can still fail when they are corrupted, unusual, low quality, or too large. AI Converter currently accepts PDFs up to 50 MB and does not claim every bank format is supported.
 
 No bank login is requested. The export should be reviewed before important use.
 `;
@@ -254,7 +254,7 @@ Typical CSV columns are date, description, money in, money out, and balance when
 
 ## Limits
 
-Some files fail because they are scanned poorly, password-protected, corrupted, unusual, or unsupported. Review the export before bookkeeping, tax, lending, or compliance use.
+Password-protected PDFs are supported when the PDF password is provided on upload. Some files still fail because they are scanned poorly, corrupted, unusual, or unsupported. Review the export before bookkeeping, tax, lending, or compliance use.
 `;
 
 const waveCsvMarkdown = `---
@@ -298,7 +298,7 @@ AI Converter can use OCR fallback for scanned or image-heavy bank statement PDFs
 
 ## Limits
 
-OCR is sensitive to scan quality. Blurry pages, shadows, cut-off columns, handwriting, password protection, corruption, or unusual layouts may fail.
+Password-protected PDFs are supported when the PDF password is provided on upload. OCR is sensitive to scan quality. Blurry pages, shadows, cut-off columns, handwriting, corruption, or unusual layouts may still fail.
 
 Low-confidence conversions should fail closed instead of inventing rows.
 `;
@@ -455,7 +455,7 @@ The first production AI workflow is bank statement PDF to CSV. Receipt, invoice,
 
 ## User responsibility
 
-You are responsible for checking exported files before using them for bookkeeping, taxes, lending, legal, compliance, or decision-making work. Automated extraction and conversion can be wrong, especially on unusual, scanned, damaged, password-protected, noisy, or low-quality files.
+You are responsible for checking exported files before using them for bookkeeping, taxes, lending, legal, compliance, or decision-making work. Automated extraction and conversion can be wrong, especially on unusual, scanned, damaged, noisy, or low-quality files. Password-protected PDFs are accepted when the PDF password is provided on upload.
 
 ## Payment and access
 

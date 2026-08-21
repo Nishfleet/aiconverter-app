@@ -23,6 +23,6 @@ AI Converter turns bank statement PDFs into spreadsheet-ready CSV. Upload the PD
 
 ## Limits
 
-Files can fail when they are password-protected, corrupted, unusual, low quality, or too large. AI Converter currently accepts PDFs up to 50 MB and does not claim every bank format is supported.
+Password-protected PDFs are supported when the PDF password is provided on upload. The password is decrypted in this request only and is not written to private storage. Files can still fail when they are corrupted, unusual, low quality, or too large. AI Converter currently accepts PDFs up to 50 MB and does not claim every bank format is supported.
 
 No bank login is requested. The export should be reviewed before important use.
