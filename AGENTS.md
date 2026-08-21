@@ -27,6 +27,27 @@ npm run readiness:live
 
 ## Deploy
 
+Deploys go through CI, not your terminal. Every push to `main` auto-deploys
+through `.github/workflows/deploy.yml`, which runs pricing check, unit tests,
+build, `wrangler pages deploy dist --project-name aiconverter --branch main`,
+and a live-site verification. Do not run `wrangler pages deploy` locally for
+routine ships. Local deploy is break-glass only when Actions is down and no CI
+deploy is in flight.
+
+Required repo secrets (the lane fails closed and red until both exist):
+- `CLOUDFLARE_API_TOKEN` - Cloudflare API token with Cloudflare Pages:Edit on
+  the account that owns the `aiconverter` Pages project.
+- `CLOUDFLARE_ACCOUNT_ID` - the account id that owns the `aiconverter` project.
+
+Provision once (dashboard, ~2 minutes):
+1. https://dash.cloudflare.com/profile/api-tokens -> Create Token
+2. Use the "Cloudflare Pages: Edit" template, scope to the owning account.
+3. `gh secret set CLOUDFLARE_API_TOKEN -R nish3451/aiconverter-app`
+4. `gh secret set CLOUDFLARE_ACCOUNT_ID -R nish3451/aiconverter-app -b <account-id>`
+5. Re-run the Deploy lane (or wait for the next main merge / the daily schedule).
+
+Break-glass local deploy (only when Actions is down):
+
 ```bash
 SAFE_DEPLOY_APPROVED='pages deploy dist --project-name aiconverter --branch main' wrangler pages deploy dist --project-name aiconverter --branch main
 ```
