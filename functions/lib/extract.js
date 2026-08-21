@@ -153,7 +153,36 @@ export async function convertFileToCsv(env, converterId, fileName, contentType, 
 }
 
 export async function convertPdfToCsv(env, fileName, arrayBuffer, options = {}) {
-  const pageCount = await detectPdfPageCount(arrayBuffer).catch(() => 0);
+  let pageCount;
+  try {
+    pageCount = await detectPdfPageCount(arrayBuffer, options);
+  } catch (error) {
+    if (error?.code === "pdf_password_required" || error?.passwordRequired) {
+      return {
+        ok: false,
+        message: error.message,
+        confidence: 0,
+        trustScore: 0,
+        rowCount: 0,
+        warnings: [],
+        provider: "pdf-password-required",
+        errorCode: "pdf_password_required"
+      };
+    }
+    if (error?.code === "pdf_incorrect_password" || error?.passwordIncorrect) {
+      return {
+        ok: false,
+        message: error.message,
+        confidence: 0,
+        trustScore: 0,
+        rowCount: 0,
+        warnings: [],
+        provider: "pdf-incorrect-password",
+        errorCode: "pdf_incorrect_password"
+      };
+    }
+    pageCount = 0;
+  }
   if (pageCount > MAX_PAGE_COUNT) {
     return {
       ok: false,
@@ -166,9 +195,50 @@ export async function convertPdfToCsv(env, fileName, arrayBuffer, options = {}) 
     };
   }
 
-  const extracted = await extractWithBestProvider(env, fileName, arrayBuffer, options);
+  let extracted;
+  try {
+    extracted = await extractWithBestProvider(env, fileName, arrayBuffer, options);
+  } catch (error) {
+    if (error?.code === "pdf_password_required" || error?.passwordRequired) {
+      return {
+        ok: false,
+        message: error.message,
+        confidence: 0,
+        trustScore: 0,
+        rowCount: 0,
+        warnings: [],
+        provider: "pdf-password-required",
+        errorCode: "pdf_password_required"
+      };
+    }
+    if (error?.code === "pdf_incorrect_password" || error?.passwordIncorrect) {
+      return {
+        ok: false,
+        message: error.message,
+        confidence: 0,
+        trustScore: 0,
+        rowCount: 0,
+        warnings: [],
+        provider: "pdf-incorrect-password",
+        errorCode: "pdf_incorrect_password"
+      };
+    }
+    throw error;
+  }
 
   if (!extracted.ok) {
+    if (extracted.errorCode === "pdf_password_required" || extracted.errorCode === "pdf_incorrect_password") {
+      return {
+        ok: false,
+        message: extracted.message,
+        confidence: extracted.confidence || 0,
+        trustScore: extracted.trustScore || extracted.confidence || 0,
+        rowCount: extracted.rowCount || 0,
+        warnings: extracted.warnings || [],
+        provider: extracted.provider || "none",
+        errorCode: extracted.errorCode
+      };
+    }
     return {
       ok: false,
       message: extracted.message,
@@ -654,14 +724,101 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-export async function detectPdfPageCount(arrayBuffer) {
+export async function detectPdfPageCount(arrayBuffer, options = {}) {
   let pdf;
   try {
-    pdf = await getDocumentProxy(copyPdfBytes(arrayBuffer));
+    pdf = await openPdfDocument(arrayBuffer, options);
     return Number(pdf.numPages || 0);
   } finally {
     await pdf?.destroy?.();
   }
+}
+
+export class PdfPasswordRequiredError extends Error {
+  constructor(message = "This PDF is password-protected. Add the password and try again.") {
+    super(message);
+    this.name = "PdfPasswordRequiredError";
+    this.code = "pdf_password_required";
+    this.passwordRequired = true;
+  }
+}
+
+export class PdfIncorrectPasswordError extends Error {
+  constructor(message = "The password did not unlock this PDF. Check the password and try again.") {
+    super(message);
+    this.name = "PdfIncorrectPasswordError";
+    this.code = "pdf_incorrect_password";
+    this.passwordIncorrect = true;
+  }
+}
+
+async function openPdfDocument(arrayBuffer, options = {}) {
+  const password = sanitizePdfPassword(options.pdfPassword);
+  const bytes = copyPdfBytes(arrayBuffer);
+  const errors = [];
+  if (password) {
+    try {
+      return await getDocumentProxy(bytes, { password });
+    } catch (error) {
+      if (isIncorrectPasswordError(error)) {
+        throw new PdfIncorrectPasswordError();
+      }
+      errors.push(error);
+    }
+  }
+  try {
+    return await getDocumentProxy(bytes);
+  } catch (error) {
+    if (isPasswordRequiredError(error)) {
+      throw new PdfPasswordRequiredError();
+    }
+    if (isIncorrectPasswordError(error) && password) {
+      throw new PdfIncorrectPasswordError();
+    }
+    if (errors.length) throw errors[0];
+    throw error;
+  }
+}
+
+function sanitizePdfPassword(value) {
+  if (value === undefined || value === null) return "";
+  return String(value).slice(0, 256);
+}
+
+function isPasswordRequiredError(error) {
+  const message = String(error?.message || "");
+  const name = String(error?.name || "");
+  return (
+    /password/i.test(message) ||
+    /password/i.test(name) ||
+    error?.code === "pdf_password_required" ||
+    name === "PasswordException"
+  );
+}
+
+function isIncorrectPasswordError(error) {
+  const message = String(error?.message || "");
+  return /incorrect\s*password/i.test(message) || /wrong\s*password/i.test(message);
+}
+
+async function assertPdfDecryptable(arrayBuffer, options = {}) {
+  const password = sanitizePdfPassword(options.pdfPassword);
+  let pdf;
+  try {
+    pdf = password
+      ? await getDocumentProxy(copyPdfBytes(arrayBuffer), { password })
+      : await getDocumentProxy(copyPdfBytes(arrayBuffer));
+  } catch (error) {
+    await pdf?.destroy?.();
+    if (isPasswordRequiredError(error) && !password) {
+      throw new PdfPasswordRequiredError();
+    }
+    if (isPasswordRequiredError(error) || isIncorrectPasswordError(error)) {
+      throw new PdfIncorrectPasswordError();
+    }
+    throw error;
+  }
+  await pdf?.destroy?.();
 }
 
 async function extractWithBestProvider(env, fileName, arrayBuffer, options) {
@@ -701,6 +858,28 @@ async function extractWithBestProvider(env, fileName, arrayBuffer, options) {
         message: validation.message
       });
     } catch (error) {
+      if (error?.passwordRequired || error?.code === "pdf_password_required") {
+        return {
+          ok: false,
+          provider: provider.id,
+          confidence: 0,
+          trustScore: 0,
+          rowCount: 0,
+          message: error.message,
+          errorCode: "pdf_password_required"
+        };
+      }
+      if (error?.passwordIncorrect || error?.code === "pdf_incorrect_password") {
+        return {
+          ok: false,
+          provider: provider.id,
+          confidence: 0,
+          trustScore: 0,
+          rowCount: 0,
+          message: error.message,
+          errorCode: "pdf_incorrect_password"
+        };
+      }
       failures.push({
         provider: provider.id,
         warning: `${provider.label}: ${error?.message || "failed"}`,
@@ -748,7 +927,7 @@ function providerOrder(env, options = {}) {
 }
 
 async function extractWithNativePdf(env, fileName, arrayBuffer, options = {}) {
-  const { pages, totalPages } = await readPdfTextPages(arrayBuffer);
+  const { pages, totalPages } = await readPdfTextPages(arrayBuffer, options);
   if (totalPages > MAX_PAGE_COUNT) {
     throw new Error(`This PDF appears to have ${totalPages} pages. Split files above ${MAX_PAGE_COUNT} pages before uploading.`);
   }
@@ -770,10 +949,10 @@ async function extractWithNativePdf(env, fileName, arrayBuffer, options = {}) {
   };
 }
 
-async function readPdfTextPages(arrayBuffer) {
+async function readPdfTextPages(arrayBuffer, options = {}) {
   let pdf;
   try {
-    pdf = await getDocumentProxy(copyPdfBytes(arrayBuffer));
+    pdf = await openPdfDocument(arrayBuffer, options);
     const result = await extractText(pdf, { mergePages: false });
     return {
       totalPages: result.totalPages || pdf.numPages || 0,
@@ -789,6 +968,7 @@ function copyPdfBytes(arrayBuffer) {
 }
 
 async function extractWithMistralOcr(env, fileName, arrayBuffer, options = {}) {
+  await assertPdfDecryptable(arrayBuffer, options);
   const ocr = await runMistralOcr(env, "application/pdf", arrayBuffer, options);
   const transactions = parseTransactionsFromPages(ocr.pages);
 
@@ -1407,6 +1587,7 @@ function failConversion(message, provider, confidence = 0, rowCount = 0) {
 }
 
 async function extractWithAzure(env, fileName, arrayBuffer, options = {}) {
+  await assertPdfDecryptable(arrayBuffer, options);
   const endpoint = String(env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT || "").replace(/\/+$/, "");
   const model = env.AZURE_DOCUMENT_INTELLIGENCE_MODEL || DEFAULT_AZURE_MODEL;
   const apiVersion = env.AZURE_DOCUMENT_INTELLIGENCE_API_VERSION || DEFAULT_AZURE_API_VERSION;
@@ -1753,6 +1934,7 @@ function mapHeaderIndexes(headers) {
 }
 
 async function extractWithCloudflareAi(env, fileName, arrayBuffer, options = {}) {
+  await assertPdfDecryptable(arrayBuffer, options);
   const markdown = await pdfToMarkdown(env, fileName, arrayBuffer);
   const extracted = await extractTransactions(env, markdown, options);
   return { provider: "cloudflare-ai", ...extracted };
