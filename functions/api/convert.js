@@ -70,6 +70,7 @@ export async function onRequestPost({ request, env }) {
   const file = form.get("file");
   if (!(file instanceof File)) return badRequest("Choose a file first.");
   const funnelSessionId = String(form.get("funnelSessionId") || "").trim().slice(0, 80);
+  const pdfPassword = sanitizePdfPasswordInput(form.get("pdfPassword"));
   const baseFunnelEvent = {
     sessionId: funnelSessionId,
     converterId,
@@ -137,8 +138,21 @@ export async function onRequestPost({ request, env }) {
   const clientEstimate = Number(form.get("estimatedPages") || 25);
   const clientEstimatedPages = Number.isFinite(clientEstimate) ? Math.max(1, clientEstimate) : 25;
   const isPdf = String(file.type || "").toLowerCase() === "application/pdf" || fileName.toLowerCase().endsWith(".pdf");
+  let passwordBlocked = false;
   const detectedPages = isPdf
-    ? (await detectPdfPageCount(arrayBuffer).catch(() => 0)) || estimatePdfPagesFromBytes(arrayBuffer)
+    ? (await detectPdfPageCount(arrayBuffer, { pdfPassword })
+        .then((pages) => pages)
+        .catch((error) => {
+          if (error?.code === "pdf_password_required" || error?.passwordRequired) {
+            passwordBlocked = "required";
+            return 0;
+          }
+          if (error?.code === "pdf_incorrect_password" || error?.passwordIncorrect) {
+            passwordBlocked = "incorrect";
+            return 0;
+          }
+          return 0;
+        })) || estimatePdfPagesFromBytes(arrayBuffer)
     : 1;
   const sizeEstimatedPages = Math.ceil(file.size / 320000);
   const estimatedPages = isPdf
@@ -165,6 +179,19 @@ export async function onRequestPost({ request, env }) {
       errorCode: "http_429"
     });
     return json({ error: uploadPolicy.message }, { status: 429 });
+  }
+
+  if (passwordBlocked) {
+    await safeRecordFunnelEvent(env, request, {
+      ...baseFunnelEvent,
+      eventType: "preview_error",
+      errorCode: passwordBlocked === "incorrect" ? "pdf_incorrect_password" : "pdf_password_required"
+    });
+    return badRequest(
+      passwordBlocked === "incorrect"
+        ? "The password did not unlock this PDF. Check the password and try again."
+        : "This PDF is password-protected. Add the PDF password below and try again."
+    );
   }
 
   const jobId = randomId("job");
@@ -214,11 +241,15 @@ export async function onRequestPost({ request, env }) {
       previewPages: PREVIEW_PAGE_LIMIT,
       estimatedPages,
       outputFormat,
-      accountingMetadata
+      accountingMetadata,
+      pdfPassword
     });
 
     if (!converted.ok) {
       await env.AICONVERTER_BUCKET.delete(sourceKey).catch(() => {});
+      const isPasswordIssue =
+        converted.errorCode === "pdf_password_required" ||
+        converted.errorCode === "pdf_incorrect_password";
       await updateJob(env, jobId, {
         status: "failed",
         error: converted.message,
@@ -232,7 +263,7 @@ export async function onRequestPost({ request, env }) {
         eventType: "preview_error",
         jobId,
         pageBucket: pageBucketForEstimate(estimatedPages),
-        errorCode: "preview_failed"
+        errorCode: isPasswordIssue ? converted.errorCode : "preview_failed"
       });
 
       return json({
@@ -245,6 +276,7 @@ export async function onRequestPost({ request, env }) {
         columns: converted.columns || [],
         converterId,
         outputFormat,
+        errorCode: converted.errorCode || "",
         sourceDeletedAt: new Date().toISOString(),
         resultExpiresAt: expiresAt,
         plan
@@ -322,6 +354,12 @@ export async function onRequestPost({ request, env }) {
 
 async function safeRecordFunnelEvent(env, request, event) {
   await recordFunnelEvent(env, request, event).catch(() => {});
+}
+
+function sanitizePdfPasswordInput(value) {
+  if (value === undefined || value === null) return "";
+  const normalized = String(value);
+  return normalized.slice(0, 256);
 }
 
 function inputKindForUpload(file) {
