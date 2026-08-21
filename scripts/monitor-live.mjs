@@ -21,6 +21,18 @@ if (!adminToken) {
   else failures.push(missingAdmin);
 }
 const monitorOk = failures.length === 0 && !(strictWarnings && warnings.length);
+const funnelStatus = adminToken ? "active" : "skipped";
+const funnelSummary = overview?.funnel && typeof overview.funnel === "object" ? overview.funnel : null;
+
+// Print the funnel status line so operators can grep a single line in the
+// routine monitor output: "funnel=active pageView=NNN ..." when the admin
+// token is configured, or "funnel=skipped (admin token not configured)"
+// when it is not. The green/red behavior is unchanged — only the line is
+// added — so a skip never flips the run red on its own.
+const funnelLine = adminToken
+  ? ["funnel=active", ...formatFunnelSummary(funnelSummary)].join(" ")
+  : "funnel=skipped (admin token not configured)";
+console.log(funnelLine);
 
 console.log(
   JSON.stringify(
@@ -29,6 +41,9 @@ console.log(
       strictWarnings,
       baseUrl,
       elapsed_ms: Date.now() - started,
+      funnelStatus,
+      funnelSkipReason: adminToken ? null : "admin token not configured",
+      funnel: funnelSummary,
       health,
       overview,
       warnings,
@@ -125,4 +140,12 @@ function summarizeFunnel(rows) {
     summary[eventType] = Number.isFinite(count) ? count : 0;
   }
   return summary;
+}
+
+// Render the funnel summary as `name=value` pairs for the human-readable
+// `funnel=active` line. Stable iteration order so the line is grep-friendly.
+function formatFunnelSummary(summary) {
+  if (!summary || typeof summary !== "object") return [];
+  const names = Object.keys(summary).sort();
+  return names.map((name) => `${name}=${Number(summary[name]) || 0}`);
 }
