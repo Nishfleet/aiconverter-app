@@ -2,6 +2,29 @@
 
 AI Converter is a web app for automated AI conversion and common file-format conversion. Bank statement PDF to CSV is the first production AI module.
 
+## Pages
+
+- Home: https://aiconverter.app
+- Formats: https://aiconverter.app/formats/
+- About: https://aiconverter.app/about/
+- Pricing: https://aiconverter.app/pricing/
+- Bank statement PDF to CSV: https://aiconverter.app/bank-statement-pdf-to-csv/
+- Convert bank statement to CSV: https://aiconverter.app/convert-bank-statement-to-csv/
+- PDF bank statement to QuickBooks CSV: https://aiconverter.app/pdf-bank-statement-to-quickbooks-csv/
+- PDF bank statement to Xero CSV: https://aiconverter.app/pdf-bank-statement-to-xero-csv/
+- PDF bank statement to Wave CSV: https://aiconverter.app/pdf-bank-statement-to-wave-csv/
+- Scanned bank statement to Excel: https://aiconverter.app/scanned-bank-statement-to-excel/
+- Credit card statement PDF to CSV: https://aiconverter.app/credit-card-statement-pdf-to-csv/
+- Bank statement converter for bookkeepers: https://aiconverter.app/bank-statement-converter-for-bookkeepers/
+- Receipt image or PDF to expense CSV (beta): https://aiconverter.app/receipt-to-csv/
+- Sample CSV: https://aiconverter.app/sample-csv/
+- Trust center: https://aiconverter.app/trust/
+- Privacy: https://aiconverter.app/privacy/
+- Security: https://aiconverter.app/security/
+- Refunds: https://aiconverter.app/refund/
+- Data retention: https://aiconverter.app/data-retention/
+- Support: https://aiconverter.app/support/
+
 Live and beta modules:
 - Bank statement PDF to CSV.
 - PDF bank statement to QuickBooks CSV preparation. This is CSV prep only, not official QuickBooks Web Connect, not a direct QuickBooks connection, and not a guaranteed import.
