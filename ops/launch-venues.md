@@ -3,8 +3,9 @@
 Durable record of launch-venue decisions and submission kits for aiconverter.app.
 Live-production claims only: everything below is grounded in live pages and
 `/llms.txt` (verified 2026-08-09 for Product Hunt and BetaList, re-verified
-2026-08-10, 2026-08-14, 2026-08-15, and 2026-08-20 (`/pricing/` regressed to
-404 between 2026-08-15 and 2026-08-20; kits no longer claim that route); WeLikeTools and xix.ai verified 2026-08-10, re-verified
+2026-08-10, 2026-08-14, 2026-08-15, 2026-08-20, and 2026-08-21 (`/pricing/`
+regressed to 404 between 2026-08-15 and 2026-08-20 and was still 404 on
+2026-08-21; kits no longer claim that route); WeLikeTools and xix.ai verified 2026-08-10, re-verified
 2026-08-11, 2026-08-12 and 2026-08-14; Toolbit.ai verified 2026-08-10 and re-verified 2026-08-11 and 2026-08-14;
 Toolify.ai verified 2026-08-11 and re-verified 2026-08-12 and 2026-08-15; Microlaunch verified 2026-08-11; Uneed
 (uneed.best) verified 2026-08-11 and re-verified 2026-08-12, 2026-08-15 and 2026-08-16; Open-Launch verified
@@ -637,6 +638,72 @@ copy-paste ready:
     until that regresses the other way. The header line above was updated to
     note the regression. `/receipt-to-csv/` is still 404 (the kit never
     claimed it).
+- Next action (unchanged): Nish submits manually using the kits below (Product
+  Hunt: choose/confirm the launch date and publish; BetaList: decide whether to
+  pay and submit), then this file should be updated with the public URL
+  and the venue's status line flipped to live.
+
+### Fleet lane attempt 2026-08-21 (Product Hunt + BetaList — NOT EXECUTED, decisions re-verified; guard verified live for the first time)
+
+- Attempted by lane 1 (packet item 7133745c8e, re-dispatch: "List the product
+  on Product Hunt and record a submit-or-decline decision for BetaList —
+  baseline launch venue never live"). Neither listing was submitted and
+  neither is live; the 2026-08-09 / 2026-08-14 / 2026-08-15 / 2026-08-20
+  decisions stand unchanged and both kits remain valid and copy-paste ready:
+  - **Product Hunt — submit declined by the fleet (NEEDS_NISH_STEP).**
+    `agent-state/growth-loop/venue-policy.json` (re-read 2026-08-21, still
+    updated 2026-08-08, well within the 90-day freshness window) still marks
+    `producthunt.com` `automation_disposition: prohibited` and the
+    executable `allowlist` is still empty. **The `venue-claim` binary is now
+    installed** (`/home/nish/.local/bin/venue-claim`), so this run verified
+    the gate live instead of inferring it: `venue-claim claim producthunt.com
+    aiconverter-app …` exited **4** ("ALLOWLIST/POLICY BLOCK: venue
+    producthunt.com is reviewed as prohibited - not automation-allowed;
+    route to NEEDS-NISH/manual, never bypass") and created **no ledger
+    record** (`venue-claim list` shows zero aiconverter records before and
+    after). Per the contract, a blocked exit means NO browser work; the
+    launch flow remains account-gated and publishing stays a human action
+    with Nish.
+  - **BetaList — DECLINE (SKIPPED_PAID, re-verified 2026-08-21).** The gate
+    was likewise verified live: `venue-claim claim betalist.com
+    aiconverter-app …` exited **4** ("unknown (not allowlisted, not
+    reviewed). No current official policy evidence permits automated
+    action"), no ledger record created. The official Support page (re-fetched
+    live 2026-08-21) still states "All submissions are paid. There is no
+    free submission option." with the FAQ verbatim "No. BetaList used to
+    offer free submissions, but all submissions now require payment." The
+    fleet declines the paid submission (spend decisions stay with Nish); no
+    spend authorization exists in `agent-state/authorizations/` (still only
+    the sol-xhigh worker grant — expired 2026-08-14).
+- Live re-verification (2026-08-21):
+  - Product Hunt: the search page remains Cloudflare-challenged for plain
+    HTTP from this VPS — `https://www.producthunt.com/search?q=aiconverter`
+    returns **403** (same as the 2026-08-14/15/20 runs; no JS renderer was
+    available in this lane run, so the Camoufox-rendered finding of
+    2026-08-14/15/20 — no aiconverter.app result — is carried forward).
+    Credential-free secondary checks (2026-08-21) found **no evidence of
+    any listing**: Wayback availability API returns no archived snapshots
+    for producthunt.com/products/aiconverter, /products/ai-converter, or
+    /products/aiconverter-app, and a Wayback CDX domain query
+    (`url=producthunt.com&matchType=domain&filter=urlkey:.*aiconverter.*`)
+    returns **zero** archived Product Hunt URLs containing "aiconverter".
+    The venue hosts the category (receipt-ai, ledgerbox per the 2026-08-09
+    evidence); the listing is missing.
+  - BetaList search `q=aiconverter`
+    (https://www.betalist.com/search?q=aiconverter, HTTP 200): still "No
+    results found for aiconverter" — no duplicate, no listing.
+  - BetaList support page (https://www.betalist.com/support, HTTP 200):
+    paid-only statements verbatim unchanged (see above); eligibility
+    unchanged: "Your startup must have its own domain—we don't accept
+    submissions using free hosting subdomains (like vercel.app,
+    netlify.app, herokuapp.com) or direct links to app stores."
+  - BetaList submit page (https://betalist.com/submit, HTTP 200): unchanged
+    from 2026-08-20 — form is account-gated; the support page remains the
+    authoritative paid-only statement.
+  - Kit reference pages all live HTTP 200 (2026-08-21): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+    `/pricing/` is **still 404** (regression first noted 2026-08-20,
+    unchanged) and `/receipt-to-csv/` still 404 (the kit never claimed it).
 - Next action (unchanged): Nish submits manually using the kits below (Product
   Hunt: choose/confirm the launch date and publish; BetaList: decide whether
   to pay and submit), then this file should be updated with the public URL
