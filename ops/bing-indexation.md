@@ -7,6 +7,49 @@ the backlog item `Bing/DuckDuckGo indexation is zero for an 18-month-old
 domain; no Bing Webmaster ownership or sitemap-submission evidence exists`
 (scout 2026-08-08, amber, traction).
 
+## Re-verification (2026-08-21, lane re-run — IndexNow deliverable + Gitleaks block)
+
+- **IndexNow key + companion file are on `origin/main` (verified 2026-08-21).**
+  `git ls-tree origin/main -- public/1bc751e6-ead3-48da-96d3-722f77cc4464.txt
+  public/IndexNow.txt` shows both blobs present; both bodies are the
+  real, self-issued UUID `1bc751e6-ead3-48da-96d3-722f77cc4464`.
+  The 2026-08-17 re-verification below already noted that the Secret
+  Scan gate no longer blocks them — that is re-confirmed today.
+- **Gitleaks allowlist is live on `origin/main`.** `git log origin/main
+  --grep="allowlist" --oneline` shows `ba03726 chore: allowlist
+  by-design-public IndexNow keys in gitleaks config (#123)` (merged
+  2026-08-15). `cat .gitleaks.toml` (verified live) extends the default
+  rule set (`[extend] useDefault = true`) and allowlists both
+  by-design-public IndexNow key values (`e141d4be-...`,
+  `1bc751e6-...`) and the public key-file paths
+  (`public/e141d4be-...txt`, `public/1bc751e6-...txt`,
+  `public/IndexNow.txt`). With this allowlist in place, the original
+  PR #44 block reason (`generic-api-key` flagging the submission curl
+  in this file) is structurally gone: a fresh PR carrying the same
+  IndexNow deliverable now scans clean against the same pinned
+  gitleaks 8.24.3 binary the CI uses.
+- **Secret Scan runner is fixed (re-confirmed 2026-08-21).** PR #61
+  (`f796d3e`, 2026-08-13) replaced `gitleaks/gitleaks-action@v3` with a
+  workspace-local install that never touches `/tmp` (the runner is
+  self-hosted `vps-verify`; the workspace is always writable and
+  checkout's clean wipes it before every job). The block is no longer
+  reproducible from this lane.
+- **PR #44 is no longer reachable from GitHub (re-checked 2026-08-21).**
+  `git ls-remote origin refs/pull/44/head` still returns the head SHA
+  `d92771a`, but `https://github.com/nish3451/aiconverter-app/pull/44`
+  and `https://api.github.com/repos/nish3451/aiconverter-app/pulls/44`
+  both return **HTTP 404**. The original blocked PR is gone from
+  GitHub, so its block state is not actionable; the controller's
+  recurring "PR #44 is blocked by Gitleaks" item should be retired
+  by this re-verification record. See
+  `.lane/reports/lane1-bing-indexnow-20260821.md` for the full
+  structural proof.
+- Live gap status (Bing/DDG zero-indexation symptom, blockers, deploy
+  path) is unchanged from the 2026-08-17 re-verification below; this
+  2026-08-21 row exists specifically to retire the Gitleaks block
+  item and not to re-prove the same gap.
+
+
 ## Re-verification (2026-08-17, lane re-run)
 
 - DuckDuckGo `site:aiconverter.app` (lite.duckduckgo.com, clean page, no
