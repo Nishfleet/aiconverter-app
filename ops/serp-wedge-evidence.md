@@ -3,11 +3,12 @@
 Dated record of the core-phrase search results page (SERP) for the traction
 rethink, feeding the free-anchor question into the rethink epic (E2 in the
 improvement-loop `epics.md`). Live-production claims only: everything below was
-re-observed live on 2026-08-09 (UTC) and re-verified live on 2026-08-14 (UTC).
+re-observed live on 2026-08-09 (UTC) and re-verified live on 2026-08-14 (UTC)
+and 2026-08-20 (UTC).
 This record carries no code or payment changes; it exists so the rethink epic
 can decide positioning on evidence. The epic reached its explicit positioning
-decision (paid-quality wedge, "B") on 2026-08-14 — the re-verification below
-confirms the SERP evidence that decision rests on is still live.
+decision (paid-quality wedge, "B") on 2026-08-14 — the re-verifications below
+confirm the SERP evidence that decision rests on is still live.
 
 ## Snapshot (dated 2026-08-09T19:1xZ, live re-run)
 
@@ -161,3 +162,80 @@ POSITIONING DECISION entry) — aiconverter.app leads as a professional
 converter at a real price, free tier only as a taste. This re-verification
 confirms the SERP evidence supporting that decision is still live as of
 2026-08-14; no decision change is warranted by this run.
+
+## Re-verification 2026-08-20 (live, fresh anti-detection session)
+
+The full claim was re-observed live on 2026-08-20 (UTC) in a fresh
+anti-detection browser session, Google English/US (unauthenticated). The
+free-positioning pattern and aiconverter.app absence are unchanged from
+2026-08-14 and 2026-08-17.
+
+### Core phrase — `bank statement pdf to csv converter` (unquoted)
+
+Page-1 organic composition, read from the rendered DOM and vision-confirmed
+screenshots (fresh session, `num=10`):
+
+| Slot | Result | Position |
+| --- | --- | --- |
+| 1 | "Accurately Convert PDF Bank Statements to CSV" - bankstatementconverter.com | organic 1 |
+| 2 | "Converting pdf bank statements to csv" - Reddit r/Bookkeeping thread | organic 2 |
+| 3 | "Free Bank Statement Converter — PDF to CSV" - founderpath.com | organic 3 |
+| 4 | "Convert PDF Bank Statements to CSV or Excel" - statementconvert.com | organic 4 |
+| 5 | "FinanceFileConverter – Convert Bank & Accounting Files" - financefileconverter.com | organic 5 |
+| 6 | "Bank Statement Converter PDF to CSV/Excel (100% FREE)" - bankstatementconverters.ai | organic 6 |
+| 7 | "Bank Statement Converter to CSV - Online and Free" - zamzar.com | organic 7 |
+| 8 | "How to Convert Bank Statements to CSV, Excel 365 or Google..." - YouTube (Klippa) | organic 8 |
+| 9 | "Razor Extract - Convert PDF Statements to Excel or CSV" - razorextract.com | organic 9 |
+
+- Sponsored results rendered in this session: DocuClipper ("Get 14-Day Free
+  Trial - 99.5% Average Accuracy", docuclipper.com/bank-statements/to-csv),
+  SendItSheets (senditsheets.com, "Bank Statement to Excel"), and a Lido
+  (lido.app) slot — all paid ads; no paid-after-preview product holds any
+  organic position.
+- AI Overview rendered (DOM-confirmed; cites Microsoft Excel, Tabula,
+  DocuClipper, Reddit r/Bookkeeping — never aiconverter.app).
+- "People also ask" rendered; "How can I convert a PDF bank statement to
+  Excel for free?" among the questions.
+- "People also search for" rendered, every suggestion free-anchored: "Bank
+  statement pdf to csv converter online free", "Bank statement converter
+  free", "PDF bank statement to Excel".
+- DOM check `hasAiconverter: false` — `aiconverter.app` appears nowhere in
+  the rendered page body.
+
+### Exact-phrase variant — `"bank statement pdf to csv converter"` (quoted)
+
+Organic results this session: koody.com ("Bank Statement PDF to CSV
+Converter"), bankstatementpdftocsv.com ("Convert PDF bank statements into
+clean CSV files..."), apify.com (OCR extraction), bankconv.com ("The #1 Bank
+Statement Converter"), Reddit r/SideProject ("runs entirely in your browser
+(nothing gets uploaded)") — all free-positioned or free/community entry
+points; DocuClipper sponsored ad present. `aiconverter.app` absent
+(`hasAiconverter: false`).
+
+### Indexed-but-absent still holds
+
+`site:aiconverter.app bank statement` (2026-08-20) returns ten indexed pages
+with `https://aiconverter.app/bank-statement-pdf-to-csv/` first — the
+product's exact-core-phrase page is still Google-indexed, yet still appears
+nowhere on page 1 for the core phrase. Absence is still a positioning
+problem, not an indexation problem.
+
+### Product position unchanged
+
+Live `https://aiconverter.app/bank-statement-pdf-to-csv/` (2026-08-20, HTTP
+200) still leads with "Pricing starts at ₹399 for up to 25 pages" and
+"Preview before payment" — free preview and sample CSV download, paid full
+export (₹399/25, ₹799/100, ₹1,399/500). There is still no free
+full-conversion anchor to enter this SERP.
+
+### Status of the question the record feeds
+
+The rethink epic (E2) reached its explicit positioning decision on
+2026-08-14: **paid-quality wedge** (option "B", per the improvement-loop
+`epics.md` POSITIONING DECISION entry) — aiconverter.app leads as a
+professional converter at a real price, free tier only as a taste. The
+2026-08-20 improvement-loop cycle evidence notes the decision is still NOT
+implemented on the live product (no pricing nav, /pricing/ 404, deploy
+stale). This re-verification confirms the SERP evidence supporting the
+decision is still live as of 2026-08-20; no decision change is warranted by
+this run.
