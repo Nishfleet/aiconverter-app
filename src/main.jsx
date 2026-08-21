@@ -26,6 +26,7 @@ import {
   buildConversionCatalog,
   capableOutputFormats,
   confidenceDetailsForConverter,
+  conversionRequestHref,
   isLiveConverter,
   isLocalConverter,
   isProviderConverter
@@ -44,6 +45,20 @@ let turnstileScriptPromise = null;
 const TICKER_MIN_COPY_COUNT = 8;
 const BRAND_NAME = "AI Converter";
 const BATCH_RETURN_KEY = "aiconverter_batch_return";
+
+// Brings the conversion workspace back into view after a file is picked from a
+// distant CTA (e.g. the pricing-card or security-section "Upload file" buttons).
+// Guarded so normal uploads from the workspace itself never cause a scroll jump.
+function scrollWorkspaceIntoView() {
+  const workspace = document.getElementById("start");
+  if (!workspace) return;
+  const rect = workspace.getBoundingClientRect();
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  const workspaceTopVisible = rect.top >= 0 && rect.top < viewportHeight * 0.75;
+  if (!workspaceTopVisible) {
+    workspace.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
 
 function BrandName({ className = "" }) {
   return <strong className={classNames("brand-name", className)}>{BRAND_NAME}</strong>;
@@ -83,6 +98,33 @@ function planById(planId) {
 
 function converterById(converterId) {
   return data.converters.find((converter) => converter.id === converterId) || null;
+}
+
+function converterIntentFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const requestedId = String(params.get("converter") || "").trim().toLowerCase();
+    const requestedOutput = String(params.get("output") || "").trim().toLowerCase();
+    if (!requestedId) return null;
+    const converter = data.converters.find(
+      (candidate) => candidate.id === requestedId && isLiveConverter(candidate)
+    );
+    if (!converter) return null;
+    const formats = capableOutputFormats(converter, null);
+    const requestedFormat = requestedOutput ? formats.find((format) => format.id === requestedOutput)?.id : "";
+    const outputFormat =
+      requestedFormat ||
+      (formats.some((format) => format.id === "csv") ? "csv" : "") ||
+      formats[0]?.id ||
+      "csv";
+    return {
+      converterId: converter.id,
+      outputFormat,
+      showBankDetails: Boolean(converter.id === "bank" && isBankAdvancedFormat(outputFormat))
+    };
+  } catch {
+    return null;
+  }
 }
 
 function allAcceptedTypes(converters) {
@@ -199,11 +241,20 @@ function pageBucket(count) {
 function trackFunnelEvent(eventType, fields = {}) {
   if (import.meta.env.DEV && ["localhost", "127.0.0.1"].includes(window.location.hostname)) return;
   const payload = JSON.stringify({ eventType, ...fields });
+  // sendBeacon keeps the same POST semantics that let events sent right
+  // before navigation still arrive, but Chromium reports it as a finished
+  // request. A fetch() POST beacon stays "in flight" from the network stack's
+  // view on the Cloudflare edge, so the page never reaches network idle and
+  // rendered-load audits time out on the home page. Fall back to fetch only
+  // when sendBeacon cannot queue the payload.
+  if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function" && payload.length < 1200) {
+    navigator.sendBeacon("/api/funnel-event", new Blob([payload], { type: "application/json" }));
+    return;
+  }
   fetch("/api/funnel-event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: payload,
-    keepalive: payload.length < 1200
+    body: payload
   }).catch(() => {});
 }
 
@@ -439,6 +490,64 @@ function selectedRouteDescription(converter, candidate) {
   return converter?.description || "";
 }
 
+function uploadTargetCopyFor(converter, outputFormat) {
+  const output = outputLabel(converter, outputFormat);
+  switch (converter?.id) {
+    case "bank":
+      return {
+        title: "Bank statement → accounting CSV",
+        detail:
+          "Upload a bank statement PDF for a private preview, review the rows, then export to QuickBooks, Xero, Wave, GnuCash, or CSV."
+      };
+    case "receipt":
+      return {
+        title: "Receipt → expense CSV",
+        detail: "Upload a receipt photo or PDF for a private preview, review the rows, then export to expense CSV."
+      };
+    case "screenshot":
+      return {
+        title: "Screenshot table → CSV",
+        detail: "Upload a screenshot or image of a table for a private preview, review the rows, then export to CSV."
+      };
+    case "invoice":
+      return {
+        title: "Invoice / bill → CSV",
+        detail: "Upload an invoice PDF or photo for a private preview, review the rows, then export to CSV."
+      };
+    case "image-format":
+    case "raster-vector":
+      return {
+        title: `Image → ${output}`,
+        detail: `Convert an image to ${output} privately in your browser. No upload needed.`
+      };
+    case "audio-transcript":
+      return {
+        title: "Audio → transcript",
+        detail: "Upload an audio file for a private preview, review the transcript, then export to TXT or JSON."
+      };
+    case "document-markdown":
+      return {
+        title: "Document → Markdown",
+        detail: "Upload a document or PDF for a private preview, review the result, then export to Markdown."
+      };
+    case "screenshot-code":
+      return {
+        title: "Screenshot → HTML",
+        detail: "Upload a screenshot or image for a private preview, review the result, then export to HTML."
+      };
+    case "universal-file":
+      return {
+        title: "Universal file conversion",
+        detail: "Upload a document, image, audio, video, or archive for a private preview, then export to your chosen format."
+      };
+    default:
+      return {
+        title: `${converter?.title || "File"} → ${output}`,
+        detail: "Upload a file for a private preview, review the result, then export when it looks useful."
+      };
+  }
+}
+
 function displayPriceForPlan(plan, pricingPreview) {
   const planId = typeof plan === "string" ? plan : plan?.id;
   return pricingPreview?.prices?.[planId]?.display || planById(planId)?.price || plan?.price || "₹399";
@@ -507,6 +616,7 @@ function queuePriceSummary(entries, pricingPreview) {
 function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Available");
+  const searchInputRef = useRef(null);
   const categories = useMemo(
     () => [
       "Available",
@@ -539,6 +649,21 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
   );
   const upcomingConverters = data.converters.filter((converter) => !isLiveConverter(converter));
   const coveredFamilies = ["Documents", "Images", "Audio", "Video", "Archives"];
+  const noFormatsMatch = visiblePairs.length === 0;
+  const noMatchHeading = normalizedQuery ? "No formats match your search" : "No formats in this category yet";
+  const noMatchMessage = normalizedQuery
+    ? `No formats match “${query.trim()}”${
+        category === "Available" ? " among the formats available now" : ` in ${category}`
+      }.`
+    : category === "Available"
+      ? "No formats are available yet."
+      : `No formats are listed under ${category} yet.`;
+
+  function resetFormatsFilters() {
+    setQuery("");
+    setCategory("Available");
+    searchInputRef.current?.focus();
+  }
 
   return (
     <main className="page-shell formats-page">
@@ -587,6 +712,7 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
         <label className="formats-search">
           <Search size={17} />
           <input
+            ref={searchInputRef}
             type="search"
             value={query}
             placeholder="Search a format"
@@ -608,20 +734,33 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
       </section>
 
       <section className="formats-grid" aria-label="Conversion options">
-        {visiblePairs.map((pair) => (
-          <article className={classNames("format-card", !pair.available && "is-disabled")} key={`${pair.converterId}-${pair.input}-${pair.output}-${pair.label}`}>
-            <div>
-              <span>{pair.category}</span>
-              <strong>{pair.label}</strong>
-              <p>{pair.detail}</p>
+        {noFormatsMatch ? (
+          <div className="formats-empty">
+            <div className="formats-empty-copy" role="status">
+              <h2>{noMatchHeading}</h2>
+              <p>{noMatchMessage}</p>
             </div>
-            <div className="format-card-meta">
-              <span>{pair.input}</span>
-              <ArrowRight size={14} />
-              <span>{pair.output}</span>
-            </div>
-          </article>
-        ))}
+            <button type="button" className="secondary-button" onClick={resetFormatsFilters}>
+              Clear search and filters
+              <RefreshCw size={15} />
+            </button>
+          </div>
+        ) : (
+          visiblePairs.map((pair) => (
+            <article className={classNames("format-card", !pair.available && "is-disabled")} key={`${pair.converterId}-${pair.input}-${pair.output}-${pair.label}`}>
+              <div>
+                <span>{pair.category}</span>
+                <strong>{pair.label}</strong>
+                <p>{pair.detail}</p>
+              </div>
+              <div className="format-card-meta">
+                <span>{pair.input}</span>
+                <ArrowRight size={14} />
+                <span>{pair.output}</span>
+              </div>
+            </article>
+          ))
+        )}
       </section>
 
       <section className="formats-confidence" aria-label="Conversion confidence rules">
@@ -659,12 +798,13 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
 }
 
 function App() {
-  const [selectedId, setSelectedId] = useState("bank");
-  const [outputFormat, setOutputFormat] = useState("csv");
+  const urlIntent = useMemo(() => converterIntentFromUrl(), []);
+  const [selectedId, setSelectedId] = useState(urlIntent?.converterId || "bank");
+  const [outputFormat, setOutputFormat] = useState(urlIntent?.outputFormat || "csv");
   const [fileQueue, setFileQueue] = useState([]);
   const [activeFileId, setActiveFileId] = useState("");
   const [pageCount, setPageCount] = useState(25);
-  const [showBankDetails, setShowBankDetails] = useState(false);
+  const [showBankDetails, setShowBankDetails] = useState(Boolean(urlIntent?.showBankDetails));
   const [bankDetails, setBankDetails] = useState(defaultBankDetails);
   const [email, setEmail] = useState("");
   const [converting, setConverting] = useState(false);
@@ -725,10 +865,15 @@ function App() {
   );
   const popularConversions = useMemo(
     () => [
-      ...TOP_CONVERSION_REQUESTS
-        .filter((request) => request.qaPriority === "core" || universalProviderReady)
-        .map((request) => request.label),
-      ...(universalProviderReady ? ["Docs, images, audio, video, archives", "Many more formats available"] : [])
+      ...TOP_CONVERSION_REQUESTS.filter((request) => request.qaPriority === "core" || universalProviderReady).map(
+        (request) => ({ label: request.label, href: conversionRequestHref(request) })
+      ),
+      ...(universalProviderReady
+        ? [
+            { label: "Docs, images, audio, video, archives", href: "/formats/" },
+            { label: "Many more formats available", href: "/formats/" }
+          ]
+        : [])
     ],
     [universalProviderReady]
   );
@@ -799,6 +944,7 @@ function App() {
   );
   const isPdfFirstConverter = selectedId === "bank";
   const selectedOutputLabel = outputLabel(selected, outputFormat);
+  const uploadTargetCopy = uploadTargetCopyFor(selected, outputFormat);
   const needsBankDetailsForOutput = selectedId === "bank" && bankNativeNeedsDetails(outputFormat);
   const bankDetailsReady =
     !needsBankDetailsForOutput ||
@@ -870,9 +1016,10 @@ function App() {
   useEffect(() => {
     trackFunnelEvent("page_view", {
       sessionId: funnelSessionIdRef.current,
-      routePath
+      routePath,
+      ...(urlIntent ? { intentConverter: urlIntent.converterId, intentOutput: urlIntent.outputFormat } : {})
     });
-  }, [routePath]);
+  }, [routePath, urlIntent]);
 
   useEffect(() => {
     activeFileIdRef.current = activeFileId;
@@ -1268,6 +1415,7 @@ function App() {
       turnstileState: "idle"
     });
     event.target.value = "";
+    scrollWorkspaceIntoView();
   }
 
   function handleUploadAnotherFile() {
@@ -1911,7 +2059,7 @@ function App() {
         </a>
         <nav className="site-nav" aria-label="Primary navigation">
           <a href="/formats/">All formats</a>
-          <a href="#pricing">Pricing</a>
+          <a href="/pricing/">Pricing</a>
           <a href="/support/">Support</a>
           <a className="nav-proof" href="#security">Private</a>
           <a className="nav-cta" href="#start">Start private preview</a>
@@ -1946,15 +2094,30 @@ function App() {
               Upload a bank statement PDF, choose a Xero, Wave, QuickBooks, or spreadsheet CSV,
               review the rows, and download a free sample before unlocking the full export.
             </p>
+            <p>
+              Built for accountants, bookkeepers, and finance operators preparing
+              accounting imports from bank statements.
+            </p>
           </div>
 
           <section className={classNames("converter-workspace", file && "has-file", result && "has-result")} aria-label="AI conversion workspace">
           <form className="conversion-flow" id="start" onSubmit={handleConvert}>
             <div className="workspace-console-bar" aria-hidden="true">
-              <span>Bank PDFs</span>
-              <span>Xero CSV</span>
-              <span>Wave CSV</span>
-              <span>QuickBooks CSV</span>
+              {selectedId === "bank" ? (
+                <>
+                  <span>Bank PDFs</span>
+                  <span>Xero CSV</span>
+                  <span>Wave CSV</span>
+                  <span>QuickBooks CSV</span>
+                </>
+              ) : (
+                <>
+                  <span>{selected?.title || "Files"}</span>
+                  <span>{selectedOutputLabel}</span>
+                  <span>Free preview</span>
+                  <span>Private</span>
+                </>
+              )}
             </div>
             {file && (
               <div className="flow-rail" aria-label="Conversion steps">
@@ -1976,25 +2139,42 @@ function App() {
 
             {!file && (
               <div className="hero-lab-grid">
-                <label className="upload-target">
-                  <span className="upload-symbol">
-                    <Upload size={26} />
-                  </span>
-                  <span>
-                    <strong>Upload a bank statement for a private preview</strong>
-                    <small>PDF statements first. Other converter routes are available in the output picker.</small>
-                  </span>
-                  <span className="upload-go" aria-hidden="true">
-                    <ArrowRight size={20} />
-                  </span>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept={allAcceptedTypes(selectableConverters)}
-                    onChange={handleFileChange}
-                  />
-                </label>
+                <div className="upload-choice-stack">
+                  <label className="upload-target">
+                    <span className="upload-symbol">
+                      <Upload size={26} />
+                    </span>
+                    <span>
+                      <strong>{uploadTargetCopy.title}</strong>
+                      <small>{uploadTargetCopy.detail}</small>
+                    </span>
+                    <span className="upload-go" aria-hidden="true">
+                      <ArrowRight size={20} />
+                    </span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept={allAcceptedTypes(selectableConverters)}
+                      onChange={handleFileChange}
+                    />
+                  </label>
+                  <a className="other-conversions-card" href="/formats/">
+                    <span className="other-conversions-icon">
+                      <FileText size={20} />
+                    </span>
+                    <span>
+                      <strong>Other file conversions</strong>
+                      <small>
+                        Receipts, invoices, screenshots, audio, documents, images, video, and archives — availability
+                        depends on the exact input and output pair.
+                      </small>
+                    </span>
+                    <span className="upload-go" aria-hidden="true">
+                      <ArrowRight size={20} />
+                    </span>
+                  </a>
+                </div>
                 <div className="export-preview-card" aria-hidden="true">
                   <div className="export-preview-top">
                     <span>Preview output</span>
@@ -2574,9 +2754,15 @@ function App() {
                     ref={copyIndex === 0 ? tickerGroupRef : null}
                   >
                     {popularConversions.map((item) => (
-                      <span className="ticker-chip" key={`${copyIndex}-${item}`}>
-                        {item}
-                      </span>
+                      <a
+                        className="ticker-chip"
+                        href={item.href}
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        key={`${copyIndex}-${item.label}`}
+                      >
+                        {item.label}
+                      </a>
                     ))}
                   </div>
                 ))}
@@ -2589,7 +2775,9 @@ function App() {
           </div>
           <ul className="sr-only">
             {popularConversions.map((item) => (
-              <li key={item}>{item}</li>
+              <li key={item.label}>
+                <a href={item.href}>{item.label}</a>
+              </li>
             ))}
             <li>{popularConversionsSummary.title}. {popularConversionsSummary.detail}</li>
           </ul>

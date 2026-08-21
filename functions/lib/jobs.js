@@ -579,21 +579,54 @@ export async function enforceJobExpiry(env, job) {
 
   if (resultExpired(job, now)) {
     const keys = new Set([job.source_key, job.preview_key, job.result_key].filter(Boolean));
-    await Promise.all([...keys].map((key) => env.AICONVERTER_BUCKET.delete(key).catch(() => {})));
+    const outcomes = await Promise.all(
+      [...keys].map(async (key) => {
+        try {
+          await env.AICONVERTER_BUCKET.delete(key);
+          return { key, ok: true };
+        } catch {
+          return { key, ok: false };
+        }
+      })
+    );
+    const failedKeys = outcomes.filter((outcome) => !outcome.ok).map((outcome) => outcome.key);
+    if (failedKeys.length > 0) {
+      // Do NOT mark the job expired and do NOT stamp source_deleted_at or clear
+      // any pointers: the pointers are the only way a later sweep retry can find
+      // and remove the objects. The job row stays untouched, so resultExpired()
+      // still flags it on the next access and the sweep retries.
+      console.error(
+        `AIConverter expiry of job ${job.id} did not complete; R2 delete failed for keys: ${failedKeys.join(", ")}`
+      );
+      return { ...job, expiryCompleted: false, failedKeys };
+    }
     fields.source_deleted_at = fields.source_deleted_at || job.source_deleted_at || nowIso;
     fields.status = "expired";
     fields.error = job.error || "This conversion has expired.";
-    await updateJob(env, job.id, fields).catch(() => {});
+    await updateJob(env, job.id, fields);
     return null;
   }
 
   if (sourceExpired(job, now)) {
-    if (job.source_key) await env.AICONVERTER_BUCKET.delete(job.source_key).catch(() => {});
+    if (job.source_key) {
+      try {
+        await env.AICONVERTER_BUCKET.delete(job.source_key);
+      } catch {
+        // Same fail-closed contract as the result-expiry branch: no
+        // source_deleted_at stamp, no pointer change, loud log, retryable.
+        console.error(
+          `AIConverter expiry of job ${job.id} did not complete; R2 delete failed for key: ${job.source_key}`
+        );
+        return { ...job, expiryCompleted: false, failedKeys: [job.source_key] };
+      }
+    }
     fields.source_deleted_at = nowIso;
   }
 
   if (Object.keys(fields).length) {
-    await updateJob(env, job.id, fields).catch(() => {});
+    // Let DB update failures propagate: the job row stays in its pre-sweep
+    // state (retryable) and the caller is not told the expiry completed.
+    await updateJob(env, job.id, fields);
     return { ...job, ...fields };
   }
 
@@ -606,7 +639,26 @@ export async function deleteJobData(env, job, now = new Date()) {
   const keys = new Set(
     [job.source_key, job.preview_key, job.result_key, job.validation_report_key].filter(Boolean)
   );
-  await Promise.all([...keys].map((key) => env.AICONVERTER_BUCKET.delete(key).catch(() => {})));
+  const outcomes = await Promise.all(
+    [...keys].map(async (key) => {
+      try {
+        await env.AICONVERTER_BUCKET.delete(key);
+        return { key, ok: true };
+      } catch {
+        return { key, ok: false };
+      }
+    })
+  );
+  const failedKeys = outcomes.filter((outcome) => !outcome.ok).map((outcome) => outcome.key);
+  if (failedKeys.length > 0) {
+    // Do NOT mark the job deleted and do NOT clear any object pointers: the
+    // pointers are the only way a later delete retry or the expiry sweeper
+    // (enforceJobExpiry / sourceExpired) can find and remove the objects.
+    console.error(
+      `AIConverter delete of job ${job.id} did not complete; R2 delete failed for keys: ${failedKeys.join(", ")}`
+    );
+    return { ...job, deletionCompleted: false, failedKeys };
+  }
   const fields = {
     status: "deleted",
     source_deleted_at: job.source_deleted_at || nowIso,
@@ -617,7 +669,7 @@ export async function deleteJobData(env, job, now = new Date()) {
     validation_report_key: ""
   };
   await updateJob(env, job.id, fields);
-  return { ...job, ...fields };
+  return { ...job, ...fields, deletionCompleted: true };
 }
 
 export async function getAuthorizedJob(env, id, token) {

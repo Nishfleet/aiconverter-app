@@ -28,6 +28,8 @@ The monitor fails on:
 - any critical private admin alert
 - any private warning when strict mode is enabled
 
+With an admin token configured, the monitor output also includes live funnel visit counts for the last 24 hours (`overview.funnel` with named counts such as `pageView`, `previewSuccess`, `checkoutClick`, `finalizeSuccess`, `downloadSuccess`, plus `overview.previewFunnel` with the raw per-event rows).
+
 Run the controlled provider failover drill after deploys that touch provider routing:
 
 ```bash
@@ -72,11 +74,18 @@ The private admin page flags:
 - unmatched Dodo payment events
 - refund or credit due jobs
 
+Drill refunds blocked on Dodo wallet funds are retried with
+`POST /api/admin/refund-drill` (`{ jobId, confirmJobId }`). If the operator
+decides not to fund the wallet, the drill refund is written off through the same
+endpoint with `{ jobId, confirmJobId, writeOff: true, reason }` where the reason
+must contain the literal `WRITE-OFF` acknowledgment; the decision is recorded in
+`ops/refund-writeoffs.md` and the job leaves the refund-due queue.
+
 ## Human-Only Checks
 
 Repeat these after checkout, provider, upload, or Turnstile changes:
 
 - browser upload with a human-solved Turnstile challenge, followed by visible `preview_ready`
 - real-card Dodo checkout return, webhook, paid finalize, download, and redo path
-- cash refund retry after the Dodo wallet has enough funds
+- cash refund retry after the Dodo wallet has enough funds, or an explicit write-off decision when it never will
 - private corpus run with `AICONVERTER_PRIVATE_CORPUS_REQUIRED=true` before paid traffic or serious ads

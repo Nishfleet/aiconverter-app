@@ -326,6 +326,33 @@ No card login is requested. There is no direct feed, categorization promise, rec
 Clear transaction tables are the best fit. Rewards pages, summaries, promotional sections, unusual layouts, scans, locked files, and corrupted PDFs may require cleanup or fail.
 `;
 
+const receiptMarkdown = `---
+title: Receipt to expense CSV
+description: Convert receipt photos and PDFs into expense CSV rows with a free preview before payment. Accepts PDF, PNG, JPG, JPEG, and WEBP up to 50 MB.
+---
+
+# Receipt to expense CSV
+
+AI Converter turns receipt photos and PDFs into expense CSV rows. Upload the file, check sample rows free, then unlock the full expense CSV only when the preview looks useful.
+
+## Workflow
+
+1. Upload a receipt as PDF, PNG, JPG, JPEG, or WEBP (up to 50 MB).
+2. Review sample rows free before payment.
+3. Unlock the full expense CSV if the preview is usable.
+4. Download rows with vendor, date, category, total, currency, subtotal, tax, payment method, and notes when each is safely detected.
+
+## Output shape
+
+Receipt exports are one row per readable receipt page. Fields such as currency, subtotal, tax, payment method, and notes appear only when the receipt clearly shows them.
+
+## Limits
+
+Only PDF, PNG, JPG, JPEG, and WEBP files are accepted, up to 50 MB each. Jobs stop without an export when a vendor and total cannot be found or extraction confidence is too low. Blurry, tilted, cut-off, or unusual receipts may fail. Receipt conversion is a beta module and AI Converter does not claim support for every receipt layout, language, or currency.
+
+The export should be compared with the original receipt before important use.
+`;
+
 const bookkeepersMarkdown = `---
 title: Bank statement converter for bookkeepers
 description: A preview-first bank statement PDF to CSV converter for bookkeepers who need reviewable rows and clear limits.
@@ -603,11 +630,62 @@ Use the support form for conversion, payment, refund, deletion, or security ques
 AI Converter does not claim SOC 2, GDPR certification, official bank feeds, guaranteed accounting-platform imports, accounting advice, or tax advice.
 `;
 
+const pricingMarkdown = `---
+title: Pricing - AI Converter one-time page packs
+description: One-time INR page packs with a free preview first: Starter, Standard, and Bulk. See how the pack is chosen and what paid unlocks include.
+---
+
+# Pricing
+
+AI Converter sells one-time page packs, not subscriptions. You review a free preview first, and the pack shown at checkout is the pack you pay for. No recurring charge, no bank login, and no human file review queue.
+
+## Packs
+
+- Starter: ₹399 for 25 pages or images. Free preview first.
+- Standard: ₹799 for 100 pages or images. Most one-off jobs.
+- Bulk: ₹1,399 for 500 pages or images. Best value for large statements and batches.
+
+Prices on this page are the base INR pack prices. Checkout may show a localized total in your local currency when adaptive checkout pricing applies, so the amount shown at checkout is the amount you pay.
+
+## How the pack is chosen
+
+The pack is assigned at checkout from the largest of the page count you submit, the page count detected in the file, and a size-based estimate of roughly 320 KB per page. PDFs above 500 pages are rejected before checkout.
+
+Batch checkout accepts up to 50 previewed files and up to 500 pages or images total in one checkout. Larger batches are split into separate checkouts, and each checkout is priced on its own pack.
+
+## What paid unlock includes
+
+- Free preview and downloadable sample rows before payment.
+- One payment generates and downloads the full export.
+- One automatic stronger redo for paid extraction jobs.
+- Provider-backed format conversions, such as PDF to Word or MP4 to MP3, do not include the automatic redo.
+
+## Preview honesty
+
+After you upload a file, the free sample preview contains rows extracted from your own file, so treat it as customer data. The downloadable fictional sample CSV at https://aiconverter.app/sample-csv/ is a made-up example of the output shape, not your data.
+
+Extraction routes (bank statements, receipts, invoices, screenshots, documents, and audio) show real sample rows before payment. Provider-backed format swaps show a metadata preview before payment, and the actual conversion runs after payment, so those routes have no extractable content to inspect in advance.
+
+## Refunds and failures
+
+If a preview cannot be produced safely, there is no charge: the file fails closed instead of reaching a human queue. If you pay and the full export still cannot be produced after the stronger redo, the job is recorded as refund due or credit due under the refund policy at https://aiconverter.app/refund/. A cash refund is requested when one is available; otherwise support resolves the credit or refund.
+
+Review every export before bookkeeping, tax, lending, or compliance use, per the terms of service at https://aiconverter.app/terms/.
+
+## Related pages
+
+- Formats: https://aiconverter.app/formats/
+- Refund policy: https://aiconverter.app/refund/
+- Terms of service: https://aiconverter.app/terms/
+- Support: https://aiconverter.app/support/
+`;
+
 const markdownByRoute = new Map([
   ["/", markdown],
   ["/index.html", markdown],
   ["/formats", formatsMarkdown],
   ["/about", aboutMarkdown],
+  ["/pricing", pricingMarkdown],
   ["/bank-statement-pdf-to-csv", bankStatementMarkdown],
   ["/convert-bank-statement-to-csv", convertMarkdown],
   ["/pdf-bank-statement-to-quickbooks-csv", quickBooksCsvMarkdown],
@@ -615,6 +693,7 @@ const markdownByRoute = new Map([
   ["/pdf-bank-statement-to-wave-csv", waveCsvMarkdown],
   ["/scanned-bank-statement-to-excel", scannedStatementMarkdown],
   ["/credit-card-statement-pdf-to-csv", creditCardStatementMarkdown],
+  ["/receipt-to-csv", receiptMarkdown],
   ["/bank-statement-converter-for-bookkeepers", bookkeepersMarkdown],
   ["/sample-csv", sampleMarkdown],
   ["/privacy", privacyMarkdown],
@@ -647,6 +726,7 @@ Use one of the real routes:
 - [scanned bank statement to Excel](/scanned-bank-statement-to-excel/)
 - [credit card statement PDF to CSV](/credit-card-statement-pdf-to-csv/)
 - [formats page](/formats/)
+- [pricing page](/pricing/)
 - [privacy policy](/privacy/)
 - [security notes](/security/)
 - [data retention policy](/data-retention/)

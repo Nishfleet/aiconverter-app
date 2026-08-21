@@ -18,6 +18,7 @@ Live behavior:
 - Bank statement converter for bookkeepers who need reviewable CSV rows for cleanup, client workpapers, and accounting-system prep.
 - PDF upload limit: 50 MB.
 - Page-pack pricing up to 500 pages.
+- Pricing page: https://aiconverter.app/pricing/ (one-time INR packs, preview first, pack-assignment and refund terms).
 - Built-in parser first for digital PDFs.
 - OCR fallback for scanned or messy PDFs when configured.
 - Free preview and downloadable sample CSV before payment.
