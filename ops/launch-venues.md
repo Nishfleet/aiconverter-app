@@ -14,9 +14,10 @@ verified 2026-08-12 and re-verified 2026-08-14; Futurepedia, TAAFT
 2026-08-17; Capterra verified
 2026-08-15 via Wayback/CDX (direct VPS access remains 403-blocked by
 Capterra's bot wall, so no live-page claim is made for it — see the Capterra
-section); G2 verified 2026-08-15 (g2.com itself is bot-walled from this VPS —
-the eligibility rule and official create-a-profile flow were verified via
-credential-free fetch/search evidence, see the G2 section).
+section); G2 verified 2026-08-15 and re-verified 2026-08-21 (g2.com itself is
+bot-walled from this VPS — the eligibility rule and official create-a-profile
+flow were verified via credential-free fetch/search evidence, see the G2
+section).
 Automated submission is blocked for all fifteen venues by the fleet venue
 policy ledger (`agent-state/growth-loop/venue-policy.json` and the
 `venue-claim` guard): Product Hunt is reviewed as prohibiting automation;
@@ -128,8 +129,8 @@ copy source):
   no product-creation API, no agent-credential path), so account creation +
   submission is Nish's human action using the G2 kit below. No listing fee
   surfaced for the free profile; paid Marketing Solutions stay a separate
-  spend call. (Lane attempt 2026-08-15: NOT EXECUTED — see the G2 section
-  below.)
+  spend call. (Lane attempts 2026-08-15 and 2026-08-21: NOT EXECUTED — see
+  the G2 section below.)
 
 ## Status ledger (fleet re-verification 2026-08-10)
 
@@ -3257,6 +3258,50 @@ copy-paste ready:
   the venue research desk reviewing g2.com and adding it to the policy
   allowlist — and even then the reviewed vendor form's email verification
   stays with the account owner.
+
+### Fleet lane attempt 2026-08-21 (G2 — NOT EXECUTED, decision re-verified)
+
+- Attempted by lane 1 (packet item 4eb99c12cf, same item as the 2026-08-15
+  attempt). The eligibility condition is **still MET** and the venue policy
+  guard + reviewed vendor form continue to block agent-executed submission.
+  `agent-state/growth-loop/venue-policy.json` (re-read 2026-08-21, still
+  dated 2026-08-08) lists g2.com with `automation_disposition: "unknown"`
+  and the executable `allowlist` is **still empty** — so the
+  `venue-claim` contract still produces an exit-4 "Allowlist/policy block"
+  and "A blocked exit means NO browser work" applies unchanged. The
+  `venue-claim` binary is still not installed in the lane environment
+  (`/home/nish/.local/bin/venue-claim: No such file or directory`), so the
+  outcome is deterministic from the authoritative policy JSON.
+- Live re-verification (2026-08-21, credential-free, same as the 2026-08-15
+  fetch used on this lane):
+  - Production workflow live, all HTTP 200: `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+    Bank-statement copy still confirms released/non-beta/B2B framing
+    ("Convert bank statement PDFs into reviewable CSV rows with
+    preview-first extraction and short private file retention"; "Preview
+    before payment"; "No bank login, no email intake, no manual review
+    queue"). `/pricing/` is **still 404** (the 2026-08-15 kit does not
+    claim that route, so the regression does not change the submission
+    posture; `/receipt-to-csv/` also still 404).
+  - G2 eligibility rule live: https://documentation.g2.com/help/docs/
+    finding-or-listing-a-product-on-g2 → HTTP 200 (B2C/alpha-beta exclusion
+    quote unchanged).
+  - Official flow live: https://sell.g2.com/create-a-profile → HTTP 200
+    (request form → conditional approval ~3-5 business days → claim free →
+    final review 1-3 business days, copy unchanged from 2026-08-15);
+    https://sell.g2.com/claim-your-profile → "Claim that thing for free"
+    (unchanged).
+  - Direct g2.com access (re-checked 2026-08-21, plain Mozilla/Chrome UA):
+    `https://www.g2.com/` → HTTP **403** (bot-walled; same as 2026-08-15).
+- Decision: **unchanged.** The kit below is still copy-paste ready and the
+  next step is still Nish's manual Product Submission Form + claim. No new
+  G2 profile for aiconverter.app / "AI Converter" has been published since
+  2026-08-15 (the live peer profile
+  https://www.g2.com/products/bank-statement-converter-ai-online/reviews
+  remains the only exact-category listing on G2).
+- Full evidence: `.lane/reports/lane1-g2-listing-20260821.md` (this run);
+  the earlier 2026-08-15 report (`.lane/reports/lane1-g2-listing-20260815.md`)
+  remains valid and the kit below is carried forward verbatim.
 
 ### Manual submission kit (copy-paste ready; truthful — live claims only)
 
