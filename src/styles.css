@@ -798,6 +798,20 @@ a {
   box-shadow: 0 0 0 4px rgba(50, 104, 255, 0.12);
 }
 
+.pdf-password-field em {
+  color: var(--alert, #b32d2d);
+  font-style: normal;
+  margin-left: 4px;
+  font-weight: 700;
+}
+
+.pdf-password-hint {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
 .turnstile-wrap {
   min-height: 70px;
   margin: 0 0 12px;
