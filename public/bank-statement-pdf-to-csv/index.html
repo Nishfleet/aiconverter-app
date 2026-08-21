@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="index,follow" />
     <title>Bank Statement PDF to CSV - AI Converter</title>
-    <meta name="description" content="Convert bank statement PDFs into reviewable CSV rows with preview-first extraction and short private file retention." />
+    <meta name="description" content="Convert bank statement PDFs into reviewable CSV rows with preview-first verification, fail-closed confidence, and short private file retention." />
     <link rel="canonical" href="https://aiconverter.app/bank-statement-pdf-to-csv/" />
     <link rel="alternate" type="text/markdown" href="https://aiconverter.app/bank-statement-pdf-to-csv/index.md" />
     <meta property="og:title" content="Bank Statement PDF to CSV - AI Converter" />
-    <meta property="og:description" content="Convert bank statement PDFs into reviewable CSV rows with preview-first extraction and short private file retention." />
+    <meta property="og:description" content="Convert bank statement PDFs into reviewable CSV rows with preview-first verification, fail-closed confidence, and short private file retention." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://aiconverter.app/bank-statement-pdf-to-csv/" />
     <meta property="og:image" content="https://aiconverter.app/og-image.png" />
@@ -17,7 +17,7 @@
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Bank Statement PDF to CSV - AI Converter" />
-    <meta name="twitter:description" content="Convert bank statement PDFs into reviewable CSV rows with preview-first extraction and short private file retention." />
+    <meta name="twitter:description" content="Convert bank statement PDFs into reviewable CSV rows with preview-first verification, fail-closed confidence, and short private file retention." />
     <meta name="twitter:image" content="https://aiconverter.app/og-image.png" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -26,7 +26,7 @@
             "@context": "https://schema.org",
             "@type": "WebPage",
             "name": "Bank Statement PDF to CSV - AI Converter",
-            "description": "Convert bank statement PDFs into reviewable CSV rows with preview-first extraction and short private file retention.",
+            "description": "Convert bank statement PDFs into reviewable CSV rows with preview-first verification, fail-closed confidence, and short private file retention.",
             "url": "https://aiconverter.app/bank-statement-pdf-to-csv/",
             "image": "https://aiconverter.app/og-image.png",
             "isPartOf": {
@@ -109,6 +109,23 @@
           </p>
         </article>
 
+        <article class="policy-card">
+          <p class="kicker">Verification</p>
+          <h2>How do you know the extraction is right?</h2>
+          <p>
+            The free preview is the proof surface: it shows the actual sample rows the parser detected — dates,
+            descriptions, amounts, signs, and the balance column when the source PDF exposes one. Compare the
+            preview's totals, dates, and balance against the original statement before paying. Conversions that
+            cannot be read safely (wrong totals, missing rows, OCR noise, unreadable structure) fail closed with no
+            charge instead of returning a CSV that hides silent errors.
+          </p>
+          <p>
+            <strong class="brand-name">AI Converter</strong> does not claim blanket accuracy. The preview, the
+            <a href="/sample-csv/">fictional sample CSV</a>, and the fail-closed behavior are the verification;
+            review them before unlocking the full export.
+          </p>
+        </article>
+
         <article class="notice">
           Want to inspect the output shape first? <a href="/sample-csv/">Download the fictional sample CSV.</a>
         </article>
@@ -121,6 +138,13 @@
           wrong when a scan is noisy, a table is unusual, a file is damaged, or a provider cannot safely read the source.
           The preview gives you an early look at columns, dates, descriptions, totals, signs, and row structure before you
           pay for the complete result.
+        </p>
+        <p>
+          <strong>Verification is the wedge.</strong> A "99% accurate" headline is nearly useless for deciding whether to
+          trust a specific extraction; the real question is whether this particular file was read safely. AI Converter's
+          preview, fail-closed behavior on low-confidence parses, sample CSV, and the balance / totals columns the parser
+          detected together form the proof surface — not a blanket accuracy claim. Review the preview, then unlock the
+          full file only when it matches.
         </p>
         <p>
           For accounting workflows, compare the export with the source statement before importing it into bookkeeping,
