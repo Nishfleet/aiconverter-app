@@ -49,6 +49,25 @@ domain; no Bing Webmaster ownership or sitemap-submission evidence exists`
   2026-08-21 row exists specifically to retire the Gitleaks block
   item and not to re-prove the same gap.
 
+## Growth lane (2026-08-21) — IndexNow submission script
+
+- **`scripts/indexnow-submit.mjs` added** (credential-free, fail-closed).
+  Reads the key from `public/IndexNow.txt`, refuses to submit until
+  `https://aiconverter.app/<key>.txt` returns 200 live (proven fail-closed
+  against today's 404), validates the live key matches the committed key,
+  extracts URLs from `public/sitemap.xml` or accepts explicit URL args,
+  POSTs to `https://api.indexnow.org/indexnow`, treats HTTP 202 as success.
+  The key comes from the public key file (not hardcoded in the script), so
+  gitleaks stays clean.
+- **Why this PR exists:** lane1 PR #143 carried the same script but
+  conflicted on this doc (lane1 added a 2026-08-20 section that has since
+  been superseded by the 2026-08-21 section above). This growth PR carries
+  the script on fresh `origin/main` with no conflict and no doc duplication.
+- **Next action (deploy-gated):** once PR #135's Cloudflare Pages deploy
+  workflow merges and the Pages token is provisioned, the first deploy makes
+  the key file return 200. Then run `node scripts/indexnow-submit.mjs` to
+  ping the sitemap URLs to IndexNow — no account, no credentials needed.
+
 
 ## Re-verification (2026-08-17, lane re-run)
 
