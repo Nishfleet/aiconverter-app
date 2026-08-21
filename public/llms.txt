@@ -73,7 +73,7 @@ Upcoming module:
 
 Important product truth:
 - AI Converter does not claim to support every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every audio file, every document, every image format, or every file type.
-- Password-protected or encrypted PDFs are not supported. Remove the password before uploading, or the conversion will fail.
+- Password-protected PDFs are supported when the PDF password is provided on upload. The password is decrypted in that request only and is not written to private storage. Encrypted PDFs without the password will fail.
 - Accuracy, security, compliance, and supported-format claims should stay limited to what the live product can prove.
 - AI Converter does not claim official QuickBooks Web Connect support, direct bank feeds, guaranteed accounting-platform imports, SOC 2, GDPR, accounting advice, tax advice, reconciliation, or categorization.
 - Need OFX/QBO? Add bank details in the converter. Treat those files as advanced exports to review separately, not guaranteed import files.
