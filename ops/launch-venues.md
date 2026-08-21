@@ -1914,6 +1914,73 @@ copy-paste ready:
   and appears in Microlaunch search, then flip this venue's status line to
   live.
 
+### Fleet lane attempt 2026-08-20 (Microlaunch — NOT EXECUTED, re-verified, re-dispatch #4)
+
+- Attempted by lane 1 (packet item ed8ccbdb9d re-dispatch #4: "List the
+  product on Microlaunch via + New Launch — exact-category peers Bank
+  Statement Converter and Bankformats a"). The listing was **still not
+  submitted**: the 2026-08-11 decision above still binds and no policy
+  change occurred since 2026-08-17.
+  `agent-state/growth-loop/venue-policy.json` (updated 2026-08-08, re-read
+  2026-08-20) still has no microlaunch.net entry — `automation_disposition:
+  unknown`, allowlist still empty — so `venue-claim claim` exits 4 and the
+  agent must not drive a browser submission. The sign-in gate (Google / 𝕏
+  OAuth only) is still a human account action that stays with Nish per the
+  decision above. The `venue-claim` binary is not installed in the lane
+  environment, but the policy JSON is the authoritative guard and is
+  unchanged; this record is the honest NOT-EXECUTED lane outcome the
+  re-dispatch packet requires (the dated decision line flips to SUBMITTED
+  only after Nish submits the Regular launch).
+- Live re-verification (2026-08-20, credential-free `urllib` requests; no
+  JS needed for these pages):
+  - Homepage live, HTTP 200 (final URL `https://microlaunch.net/`); body
+    still contains `new launch`, `world-class`, `daily visitors`,
+    `google`, `x.com`, `twitter`, `launch20`, and `signup`. Nav still
+    surfaces the New Launch entry point and the OAuth-gated Sign-up
+    button.
+  - `/submit` followed to its destination (final URL
+    `https://microlaunch.net/premium#pricing`, status 200); this matches
+    the standing 307 redirect recorded on 2026-08-17 — the free
+    submission path is gated behind account creation.
+  - `/premium` live, HTTP 200; premium page still names the "Regular
+    launch" tier (FAQ), the "Pro Launch" offer, the `LAUNCH20` code, and
+    the "Expert Feedback" paid add-on (`$39` literal no longer present in
+    the served body, but the Pro Launch card is unchanged).
+  - Both exact-category peers still live, HTTP 200: Bank Statement
+    Converter (https://microlaunch.net/p/bankstatementconverter) and
+    Bankformats (https://microlaunch.net/p/bankformats).
+  - No duplicate: the full launches/products API
+    (https://api.microlaunch.net/api/launches, `authorized_mode: false`,
+    `data.launches` + `data.products` each **246** records, up from 233 on
+    2026-08-17) still has zero hits for `aiconverter`, `ai-converter`, or
+    `ai converter` across every field (slug, codename, name, labels,
+    description). Slug probes `/p/aiconverter`, `/p/ai-converter`,
+    `/p/aiconverter-app`, `/p/ai-converter-app`, `/p/AI-Converter`,
+    `/p/aiconverter.app` all return HTTP 500 (same not-found behaviour
+    recorded on 2026-08-12, 2026-08-14 and 2026-08-17).
+  - ToS live, HTTP 200: https://microlaunch.net/terms — generic template
+    (4817 chars), no `robot`, `spider`, `crawl`, `scrap`, `automated`, or
+    `bot` strings (unchanged; flag for the venue research desk; the
+    `venue-claim` guard stays exit-4 either way).
+  - Kit reference pages all live HTTP 200 (2026-08-20): `/`,
+    `/llms.txt`, `/bank-statement-pdf-to-csv/`, `/sample-csv/`,
+    `/trust/`, `/formats/`; `/pricing/` and `/receipt-to-csv/` still 404
+    (unchanged; the kit claims none of those routes).
+- Paid decision (re-recorded 2026-08-20, unchanged): the Pro Launch $39
+  upgrade stays deferred to Nish's spend call — no spend authorization
+  exists in `agent-state/authorizations/` (only the sol-xhigh worker
+  grant; the dispatch ledger has no Microlaunch entry).
+- Lane report: `.lane/reports/lane1-microlaunch-listing-20260820.md`
+  records the full HTTP check list and the unchanged blocking factors.
+- Next action (unchanged): Nish signs in (Google or 𝕏) and submits the
+  Regular launch using the kit above; the Pro Launch $39 upgrade stays his
+  spend call. The only route to an agent-executed submission would be the
+  venue research desk reviewing microlaunch.net (its ToS has no
+  robot/spider/automated-access prohibition) and adding it to the policy
+  allowlist. After the listing, confirm microlaunch.net/p/{slug} returns 200
+  and appears in Microlaunch search, then flip this venue's status line to
+  live.
+
 ## Uneed
 
 ### Decision (dated 2026-08-11)
