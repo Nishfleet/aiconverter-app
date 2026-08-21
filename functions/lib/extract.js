@@ -752,6 +752,11 @@ export class PdfIncorrectPasswordError extends Error {
   }
 }
 
+export function sanitizePdfPassword(value) {
+  if (value === undefined || value === null) return "";
+  return String(value).slice(0, 256);
+}
+
 async function openPdfDocument(arrayBuffer, options = {}) {
   const password = sanitizePdfPassword(options.pdfPassword);
   const bytes = copyPdfBytes(arrayBuffer);
@@ -780,7 +785,7 @@ async function openPdfDocument(arrayBuffer, options = {}) {
   }
 }
 
-function sanitizePdfPassword(value) {
+function sanitizePdfPassword$inline(value) {
   if (value === undefined || value === null) return "";
   return String(value).slice(0, 256);
 }
@@ -802,7 +807,7 @@ function isIncorrectPasswordError(error) {
 }
 
 async function assertPdfDecryptable(arrayBuffer, options = {}) {
-  const password = sanitizePdfPassword(options.pdfPassword);
+  const password = sanitizePdfPassword$inline(options.pdfPassword);
   let pdf;
   try {
     pdf = password
