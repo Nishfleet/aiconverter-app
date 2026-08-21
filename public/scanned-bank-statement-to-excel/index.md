@@ -16,6 +16,6 @@ AI Converter can use OCR fallback for scanned or image-heavy bank statement PDFs
 
 ## Limits
 
-OCR is sensitive to scan quality. Blurry pages, shadows, cut-off columns, handwriting, password protection, corruption, or unusual layouts may fail.
+Password-protected PDFs are supported when the PDF password is provided on upload. OCR is sensitive to scan quality. Blurry pages, shadows, cut-off columns, handwriting, corruption, or unusual layouts may still fail.
 
 Low-confidence conversions should fail closed instead of inventing rows.
