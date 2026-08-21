@@ -822,6 +822,8 @@ function App() {
   const [result, setResult] = useState(null);
   const [conversionBrief, setConversionBrief] = useState(null);
   const [error, setError] = useState("");
+  const [pdfPassword, setPdfPassword] = useState("");
+  const [pdfPasswordRequired, setPdfPasswordRequired] = useState(false);
   const [turnstileSiteKey, setTurnstileSiteKey] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileStatus, setTurnstileStatus] = useState("idle");
@@ -946,6 +948,12 @@ function App() {
   const selectedOutputLabel = outputLabel(selected, outputFormat);
   const uploadTargetCopy = uploadTargetCopyFor(selected, outputFormat);
   const needsBankDetailsForOutput = selectedId === "bank" && bankNativeNeedsDetails(outputFormat);
+  const converterAcceptsPdf = Boolean(selected && converterAcceptsFile(selected, { type: "application/pdf", name: "sample.pdf" }));
+  const shouldShowPdfPasswordField =
+    Boolean(file) &&
+    isPdfFile(file) &&
+    converterAcceptsPdf &&
+    !isLocalImageConverter;
   const bankDetailsReady =
     !needsBankDetailsForOutput ||
     Boolean(
@@ -1402,6 +1410,8 @@ function App() {
     }));
     setError("");
     setResult(null);
+    setPdfPassword("");
+    setPdfPasswordRequired(false);
     setFileQueue((currentQueue) => [...currentQueue, ...nextEntries]);
     const nextActive = nextEntries[0];
     setActiveFileId(nextActive.id);
@@ -1473,6 +1483,7 @@ function App() {
     const pageCountToUse = pageCount;
     const emailToUse = email;
     const bankDetailsToUse = bankDetails;
+    const pdfPasswordToUse = pdfPassword;
 
     const form = new FormData();
     form.append("file", fileToConvert);
@@ -1484,6 +1495,9 @@ function App() {
     form.append("funnelSessionId", funnelSessionIdRef.current);
     if (converterToUse === "bank" && BANK_ADVANCED_FORMATS.has(outputToUse)) {
       form.append("accountingMetadata", JSON.stringify(bankDetailsToUse));
+    }
+    if (isPdfFile(fileToConvert) && pdfPasswordToUse) {
+      form.append("pdfPassword", pdfPasswordToUse);
     }
     if (turnstileToken) form.append("turnstileToken", turnstileToken);
 
@@ -1505,6 +1519,20 @@ function App() {
         trackPreviewEvent("preview_error", { errorCode: `http_${response.status}` });
         previewErrorTracked = true;
         throw new Error(requestErrorMessage(payload, "The AI converter could not process this file.", response.status));
+      }
+
+      if (payload?.status === "failed" && payload?.errorCode === "pdf_password_required") {
+        setPdfPasswordRequired(true);
+      } else if (payload?.status === "failed" && payload?.errorCode === "pdf_incorrect_password") {
+        setPdfPasswordRequired(true);
+        setError(payload?.message || "The password did not unlock this PDF. Check the password and try again.");
+        previewErrorTracked = true;
+        trackPreviewEvent("preview_error", { errorCode: "pdf_incorrect_password" });
+        setConverting(false);
+        resetTurnstile();
+        return;
+      } else {
+        setPdfPasswordRequired(false);
       }
 
       setResultForFile(fileId, payload);
@@ -2454,6 +2482,29 @@ function App() {
                       </strong>
                     </div>
                   </div>
+
+                  {shouldShowPdfPasswordField && (
+                    <label className="email-field pdf-password-field" aria-label="PDF password (optional)">
+                      <span>
+                        PDF password (optional)
+                        {pdfPasswordRequired ? <em> · password required</em> : null}
+                      </span>
+                      <input
+                        type="password"
+                        inputMode="text"
+                        autoComplete="off"
+                        spellCheck="false"
+                        maxLength={256}
+                        placeholder={pdfPasswordRequired ? "Add the PDF password and try again" : "Leave blank for unlocked PDFs"}
+                        value={pdfPassword}
+                        onChange={(event) => setPdfPassword(event.target.value)}
+                      />
+                      <small className="pdf-password-hint">
+                        We decrypt the PDF in this request only. The password is never written to private storage and is
+                        not stored after the upload completes.
+                      </small>
+                    </label>
+                  )}
 
                   <div className="confidence-panel" aria-label="Selected conversion details">
                     <div>
