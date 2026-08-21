@@ -22,4 +22,4 @@ Typical CSV columns are date, description, money in, money out, and balance when
 
 ## Limits
 
-Some files fail because they are scanned poorly, password-protected, corrupted, unusual, or unsupported. Review the export before bookkeeping, tax, lending, or compliance use.
+Password-protected PDFs are supported when the PDF password is provided on upload. Some files still fail because they are scanned poorly, corrupted, unusual, or unsupported. Review the export before bookkeeping, tax, lending, or compliance use.
