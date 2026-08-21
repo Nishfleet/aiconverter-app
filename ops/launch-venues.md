@@ -13,7 +13,9 @@ Toolify.ai verified 2026-08-11 and re-verified 2026-08-12 and 2026-08-15; Microl
 verified 2026-08-12 and re-verified 2026-08-14; Futurepedia, TAAFT
 (theresanaiforthat.com) and Dang.ai verified 2026-08-14 and re-verified
 2026-08-17; Capterra verified
-2026-08-15 via Wayback/CDX (direct VPS access remains 403-blocked by
+2026-08-15 and re-verified 2026-08-21 via Wayback/CDX + the official
+Gartner/G2 Digital Markets get-listed flow (direct VPS access remains
+403-blocked by
 Capterra's bot wall, so no live-page claim is made for it — see the Capterra
 section); G2 verified 2026-08-15 and re-verified 2026-08-21 (g2.com itself is
 bot-walled from this VPS — the eligibility rule and official create-a-profile
@@ -115,7 +117,9 @@ copy source):
   agent-credential path), so account creation + submission is Nish's human
   action using the Capterra kit below. No listing fee surfaced in the
   official-path evidence; sponsored placement stays a separate spend call.
-  (Lane attempt 2026-08-15: NOT EXECUTED — see the Capterra section below.)
+  (Lane attempts 2026-08-15 and 2026-08-21: NOT EXECUTED — see the Capterra
+  section below; the 2026-08-21 run captured a live `venue-claim` exit-4
+  policy block, the binary now being installed on this VPS.)
 - **G2 — NEEDS_NISH_STEP (agent-executed submission declined).** The
   production bank-statement workflow meets G2's B2B/non-beta eligibility
   (official rule fetched live 2026-08-15: G2 does not accept B2C or
@@ -2435,7 +2439,7 @@ copy-paste ready:
 
 ## Capterra
 
-### Decision (dated 2026-08-11, re-verified 2026-08-15)
+### Decision (dated 2026-08-11, re-verified 2026-08-15 and 2026-08-21)
 
 - **Decision: DECLINED for agent-executed submission. Truthful profile
   creation is a manual external-account action by Nish via the official
@@ -2554,6 +2558,75 @@ copy-paste ready:
   then the reviewed vendor form's email verification stays with the account
   owner.
 
+### Fleet lane attempt 2026-08-21 (Capterra — NOT EXECUTED, decision re-verified with a live guard receipt)
+
+- Attempted by lane 1 (same packet item 83c4f2d087). The profile was **not
+  created**: the 2026-08-11 decision still binds and no policy change has
+  occurred since 2026-08-08.
+- **New this run — the guard was actually executed, not inferred.**
+  `venue-claim` is now installed on this VPS
+  (`/home/nish/.local/bin/venue-claim`, mtime 2026-08-20 23:24); the
+  2026-08-11/2026-08-15 records had to reason from the policy JSON because
+  the binary was absent (exit 127). Live results, 2026-08-21:
+  - `venue-claim check capterra.com aiconverter-app` → exit 0 with
+    `policy disposition for capterra.com: reviewed (unknown)` (exit 0 here
+    only means "no active ledger record", not "allowed").
+  - `venue-claim validate` → capterra.com is listed under **reviewed
+    (non-executable) venues** (with alternativeto.net, g2.com, getapp.com,
+    producthunt.com, startupsubmit.app).
+  - `venue-claim claim capterra.com aiconverter-app ...` run against the real
+    production policy file in an isolated sandbox (`VENUE_POLICY_PATH` copy of
+    the production policy, throwaway `VENUE_LEDGER_PATH`/`VENUE_LOCK_PATH` in
+    `/tmp`, so the production ledger is never written) →
+    **exit 4**: `ALLOWLIST/POLICY BLOCK: venue capterra.com is reviewed as
+    unknown - not automation-allowed; route to NEEDS-NISH/manual, never
+    bypass.` Per the contract, a blocked exit means **NO browser work** — no
+    account creation, no vendor form, no navigation of capterra.com. The
+    production ledger still holds **zero** capterra records (`venue-claim list
+    aiconverter-app` → no capterra rows; grep of `venues.json` → 0 matches),
+    so nothing was claimed or mutated by this verification.
+- Policy ledger unchanged (re-read 2026-08-21):
+  `agent-state/growth-loop/venue-policy.json` still `updated: 2026-08-08`,
+  `allowlist: {}` (empty), capterra.com `automation_disposition: "unknown"`
+  with the note "NOT automation-allowed until current official evidence
+  exists."
+- Live re-verification (2026-08-21, credential-free; Capterra itself remains
+  bot-walled for plain HTTP):
+  - Direct VPS access to Capterra: `https://www.capterra.com/` → **403**,
+    peer profile `/p/10048907/Bank-Statement-Converter/` → **403**,
+    `/vendors/` → **403**, `/legal/listing-guidelines/` → **403** (bot wall,
+    unchanged since 2026-08-11).
+  - Official path live: `https://digitalmarkets.gartner.com/get-listed/start`
+    → **HTTP 200**, redirecting to
+    `https://app.g2digitalmarkets.com/get-listed/start` (**HTTP 200**) —
+    unchanged from the 2026-08-15 record, so the kit's "next action" URL is
+    still correct.
+  - No duplicate (Wayback CDX, 2026-08-21): zero captures for
+    `capterra.com/p/*aiconverter*`, `capterra.com/p/*ai-converter*`, and a
+    regex-filtered domain scan for `.*[Aa][Ii][-]?[Cc]onverter.*` under
+    `capterra.com/p/` → empty. Control probe confirms the query shape works:
+    `capterra.com/p/` prefix returns captures (e.g.
+    `capterra.com/p&c-insurance-software/`, HTTP 200, 2018), so the empty
+    aiconverter result is a real absence, not a broken query. The peer
+    profile `capterra.com/p/10048907/` still has no archived capture, so the
+    peer's evidence remains the scout's 2026-08-09 live check.
+  - Kit reference pages live HTTP 200 (2026-08-21): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+    `/pricing/` is **still 404** (the regression first recorded 2026-08-20 has
+    not self-healed) and `/receipt-to-csv/` is still 404 — the kit claims
+    neither route, so it stays truthful as written.
+- Paid decision (re-verified 2026-08-21, unchanged): **no listing fee
+  surfaced** in the official-path evidence; optional sponsored placement /
+  lead generation stays Nish's spend call. No spend authorization exists in
+  `agent-state/authorizations/`.
+- Next action (unchanged, human-owned): Nish creates the vendor account at
+  https://app.g2digitalmarkets.com/get-listed/start and submits using the kit
+  below, then this file gets the public profile URL and the status line flips
+  to live. The only route to an agent-executed submission is the venue
+  research desk reviewing capterra.com and adding it to the policy
+  allowlist — and even then the reviewed vendor form's email verification
+  stays with the account owner.
+
 ### Manual submission kit (copy-paste ready; truthful — live claims only)
 
 - Name: **AI Converter**
@@ -2580,7 +2653,8 @@ copy-paste ready:
   Do not invent a category slug.
 - Pricing tag: Freemium (free preview + paid per-page extraction, matching
   live checkout behavior).
-- Canonical links for the listing (all verified live HTTP 200 on 2026-08-15):
+- Canonical links for the listing (all verified live HTTP 200 on 2026-08-15,
+  re-verified 2026-08-21):
   - https://aiconverter.app/bank-statement-pdf-to-csv/
   - https://aiconverter.app/sample-csv/
   - https://aiconverter.app/trust/
