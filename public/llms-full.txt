@@ -133,4 +133,6 @@ Fake sample CSV:
 
 Do not claim AI Converter supports every bank, every statement format, every receipt format, every invoice format, every screenshot layout, every audio file, every document, every image format, every file type, certified compliance, human review, guaranteed accuracy, accounting or tax advice, instant AI processing, pixel-perfect screenshot-to-code, or customer-volume proof. Format conversion depends on the live app accepting that exact input/output pair. Exports should be reviewed before important use.
 
+- Do not claim password-protected or encrypted PDF support. Password-protected PDFs are not supported and will fail; users must remove the password before uploading.
+
 Do not claim official QuickBooks Web Connect, direct QuickBooks/Xero/Wave integration, direct bank feeds, guaranteed imports, reconciliation, categorization, SOC 2, or GDPR. Mention OFX or QBO only through the optional "Need OFX/QBO? Add bank details" path, not as guaranteed import files.
