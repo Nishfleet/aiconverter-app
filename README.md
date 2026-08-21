@@ -64,6 +64,7 @@ Use the safe-deploy wrapper on Nish's machine before live commands.
 ## Product Truth
 
 - Preview is free.
+- Password-protected PDFs are supported when the PDF password is supplied on upload.
 - Full AI extraction unlock is paid.
 - Dodo checkout creation, signed webhook validation, paid finalize/download code paths, admin refund drills, and failed-payment handling are implemented and covered by automated checks.
 - One successful real-card drill through checkout, webhook, paid finalize, download, redo, and cash refund still needs operator proof before scaling paid traffic. The 2026-05-18 drill's ₹299 refund stayed blocked on Dodo wallet funds (five failed attempts) and was written off by explicit operator decision on 2026-08-10 — see `ops/refund-writeoffs.md`.
