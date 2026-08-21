@@ -17,20 +17,20 @@ Capterra's bot wall, so no live-page claim is made for it — see the Capterra
 section); G2 verified 2026-08-15 and re-verified 2026-08-21 (g2.com itself is
 bot-walled from this VPS — the eligibility rule and official create-a-profile
 flow were verified via credential-free fetch/search evidence, see the G2
-section).
-Automated submission is blocked for all fifteen venues by the fleet venue
+section); AIAccountingApps.com verified 2026-08-21.
+Automated submission is blocked for all sixteen venues by the fleet venue
 policy ledger (`agent-state/growth-loop/venue-policy.json` and the
 `venue-claim` guard): Product Hunt is reviewed as prohibiting automation;
 BetaList, WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, Microlaunch, uneed.best,
 Open-Launch, saashub.com, futurepedia.io, theresanaiforthat.com, dang.ai,
-capterra.com, and g2.com
+capterra.com, g2.com, and aiaccountingapps.com
 are not yet reviewed (`automation_disposition: unknown`). Uneed is
 the first venue that publishes its own official agent-launch API
 (`/launch.txt` + REST `/api/v1`) — strong positive evidence the venue research
 desk should weigh when reviewing uneed.best. Account actions (and the xix.ai
 $9.90, Toolify.ai $99, Microlaunch Pro Launch $39, Uneed Skip the Waiting Line
 $29.99, Open-Launch Premium Launch $12, Futurepedia Verified Listing $497,
-and TAAFT launch $49/$347 spend decisions) stay with Nish.
+AIAccountingApps.com €59, and TAAFT launch $49/$347 spend decisions) stay with Nish.
 The kits below make each manual submission a copy-paste job.
 
 ## Live-route change (2026-08-12)
@@ -129,8 +129,23 @@ copy source):
   no product-creation API, no agent-credential path), so account creation +
   submission is Nish's human action using the G2 kit below. No listing fee
   surfaced for the free profile; paid Marketing Solutions stay a separate
-  spend call. (Lane attempts 2026-08-15 and 2026-08-21: NOT EXECUTED — see
-  the G2 section below.)
+   spend call. (Lane attempts 2026-08-15 and 2026-08-21: NOT EXECUTED — see
+   the G2 section below.)
+- **AIAccountingApps.com — NEEDS_NISH_STEP (agent-executed submission
+  declined).** The venue hosts the exact category — a dedicated Bank Statement
+  Conversion page (https://www.aiaccountingapps.com/c/bank-statement-converters,
+  live 2026-08-21, "4 Best Bank Statement Conversion Tools (2026)") listing
+  only AI Bank Parser, Lido, Smart Clerk, and Badbank AI, with no
+  aiconverter.app / "AI Converter" listing anywhere on the index — the listing
+  is missing, not duplicate. The submit page offers a paid path (€59 one-off,
+  Stripe checkout https://buy.stripe.com/28og0t78E9xMfRe5kl) and an editorial
+  route ("Or write to the editor first", hello@aiaccountingapps.com); the
+  homepage FAQ separately states "Submission and listing are free of charge."
+  aiaccountingapps.com is unreviewed in the venue policy ledger
+  (`automation_disposition: unknown`, executable allowlist empty), so
+  `venue-claim claim` exits 4 — no agent browser work; the editor email and
+  any €59 spend are Nish's human actions using the kit below. (Lane attempt
+  2026-08-21: NOT EXECUTED — see the AIAccountingApps.com section below.)
 
 ## Status ledger (fleet re-verification 2026-08-10)
 
@@ -3453,3 +3468,179 @@ copy-paste ready:
   avoids blanket accuracy/bank-support claims and never references
   undeployed `/pricing/` or `/receipt-to-csv/`; then update this file with
   the public URL (g2.com/products/{slug}).
+
+## AIAccountingApps.com
+
+### Decision (dated 2026-08-21)
+
+- **Decision: SUBMIT — free editorial route first ("write to the editor"),
+  manual by Nish. The paid €59 path is recorded and deferred to Nish's spend
+  call. Declined for agent-executed submission.** This line becomes SUBMITTED
+  (or DECLINED) once Nish acts.
+- Reason: AIAccountingApps.com (https://www.aiaccountingapps.com/, live
+  2026-08-21, "AI Accounting Apps · 319 tools across 13 categories (2026)",
+  "June 2026 edition · Independent. No pay-to-rank") is an exact-category
+  directory read by accountants, bookkeepers, and finance teams, and it hosts
+  a dedicated Bank Statement Conversion category
+  (https://www.aiaccountingapps.com/c/bank-statement-converters) with only
+  **4 tools** listed — AI Bank Parser (/ai-bank-parser), Lido (/lido), Smart
+  Clerk (/smart-clerk), and Badbank AI (/badbank-ai). Zero hits for
+  aiconverter / "AI Converter" across the category page and index — no
+  duplicate; the venue hosts the category and only this product's listing is
+  missing. An underserved exact-category page aimed at this product's ICP is
+  the strongest listing fit recorded in this file.
+- Fee picture (verified live 2026-08-21): the submit page
+  (https://www.aiaccountingapps.com/submit/) prices the listing at **€59
+  one-off** ("Fee €59 one-off", "Review time Within 24 hours", "Backlink
+  Do-follow... Domain Rating sits at 30+", verified badge on 5 of 319
+  listings) via Stripe checkout (https://buy.stripe.com/28og0t78E9xMfRe5kl),
+  with steps "01 Pay the €59 fee. A single Stripe checkout." → "02 Send us
+  your details. Email the URL, a one-paragraph description, your logo, and
+  the category you belong in to hello@aiaccountingapps.com." The same page
+  offers "Or write to the editor first", and its FAQ answers "My team makes
+  a bank statement conversion tool. How do we get listed?" with "Write to
+  the editor." The homepage FAQ separately states "Submission and listing
+  are free of charge." Honest read: the free editorial route is offered in
+  the venue's own words but the /submit page frames the editor email as the
+  post-payment step — so try the free editor email first (draft below); if
+  the editor points back to the €59 fee, that becomes Nish's explicit spend
+  call under the zero-spend rule.
+- Money boundary: €59 is a spend decision only Nish can make; the agent
+  cannot pay or send email from his identity. No spend authorization exists
+  in `agent-state/authorizations/` (only the sol-xhigh worker grant —
+  expired 2026-08-14).
+- Constraint (gate): aiaccountingapps.com has no entry in
+  `venue-policy.json` (`automation_disposition: unknown`) and the executable
+  `allowlist` is empty → `venue-claim claim` exits 4 (allowlist/policy
+  block) and a blocked exit means NO browser work. `venue-claim` is not
+  installed in the lane environment, but the policy JSON is the
+  authoritative guard and is unchanged. robots.txt (live 2026-08-21) carries
+  no blanket robot/spider prohibition for general agents — Cloudflare
+  content-signals only (`search=yes,ai-train=no,use=reference`;
+  `User-agent: *` allows `/` except `/api/`, `/_next/`, `/ingest/`) — and no
+  ToS/terms page exists (`/terms`, `/tos`, `/privacy` all 404). That is
+  positive evidence for the venue research desk, but the guard stays exit-4
+  until the ledger is reviewed.
+- Next action: Nish sends the draft editor email below (free route first),
+  decides on the €59 fallback if the editor requires it, then this file
+  should be updated with the public profile URL and the venue's status line
+  flipped to live.
+
+### Manual submission kit (copy-paste ready; truthful — live claims only)
+
+- Name: **AI Converter**
+- Website: https://aiconverter.app
+- Category: **Bank Statement Conversion**
+  (https://www.aiaccountingapps.com/c/bank-statement-converters)
+- One-paragraph description:
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your
+  > browser. Review sample rows free, then unlock the full extraction only when
+  > the preview looks right. OCR fallback handles scanned statements; low
+  > confidence fails closed with no charge. No bank logins and no human review
+  > queue; source files are deleted after 24 hours.
+
+- Key features (3-5 bullets):
+  - Bank statement PDF to CSV with a built-in parser first, OCR fallback for scans.
+  - Free preview: review sample rows and download a sample CSV before paying.
+  - Fail-closed extraction: low-confidence conversions are not charged.
+  - No bank login and no human review queue; source files deleted after 24 hours.
+  - Paid jobs get one automatic stronger redo.
+- Pricing tag: Freemium (free preview + paid per-page extraction, matching
+  live checkout behavior).
+- Canonical links for the listing (all verified live HTTP 200 on 2026-08-21;
+  `/pricing/` and `/receipt-to-csv/` are still 404 and are claimed nowhere):
+  - https://aiconverter.app/bank-statement-pdf-to-csv/
+  - https://aiconverter.app/sample-csv/
+  - https://aiconverter.app/trust/
+  - https://aiconverter.app/formats/
+- Draft email to the editor (free route; To: hello@aiaccountingapps.com):
+
+  > Subject: Listing request — AI Converter (bank statement PDF to CSV)
+  >
+  > Hi,
+  >
+  > I'd like AI Converter (https://aiconverter.app) considered for your Bank
+  > Statement Conversion category.
+  >
+  > What it does: AI Converter turns bank statement PDFs into
+  > spreadsheet-ready CSV in your browser. Review sample rows free, then
+  > unlock the full extraction only when the preview looks right. OCR
+  > fallback handles scanned statements; low-confidence jobs fail closed
+  > with no charge. No bank logins and no human review queue; source files
+  > are deleted after 24 hours.
+  >
+  > Category fit: Bank Statement Conversion — the product converts statements
+  > into CSV alongside the formats your category page describes (PDF, Excel,
+  > CSV, OFX, QBO, QIF).
+  >
+  > Useful pages:
+  > https://aiconverter.app/bank-statement-pdf-to-csv/ ·
+  > https://aiconverter.app/sample-csv/ · https://aiconverter.app/trust/ ·
+  > https://aiconverter.app/formats/
+  >
+  > Your homepage FAQ says submission and listing are free of charge, so I'm
+  > writing to the editor first as the submit page suggests. Happy to send a
+  > logo or anything else you need for the profile.
+  >
+  > Thanks,
+  > Nish — aiconverter.app
+
+- Post-listing check: the Bank Statement Conversion category page shows 5
+  tools including AI Converter, the profile links https://aiconverter.app/
+  and a live canonical bank-statement page, and the copy avoids blanket
+  accuracy/bank-support claims and never references undeployed `/pricing/`
+  or `/receipt-to-csv/`; then update this file with the public URL.
+
+### Fleet lane attempt 2026-08-21 (AIAccountingApps.com — NOT EXECUTED, decision recorded)
+
+- Attempted by lane 1 (packet item f19a142713: "List the product on
+  AIAccountingApps.com — exact-category directory (319 tools, 13 categories)
+  with a dedicated Bank Statement Conversion category (only 4 tools listed)
+  and AI Converter is absent"). The listing was **not submitted**: the venue
+  policy guard blocks agent-executed submission and both routes end in
+  Nish-held human actions. `agent-state/growth-loop/venue-policy.json`
+  (re-read 2026-08-21, still dated 2026-08-08) has no aiaccountingapps.com
+  entry — `automation_disposition: unknown`, executable allowlist empty — so
+  `venue-claim claim` exits 4 and "A blocked exit means NO browser work"
+  applies. The `venue-claim` binary is not installed in the lane environment,
+  but the policy JSON is the authoritative guard and is unchanged. The paid
+  €59 path is a Nish-only spend decision (zero-spend rule; no spend
+  authorization exists in `agent-state/authorizations/`), and the free
+  editorial route is an email from Nish's identity. This record plus the
+  dated decision line above is the honest NOT-EXECUTED lane outcome the
+  packet requires.
+- Live re-verification (2026-08-21, plain HTTP, credential-free):
+  - Homepage https://www.aiaccountingapps.com/ — HTTP 200, title "AI
+    Accounting Apps · 319 tools across 13 categories (2026)", stats row
+    "Tools indexed 319 / Categories 13 / Featured 1 / Verified 5", category
+    list shows "04 Bank Statement Conversion 4 tools", footer contact
+    hello@aiaccountingapps.com and @aiaccapps, FAQ line "Submission and
+    listing are free of charge."
+  - Category page https://www.aiaccountingapps.com/c/bank-statement-converters/
+    — HTTP 200, title "4 Best Bank Statement Conversion Tools (2026)";
+    internal tool slugs /ai-bank-parser, /lido, /smart-clerk, /badbank-ai;
+    zero occurrences of aiconverter or "AI Converter" anywhere in the page.
+  - Submit page https://www.aiaccountingapps.com/submit/ — HTTP 200, "Get
+    indexed in the directory accountants actually read", "Fee €59 one-off",
+    "Review time Within 24 hours", do-follow backlink claim, "Pay and submit
+    · €59 Or write to the editor first", Stripe checkout link
+    https://buy.stripe.com/28og0t78E9xMfRe5kl present in the page, editor
+    quote "Paid does not buy ranking. It buys a verified mark and an honest
+    profile."
+  - robots.txt live (Cloudflare content-signals preamble; no blanket
+    robot/spider disallow for `User-agent: *`, which is `Allow: /` minus
+    `/api/`, `/_next/`, `/ingest/`); `/terms`, `/tos`, `/privacy` all 404.
+  - Kit reference pages all live HTTP 200 (2026-08-21): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
+    `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
+    none of those routes).
+- Full evidence: `.lane/reports/lane1-aiaccountingapps-listing-20260821.md`
+  (this run).
+- Next action (human-owned): Nish sends the draft editor email above (free
+  route first), decides on the €59 fallback if the editor requires it, then
+  updates this file with the public URL and flips this venue's status line
+  to live. The only route to an agent-executed submission would be the venue
+  research desk reviewing aiaccountingapps.com and adding it to the policy
+  allowlist — and even then the editor correspondence stays with the account
+  owner.
