@@ -59,7 +59,7 @@ test("agent markdown negotiation serves the pricing route", () => {
 });
 
 test("pricing route is listed in sitemap and agent docs", () => {
-  assert.match(sitemap, /<url><loc>https:\/\/aiconverter\.app\/pricing\/<\/loc><\/url>/);
+  assert.match(sitemap, /<url><loc>https:\/\/aiconverter\.app\/pricing\/<\/loc><lastmod>\d{4}-\d{2}-\d{2}<\/lastmod><\/url>/);
   assert.match(llmsTxt, /https:\/\/aiconverter\.app\/pricing\//);
   assert.match(llmsFull, /https:\/\/aiconverter\.app\/pricing\//);
 });

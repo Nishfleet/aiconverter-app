@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
+    "build": "node scripts/build-sitemap.mjs && vite build",
+    "build:sitemap": "node scripts/build-sitemap.mjs",
     "check:pricing": "node scripts/check-pricing.mjs",
     "dodo:sync-prices": "node scripts/sync-dodo-prices.mjs",
     "corpus:private": "node scripts/private-corpus.mjs",
