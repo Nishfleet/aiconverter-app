@@ -2189,6 +2189,34 @@ copy-paste ready:
   and appears in Microlaunch search, then flip this venue's status line to
   live.
 
+### Fleet lane attempt 2026-08-23 (Microlaunch — NOT EXECUTED, re-verified, re-dispatch #5)
+
+- Attempted by lane 1 (packet item ed8ccbdb9d re-dispatch #5). The listing was **still not
+  submitted**: the 2026-08-11 decision above still binds and no policy change occurred since
+  2026-08-20. `agent-state/growth-loop/venue-policy.json` (updated 2026-08-08, re-read
+  2026-08-23) still has no microlaunch.net entry — allowlist still empty — so the agent must not
+  drive a browser submission; the Google / 𝕏 OAuth gate remains a human account action that
+  stays with Nish. This record is the honest NOT-EXECUTED outcome re-dispatch #5 requires.
+- Live re-verification (2026-08-23, credential-free curl): homepage 200; `/submit`
+  redirect target https://microlaunch.net/premium#pricing, 200; `/premium` 200 (body still
+  contains regular launch, pro launch, launch20, and expert feedback; the literal $39 string is
+  absent); both exact-category peers still live, HTTP 200: Bank Statement Converter
+  (https://microlaunch.net/p/bankstatementconverter) and Bankformats
+  (https://microlaunch.net/p/bankformats).
+- No duplicate: API scan (https://api.microlaunch.net/api/launches,
+  `authorized_mode: false`, launches/products counts 250 + 250, vs 246 + 246 on 2026-08-20)
+  has 0 case-insensitive hits for `ai.?converter`; slug probes `/p/aiconverter`,
+  `/p/ai-converter`, `/p/aiconverter-app`, `/p/ai-converter-app`, `/p/AI-Converter`,
+  `/p/aiconverter.app` return 500 for each.
+- ToS live, HTTP 200; automation-string scan count 0. Kit reference pages: all eight HTTP 200
+  (`/`, `/llms.txt`, `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`,
+  `/pricing/`, `/receipt-to-csv/`); `/pricing/` and `/receipt-to-csv/` were 404 on 2026-08-20.
+- Paid decision (re-recorded 2026-08-23, unchanged): Pro Launch $39 stays deferred to Nish's
+  spend call — `agent-state/authorizations/` holds only the sol-xhigh worker grant.
+- Lane report: `.lane/reports/lane1-microlaunch-listing-20260823.md`.
+- Next action (unchanged): Nish signs in (Google or 𝕏) and submits the Regular launch using the
+  kit above; then flip this venue's status line and confirm microlaunch.net/p/{slug} returns 200.
+
 ## Uneed
 
 ### Decision (dated 2026-08-11)
