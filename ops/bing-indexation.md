@@ -7,6 +7,17 @@ the backlog item `Bing/DuckDuckGo indexation is zero for an 18-month-old
 domain; no Bing Webmaster ownership or sitemap-submission evidence exists`
 (scout 2026-08-08, amber, traction).
 
+## Re-verification (2026-08-22, lane re-run — IndexNow key live + first ping)
+
+- **Deploy path is open.** GitHub Actions workflow `Deploy production` run `32550455542` concluded `success` at `2026-08-22T04:37:21Z` on SHA `f26c826e356480885396eb2d7e990b959870c7b4`. The previous "no Cloudflare Pages deploy" blocker is retired.
+- **IndexNow key is live.** `curl` of `https://aiconverter.app/1bc751e6-ead3-48da-96d3-722f77cc4464.txt` → HTTP 200, body `1bc751e6-ead3-48da-96d3-722f77cc4464`. `curl` of `https://aiconverter.app/IndexNow.txt` → HTTP 200, same body. Both files already exist on `origin/main`; this run did not rotate the key.
+- **IndexNow ping.** Ran `node scripts/indexnow-submit.mjs` from this checkout (sitemap URL list, no extra argv). Result: exit 0 — stdout: `Submitting 24 URL(s) to https://api.indexnow.org/ ...` then `IndexNow accepted (HTTP 200) for 24 URL(s).`. Endpoint: `POST https://api.indexnow.org/indexnow`. Key used: `1bc751e6-ead3-48da-96d3-722f77cc4464`. This is the credential-free sitemap-notification receipt. It is not Bing Webmaster ownership and it is not a Bing Webmaster console sitemap submission.
+- **Script change.** `scripts/indexnow-submit.mjs` now treats IndexNow HTTP 200 and HTTP 202 as success (IndexNow protocol: 200 URL submitted successfully; 202 URL received, key validation pending).
+- **Bing Webmaster ownership still missing.** `https://aiconverter.app/BingSiteAuth.xml` → HTTP 404. Live homepage HTML has no `msvalidate.01` and no `bing-site-verification` meta tag. No Bing-issued token exists in this repo. DNS remains authoritative at Porkbun (`ops/dns.md`); this lane has no Porkbun credential. Account sign-in for https://www.bing.com/webmasters/ stays with Nish.
+- **Crawler surfaces.** `https://aiconverter.app/robots.txt` → HTTP 200 and still contains `Sitemap: https://aiconverter.app/sitemap.xml`. `https://aiconverter.app/sitemap.xml` → HTTP 200 with 24 `<loc>` entries.
+- **SERP.** DuckDuckGo/Bing `site:aiconverter.app` is not a pass gate for this run (indexing lag + agent-side challenges). DDG lite agent-side bot-challenged.
+- **Item 986a062c71 is not retired.** IndexNow ping does not satisfy the backlog acceptance line that requires Bing Webmaster ownership verification plus `site:` hits on Bing and DuckDuckGo within 2 weeks. Do not call `fleet-resolve-item`.
+
 ## Re-verification (2026-08-21, lane re-run — IndexNow deliverable + Gitleaks block)
 
 - **IndexNow key + companion file are on `origin/main` (verified 2026-08-21).**
@@ -63,10 +74,10 @@ domain; no Bing Webmaster ownership or sitemap-submission evidence exists`
   conflicted on this doc (lane1 added a 2026-08-20 section that has since
   been superseded by the 2026-08-21 section above). This growth PR carries
   the script on fresh `origin/main` with no conflict and no doc duplication.
-- **Next action (deploy-gated):** once PR #135's Cloudflare Pages deploy
-  workflow merges and the Pages token is provisioned, the first deploy makes
-  the key file return 200. Then run `node scripts/indexnow-submit.mjs` to
-  ping the sitemap URLs to IndexNow — no account, no credentials needed.
+- **Next action completed 2026-08-22:** Pages deploy run `32550455542` made
+  the key files return HTTP 200. This lane ran `node scripts/indexnow-submit.mjs`
+  (receipt in the 2026-08-22 re-verification section). Remaining work is
+  Nish-held Bing Webmaster ownership + sitemap submit in the Webmaster UI.
 
 
 ## Re-verification (2026-08-17, lane re-run)
@@ -162,30 +173,26 @@ domain; no Bing Webmaster ownership or sitemap-submission evidence exists`
   key file). robots.txt and sitemap.xml are valid and referenced, but Bing
   Webmaster Tools has no verified property for the domain.
 
-## Why Automated Submission Is Blocked From This Lane
+## Why Bing Webmaster Submission Is Still Blocked From This Lane
 
-- **Account action.** Bing Webmaster Tools ownership verification and sitemap
-  submission require signing in with a Microsoft (or linked GitHub/Google)
-  account. Per the fleet venue-policy pattern used for Product Hunt and
-  BetaList (`ops/launch-venues.md`), account actions stay with Nish; an agent
-  must not drive an authenticated browser session.
-- **No API credentials.** No Bing Webmaster API key and no Microsoft Graph
-  credential exist in this lane's environment (checked at runtime), so there
-  is no credential-free programmatic submission path. A fresh IndexNow key is
-  now prepared in-repo (2026-08-14, see re-verification section) but is not
-  live until a deploy exists.
-- **No DNS write path.** Verification via DNS TXT needs Porkbun access; DNS is
-  authoritative at Porkbun (`ops/dns.md`) and no Porkbun API credential is
-  available in this lane's environment.
-- **No deploy path.** Verification via meta tag or `BingSiteAuth.xml` file
-  (and an IndexNow key file) would require shipping a new static file to
-  Pages production. Deploy remains blocked (open red backlog item: release
-  policy disarmed, no Cloudflare Pages Edit token, live bundle predates
-  merged PRs), so a repo-added verification artifact would not go live.
-- **No fabrication.** A verification token or meta tag would need to be
-  Bing-issued to be a true ownership claim; none is invented here. The
-  IndexNow key in this repo is a real freshly generated UUID (IndexNow keys
-  are self-issued by design), and it is explicitly not live until deployed.
+- **Account action (unchanged).** Bing Webmaster Tools ownership verification
+  and the Webmaster sitemap-submission UI require signing in with a Microsoft
+  (or linked GitHub/Google) account. Per the fleet venue-policy pattern used
+  for Product Hunt and BetaList (`ops/launch-venues.md`), account actions stay
+  with Nish; an agent must not drive an authenticated browser session.
+- **No Bing Webmaster API credentials (unchanged).** No Bing Webmaster API key
+  and no Microsoft Graph credential exist in this lane's environment.
+- **No DNS write path (unchanged).** Verification via DNS TXT needs Porkbun
+  access; DNS is authoritative at Porkbun (`ops/dns.md`) and no Porkbun API
+  credential is available in this lane's environment.
+- **Deploy path is open as of 2026-08-22.** GitHub Actions run `32550455542`
+  published production. The IndexNow key files return HTTP 200. The previous
+  "no deploy path" blocker is retired. IndexNow ping is the credential-free
+  sitemap-notification path and is no longer blocked.
+- **No fabrication (unchanged).** A Bing Webmaster verification token or meta
+  tag would need to be Bing-issued; none is invented here. The IndexNow key
+  `1bc751e6-ead3-48da-96d3-722f77cc4464` is self-issued by protocol design and
+  is live.
 
 ## Decision (dated 2026-08-10)
 
@@ -206,17 +213,18 @@ domain; no Bing Webmaster ownership or sitemap-submission evidence exists`
    record value. Add it as a TXT record for `aiconverter.app` in the Porkbun
    registrar panel (authoritative DNS per `ops/dns.md`; do not touch
    nameservers). TXT survives every redeploy. Alternative verification methods
-   (meta tag, `BingSiteAuth.xml` file upload) are fine once a deploy path
-   exists, but a repo-only artifact cannot reach production today.
+  (meta tag, `BingSiteAuth.xml` file upload) can ship via the now-working
+  Pages deploy, but the token must be Bing-issued after Nish adds the
+  property; do not invent one.
 3. **Submit the sitemap.** In Bing Webmaster Tools → Sitemaps, submit
    `https://aiconverter.app/sitemap.xml` and confirm it reports valid/200.
-4. **(Optional, free, faster discovery) IndexNow.** The key is already
-   prepared in this repo: `https://aiconverter.app/1bc751e6-ead3-48da-96d3-722f77cc4464.txt`
-   (and `https://aiconverter.app/IndexNow.txt`). Both go live with the next
-   Pages deploy. Once the key returns 200, submit the sitemap URLs via
-   https://api.indexnow.org/ (key `1bc751e6-ead3-48da-96d3-722f77cc4464` +
-   urlList) — or use the same key in the Bing Webmaster IndexNow settings.
-   Do not submit before the key file is live (a non-live key is rejected).
+4. **IndexNow (credential-free, now live).** Key files
+   `https://aiconverter.app/1bc751e6-ead3-48da-96d3-722f77cc4464.txt` and
+   `https://aiconverter.app/IndexNow.txt` return HTTP 200 with body
+   `1bc751e6-ead3-48da-96d3-722f77cc4464` as of the 2026-08-22 Pages deploy.
+   First ping from this lane: `node scripts/indexnow-submit.mjs` →
+   exit 0 — stdout: `Submitting 24 URL(s) to https://api.indexnow.org/ ...` then `IndexNow accepted (HTTP 200) for 24 URL(s).`. Remaining Nish step: add the same key in Bing
+   Webmaster IndexNow settings if desired. Do not rotate the key.
 5. **Request indexing** for the homepage and the two bank landing pages
    (`/bank-statement-pdf-to-csv/`, `/convert-bank-statement-to-csv/`) via URL
    submission once the property is verified.
