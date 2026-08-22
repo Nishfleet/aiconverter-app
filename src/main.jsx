@@ -2069,8 +2069,8 @@ function App() {
   return (
     <main className="page-shell">
       <div className="announcement-bar" aria-label="Product status">
-        <p>Free sample CSV before checkout.</p>
-        <a href="#start">Start free preview →</a>
+        <p>Verified previews. Fail-closed extraction. From ₹399.</p>
+        <a href="#start">Try a real statement →</a>
       </div>
 
       <header className="site-header" aria-label="Site header">
@@ -2109,8 +2109,8 @@ function App() {
 
         <div className="landing-hero-grid">
           <div className="conversion-heading">
-            <a className="hero-chip-row" href="#start" aria-label="Start with a free preview">
-              <span>Preview and sample before checkout</span>
+            <a className="hero-chip-row" href="#start" aria-label="Start with a verified preview">
+              <span>Verified preview before you pay</span>
               <ArrowRight size={14} />
             </a>
             <h1>
