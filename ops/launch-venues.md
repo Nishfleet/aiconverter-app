@@ -3328,6 +3328,75 @@ copy-paste ready:
   reviewing saashub.com and adding it to the policy allowlist. Per-lane
   evidence: `.lane/reports/lane1-saashub-listing-20260820.md`.
 
+### Fleet lane attempt 2026-08-22 (SaaSHub — NOT EXECUTED, re-verified)
+
+- Attempted by lane 1 (packet item cb5bc34efc: "List the product on the
+  SaaSHub alternatives directory (free submission; paid promo optional) and
+  record a decision"). The listing was **still not submitted**: the decision
+  above still binds and no policy change occurred since 2026-08-20.
+  `agent-state/growth-loop/venue-policy.json` (updated 2026-08-08) still has
+  no saashub.com entry — `automation_disposition: unknown`, allowlist still
+  empty — so `venue-claim claim` exits 4 and the agent must not drive the
+  submission, including not triggering the `/services/new` crawl with
+  aiconverter.app's URL. The `venue-claim` binary is present in this lane
+  environment (`/home/nish/.local/bin/venue-claim`); `venue-claim check
+  saashub.com aiconverter-app` printed "policy disposition for saashub.com:
+  unknown (not reviewed)". `venue-claim claim` was not invoked (it writes
+  the ledger). The policy JSON is the authoritative guard and is unchanged;
+  this record is the honest NOT-EXECUTED lane outcome the packet requires.
+  The optional $99/month featured promo remains a recurring spend decision
+  only Nish can make ("Money boundary" above).
+- Live re-verification (2026-08-22, plain HTTP; no JS needed for these
+  pages):
+  - Submit page live, HTTP 200: https://www.saashub.com/services/submit —
+    "Submit a Product", single Website URL field, form action
+    `/services/new` (GET), acceptance rules and submission advice unchanged
+    (add categories; list competitors to avoid the bottom-of-queue slowdown;
+    optional verification with an email on the product's domain; software
+    development agencies, waiting-list landing pages, unreleased products,
+    free subdomains, non-English products rejected). The `/services/new`
+    crawl was NOT triggered (submit page documented from GET
+    `/services/submit` only). The free Startup Directory surface
+    (https://www.saashub.com/startups) also remains available.
+  - No duplicate: `GET /list?q=aiconverter` (HTTP 200, "Top 20 products
+    relevant to *aiconverter*", "Showing 20 of 380+ results" — was 379+ on
+    2026-08-20, 370+ on 2026-08-14, 366+ on 2026-08-12) contains zero
+    aiconverter.app hits (the string `aiconverter` on the page is only the
+    query echo); slug probes /aiconverter, /aiconverter-app,
+    /ai-converter-app, /aiconverter-alternatives,
+    /aiconverter-app-alternatives, /ai-converter-app-alternatives all 404;
+    /ai-converter 302s to the unrelated generic product "AI converter"
+    (/ai-converter-alternatives, "Not approved", File Management / File
+    Converter) — a different tool, not a duplicate.
+  - Category hosted: the `q=aiconverter` facet list (HTTP 200) confirms the
+    exact relevant categories exist — Bank Statements (15), Accounting &
+    Finance (20), File Converter (47; was 48 on 2026-08-20), PDF Converter
+    (57), OCR (41) — and `q=bank statement to csv` still returns 1,000+
+    results including BankScanPro, Bank Statement Converter, AI Bank
+    Statement, Bank-Statement-Conversion, Convert My Bank Statement, Bank
+    Statement Sheet, and Import Bank Statement. ConvertMyStatement AI did
+    not appear in this run's top-result HTML (it did on 2026-08-20). The
+    venue hosts the category; only this product's listing is missing.
+  - Paid promo live: https://www.saashub.com/featured-products (HTTP 200) —
+    "$99 / Month · cancel anytime", "Shown on your competitors' pages and in
+    your exact categories", estimated 11–20 targeted referrals/month (FAQ
+    dated 22 Aug 2026; was 10–18 on 2026-08-20), Stripe checkout, cancel in
+    one click, no contract, 564,000+ page views/month. Drift vs 2026-08-20:
+    "Join **114+** products already featured" (was 110+ on 2026-08-20, 109+
+    on 2026-08-14, 111+ on 2026-08-12).
+  - Kit reference pages all live HTTP 200 (2026-08-22): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+    Change vs prior SaaSHub runs: `/pricing/` and `/receipt-to-csv/` are now
+    HTTP 200 (real pages — titles "Pricing - AI Converter one-time page
+    packs" and "Receipt to Expense CSV - AI Converter"; a non-existent path
+    still 404s). The SaaSHub kit still claims none of those routes.
+- Next action (unchanged): Nish opens
+  https://www.saashub.com/services/submit and submits using the kit above
+  (free; optional $99/month featured promo stays his spend call). The only
+  route to an agent-executed submission would be the venue research desk
+  reviewing saashub.com and adding it to the policy allowlist. Per-lane
+  evidence: `.lane/reports/lane1-saashub-listing-20260822.md`.
+
 ## Futurepedia
 
 ### Decision (dated 2026-08-14)
