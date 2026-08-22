@@ -3459,6 +3459,7 @@ copy-paste ready:
   - https://aiconverter.app/sample-csv/
   - https://aiconverter.app/trust/
   - https://aiconverter.app/formats/
+- Correction (2026-08-22): `/pricing/` is HTTP 200 (title "Pricing - AI Converter one-time page packs"); `/receipt-to-csv/` is HTTP 200 (title "Receipt to Expense CSV - AI Converter"). This kit still claims none of those routes.
 
 ### Fleet lane attempt 2026-08-14 (Futurepedia — NOT EXECUTED, decision recorded)
 
@@ -3521,6 +3522,37 @@ copy-paste ready:
     `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`;
     `/pricing/` and `/receipt-to-csv/` still 404 (unchanged; the kit claims
     none of those routes).
+- Next action (unchanged): Nish decides whether to pay for a listing
+  (Verified $497 or Basic $247 when available). After the listing, confirm
+  the tool page returns 200 and search returns the listing, then flip this
+  venue's status line to live.
+
+### Fleet lane attempt 2026-08-22 (Futurepedia — NOT EXECUTED, decision re-verified; kit routes drifted)
+
+- Attempted by lane 1 (packet item 7967b43c89). The listing was **not submitted**
+  and the decision stays **DECLINE — free path does not exist; paid-only
+  venue**. Live venue facts match the 2026-08-17 record. The fork exists
+  because kit reference pages drifted (see below), not because a free
+  Futurepedia path appeared. `agent-state/growth-loop/venue-policy.json`
+  still has no futurepedia.io entry (`automation_disposition: unknown`,
+  `allowlist: {}`), so `venue-claim claim` still exits 4 — no agent-driven
+  browser submission. Submit arm: UNREACHABLE this run (no public no-login
+  form; policy unknown). No POST, signup, or payment was attempted.
+- Live re-verification (2026-08-22), plain curl from the VPS:
+  - Submit page live, HTTP 200: https://www.futurepedia.io/submit-tool —
+    FAQ still contains verbatim **"We are no longer offering free
+    submissions. It's very important to us to maintain the quality of our
+    directory and it became unmanageable to do so."** Paid tiers still
+    **$247** and **$497** with **Sold Out** on the page (price-only
+    movement is not a fact change).
+  - No duplicate: https://www.futurepedia.io/tool/aiconverter — HTTP 404
+    (unchanged).
+  - Kit reference pages (2026-08-22): HTTP 200 for `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+    **Drift vs the 2026-08-17 baseline:** `/pricing/` is HTTP 200 (title
+    "Pricing - AI Converter one-time page packs") and `/receipt-to-csv/` is
+    HTTP 200 (title "Receipt to Expense CSV - AI Converter"). The kit still
+    claims none of those routes.
 - Next action (unchanged): Nish decides whether to pay for a listing
   (Verified $497 or Basic $247 when available). After the listing, confirm
   the tool page returns 200 and search returns the listing, then flip this
@@ -3594,6 +3626,7 @@ copy-paste ready:
   - https://aiconverter.app/sample-csv/
   - https://aiconverter.app/trust/
   - https://aiconverter.app/formats/
+- Correction (2026-08-22): `/pricing/` is HTTP 200 (title "Pricing - AI Converter one-time page packs"); `/receipt-to-csv/` is HTTP 200 (title "Receipt to Expense CSV - AI Converter"). This kit still claims none of those routes.
 
 ### Fleet lane attempt 2026-08-14 (TAAFT — NOT EXECUTED, decision recorded)
 
@@ -3732,6 +3765,7 @@ copy-paste ready:
   - https://aiconverter.app/sample-csv/
   - https://aiconverter.app/trust/
   - https://aiconverter.app/formats/
+- Correction (2026-08-22): `/pricing/` is HTTP 200 (title "Pricing - AI Converter one-time page packs"); `/receipt-to-csv/` is HTTP 200 (title "Receipt to Expense CSV - AI Converter"). This kit still claims none of those routes.
 
 ### Fleet lane attempt 2026-08-14 (Dang.ai — NOT EXECUTED, decision recorded)
 
