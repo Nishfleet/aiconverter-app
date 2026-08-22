@@ -39,7 +39,7 @@ test("audience identifier stays visible in the 390x844 first viewport", () => {
 });
 
 test("conversion promise and task statement stay intact", () => {
-  assert.match(source, /Preview and sample before checkout/);
+  assert.match(source, /Verified preview before you pay/);
   assert.match(source, /Bank statement PDFs in/);
   assert.match(source, /Accounting CSV out/);
   assert.match(source, /download a free sample before unlocking the full export/);
