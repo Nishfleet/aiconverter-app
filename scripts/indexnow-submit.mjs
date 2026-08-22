@@ -58,8 +58,8 @@ async function main() {
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(30000),
   });
-  if (res.status === 202) {
-    console.log(`IndexNow accepted (HTTP 202) for ${urls.length} URL(s).`);
+  if (res.status === 200 || res.status === 202) {
+    console.log(`IndexNow accepted (HTTP ${res.status}) for ${urls.length} URL(s).`);
   } else if (res.status === 403) {
     throw new Error(`IndexNow rejected the key (HTTP 403) — key file live but not matching? Check ${keyUrl}`);
   } else {
