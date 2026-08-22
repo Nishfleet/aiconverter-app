@@ -67,7 +67,7 @@ Duplicate check — API scan:
 curl -sS --max-time 60 https://api.microlaunch.net/api/launches | grep -Eci 'ai.?converter'
 0
 
-python3 -c 'import json;d=json.load(open("/tmp/microlaunch-api.json"))["data"];print(len(d.get("launches",[])),len(d.get("products",[])))'
+python3 -c 'import json,sys;d=json.load(sys.stdin)["data"];print(len(d.get("launches",[])),len(d.get("products",[])))'
 250 250
 ```
 
