@@ -71,4 +71,4 @@ Related open docs-only PR #136 left untouched.
 
 - Branch: `lane1/futurepedia-taaft-dang-20260822`
 - Files: `ops/launch-venues.md`, `.lane/reports/lane1-futurepedia-taaft-dang-20260822.md`
-- PR URL: (filled after `gh pr create`)
+- PR URL: https://github.com/nish3451/aiconverter-app/pull/167
