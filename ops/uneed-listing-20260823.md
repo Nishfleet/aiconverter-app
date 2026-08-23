@@ -44,4 +44,4 @@ Date: 2026-08-23
 
 ## Submission record
 
-**Not submitted.** Blocker: Uneed free waiting-line is closed (`free_line_closed: true`). Paid skip-the-line options declined per fleet spend policy. Account creation (email-OTP) is Nish-reserved and was not attempted.
+**Not submitted.** Blocker: Uneed free waiting-line is closed (`free_line_closed: true`). Paid skip-the-line options declined per fleet spend policy. Account creation (email-OTP) is Nish-reserved and was not attempted. Evidence PR: #173.

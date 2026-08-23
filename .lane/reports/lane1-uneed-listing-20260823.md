@@ -43,7 +43,7 @@ Source: `ops/launch-venues.md` § Uneed (lines 2231–2238) and re-verified in `
 
 - Created `.lane/reports/lane1-uneed-listing-20260823.md` (this file)
 - Created `ops/uneed-listing-20260823.md` (durable repo record)
-- Branch `lane1-uneed-listing-20260823` pushed; record-only PR opened
+- Branch `lane1-uneed-listing-20260823` pushed; record-only PR #173 opened
 
 ## Next action
 
