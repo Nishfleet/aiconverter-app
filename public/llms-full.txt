@@ -120,6 +120,7 @@ Fake sample CSV:
 - About: https://aiconverter.app/about/
 - Pricing: https://aiconverter.app/pricing/
 - Receipt image or PDF to expense CSV (beta): https://aiconverter.app/receipt-to-csv/
+- Screenshot table to spreadsheet CSV (beta): https://aiconverter.app/screenshot-to-csv/
 - Bank statement PDF to CSV: https://aiconverter.app/bank-statement-pdf-to-csv/
 - Convert bank statement to CSV: https://aiconverter.app/convert-bank-statement-to-csv/
 - PDF bank statement to QuickBooks CSV: https://aiconverter.app/pdf-bank-statement-to-quickbooks-csv/
