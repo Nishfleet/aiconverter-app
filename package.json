@@ -18,6 +18,7 @@
     "monitor:live": "node scripts/monitor-live.mjs",
     "drill:failover": "node scripts/drill-failover-live.mjs",
     "readiness:live": "node scripts/readiness-live.mjs",
+    "first-viewport-audience:live": "node scripts/first-viewport-audience-live.mjs",
     "stress:all": "npm run stress:converters && npm run stress:live && npm run readiness:live",
     "release:gate": "npm run check:pricing && node --test tests/*.test.mjs && AICONVERTER_PRIVATE_CORPUS_REQUIRED=true npm run corpus:private && npm audit --audit-level=moderate && npm run build && npm run stress:converters && npm run stress:live && AICONVERTER_MONITOR_STRICT=true npm run monitor:live && npm run readiness:live",
     "preview": "vite preview --host 0.0.0.0",
@@ -34,5 +35,8 @@
     "typescript": "^5.9.3",
     "unpdf": "^1.8.1",
     "vite": "^8.2.1"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
   }
 }
