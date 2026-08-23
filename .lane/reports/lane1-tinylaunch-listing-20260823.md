@@ -58,7 +58,7 @@ tinylaunch records in `venue-claim list` before and after the claim attempt.
 - Created `ops/tinylaunch-listing-20260823.md` (durable repo record)
 - Edited `ops/launch-venues.md` (TinyLaunch venue #17: intro chain, venue count,
   submission-outcomes bullet, full TinyLaunch section)
-- Branch `lane1-tinylaunch-listing-20260823` pushed; PR pending
+- Branch `lane1-tinylaunch-listing-20260823` pushed; PR #178 opened
 
 ## Next action
 

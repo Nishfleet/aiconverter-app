@@ -55,4 +55,4 @@ Date: 2026-08-23
 
 **Not submitted.** Blocker: tinylaunch.com is unreviewed in the venue policy
 ledger (`venue-claim claim` exit 2) and submission requires email-OTP account
-creation — Nish-reserved, not attempted. Evidence PR: pending.
+creation — Nish-reserved, not attempted. Evidence PR: #178.
