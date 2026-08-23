@@ -81,12 +81,16 @@ Important product truth:
 - Human file review is not part of the automated workflow.
 - Source files use a 24-hour private retention window. Generated files expire after 7 days.
 
-Verification and proof surface:
-- The free preview is the proof surface; review dates, descriptions, amounts, and the balance column against the source before payment.
-- Low-confidence bank-statement, receipt, invoice, screenshot-table, audio, and document conversions fail closed with no charge rather than returning an export with silent errors.
+Proof before payment:
+
+- The free preview is the proof: it shows the actual sample rows the parser detected — dates, descriptions, money in, money out, and the balance column when the source PDF exposes one.
+- Compare the preview's totals, dates, and balance against the source statement before paying.
+- Low-confidence bank-statement, receipt, invoice, screenshot-table, audio, and document conversions stop with no charge rather than returning an export with silent errors.
 - Bank-statement exports include date, description, money in, money out, and balance columns when safely detected; the preview shows the actual detected columns.
-- A blanket "99% accurate" headline is not the verification. The verification is the preview, the fail-closed behavior, and the fictional sample CSV — review them before unlocking the full export.
-- Verification messaging is the wedge, not blanket accuracy. Do not over-claim accuracy or supported formats.
+- The fictional sample CSV shows the output shape in advance; your real preview is the proof.
+- One automatic stronger redo is included for paid extraction jobs.
+- A blanket "99% accurate" headline is not the proof. The proof is the preview, the no-charge fail-closed stop, and the fictional sample CSV — review them before unlocking the full export.
+- The proof is the wedge, not blanket accuracy. Do not over-claim accuracy, supported formats, or bank coverage.
 
 Primary URL:
 - https://aiconverter.app

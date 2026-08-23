@@ -2069,7 +2069,7 @@ function App() {
   return (
     <main className="page-shell">
       <div className="announcement-bar" aria-label="Product status">
-        <p>Verified previews. Fail-closed extraction. From ₹399.</p>
+        <p>Sample rows before payment. Unsafe parse? No charge. From ₹399.</p>
         <a href="#start">Try a real statement →</a>
       </div>
 
@@ -2109,8 +2109,8 @@ function App() {
 
         <div className="landing-hero-grid">
           <div className="conversion-heading">
-            <a className="hero-chip-row" href="#start" aria-label="Start with a verified preview">
-              <span>Verified preview before you pay</span>
+            <a className="hero-chip-row" href="#start" aria-label="Start with a sample-row preview">
+              <span>Review sample rows before you pay</span>
               <ArrowRight size={14} />
             </a>
             <h1>
@@ -2119,8 +2119,8 @@ function App() {
               <strong>Accounting CSV out.</strong>
             </h1>
             <p>
-              Upload a bank statement PDF, choose a Xero, Wave, QuickBooks, or spreadsheet CSV,
-              review the rows, and download a free sample before unlocking the full export.
+              Upload a bank statement PDF, choose a Xero, Wave, QuickBooks, GnuCash, or spreadsheet CSV,
+              review the detected sample rows, and download a free sample before unlocking the full export.
             </p>
             <p>
               Built for accountants, bookkeepers, and finance operators preparing
@@ -2872,7 +2872,7 @@ function App() {
             <span className="queue-number">02</span>
             <div>
               <h3>Check a real sample</h3>
-              <p>We parse digital bank PDFs first and use OCR only when a file needs it. If the preview is not reliable, the job stops.</p>
+              <p>We parse digital bank PDFs first and use OCR only when a file needs it. If the preview is not reliable or the totals do not match, the job stops and you are not charged.</p>
             </div>
             <strong>Fail-closed</strong>
           </article>
