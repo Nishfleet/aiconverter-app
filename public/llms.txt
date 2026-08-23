@@ -17,6 +17,7 @@ AI Converter is a web app for automated AI conversion and common file-format con
 - Credit card statement PDF to CSV: https://aiconverter.app/credit-card-statement-pdf-to-csv/
 - Bank statement converter for bookkeepers: https://aiconverter.app/bank-statement-converter-for-bookkeepers/
 - Receipt image or PDF to expense CSV (beta): https://aiconverter.app/receipt-to-csv/
+- Screenshot table to spreadsheet CSV (beta): https://aiconverter.app/screenshot-to-csv/
 - Sample CSV: https://aiconverter.app/sample-csv/
 - Trust center: https://aiconverter.app/trust/
 - Privacy: https://aiconverter.app/privacy/
@@ -100,6 +101,7 @@ Useful pages:
 - https://aiconverter.app/about/
 - https://aiconverter.app/pricing/
 - https://aiconverter.app/receipt-to-csv/
+- https://aiconverter.app/screenshot-to-csv/
 - https://aiconverter.app/bank-statement-pdf-to-csv/
 - https://aiconverter.app/convert-bank-statement-to-csv/
 - https://aiconverter.app/pdf-bank-statement-to-quickbooks-csv/
