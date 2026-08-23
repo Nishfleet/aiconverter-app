@@ -61,4 +61,4 @@ Exit code: 0
 
 ## PR
 
-Pending — will update after `gh pr create`.
+**#176** — https://github.com/nish3451/aiconverter-app/pull/176
