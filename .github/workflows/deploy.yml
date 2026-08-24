@@ -44,7 +44,7 @@ concurrency:
 jobs:
   deploy:
     name: Build and publish to Cloudflare Pages
-    runs-on: [self-hosted, linux, x64, vps-verify]
+    runs-on: ubuntu-latest
     # Secrets are hoisted to the job env because the `secrets` context is not
     # available in step-level `if:` conditions; the `env` context is.
     env:
