@@ -1,0 +1,283 @@
+name: PR checks
+
+# Consolidated pull-request validation gate: pricing consistency, unit tests,
+# production build, gitleaks secret scan, and the review-gate classifier that
+# decides whether to spend a rationed Greptile review. These were three
+# separate workflows (CI / Secret Scan / Review gate) on the same PR + push
+# events, paying one runner boot and one controller spin-up each; they now
+# share one workflow. Each check is its own job so a failure surfaces under
+# its own name in the PR checks UI.
+#
+# Required-check names preserved from the old CI workflow so anything that
+# referenced "Pricing check", "Unit tests", or "Build" (auto-merge scripts,
+# docs, status badges) still resolves:
+#   - the `checks` job still runs `check:pricing`, `node --test`, and `build`
+#     in order; if any step exits non-zero the job fails and the PR check
+#     for that step is reported as failed under the same overall check name.
+#   - `gitleaks` and `classify` keep their old names and exit contracts.
+#
+# Concurrency + paths-ignore come from the standing rule "Doc-only changes
+# never run the full suite": docs-only diffs skip the heavy checks entirely,
+# and any new push to a PR cancels the in-flight run instead of queueing
+# behind it. No branch protection exists on this repo today; auto-merge
+# waits for all checks to be green, which these jobs satisfy under their
+# preserved names.
+
+on:
+  pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "**/*.mdx"
+      - "**/*.txt"
+      - "docs/**"
+      - ".lane/**"
+      - ".github/dependabot.yml"
+      - "LICENSE*"
+      - ".gitignore"
+      - ".gitattributes"
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "**/*.mdx"
+      - "**/*.txt"
+      - "docs/**"
+      - ".lane/**"
+      - ".github/dependabot.yml"
+      - "LICENSE*"
+      - ".gitignore"
+      - ".gitattributes"
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  # One live run per PR head or main ref; superseded runs cancel instead of
+  # queueing behind each other (observed: 8+ superseded runs/week on this
+  # repo before this change, each one running 3-5 minutes of wasted boot +
+  # npm ci before being cancelled).
+  group: pr-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Pricing check + Unit tests + Build
+    # Runs the three CI checks sequentially in one job so the runner only
+    # pays one checkout + setup-node + npm ci (~90s) instead of three. The
+    # three assertions still run and still fail individually: any non-zero
+    # exit fails this job and therefore the PR check, exactly as before.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Pricing check
+        run: npm run check:pricing
+
+      - name: Unit tests
+        run: node --test tests/*.test.mjs
+
+      - name: Build
+        run: npm run build
+
+  gitleaks:
+    name: Gitleaks
+    # Secret-scan logic preserved verbatim from the old secret-scan.yml so
+    # detection rules and the SARIF exit-code contract are unchanged. Lives
+    # in this workflow so its boot + checkout piggybacks on the controller
+    # already running for the PR, not a separate workflow boot.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # gitleaks-action v3 installs the scanner under os.tmpdir() (system
+      # /tmp on this self-hosted runner) and never cleans up, so the shared
+      # VPS verification runner breaks two ways:
+      #   - the actions-cache restore fails with "Cannot mkdir /tmp:
+      #     Read-only file system" because the cached archive stores the
+      #     /tmp/gitleaks-* tree as workspace-escaped relative paths;
+      #   - the download fallback then fails against a stale file left by a
+      #     previous run: "Destination file path /tmp/gitleaks.tmp already
+      #     exists".
+      # Install the pinned scanner into the per-job workspace instead: the
+      # workspace is always writable and checkout's clean wipes it before
+      # every job, so no stale state can ever accumulate and no actions
+      # cache is involved.
+      - name: Install Gitleaks
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/.gitleaks"
+          curl -fsSL --retry 3 --retry-delay 2 \
+            -o "$GITHUB_WORKSPACE/.gitleaks/gitleaks.tgz" \
+            "https://github.com/zricethezav/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz"
+          tar -xzf "$GITHUB_WORKSPACE/.gitleaks/gitleaks.tgz" -C "$GITHUB_WORKSPACE/.gitleaks"
+          "$GITHUB_WORKSPACE/.gitleaks/gitleaks" version
+      - name: Scan repository
+        env:
+          GITLEAKS_BIN: ${{ github.workspace }}/.gitleaks/gitleaks
+        run: |
+          set -euo pipefail
+          log_opts=""
+          case "$GITHUB_EVENT_NAME" in
+            pull_request)
+              # Scan exactly the commits this PR introduces, mirroring the
+              # range gitleaks-action v3 computed from the PR commit list.
+              log_opts="--no-merges --first-parent ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+              ;;
+            push)
+              # Scan exactly the commits this push introduced. All-zero SHAs
+              # mean a branch was created or deleted; neither can happen on
+              # protected main, but mirror the action's guards anyway.
+              if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+                log_opts="-1"
+              elif [ "$GITHUB_SHA" = "0000000000000000000000000000000000000000" ]; then
+                echo "No commits to scan"
+                exit 0
+              else
+                log_opts="--no-merges --first-parent ${{ github.event.before }}..${GITHUB_SHA}"
+              fi
+              ;;
+          esac
+          args=(detect --redact -v --exit-code=2 --report-format=sarif --report-path=results.sarif --log-level=debug)
+          if [ -n "$log_opts" ]; then
+            args+=(--log-opts "${log_opts}")
+          fi
+          set +e
+          "$GITLEAKS_BIN" "${args[@]}"
+          rc=$?
+          set -e
+          # Exit-code contract is the same as gitleaks-action v3:
+          # 0 = clean, 2 = leaks found, anything else = scanner error.
+          if [ "$rc" -eq 0 ]; then
+            echo "No leaks detected"
+          elif [ "$rc" -eq 2 ]; then
+            echo "::error::Leaks detected - see results.sarif for details"
+            exit 1
+          else
+            echo "::error::Unexpected exit code [$rc] from gitleaks"
+            exit 1
+          fi
+
+  classify:
+    name: Review gate
+    # Classifier logic preserved verbatim from the old review-gate.yml so
+    # MONTHLY_CAP and the risk/backpressure behaviour are unchanged. Lives
+    # in this workflow so its boot piggybacks on the same PR controller.
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    env:
+      MONTHLY_CAP: "3"
+    steps:
+      - name: Decide whether this PR earns a review
+        id: gate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          gh api --paginate "repos/$REPO/pulls/$PR/files" \
+            --jq '.[] | [.filename, .additions, .deletions] | @tsv' > files.tsv || true
+
+          MONTH_START="$(date -u +%Y-%m-01)"
+          SPENT="$(gh api -X GET search/issues \
+            -f "q=repo:$REPO is:pr label:review:deep created:>=$MONTH_START" \
+            --jq '.total_count' 2>/dev/null || echo 0)"
+          echo "spent=$SPENT" >> "$GITHUB_OUTPUT"
+
+          SPENT="$SPENT" python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import os
+          from pathlib import Path
+
+          # Things that lose money, leak data, or break the deploy if they are wrong.
+          CRITICAL = (
+              "auth", "oauth", "session", "password", "secret", "token", "credential",
+              "permission", "rbac", "billing", "payment", "stripe", "checkout",
+              "subscription", "invoice", "refund", "migration", "migrations",
+              "/schema", "d1/", "prisma/", "drizzle/", ".github/workflows/",
+          )
+          # True of nearly every file in a Cloudflare app, so only meaningful in bulk.
+          BROAD = ("api/", "server/", "worker", "wrangler", "middleware", "deploy", "release")
+          LOCKFILES = ("package-lock.json", "pnpm-lock.yaml", "yarn.lock", "bun.lock")
+          DOCS = {".md", ".mdx", ".txt", ".rst", ".adoc"}
+
+          rows = [r.split("\t") for r in Path("files.tsv").read_text().splitlines() if r.strip()]
+          rows = [(r[0], int(r[1]), int(r[2])) for r in rows if len(r) >= 3]
+          names = [r[0] for r in rows]
+          churn = sum(a + d for _, a, d in rows)
+          lower = [n.lower() for n in names]
+
+          def any_hit(hints):
+              return [n for n in lower if any(h in n for h in hints)]
+
+          critical = any_hit(CRITICAL)
+          broad = any_hit(BROAD)
+          locks = any_hit(LOCKFILES)
+
+          if not names:
+              level, why = "low", "no files changed"
+          elif all(Path(n).suffix.lower() in DOCS for n in names):
+              level, why = "low", "docs only"
+          elif locks and len(names) <= 3:
+              # A dependency bump is mechanical; the lockfile diff teaches a reviewer nothing.
+              level, why = "normal", "dependency bump only"
+          elif critical:
+              level, why = "critical", "touches " + ", ".join(sorted(set(critical))[:3])
+          elif len(names) >= 25 or churn >= 2000:
+              level, why = "high", f"large diff: {len(names)} files, {churn} lines"
+          elif broad and churn >= 400:
+              level, why = "high", f"substantial server-side change: {churn} lines"
+          else:
+              level, why = "normal", "ordinary diff"
+
+          spent = int(os.environ.get("SPENT") or 0)
+          cap = int(os.environ.get("MONTHLY_CAP") or 30)
+          ratio = spent / cap if cap else 1.0
+
+          if ratio < 0.5:
+              bar = {"critical", "high"}
+          elif ratio < 0.85:
+              bar = {"critical"}
+          else:
+              bar = set()
+
+          spend = level in bar
+          print(f"level={level}")
+          print(f"why={why}")
+          print(f"spend={'yes' if spend else 'no'}")
+          print(f"budget={spent}/{cap}")
+          PY
+
+      - name: Request deep review
+        if: steps.gate.outputs.spend == 'yes'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh label create review:deep --repo "$REPO" --color B60205 \
+            --description "High-risk diff: spend a rationed AI review here" --force >/dev/null 2>&1 || true
+          gh pr edit "$PR" --repo "$REPO" --add-label review:deep
+          echo "::notice::Deep review requested (${{ steps.gate.outputs.level }}) — ${{ steps.gate.outputs.why }}. Budget ${{ steps.gate.outputs.budget }}."
+
+      - name: Explain the skip
+        if: steps.gate.outputs.spend != 'yes'
+        run: |
+          echo "::notice::No deep review — ${{ steps.gate.outputs.level }}: ${{ steps.gate.outputs.why }}. Budget ${{ steps.gate.outputs.budget }}. sgscan and crgate still run locally; add the review:deep label by hand to override."
