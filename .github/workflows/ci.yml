@@ -69,3 +69,25 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
+  actionlint:
+    # Lint job config is wiring, not a ruleset — duplicated per repo is
+    # acceptable (the canonical semgrep ruleset is NOT duplicated; it is
+    # consumed by pinned raw URL in secret-scan.yml). Same job shape as
+    # siterep-public's actionlint: SHA-pinned action, uses:-only.
+    name: actionlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run actionlint
+        uses: raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7 # v2.2.0
+        with:
+          # shellcheck/pyflakes are optional extras; keep the job hermetic
+          # and avoid the pipx install path on the hosted runner.
+          shellcheck: false
+          pyflakes: false
