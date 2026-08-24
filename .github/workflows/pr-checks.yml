@@ -1,0 +1,25 @@
+name: PR checks
+
+# Thin caller for the canonical reusable PR-checks workflow.
+# The standard (timeout-minutes, concurrency+cancel, npm cache, batched CI +
+# gitleaks, docs-only fast path, 7-day SARIF retention) lives in
+# nish3451/shared-workflows and is applied here by construction. Updates on the
+# `v1` branch propagate automatically. Do not override the called workflow's
+# steps — pass inputs instead.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-checks:
+    uses: nish3451/shared-workflows/.github/workflows/pr-checks.yml@v1
+    with:
+      node-version: "22"
+      install-command: npm ci
+      verify-command: npm run check:pricing && node --test tests/*.test.mjs && npm run build
+    secrets: inherit

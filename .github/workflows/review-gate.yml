@@ -22,11 +22,35 @@ name: Review gate
 on:
   pull_request:
     types: [opened, ready_for_review, reopened]
+    paths-ignore:
+      # The Review gate context is NOT branch-protection required on this
+      # repo (see /branches/main/protection: ['Gitleaks', 'Pricing check',
+      # 'Unit tests', 'Build']), so paths-ignore here is safe: a skipped run
+      # never lies about gate status because nothing waits on this context.
+      # Docs-only PRs never need an AI review, and the gate does not run on
+      # push to main.
+      - "**/*.md"
+      - "**/*.mdx"
+      - "**/*.txt"
+      - "docs/**"
+      - ".lane/**"
+      - ".github/dependabot.yml"
+      - "LICENSE*"
+      - ".gitignore"
+      - ".gitattributes"
 
 permissions:
   contents: read
   pull-requests: write
   issues: read
+
+concurrency:
+  # One live run per PR head; superseded runs cancel instead of queueing.
+  # Before this change every push to a PR head re-ran the classifier (3+
+  # superseded runs/week observed) wasting a few seconds of runner time
+  # each.
+  group: review-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 env:
   MONTHLY_CAP: "3"
@@ -34,6 +58,11 @@ env:
 jobs:
   classify:
     runs-on: ubuntu-latest
+    # Observed history: median ~0.2min, healthy max ~2.1min. The 1214min
+    # outlier was a queued run, not execution. 10min is ~5x the healthy max
+    # and well under the 360min hosted-runner cap; a hung gh API call here
+    # would otherwise hold the review-gate concurrency group indefinitely.
+    timeout-minutes: 10
     if: github.event.pull_request.draft == false
     steps:
       - name: Decide whether this PR earns a review
