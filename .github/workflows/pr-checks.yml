@@ -50,6 +50,12 @@ jobs:
   pricing:
     name: Pricing check
     runs-on: ubuntu-latest
+    # Observed history (origin/main ci.yml::pricing): median ~2.7min, healthy
+    # max ~3.9min. The 1214min outlier was a queued run, not execution. 15min
+    # is ~4x the healthy max and well under the 360min hosted-runner cap; a
+    # hang here would otherwise hold the pr-checks concurrency group
+    # indefinitely (the 2026-08-23/24 fleet stall).
+    timeout-minutes: 15
     steps:
       - name: Classify the PR (docs-only fast path)
         id: docs
@@ -81,6 +87,11 @@ jobs:
   tests:
     name: Unit tests
     runs-on: ubuntu-latest
+    # Observed history (origin/main ci.yml::tests): median ~2.7min, healthy
+    # max ~3.9min. 15min is ~4x the healthy max and well under the 360min
+    # hosted-runner cap; a hang here would otherwise hold the pr-checks
+    # concurrency group indefinitely.
+    timeout-minutes: 15
     steps:
       - name: Classify the PR (docs-only fast path)
         id: docs
@@ -112,6 +123,11 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    # Observed history (origin/main ci.yml::build): median ~2.7min, healthy
+    # max ~3.9min. 15min is ~4x the healthy max and well under the 360min
+    # hosted-runner cap; a hang here would otherwise hold the pr-checks
+    # concurrency group indefinitely.
+    timeout-minutes: 15
     steps:
       - name: Classify the PR (docs-only fast path)
         id: docs
@@ -143,6 +159,11 @@ jobs:
   gitleaks:
     name: Gitleaks
     runs-on: ubuntu-latest
+    # Observed history (origin/main secret-scan.yml::gitleaks): median ~1.0min,
+    # healthy max ~3min. 10min is ~3x the healthy max and well under the 360min
+    # hosted-runner cap; a hang here would otherwise hold the pr-checks
+    # concurrency group indefinitely.
+    timeout-minutes: 10
     steps:
       - name: Classify the PR (docs-only fast path)
         id: docs
@@ -160,8 +181,8 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       # gitleaks-action v3 installs the scanner under os.tmpdir() (system
-      # /tmp on this self-hosted runner) and never cleans up, so the shared
-      # VPS verification runner breaks two ways:
+      # /tmp on the runner) and never cleans up, so a shared runner breaks
+      # two ways:
       #   - the actions-cache restore fails with "Cannot mkdir /tmp:
       #     Read-only file system" because the cached archive stores the
       #     /tmp/gitleaks-* tree as workspace-escaped relative paths;

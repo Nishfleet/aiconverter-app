@@ -58,6 +58,11 @@ env:
 jobs:
   classify:
     runs-on: ubuntu-latest
+    # Observed history: median ~0.2min, healthy max ~2.1min. The 1214min
+    # outlier was a queued run, not execution. 10min is ~5x the healthy max
+    # and well under the 360min hosted-runner cap; a hung gh API call here
+    # would otherwise hold the review-gate concurrency group indefinitely.
+    timeout-minutes: 10
     if: github.event.pull_request.draft == false
     steps:
       - name: Decide whether this PR earns a review
