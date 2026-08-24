@@ -9,14 +9,13 @@ find_specify_root() {
     # Use -- to handle paths starting with - (e.g., -P, -L)
     dir="$(cd -- "$dir" 2>/dev/null && pwd)" || return 1
     local prev_dir=""
-    while true; do
+    # Stop at filesystem root or when dirname stops changing. The bound lives
+    # in the loop condition (an unbounded loop is banned by the fleet's
+    # semgrep gate), not a break inside the body.
+    while [ "$dir" != "/" ] && [ "$dir" != "$prev_dir" ]; do
         if [ -d "$dir/.specify" ]; then
             echo "$dir"
             return 0
-        fi
-        # Stop if we've reached filesystem root or dirname stops changing
-        if [ "$dir" = "/" ] || [ "$dir" = "$prev_dir" ]; then
-            break
         fi
         prev_dir="$dir"
         dir="$(dirname "$dir")"
