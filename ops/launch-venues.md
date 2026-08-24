@@ -22,14 +22,15 @@ Capterra's bot wall, so no live-page claim is made for it — see the Capterra
 section); G2 verified 2026-08-15, re-verified 2026-08-21, and re-verified 2026-08-23
 (g2.com itself is bot-walled from this VPS — the eligibility rule and
 official create-a-profile flow were verified via credential-free fetch/search
-evidence, see the G2 section); AIAccountingApps.com verified 2026-08-21.
-Automated submission is blocked for all sixteen venues by the fleet venue
+evidence, see the G2 section); AIAccountingApps.com verified 2026-08-21;
+TinyLaunch (tinylaunch.com) verified 2026-08-23.
+Automated submission is blocked for all seventeen venues by the fleet venue
 policy ledger (`agent-state/growth-loop/venue-policy.json` and the
 `venue-claim` guard): Product Hunt is reviewed as prohibiting automation;
 BetaList, WeLikeTools, xix.ai, Toolbit.ai, Toolify.ai, Microlaunch, uneed.best,
 Open-Launch, saashub.com, futurepedia.io, theresanaiforthat.com, dang.ai,
-capterra.com, g2.com, and aiaccountingapps.com
-are not yet reviewed (`automation_disposition: unknown`). Uneed is
+capterra.com, g2.com, aiaccountingapps.com, and tinylaunch.com are not
+yet reviewed (`automation_disposition: unknown`). Uneed is
 the first venue that publishes its own official agent-launch API
 (`/launch.txt` + REST `/api/v1`) — strong positive evidence the venue research
 desk should weigh when reviewing uneed.best. Account actions (and the xix.ai
@@ -174,6 +175,17 @@ copy source):
   `venue-claim claim` exits 4 — no agent browser work; the editor email and
   any €59 spend are Nish's human actions using the kit below. (Lane attempt
   2026-08-21: NOT EXECUTED — see the AIAccountingApps.com section below.)
+- **TinyLaunch — SUBMIT — manual submission by Nish (free tier, email-OTP
+  account).** TinyLaunch hosts the exact category — three bank-statement-PDF-
+  to-spreadsheet peers launched in the last 30 days (Bank Statement Engine
+  2026-07-27, Statement Flow 2026-07-27, Clearly Ledger 2026-08-03); sitemap
+  enumeration (14,732 launch URLs), Wayback CDX, and slug probes find no
+  aiconverter.app listing — missing, not duplicate; tinylaunch.com is
+  unreviewed in the venue policy ledger (`automation_disposition: unknown`,
+  executable allowlist empty), so `venue-claim claim` exits 2 — no agent-
+  driven submission; the email-OTP account step is Nish's human action using
+  the kit below. (Lane attempt 2026-08-23: NOT EXECUTED — see the TinyLaunch
+  section below.)
 
 ## Status ledger (fleet re-verification 2026-08-10)
 
@@ -4281,3 +4293,128 @@ copy-paste ready:
   research desk reviewing aiaccountingapps.com and adding it to the policy
   allowlist — and even then the editor correspondence stays with the account
   owner.
+
+## TinyLaunch
+
+### Decision (dated 2026-08-23)
+
+- **Decision: SUBMIT — manual submission by Nish (free tier, email-OTP
+  account). Declined for agent-executed submission.** This line becomes
+  SUBMITTED once Nish acts and the launch is scheduled.
+- Reason: TinyLaunch (https://www.tinylaunch.com/, live 2026-08-23, "Launch
+  directory for indie startups" with an official agent API documented in
+  `/llms.txt`) hosts three exact-category bank-statement-PDF-to-spreadsheet
+  peers launched within the last 30 days: Bank Statement Engine
+  (https://www.tinylaunch.com/launch/16986-bank-statement-engine, launched
+  2026-07-27), Statement Flow
+  (https://www.tinylaunch.com/launch/16996-statement-flow, launched
+  2026-07-27), and Clearly Ledger
+  (https://www.tinylaunch.com/launch/17071-clearly-ledger, launched
+  2026-08-03). Sitemap enumeration (14,732 unique `/launch/` URLs on
+  2026-08-23), Wayback CDX (zero rows for aiconverter), and slug probes
+  (`/launch/aiconverter`, `/launch/ai-converter`, `/launch/aiconverter-app`,
+  `/launch/ai-converter-app` all HTTP 404) confirm no aiconverter.app listing
+  — missing, not duplicate. The only sitemap grep hit for `ai-converter` is
+  `/launch/8592-audio-to-text-ai-converter` (a different product). Free launch
+  slots are bookable: `GET /api/v1/launch-dates` returns earliest free window
+  **2026-09-21** (100 slots, `bookable_free: true`, `premium_only: false`);
+  dates 2026-08-24 through 2026-09-14 are full and `premium_only: true`.
+- Constraint (gate): tinylaunch.com has no entry in `venue-policy.json`
+  (`automation_disposition: unknown`) and the executable `allowlist` is empty
+  → `venue-claim claim` exits 2 (missing required policy metadata) and a
+  blocked exit means NO browser work. `/llms.txt` documents an eight-endpoint
+  API flow (`/auth/request-code` → `/auth/verify` → `/maker` → `/startups` →
+  `/launches`) that requires email-OTP auth — the lane cannot supply the
+  email account. Premium-only windows add a `payment_url` checkout; no
+  TinyLaunch spend authorization exists in `agent-state/authorizations/` and no
+  TinyLaunch entry exists in any dispatch ledger.
+- Next action: Nish completes email-OTP sign-up, creates the startup using
+  the kit below, and schedules the free launch on 2026-09-21 (or a later free
+  window); then this file should be updated with the public launch URL and the
+  venue's status line flipped to live.
+
+### Manual submission kit (copy-paste ready; live claims only)
+
+- Name: **AI Converter**
+- Tagline: **Bank statement PDFs to CSV you can review before paying**
+- Description:
+
+  > AI Converter turns bank statement PDFs into spreadsheet-ready CSV in your
+  > browser. Review sample rows free, then unlock the full extraction only when
+  > the preview looks right. OCR fallback handles scanned statements; low
+  > confidence fails closed with no charge. No bank logins and no human review
+  > queue; source files are deleted after 24 hours.
+
+- Key features (3-5 bullets):
+  - Bank statement PDF to CSV with a built-in parser first, OCR fallback for scans.
+  - Free preview: review sample rows and download a sample CSV before paying.
+  - Fail-closed extraction: low-confidence conversions are not charged.
+  - No bank login and no human review queue; source files deleted after 24 hours.
+  - Paid jobs get one automatic stronger redo.
+- Category: **Finance & FinTech** (`id: 5`, category group Business &
+  Finance — verified live 2026-08-23 via `GET /api/v1/categories`)
+- Website: https://aiconverter.app
+- Canonical links for the listing (all verified live HTTP 200 on 2026-08-23;
+  `/pricing/` and `/receipt-to-csv/` are not claimed):
+  - https://aiconverter.app/bank-statement-pdf-to-csv/
+  - https://aiconverter.app/sample-csv/
+  - https://aiconverter.app/trust/
+  - https://aiconverter.app/formats/
+- Submit route (verified live 2026-08-23):
+  - Agent guide: https://www.tinylaunch.com/llms.txt (HTTP 200, eight-endpoint
+    flow documented)
+  - `GET https://www.tinylaunch.com/api/v1/launch-dates` — earliest free slot
+    **2026-09-21** (`bookable_free: true`, 100 slots); 2026-08-24 / 2026-08-31
+    / 2026-09-07 / 2026-09-14 are `premium_only: true` (full)
+  - `GET https://www.tinylaunch.com/api/v1/categories` — Finance & FinTech
+    `id: 5`
+  - `POST https://www.tinylaunch.com/api/v1/auth/request-code` →
+    `POST /api/v1/auth/verify` → `GET/POST /api/v1/maker` →
+    `POST /api/v1/startups` → `POST /api/v1/launches` (Bearer auth after OTP;
+    see `/llms.txt` for field requirements)
+- Post-listing check: confirm `https://www.tinylaunch.com/launch/{id}-{slug}`
+  returns HTTP 200 and appears in the sitemap enumeration, then update this
+  file with the public URL.
+
+### Fleet lane attempt 2026-08-23 (TinyLaunch — NOT EXECUTED, decision recorded)
+
+- Attempted by lane 1 (packet item 84b2e7b871: "List the product on TinyLaunch
+  — 3 exact-category competitors launched there in the last 30 days and AI
+  Converter"). The listing was **not submitted**: the venue policy guard
+  blocks agent-executed submission and the email-OTP account step is Nish-
+  reserved. `agent-state/growth-loop/venue-policy.json` (re-read 2026-08-23)
+  has no tinylaunch.com entry — `automation_disposition: unknown`, executable
+  allowlist empty — so `venue-claim claim` exits 2 and "A blocked exit means
+  NO browser work" applies. `venue-claim list` shows zero tinylaunch records
+  before and after the claim attempt. This record plus the dated decision line
+  above is the honest NOT-EXECUTED lane outcome the packet requires.
+- Live re-verification (2026-08-23, plain curl, credential-free):
+  - Three exact-category peers all HTTP 200 with launch dates visible:
+    Bank Statement Engine (16986, 2026-07-27), Statement Flow (16996,
+    2026-07-27), Clearly Ledger (17071, 2026-08-03).
+  - Sitemap enumeration: 14,732 unique `/launch/` URLs; zero aiconverter.app
+    product hits (one false-positive slug `8592-audio-to-text-ai-converter`
+    matches the `ai-converter` grep pattern but is a different product).
+  - Wayback CDX `urlkey:.*aiconverter.*` — zero rows.
+  - Slug probes `/launch/aiconverter`, `/launch/ai-converter`,
+    `/launch/aiconverter-app`, `/launch/ai-converter-app` — all HTTP 404.
+  - Dead-end probes recorded: `GET /search?q=aiconverter` → HTTP 307 redirect
+    to `/login`; `GET /api/v1/startups` → `{"error":"missing_bearer_token"}`.
+  - `GET /api/v1/launch-dates` — free slot 2026-09-21 bookable; earlier windows
+    premium-only/full.
+  - `GET /api/v1/categories` — Finance & FinTech `id: 5`.
+  - `GET /llms.txt` — HTTP 200, agent guide with eight-endpoint flow.
+  - `venue-claim check tinylaunch.com aiconverter-app` — exit 0, disposition
+    unknown; `venue-claim claim` — exit 2, missing required policy metadata;
+    `venue-claim list | grep tinylaunch` — 0 before and after.
+  - Kit reference pages all live HTTP 200 (2026-08-23): `/`, `/llms.txt`,
+    `/bank-statement-pdf-to-csv/`, `/sample-csv/`, `/trust/`, `/formats/`.
+- Full evidence: `.lane/reports/lane1-tinylaunch-listing-20260823.md (this
+  run)`.
+- Next action (human-owned): Nish completes email-OTP sign-up at TinyLaunch,
+  submits using the kit above, schedules the free launch on 2026-09-21 (or a
+  later free window), then updates this file with the public launch URL and
+  flips this venue's status line to live. The only route to an agent-executed
+  submission would be the venue research desk reviewing tinylaunch.com and
+  adding it to the policy allowlist — and even then the email-OTP step stays
+  with the account owner.
