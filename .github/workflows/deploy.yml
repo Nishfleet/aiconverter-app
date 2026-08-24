@@ -45,6 +45,13 @@ jobs:
   deploy:
     name: Build and publish to Cloudflare Pages
     runs-on: ubuntu-latest
+    # Observed history: median ~2.6min, healthy max ~3.8min. The 81.5min outlier
+    # was a queued run, not execution. 15min is ~4x the healthy max and well
+    # under the 360min hosted-runner cap. This workflow uses
+    # cancel-in-progress: false, so without a timeout a hung deploy would hold
+    # the deploy-production concurrency group indefinitely - exactly the
+    # 2026-08-23/24 fleet stall shape.
+    timeout-minutes: 15
     # Secrets are hoisted to the job env because the `secrets` context is not
     # available in step-level `if:` conditions; the `env` context is.
     env:
