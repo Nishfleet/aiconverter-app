@@ -218,13 +218,19 @@ the caller's evidence directory. Never commit evidence into this repo.
 
 ## CLEANUP
 
-Kill the Vite preview by the recorded PID. Vite is single-process for the
-preview command, so SIGTERM to the PID is enough; do not `pkill` by
-matching command text (a 2026-08-26 fleet-wipe incident substring-matched
-`vite` and killed every other agent's Vite server).
+Kill the Vite preview by the recorded PID. `npx vite preview` spawns one
+child node process to serve `dist/`; SIGTERM the recorded parent first
+and then any remaining listener on port 4180 by its PID. Never `pkill`
+by matching command text (a 2026-08-26 fleet-wipe incident substring-
+matched `vite` and killed every other agent's Vite server) — match the
+recorded PID only, fall back to `lsof -i :4180 -t` for the leftover
+listener.
 
 ```bash
 kill "$(cat /tmp/verify-aiconverter/server.pid)" 2>/dev/null
+sleep 1
+leftover="$(lsof -i :4180 -t 2>/dev/null || true)"
+[ -n "$leftover" ] && kill $leftover 2>/dev/null
 lsof -i :4180   # must print nothing
 ```
 
