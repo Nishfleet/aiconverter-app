@@ -1975,45 +1975,46 @@ function App() {
             )}
 
             {!file && (
-              <div className="hero-lab-grid">
-                <label className="upload-target">
-                  <span className="upload-symbol">
-                    <Upload size={26} />
-                  </span>
-                  <span>
-                    <strong>Upload a bank statement for a private preview</strong>
-                    <small>PDF statements first. Other converter routes are available in the output picker.</small>
-                  </span>
-                  <span className="upload-go" aria-hidden="true">
-                    <ArrowRight size={20} />
-                  </span>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept={allAcceptedTypes(selectableConverters)}
-                    onChange={handleFileChange}
-                  />
-                </label>
-                <div className="export-preview-card" aria-hidden="true">
-                  <div className="export-preview-top">
-                    <span>Preview output</span>
-                    <strong>CSV</strong>
-                  </div>
-                  <div className="export-preview-table">
-                    <span>Date</span>
-                    <span>Description</span>
-                    <span>Amount</span>
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                  </div>
+              <div className="start-here">
+                <div className="start-here-heading">
+                  <h2>Choose your starting point</h2>
+                  <p>Bank statements use the preview flow above. Everything else starts from the format catalog.</p>
+                </div>
+                <div className="hero-lab-grid">
+                  <label className="upload-target">
+                    <span className="upload-symbol">
+                      <Upload size={26} />
+                    </span>
+                    <span>
+                      <strong>Upload a bank statement for a private preview</strong>
+                      <small>PDF statements first. Other converter routes are available in the output picker.</small>
+                    </span>
+                    <span className="upload-go" aria-hidden="true">
+                      <ArrowRight size={20} />
+                    </span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept={allAcceptedTypes(selectableConverters)}
+                      onChange={handleFileChange}
+                    />
+                  </label>
+                  <a className="catalog-explore-card" href="/formats/">
+                    <span className="catalog-explore-symbol">
+                      <Search size={26} />
+                    </span>
+                    <span>
+                      <strong>Browse all conversion options</strong>
+                      <small>
+                        Receipts to expense CSV, invoice PDFs to JSON, screenshot tables to CSV, audio to
+                        transcripts, and image formats — only the pairs the live app supports today.
+                      </small>
+                    </span>
+                    <span className="catalog-explore-go" aria-hidden="true">
+                      <ArrowRight size={20} />
+                    </span>
+                  </a>
                 </div>
               </div>
             )}
