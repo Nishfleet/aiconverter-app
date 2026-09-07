@@ -1975,6 +1975,67 @@ function App() {
             )}
 
             {!file && (
+              <div className="discovery-chooser" aria-label="What are you converting?">
+                <div className="discovery-chooser-heading">
+                  <span>What are you converting?</span>
+                  <a href="/formats/">
+                    Browse all formats
+                    <ArrowRight size={13} />
+                  </a>
+                </div>
+                <div className="discovery-chooser-options">
+                  <a className="discovery-option is-primary" href="#start">
+                    <FileSpreadsheet size={17} />
+                    <span>
+                      <strong>Bank statement</strong>
+                      <small>PDF to accounting CSV</small>
+                    </span>
+                  </a>
+                  <a className="discovery-option" href="/formats/">
+                    <FileText size={17} />
+                    <span>
+                      <strong>Receipt</strong>
+                      <small>Image / PDF to expense CSV</small>
+                    </span>
+                  </a>
+                  <a className="discovery-option" href="/formats/">
+                    <FileText size={17} />
+                    <span>
+                      <strong>Invoice</strong>
+                      <small>PDF / image to CSV, JSON</small>
+                    </span>
+                  </a>
+                  <a className="discovery-option" href="/formats/">
+                    <FileText size={17} />
+                    <span>
+                      <strong>Screenshot</strong>
+                      <small>PNG / JPG to CSV</small>
+                    </span>
+                  </a>
+                  <a className="discovery-option" href="/formats/">
+                    <Wand2 size={17} />
+                    <span>
+                      <strong>Audio</strong>
+                      <small>MP3 / WAV / M4A to transcript</small>
+                    </span>
+                  </a>
+                  <a className="discovery-option" href="/formats/">
+                    <ArrowRight size={17} />
+                    <span>
+                      <strong>General formats</strong>
+                      <small>Browse the live catalog</small>
+                    </span>
+                  </a>
+                </div>
+                <p className="discovery-chooser-note">
+                  These routes match the formats the app accepts today — not every input/output pair is
+                  supported. <a href="/formats/">See the full catalog</a> for exact pairs and what is
+                  coming soon.
+                </p>
+              </div>
+            )}
+
+            {!file && (
               <div className="hero-lab-grid">
                 <label className="upload-target">
                   <span className="upload-symbol">

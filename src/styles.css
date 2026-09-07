@@ -3008,6 +3008,120 @@ tbody tr:last-child td {
   background: rgba(255, 254, 248, 0.7);
 }
 
+.discovery-chooser {
+  margin: 0 14px 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(18, 18, 15, 0.06);
+  border-radius: 14px;
+  background: rgba(255, 254, 248, 0.66);
+}
+
+.discovery-chooser-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.discovery-chooser-heading > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.discovery-chooser-heading a {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.discovery-chooser-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.discovery-option {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid rgba(18, 18, 15, 0.07);
+  border-radius: 10px;
+  color: rgba(18, 18, 15, 0.72);
+  background: rgba(18, 18, 15, 0.035);
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.discovery-option:hover {
+  color: var(--ink);
+  background: rgba(18, 18, 15, 0.06);
+  border-color: rgba(18, 18, 15, 0.14);
+  transform: translateY(-1px);
+}
+
+.discovery-option.is-primary {
+  color: #172404;
+  background: var(--green);
+  border-color: rgba(18, 18, 15, 0.08);
+  box-shadow: 0 10px 24px rgba(107, 160, 0, 0.18);
+}
+
+.discovery-option.is-primary:hover {
+  background: var(--green-hot);
+}
+
+.discovery-option svg {
+  flex: 0 0 auto;
+  color: currentColor;
+}
+
+.discovery-option span {
+  display: grid;
+  gap: 1px;
+  text-align: left;
+}
+
+.discovery-option strong {
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.discovery-option small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.discovery-chooser-note {
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.discovery-chooser-note a {
+  color: var(--blue);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .flow-step {
   justify-content: center;
   font-family: var(--font-mono);
@@ -3675,6 +3789,10 @@ tbody tr:last-child td {
   .hero-lab-grid {
     grid-template-columns: 1fr;
     padding: 0;
+  }
+
+  .discovery-chooser {
+    margin: 0 0 10px;
   }
 
   .hero-backdrop .hero-cross,
