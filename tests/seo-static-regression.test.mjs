@@ -39,3 +39,18 @@ test("indexable pages satisfy the SEO audit basics", () => {
     assert.match(html, /rel="apple-touch-icon"/, `${page} should include Apple touch icon metadata`);
   }
 });
+
+test("formats page first paint does not wait for an external stylesheet", () => {
+  const html = readFileSync("public/formats/index.html", "utf8");
+  // The /formats/ route is a static page with no JavaScript. A slow or
+  // assistive visitor must see styled, truthful content at first paint without
+  // a network round trip, so its styles are inlined into the document instead
+  // of loaded from a render-blocking external stylesheet. Keep this page
+  // first-paint independent of the network.
+  assert.match(html, /<style[\s>]/, "formats page should inline its styles");
+  assert.doesNotMatch(
+    html,
+    /<link\b[^>]*rel=["']stylesheet["']/,
+    "formats page should not block first paint on an external stylesheet"
+  );
+});
