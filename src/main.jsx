@@ -13,6 +13,7 @@ import {
   LoaderCircle,
   RefreshCw,
   Search,
+  SearchX,
   ShieldCheck,
   Trash2,
   Upload,
@@ -537,6 +538,17 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
       }),
     [catalog, category, normalizedQuery]
   );
+  const hasActiveQuery = normalizedQuery.length > 0;
+  const hasActiveCategory = category !== "Available";
+  const resetFormats = () => {
+    setQuery("");
+    setCategory("Available");
+  };
+  const activeFilterLabel = [
+    ...(hasActiveQuery ? [`"${query.trim()}"`] : []),
+    ...(hasActiveCategory ? [category.toLowerCase()] : [])
+  ].join(" and ");
+  const resetLabel = hasActiveQuery && hasActiveCategory ? "Clear search and filter" : hasActiveQuery ? "Clear search" : "Show all formats";
   const upcomingConverters = data.converters.filter((converter) => !isLiveConverter(converter));
   const coveredFamilies = ["Documents", "Images", "Audio", "Video", "Archives"];
 
@@ -608,20 +620,36 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
       </section>
 
       <section className="formats-grid" aria-label="Conversion options">
-        {visiblePairs.map((pair) => (
-          <article className={classNames("format-card", !pair.available && "is-disabled")} key={`${pair.converterId}-${pair.input}-${pair.output}-${pair.label}`}>
-            <div>
-              <span>{pair.category}</span>
-              <strong>{pair.label}</strong>
-              <p>{pair.detail}</p>
+        {visiblePairs.length === 0 ? (
+          <div className="formats-empty" role="status">
+            <span className="formats-empty-icon" aria-hidden="true">
+              <SearchX size={22} />
+            </span>
+            <div className="formats-empty-copy">
+              <h2>No formats found</h2>
+              <p>No conversion options match {activeFilterLabel}. Try a different term, or reset the filters.</p>
             </div>
-            <div className="format-card-meta">
-              <span>{pair.input}</span>
-              <ArrowRight size={14} />
-              <span>{pair.output}</span>
-            </div>
-          </article>
-        ))}
+            <button type="button" className="formats-reset" onClick={resetFormats}>
+              <RefreshCw size={15} />
+              {resetLabel}
+            </button>
+          </div>
+        ) : (
+          visiblePairs.map((pair) => (
+            <article className={classNames("format-card", !pair.available && "is-disabled")} key={`${pair.converterId}-${pair.input}-${pair.output}-${pair.label}`}>
+              <div>
+                <span>{pair.category}</span>
+                <strong>{pair.label}</strong>
+                <p>{pair.detail}</p>
+              </div>
+              <div className="format-card-meta">
+                <span>{pair.input}</span>
+                <ArrowRight size={14} />
+                <span>{pair.output}</span>
+              </div>
+            </article>
+          ))
+        )}
       </section>
 
       <section className="formats-confidence" aria-label="Conversion confidence rules">
