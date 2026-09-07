@@ -537,6 +537,10 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
       }),
     [catalog, category, normalizedQuery]
   );
+  const resetFilters = () => {
+    setQuery("");
+    setCategory("Available");
+  };
   const upcomingConverters = data.converters.filter((converter) => !isLiveConverter(converter));
   const coveredFamilies = ["Documents", "Images", "Audio", "Video", "Archives"];
 
@@ -608,20 +612,37 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
       </section>
 
       <section className="formats-grid" aria-label="Conversion options">
-        {visiblePairs.map((pair) => (
-          <article className={classNames("format-card", !pair.available && "is-disabled")} key={`${pair.converterId}-${pair.input}-${pair.output}-${pair.label}`}>
+        {visiblePairs.length ? (
+          visiblePairs.map((pair) => (
+            <article className={classNames("format-card", !pair.available && "is-disabled")} key={`${pair.converterId}-${pair.input}-${pair.output}-${pair.label}`}>
+              <div>
+                <span>{pair.category}</span>
+                <strong>{pair.label}</strong>
+                <p>{pair.detail}</p>
+              </div>
+              <div className="format-card-meta">
+                <span>{pair.input}</span>
+                <ArrowRight size={14} />
+                <span>{pair.output}</span>
+              </div>
+            </article>
+          ))
+        ) : (
+          <div className="formats-empty" role="status">
             <div>
-              <span>{pair.category}</span>
-              <strong>{pair.label}</strong>
-              <p>{pair.detail}</p>
+              <span>No results</span>
+              <h2>No formats found</h2>
+              <p>
+                {normalizedQuery
+                  ? `No formats match "${query}"${category !== "Available" ? ` in ${category}` : ""}. Try a different search or category.`
+                  : `No conversion options are available in ${category} yet. Try another category.`}
+              </p>
             </div>
-            <div className="format-card-meta">
-              <span>{pair.input}</span>
-              <ArrowRight size={14} />
-              <span>{pair.output}</span>
-            </div>
-          </article>
-        ))}
+            <button type="button" className="formats-reset-button" onClick={resetFilters}>
+              Show all formats
+            </button>
+          </div>
+        )}
       </section>
 
       <section className="formats-confidence" aria-label="Conversion confidence rules">

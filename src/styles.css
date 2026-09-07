@@ -2430,6 +2430,77 @@ tbody tr:last-child td {
   color: var(--muted);
 }
 
+.formats-empty {
+  grid-column: 1 / -1;
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 16px;
+  padding: 30px 20px;
+  text-align: center;
+  border: 1px dashed var(--line-strong);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.formats-empty > div {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.formats-empty span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.formats-empty h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.formats-empty p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.formats-reset-button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid rgba(18, 18, 15, 0.08);
+  border-radius: 10px;
+  color: #06170d;
+  background: var(--green);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.formats-reset-button:hover {
+  transform: translateY(-1px);
+  background: var(--green-hot);
+}
+
+.formats-reset-button:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
 .formats-confidence {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
