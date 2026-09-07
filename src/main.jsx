@@ -13,6 +13,7 @@ import {
   LoaderCircle,
   RefreshCw,
   Search,
+  SearchX,
   ShieldCheck,
   Trash2,
   Upload,
@@ -507,6 +508,7 @@ function queuePriceSummary(entries, pricingPreview) {
 function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Available");
+  const searchInputRef = useRef(null);
   const categories = useMemo(
     () => [
       "Available",
@@ -520,6 +522,12 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
     ],
     []
   );
+
+  function clearFormatFilters() {
+    setQuery("");
+    setCategory("Available");
+    searchInputRef.current?.focus();
+  }
   const normalizedQuery = query.trim().toLowerCase();
   const visiblePairs = useMemo(
     () =>
@@ -587,6 +595,7 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
         <label className="formats-search">
           <Search size={17} />
           <input
+            ref={searchInputRef}
             type="search"
             value={query}
             placeholder="Search a format"
@@ -608,20 +617,34 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
       </section>
 
       <section className="formats-grid" aria-label="Conversion options">
-        {visiblePairs.map((pair) => (
-          <article className={classNames("format-card", !pair.available && "is-disabled")} key={`${pair.converterId}-${pair.input}-${pair.output}-${pair.label}`}>
-            <div>
-              <span>{pair.category}</span>
-              <strong>{pair.label}</strong>
-              <p>{pair.detail}</p>
+        {visiblePairs.length ? (
+          visiblePairs.map((pair) => (
+            <article className={classNames("format-card", !pair.available && "is-disabled")} key={`${pair.converterId}-${pair.input}-${pair.output}-${pair.label}`}>
+              <div>
+                <span>{pair.category}</span>
+                <strong>{pair.label}</strong>
+                <p>{pair.detail}</p>
+              </div>
+              <div className="format-card-meta">
+                <span>{pair.input}</span>
+                <ArrowRight size={14} />
+                <span>{pair.output}</span>
+              </div>
+            </article>
+          ))
+        ) : (
+          <div className="formats-empty">
+            <div className="formats-empty-message" role="status">
+              <SearchX size={26} aria-hidden="true" />
+              <strong>No formats match your search and filters</strong>
+              <p>Try a different search term, or clear the search and filters to see all available conversion options.</p>
             </div>
-            <div className="format-card-meta">
-              <span>{pair.input}</span>
-              <ArrowRight size={14} />
-              <span>{pair.output}</span>
-            </div>
-          </article>
-        ))}
+            <button type="button" className="secondary-button" onClick={clearFormatFilters}>
+              <RefreshCw size={16} aria-hidden="true" />
+              Clear search and filters
+            </button>
+          </div>
+        )}
       </section>
 
       <section className="formats-confidence" aria-label="Conversion confidence rules">
