@@ -741,6 +741,20 @@ function App() {
         title: "More conversion options coming soon",
         detail: "New format groups appear here after they pass QA."
       };
+  const recoveryExamples = useMemo(() => {
+    const availableLabels = new Set(conversionCatalog.filter((pair) => pair.available).map((pair) => pair.label));
+    const seenCategories = new Set();
+    const examples = [];
+    for (const request of TOP_CONVERSION_REQUESTS) {
+      if (request.converterId === "bank") continue;
+      if (!availableLabels.has(request.label)) continue;
+      if (seenCategories.has(request.category)) continue;
+      seenCategories.add(request.category);
+      examples.push(request.label);
+      if (examples.length >= 6) break;
+    }
+    return examples;
+  }, [conversionCatalog]);
   const converterIsEnabled = (converter) => !isProviderConverter(converter) || universalProviderReady;
   const liveConverters = useMemo(() => data.converters.filter(isLiveConverter), []);
   const selectableConverters = useMemo(
@@ -2027,6 +2041,33 @@ function App() {
                 accept={allAcceptedTypes(selectableConverters)}
                 onChange={handleFileChange}
               />
+            )}
+
+            {!file && (
+              <div className="recovery-note" role="note" aria-label="Not a bank statement?">
+                <div className="recovery-note-main">
+                  <strong className="recovery-note-title">Not a bank statement?</strong>
+                  <p>
+                    The upload box above accepts every file type this app is configured for and
+                    picks the converter automatically. The output picker only offers pairs that
+                    are actually supported.
+                  </p>
+                  <a className="recovery-note-link" href="/formats/">
+                    Browse all conversion options
+                    <ArrowRight size={15} />
+                  </a>
+                </div>
+                {recoveryExamples.length > 0 && (
+                  <div className="recovery-examples" role="group" aria-label="Example conversion options available now">
+                    <span className="recovery-examples-label">Available now</span>
+                    {recoveryExamples.map((label) => (
+                      <span className="recovery-example-chip" key={label}>
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
 
             {!file && (

@@ -1671,6 +1671,91 @@ tbody tr:last-child td {
   font-weight: 400;
 }
 
+.recovery-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  margin: 0 14px 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(18, 18, 15, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 254, 248, 0.72);
+}
+
+.recovery-note-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.recovery-note-title {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.recovery-note p {
+  margin: 0;
+  color: rgba(18, 18, 15, 0.62);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.recovery-note-link {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 0;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.recovery-note-link:hover {
+  color: #275a12;
+}
+
+.recovery-examples {
+  flex: 0 1 auto;
+  max-width: 46%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.recovery-examples-label {
+  width: 100%;
+  color: rgba(18, 18, 15, 0.5);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.recovery-example-chip {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  color: rgba(18, 18, 15, 0.68);
+  background: rgba(18, 18, 15, 0.035);
+  border: 1px solid rgba(18, 18, 15, 0.06);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
 .detected-file {
   min-height: 58px;
   display: flex;
@@ -3748,6 +3833,22 @@ tbody tr:last-child td {
 
   .upload-target.has-file {
     min-height: 120px;
+  }
+
+  .recovery-note {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin: 2px 16px 8px;
+  }
+
+  .recovery-examples {
+    max-width: 100%;
+    justify-content: flex-start;
+  }
+
+  .recovery-examples-label {
+    width: auto;
   }
 
   .file-queue-list {
