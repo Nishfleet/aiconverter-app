@@ -8,9 +8,12 @@ import {
   CreditCard,
   Database,
   Download,
+  FileAudio,
   FileSpreadsheet,
   FileText,
+  Image as ImageIcon,
   LoaderCircle,
+  Receipt,
   RefreshCw,
   Search,
   ShieldCheck,
@@ -44,6 +47,29 @@ let turnstileScriptPromise = null;
 const TICKER_MIN_COPY_COUNT = 8;
 const BRAND_NAME = "AI Converter";
 const BATCH_RETURN_KEY = "aiconverter_batch_return";
+const FORMATS_ROUTE = "/formats/";
+const PRE_UPLOAD_ROUTE_EXAMPLES = [
+  {
+    label: "Bank statements",
+    detail: "PDF to accounting CSV presets",
+    icon: FileSpreadsheet
+  },
+  {
+    label: "Receipts & invoices",
+    detail: "Images and PDFs to expense CSV or JSON",
+    icon: Receipt
+  },
+  {
+    label: "Screenshots & documents",
+    detail: "Tables to CSV, docs to Markdown, screenshots to HTML",
+    icon: ImageIcon
+  },
+  {
+    label: "Audio, media & archives",
+    detail: "Transcripts, format swaps, and more",
+    icon: FileAudio
+  }
+];
 
 function BrandName({ className = "" }) {
   return <strong className={classNames("brand-name", className)}>{BRAND_NAME}</strong>;
@@ -2016,6 +2042,34 @@ function App() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {!file && (
+              <section className="route-discovery" aria-label="More conversion routes">
+                <div className="route-discovery-heading">
+                  <h2>More conversion routes</h2>
+                  <p>
+                    Browse examples before you upload. Exact input and output availability is checked after you
+                    select a file.
+                  </p>
+                </div>
+                <div className="route-discovery-grid">
+                  {PRE_UPLOAD_ROUTE_EXAMPLES.map((route) => {
+                    const RouteIcon = route.icon;
+                    return (
+                      <a className="route-discovery-card" href={FORMATS_ROUTE} key={route.label}>
+                        <RouteIcon size={17} />
+                        <strong>{route.label}</strong>
+                        <small>{route.detail}</small>
+                      </a>
+                    );
+                  })}
+                </div>
+                <p className="route-discovery-note">
+                  Examples only, not promises — not every file type converts to every output.{" "}
+                  <a href={FORMATS_ROUTE}>See all conversion options</a>.
+                </p>
+              </section>
             )}
 
             {file && (

@@ -3179,6 +3179,99 @@ tbody tr:last-child td {
     linear-gradient(90deg, rgba(18, 18, 15, 0.08), rgba(18, 18, 15, 0.04)) 8px 50% / calc(100% - 16px) 7px no-repeat;
 }
 
+.route-discovery {
+  margin: 0 14px 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(18, 18, 15, 0.07);
+}
+
+.route-discovery-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.route-discovery-heading h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.route-discovery-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.route-discovery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.route-discovery-card {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 12px;
+  color: var(--ink);
+  border: 1px solid rgba(18, 18, 15, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 254, 248, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.route-discovery-card:hover {
+  background: #ffffff;
+  border-color: rgba(18, 18, 15, 0.16);
+  transform: translateY(-1px);
+}
+
+.route-discovery-card:focus-visible {
+  outline: 2px solid var(--green-dark);
+  outline-offset: 2px;
+}
+
+.route-discovery-card svg {
+  margin-bottom: 4px;
+  color: var(--green-dark);
+}
+
+.route-discovery-card strong {
+  font-size: 13px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.route-discovery-card small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.route-discovery-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.route-discovery-note a {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .order-summary label,
 .order-summary > div,
 .confidence-panel div,
@@ -3685,6 +3778,16 @@ tbody tr:last-child td {
 
   .export-preview-card {
     display: none;
+  }
+
+  .route-discovery {
+    margin: 0 0 12px;
+    padding: 12px 12px 0;
+    border-top: 0;
+  }
+
+  .route-discovery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .flow-rail {
