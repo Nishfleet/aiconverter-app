@@ -2430,6 +2430,52 @@ tbody tr:last-child td {
   color: var(--muted);
 }
 
+.formats-empty {
+  grid-column: 1 / -1;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 20px;
+  text-align: center;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.formats-empty-icon {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fafc;
+  color: var(--muted);
+}
+
+.formats-empty h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.formats-empty p {
+  max-width: 440px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.formats-empty-reset {
+  margin-top: 10px;
+}
+
 .formats-confidence {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

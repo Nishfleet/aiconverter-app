@@ -537,6 +537,17 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
       }),
     [catalog, category, normalizedQuery]
   );
+  const hasActiveFormatFilters = Boolean(normalizedQuery) || category !== "Available";
+  const emptyStateTitle = hasActiveFormatFilters
+    ? normalizedQuery
+      ? category === "Available"
+        ? `No formats match "${query.trim()}"`
+        : `No ${category} formats match "${query.trim()}"`
+      : `No ${category} formats yet`
+    : "No conversion formats are listed right now";
+  const emptyStateBody = hasActiveFormatFilters
+    ? "Try a different search term or choose another category, or reset the filters to see every format available today."
+    : "New conversion routes appear here after they pass QA.";
   const upcomingConverters = data.converters.filter((converter) => !isLiveConverter(converter));
   const coveredFamilies = ["Documents", "Images", "Audio", "Video", "Archives"];
 
@@ -608,20 +619,41 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
       </section>
 
       <section className="formats-grid" aria-label="Conversion options">
-        {visiblePairs.map((pair) => (
-          <article className={classNames("format-card", !pair.available && "is-disabled")} key={`${pair.converterId}-${pair.input}-${pair.output}-${pair.label}`}>
-            <div>
-              <span>{pair.category}</span>
-              <strong>{pair.label}</strong>
-              <p>{pair.detail}</p>
-            </div>
-            <div className="format-card-meta">
-              <span>{pair.input}</span>
-              <ArrowRight size={14} />
-              <span>{pair.output}</span>
-            </div>
-          </article>
-        ))}
+        {visiblePairs.length ? (
+          visiblePairs.map((pair) => (
+            <article className={classNames("format-card", !pair.available && "is-disabled")} key={`${pair.converterId}-${pair.input}-${pair.output}-${pair.label}`}>
+              <div>
+                <span>{pair.category}</span>
+                <strong>{pair.label}</strong>
+                <p>{pair.detail}</p>
+              </div>
+              <div className="format-card-meta">
+                <span>{pair.input}</span>
+                <ArrowRight size={14} />
+                <span>{pair.output}</span>
+              </div>
+            </article>
+          ))
+        ) : (
+          <div className="formats-empty" role="status">
+            <span className="formats-empty-icon" aria-hidden="true">
+              <Search size={18} />
+            </span>
+            <h2>{emptyStateTitle}</h2>
+            <p>{emptyStateBody}</p>
+            <button
+              type="button"
+              className="secondary-button formats-empty-reset"
+              onClick={() => {
+                setQuery("");
+                setCategory("Available");
+              }}
+            >
+              <RefreshCw size={16} aria-hidden="true" />
+              Clear search and category
+            </button>
+          </div>
+        )}
       </section>
 
       <section className="formats-confidence" aria-label="Conversion confidence rules">
