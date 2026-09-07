@@ -39,3 +39,15 @@ test("indexable pages satisfy the SEO audit basics", () => {
     assert.match(html, /rel="apple-touch-icon"/, `${page} should include Apple touch icon metadata`);
   }
 });
+
+test("formats page paints styled first content without a render-blocking stylesheet request", () => {
+  const formatsPath = join("public", "formats", "index.html");
+  const html = readFileSync(formatsPath, "utf8");
+  const styleStart = html.indexOf("<style>");
+  const shellRule = html.indexOf(".legal-shell {");
+  const headEnd = html.indexOf("</head>");
+  assert.ok(styleStart !== -1, `${formatsPath} should inline first-paint styles`);
+  assert.ok(shellRule !== -1 && shellRule > styleStart, `${formatsPath} inline styles should cover the page shell`);
+  assert.ok(headEnd !== -1 && headEnd > shellRule, `${formatsPath} inline styles should finish inside the head`);
+  assert.doesNotMatch(html, /<link\s+rel="stylesheet"/, `${formatsPath} should not block first paint on an external stylesheet`);
+});
