@@ -1,11 +1,9 @@
 name: CI
 
-# Fast, offline gates on every PR: pricing consistency, unit tests, and a
-# production build. All three checks are required to merge into main (see
-# branch protection), complementing the Gitleaks secret scan.
-#
-# Actions are pinned to commit SHAs with a version comment so Dependabot can
-# keep them current (same convention as secret-scan.yml).
+# Thin caller onto the fleet-ops reusable PR checks (fleet-ops#68). The
+# three former required jobs (Pricing check, Unit tests, Build) are batched
+# into one caller job; Gitleaks stays on secret-scan.yml so the required
+# secret scan keeps its own check name.
 
 on:
   pull_request:
@@ -16,59 +14,18 @@ permissions:
   contents: read
 
 jobs:
-  pricing:
-    name: Pricing check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Set up Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 22
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Check pricing consistency
-        run: npm run check:pricing
+  pr-checks:
+    uses: Nishfleet/fleet-ops/.github/workflows/reusable-pr-checks.yml@main
+    with:
+      node-version: "22"
+      install-command: npm ci
+      verify-command: |
+        npm run check:pricing
+        node --test tests/*.test.mjs
+        npm run build
+      scan-secrets: false
+      timeout-minutes: 20
 
-  tests:
-    name: Unit tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Set up Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 22
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Run unit tests
-        run: node --test tests/*.test.mjs
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Set up Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 22
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Build
-        run: npm run build
   actionlint:
     # Lint job config is wiring, not a ruleset — duplicated per repo is
     # acceptable (the canonical semgrep ruleset is NOT duplicated; it is
