@@ -1,3 +1,6 @@
+
+<!-- fleet-ops#8136 accept-criterion probe: harmless marker, reverted immediately -->
+<!-- 1219bf7ef233f04506fd19179a7dcc4c43026cbf4cafe56c6b1aee5d057e6944 -->
 # AI Converter
 
 AI Converter is a Cloudflare Pages app for preview-first AI conversion and common file conversion.
