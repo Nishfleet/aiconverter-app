@@ -1,4 +1,4 @@
-import { syncDodoProductPrices } from "../functions/lib/dodo.js";
+import { syncDodoProductPrices } from "../../functions/lib/dodo.js";
 
 const dryRun = process.argv.includes("--dry-run");
 const result = await syncDodoProductPrices(process.env, { dryRun });
