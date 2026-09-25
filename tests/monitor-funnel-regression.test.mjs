@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const source = readFileSync(new URL("../scripts/monitor-live.mjs", import.meta.url), "utf8");
+const source = readFileSync(new URL("./live/monitor-live.mjs", import.meta.url), "utf8");
 
 test("routine monitor output surfaces live funnel visit counts from the admin overview", () => {
   // The admin API already returns per-event 24h funnel counts (previewFunnel,
