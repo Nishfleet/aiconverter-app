@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 
 const execFileAsync = promisify(execFile);
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const CORPUS_SCRIPT = path.join(REPO_ROOT, "scripts", "private-corpus.mjs");
+const CORPUS_SCRIPT = path.join(REPO_ROOT, "tests", "private-corpus", "run.mjs");
 
 // Runs the corpus script exactly as npm would launch it (node script path),
 // but in a throwaway directory so the release path is exercised without any

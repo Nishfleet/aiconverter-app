@@ -11,7 +11,7 @@ const middleware = readFileSync("functions/_middleware.js", "utf8");
 const sitemap = readFileSync("public/sitemap.xml", "utf8");
 const llmsTxt = readFileSync("public/llms.txt", "utf8");
 const llmsFull = readFileSync("public/llms-full.txt", "utf8");
-const checkPricing = readFileSync("scripts/check-pricing.mjs", "utf8");
+const checkPricing = readFileSync("tests/check-pricing.mjs", "utf8");
 
 test("Pricing nav resolves to the /pricing/ route, not an in-page anchor", () => {
   assert.match(mainJsx, /<a href="\/pricing\/">Pricing<\/a>/);

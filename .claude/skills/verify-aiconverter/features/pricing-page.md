@@ -61,6 +61,6 @@ curl -fsS https://aiconverter.app/api/pricing-preview
 - `rel="canonical"` is `https://aiconverter.app/pricing/`, not the
   loopback origin.
 - The `Free preview first.` plan note survives a clean rebuild
-  (`scripts/build-sitemap.mjs` regenerates `dist/sitemap.xml`, the
+  (`src/cli/build-sitemap.mjs` regenerates `dist/sitemap.xml`, the
   pricing copy itself is built from `dist/legal.css` plus the React
   hydration, so a rebuild that drops the note is a content bug).

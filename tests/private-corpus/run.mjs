@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { convertFileToCsv } from "../functions/lib/extract.js";
-import { assertSupportedUpload } from "../functions/lib/jobs.js";
+import { convertFileToCsv } from "../../functions/lib/extract.js";
+import { assertSupportedUpload } from "../../functions/lib/jobs.js";
 
 const cwd = process.cwd();
 const manifestPath = process.env.AICONVERTER_PRIVATE_CORPUS_MANIFEST || path.join(cwd, ".private-corpus", "manifest.json");
