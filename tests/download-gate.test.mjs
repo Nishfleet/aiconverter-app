@@ -7,7 +7,7 @@ import { sha256 } from "../functions/lib/jobs.js";
 const futureExpiry = () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
 // Locks the free full-export gate that customer trials rely on
-// (see ops/customer-trials.md): a complete job downloads with paid_at set, or
+// (see docs/ops/customer-trials.md): a complete job downloads with paid_at set, or
 // without paid_at only when FREE_DOWNLOADS_ENABLED === "true".
 test("download: unpaid complete job is gated to 402 by default", async () => {
   const { jobs, objects } = await jobFixture("job_unpaid", { paid_at: null });

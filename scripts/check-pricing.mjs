@@ -8,7 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const publicTexts = await Promise.all([
   readFile(path.join(root, "functions/_middleware.js"), "utf8"),
   readFile(path.join(root, "public/llms.txt"), "utf8"),
-  readFile(path.join(root, "ops/pricing-strategy.md"), "utf8")
+  readFile(path.join(root, "docs/ops/pricing-strategy.md"), "utf8")
 ]);
 // The flagship landing page phrases prices as "for up to N pages"; guard it
 // separately so a pricing change cannot silently drift from the live page.
