@@ -5,20 +5,20 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "node scripts/build-sitemap.mjs && vite build",
-    "build:sitemap": "node scripts/build-sitemap.mjs",
-    "check:pricing": "node scripts/check-pricing.mjs",
-    "dodo:sync-prices": "node scripts/sync-dodo-prices.mjs",
-    "corpus:private": "node scripts/private-corpus.mjs",
-    "stress:converters": "node scripts/stress-converters.mjs",
-    "stress:checkout": "node scripts/stress-checkout-live.mjs",
-    "drill:paid": "node scripts/paid-drill-live.mjs",
-    "stress:live": "node scripts/stress-live.mjs",
-    "smoke:preview": "node scripts/upload-preview-live.mjs",
-    "monitor:live": "node scripts/monitor-live.mjs",
-    "drill:failover": "node scripts/drill-failover-live.mjs",
-    "readiness:live": "node scripts/readiness-live.mjs",
-    "first-viewport-audience:live": "node scripts/first-viewport-audience-live.mjs",
+    "build": "node src/cli/build-sitemap.mjs && vite build",
+    "build:sitemap": "node src/cli/build-sitemap.mjs",
+    "check:pricing": "node tests/check-pricing.mjs",
+    "dodo:sync-prices": "node src/cli/sync-dodo-prices.mjs",
+    "corpus:private": "node tests/private-corpus/run.mjs",
+    "stress:converters": "node tests/stress-converters.mjs",
+    "stress:checkout": "node tests/live/stress-checkout-live.mjs",
+    "drill:paid": "node tests/live/paid-drill-live.mjs",
+    "stress:live": "node tests/live/stress-live.mjs",
+    "smoke:preview": "node tests/live/upload-preview-live.mjs",
+    "monitor:live": "node tests/live/monitor-live.mjs",
+    "drill:failover": "node tests/live/drill-failover-live.mjs",
+    "readiness:live": "node tests/live/readiness-live.mjs",
+    "first-viewport-audience:live": "node tests/live/first-viewport-audience-live.mjs",
     "stress:all": "npm run stress:converters && npm run stress:live && npm run readiness:live",
     "release:gate": "npm run check:pricing && node --test tests/*.test.mjs && AICONVERTER_PRIVATE_CORPUS_REQUIRED=true npm run corpus:private && npm audit --audit-level=moderate && npm run build && npm run stress:converters && npm run stress:live && AICONVERTER_MONITOR_STRICT=true npm run monitor:live && npm run readiness:live",
     "preview": "vite preview --host 0.0.0.0",
@@ -30,13 +30,13 @@
     "@vitejs/plugin-react": "^5.1.1",
     "hk-grotesk": "^1.0.2",
     "lucide-react": "^0.577.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "typescript": "^5.9.3",
     "unpdf": "^1.8.1",
-    "vite": "^8.2.1"
+    "vite": "^8.3.0"
   },
   "devDependencies": {
-    "playwright": "1.62.1"
+    "playwright": "1.63.0"
   }
 }

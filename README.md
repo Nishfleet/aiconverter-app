@@ -46,12 +46,12 @@ npm run stress:checkout
 npm run readiness:live
 ```
 
-Database notes: [ops/database.md](ops/database.md)
-DNS notes: [ops/dns.md](ops/dns.md)
-Monitoring notes: [ops/monitoring.md](ops/monitoring.md)
-Private corpus notes: [ops/private-corpus.md](ops/private-corpus.md)
-Launch venue notes: [ops/launch-venues.md](ops/launch-venues.md)
-Wedge evidence notes: [ops/serp-wedge-evidence.md](ops/serp-wedge-evidence.md)
+Database notes: [docs/ops/database.md](docs/ops/database.md)
+DNS notes: [docs/ops/dns.md](docs/ops/dns.md)
+Monitoring notes: [docs/ops/monitoring.md](docs/ops/monitoring.md)
+Private corpus notes: [docs/ops/private-corpus.md](docs/ops/private-corpus.md)
+Launch venue notes: [docs/ops/launch-venues.md](docs/ops/launch-venues.md)
+Wedge evidence notes: [docs/ops/serp-wedge-evidence.md](docs/ops/serp-wedge-evidence.md)
 
 Deploy:
 
@@ -67,7 +67,7 @@ Use the safe-deploy wrapper on Nish's machine before live commands.
 - Password-protected PDFs are supported when the PDF password is supplied on upload.
 - Full AI extraction unlock is paid.
 - Dodo checkout creation, signed webhook validation, paid finalize/download code paths, admin refund drills, and failed-payment handling are implemented and covered by automated checks.
-- One successful real-card drill through checkout, webhook, paid finalize, download, redo, and cash refund still needs operator proof before scaling paid traffic. The 2026-05-18 drill's ₹299 refund stayed blocked on Dodo wallet funds (five failed attempts) and was written off by explicit operator decision on 2026-08-10 — see `ops/refund-writeoffs.md`.
+- One successful real-card drill through checkout, webhook, paid finalize, download, redo, and cash refund still needs operator proof before scaling paid traffic. The 2026-05-18 drill's ₹299 refund stayed blocked on Dodo wallet funds (five failed attempts) and was written off by explicit operator decision on 2026-08-10 — see `docs/ops/refund-writeoffs.md`.
 - Source files are private and short-retention.
 - No human file review queue.
 - Multi-file preview is implemented. Batch checkout unlocks queued previews in one payment and downloads completed exports as one ZIP.
