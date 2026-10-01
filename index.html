@@ -39,16 +39,6 @@
         color: #12120f;
         background: #f7f7f1;
       }
-      .seo-fallback img {
-        width: 56px;
-        height: 56px;
-        border-radius: 14px;
-      }
-      .seo-fallback h1 {
-        margin: 24px 0 16px;
-        font-size: 54px;
-        line-height: 1;
-      }
       .seo-fallback p,
       .seo-fallback li {
         color: #4f5649;
@@ -95,9 +85,57 @@
   </head>
   <body>
     <div id="root">
-      <main class="seo-fallback">
+      <main class="page-shell">
+        <div class="announcement-bar" aria-label="Product status">
+          <p>Sample rows before payment. Unsafe parse? No charge. From ₹399.</p>
+          <a href="#start">Try a real statement →</a>
+        </div>
+
+        <header class="site-header" aria-label="Site header">
+          <a class="brand" href="/" aria-label="AI Converter home">
+            <span class="brand-mark" aria-hidden="true">
+              <span class="brand-glyph">
+                <span class="brand-glyph-core"></span>
+                <span class="brand-glyph-spark spark-a"></span>
+                <span class="brand-glyph-spark spark-b"></span>
+                <span class="brand-glyph-spark spark-c"></span>
+              </span>
+            </span>
+            <span class="brand-name">AI Converter</span>
+          </a>
+          <nav class="site-nav" aria-label="Primary navigation">
+            <a href="/formats/">All formats</a>
+            <a href="/pricing/">Pricing</a>
+            <a href="/support/">Support</a>
+            <a class="nav-proof" href="#security">Private</a>
+            <a class="nav-cta" href="#start">Start private preview</a>
+          </nav>
+        </header>
+
+        <section id="top" class="conversion-stage">
+          <div class="landing-hero-grid">
+            <div class="conversion-heading">
+              <a class="hero-chip-row" href="#start" aria-label="Start with a sample-row preview">
+                <span>Review sample rows before you pay</span>
+              </a>
+              <h1>
+                <span>Bank statement PDFs in.</span>
+                <strong>Accounting CSV out.</strong>
+              </h1>
+              <p>
+                Upload a bank statement PDF, choose a Xero, Wave, QuickBooks, GnuCash, or spreadsheet CSV,
+                review the detected sample rows, and download a free sample before unlocking the full export.
+              </p>
+              <p>
+                Built for accountants, bookkeepers, and finance operators preparing
+                accounting imports from bank statements.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <div class="seo-fallback">
         <img src="/favicon.svg" alt="AI Converter logo" width="56" height="56" />
-        <h1>Bank statement PDFs in. Accounting CSV out.</h1>
         <p>
           AI Converter is a professional file converter built for accountants, bookkeepers, and finance operators.
           Upload a bank statement, receipt, invoice, screenshot table, document, audio file, image, video, or archive,
@@ -152,8 +190,9 @@
           importing, filing, or making decisions from it. Unsupported, encrypted, damaged, unusually formatted, or
           low-confidence files can be rejected instead of forced into a misleading output.
         </p>
+        </div>
       </main>
     </div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/boot.js"></script>
   </body>
 </html>
