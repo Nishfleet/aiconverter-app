@@ -2915,7 +2915,6 @@ tbody tr:last-child td {
   margin: 0 auto;
   padding: clamp(28px, 4.6vw, 56px) 24px 14px;
   text-align: center;
-  animation: rise-in 560ms ease both;
 }
 
 .hero-chip-row {
