@@ -1,0 +1,32 @@
+name: Lighthouse
+
+# Audits the live pages against the fleet speed budget (fleet-ops
+# config/lighthouserc.json) after every production deploy and weekly. A red
+# job is the signal.
+
+on:
+  workflow_run:
+    workflows: [Deploy production]
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: "41 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    name: lighthouse
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    uses: Nishfleet/fleet-ops/.github/workflows/lighthouse.yml@main
+    permissions:
+      contents: read
+    with:
+      urls: |
+        https://aiconverter.app/
+        https://aiconverter.app/bank-statement-pdf-to-csv/
+        https://aiconverter.app/pricing/
+        https://aiconverter.app/receipt-to-csv/
+        https://aiconverter.app/about/
