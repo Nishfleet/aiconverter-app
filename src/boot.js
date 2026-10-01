@@ -20,9 +20,14 @@ function deferredStylesheetsReady() {
   );
 }
 
-requestAnimationFrame(() => {
-  setTimeout(async () => {
-    await deferredStylesheetsReady();
-    await import("./main.jsx");
-  }, 0);
-});
+function startApp() {
+  deferredStylesheetsReady().then(() => import("./main.jsx"));
+}
+
+function afterLoad() {
+  if ("requestIdleCallback" in window) requestIdleCallback(startApp, { timeout: 2000 });
+  else setTimeout(startApp, 200);
+}
+
+if (document.readyState === "complete") afterLoad();
+else addEventListener("load", afterLoad, { once: true });
