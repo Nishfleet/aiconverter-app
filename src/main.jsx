@@ -32,7 +32,6 @@ import {
   isProviderConverter
 } from "./conversion-catalog.js";
 import { convertImageInBrowser, convertRasterToSvgInBrowser } from "./local-converters.js";
-import "./styles.css";
 
 const MAX_SIZE_MB = 50;
 const MAX_PAGES = 500;
