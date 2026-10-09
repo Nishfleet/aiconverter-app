@@ -18,6 +18,9 @@ import {
   Upload,
   Wand2
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import data from "./data/converters.json";
 import {
   TOP_CONVERSION_REQUESTS,
@@ -349,10 +352,10 @@ class AppErrorBoundary extends React.Component {
           <h1>Something went wrong.</h1>
           <p>Reload the app. If it happens again, contact support and we will trace it from the server logs.</p>
           <div className="crash-actions">
-            <button type="button" className="primary-button" onClick={() => window.location.reload()}>
+            <Button type="button" className="primary-button" onClick={() => window.location.reload()}>
               Reload app
               <RefreshCw size={17} />
-            </button>
+            </Button>
             <a className="secondary-button" href={supportHrefForJob("", "other")}>
               Contact support
             </a>
@@ -710,7 +713,7 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
       <section className="formats-toolbar" aria-label="Format filters">
         <label className="formats-search">
           <Search size={17} />
-          <input
+          <Input
             ref={searchInputRef}
             type="search"
             value={query}
@@ -739,10 +742,10 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
               <h2>{noMatchHeading}</h2>
               <p>{noMatchMessage}</p>
             </div>
-            <button type="button" className="secondary-button" onClick={resetFormatsFilters}>
+            <Button type="button" className="secondary-button" onClick={resetFormatsFilters}>
               Clear search and filters
               <RefreshCw size={15} />
-            </button>
+            </Button>
           </div>
         ) : (
           visiblePairs.map((pair) => (
@@ -753,9 +756,9 @@ function FormatsPage({ catalog, conversionCount, universalProviderReady }) {
                 <p>{pair.detail}</p>
               </div>
               <div className="format-card-meta">
-                <span>{pair.input}</span>
+                <Badge>{pair.input}</Badge>
                 <ArrowRight size={14} />
-                <span>{pair.output}</span>
+                <Badge>{pair.output}</Badge>
               </div>
             </article>
           ))
@@ -2178,7 +2181,7 @@ function App() {
                     <span className="upload-go" aria-hidden="true">
                       <ArrowRight size={20} />
                     </span>
-                    <input
+                    <Input
                       ref={fileInputRef}
                       type="file"
                       multiple
@@ -2226,7 +2229,7 @@ function App() {
             )}
 
             {file && (
-              <input
+              <Input
                 ref={fileInputRef}
                 className="sr-only-file-input"
                 type="file"
@@ -2304,16 +2307,16 @@ function App() {
                       ))}
                     </div>
                     {previewReadyServerResults.length > 1 && (
-                      <button className="primary-button full-width batch-zip-button" type="button" onClick={handleBatchUnlock} disabled={unlocking}>
+                      <Button className="primary-button full-width batch-zip-button" type="button" onClick={handleBatchUnlock} disabled={unlocking}>
                         Unlock queued previews
                         {unlocking ? <LoaderCircle className="spin" size={16} /> : <CreditCard size={16} />}
-                      </button>
+                      </Button>
                     )}
                     {completedServerResults.length > 1 && (
-                      <button className="secondary-button full-width batch-zip-button" type="button" onClick={downloadCompletedZip}>
+                      <Button className="secondary-button full-width batch-zip-button" type="button" onClick={downloadCompletedZip}>
                         Download completed ZIP
                         <Download size={16} />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 )}
@@ -2373,7 +2376,7 @@ function App() {
                             <div className="bank-details-grid" aria-label="Bank details for OFX and QBO">
                               <label>
                                 <span>Bank name</span>
-                                <input
+                                <Input
                                   value={bankDetails.bankName}
                                   onChange={(event) => handleBankDetailsChange("bankName", event.target.value)}
                                   placeholder="Bank name"
@@ -2381,7 +2384,7 @@ function App() {
                               </label>
                               <label>
                                 <span>Routing / bank ID</span>
-                                <input
+                                <Input
                                   value={bankDetails.bankId}
                                   onChange={(event) => handleBankDetailsChange("bankId", event.target.value)}
                                   placeholder="ABA, sort code, bank code"
@@ -2389,7 +2392,7 @@ function App() {
                               </label>
                               <label>
                                 <span>Account ID</span>
-                                <input
+                                <Input
                                   value={bankDetails.accountId}
                                   onChange={(event) => handleBankDetailsChange("accountId", event.target.value)}
                                   placeholder="Account number or ID"
@@ -2397,7 +2400,7 @@ function App() {
                               </label>
                               <label>
                                 <span>Currency</span>
-                                <input
+                                <Input
                                   value={bankDetails.currency}
                                   onChange={(event) => handleBankDetailsChange("currency", event.target.value.toUpperCase())}
                                   placeholder="USD"
@@ -2419,7 +2422,7 @@ function App() {
                               </label>
                               <label>
                                 <span>QuickBooks institution ID</span>
-                                <input
+                                <Input
                                   value={bankDetails.intuitBankId}
                                   onChange={(event) => handleBankDetailsChange("intuitBankId", event.target.value)}
                                   placeholder="Only needed for QBO"
@@ -2465,7 +2468,7 @@ function App() {
                         <Clock size={15} />
                         {isLocalImageConverter ? "Files" : selectedId === "bank" ? "Estimated pages" : "Pages / images"}
                       </span>
-                      <input
+                      <Input
                         min="1"
                         max="500"
                         type="number"
@@ -2488,7 +2491,7 @@ function App() {
                         PDF password (optional)
                         {pdfPasswordRequired ? <em> · password required</em> : null}
                       </span>
-                      <input
+                      <Input
                         type="password"
                         inputMode="text"
                         autoComplete="off"
@@ -2527,7 +2530,7 @@ function App() {
                   {!isLocalImageConverter && (
                     <label className="email-field">
                       <span>Email for payment receipt</span>
-                      <input
+                      <Input
                         type="email"
                         inputMode="email"
                         placeholder="you@example.com"
@@ -2541,19 +2544,19 @@ function App() {
                     <div className="turnstile-wrap" ref={turnstileRef} aria-label="Human check" />
                   )}
 
-                  <button className="primary-button full-width" disabled={!canConvert} type="submit">
+                  <Button className="primary-button full-width" disabled={!canConvert} type="submit">
                     {converting ? "Checking file..." : isLocalImageConverter ? `Convert to ${selectedOutputLabel}` : "Generate free preview"}
                     {converting ? <LoaderCircle className="spin" size={18} /> : <Wand2 size={18} />}
-                  </button>
+                  </Button>
 
                   {previewBlockReason && (
                     <div className="preview-blocker-note" role="status" aria-live="polite">
                       <AlertCircle size={16} />
                       <span>{previewBlockReason}</span>
                       {canRetryTurnstile && (
-                        <button type="button" className="inline-text-button" onClick={retryTurnstile}>
+                        <Button type="button" className="inline-text-button" onClick={retryTurnstile}>
                           Retry human check
-                        </button>
+                        </Button>
                       )}
                     </div>
                   )}
@@ -2592,10 +2595,10 @@ function App() {
                   <div>
                     <strong>{result.localFileName}</strong>
                     <p>This conversion happened in your browser. The image was not uploaded to <BrandName />.</p>
-                    <button className="primary-button" onClick={handleUnlock} type="button">
+                    <Button className="primary-button" onClick={handleUnlock} type="button">
                       {resultButtonLabel()}
                       <Download size={17} />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : result.status === "failed" ? (
@@ -2605,9 +2608,9 @@ function App() {
                     <strong>{activeConversionBrief?.mode === "refund_review" ? "Refund review." : "No charge."}</strong>
                     <p>{activeConversionBrief?.summary || result.message || "The converter could not safely extract this file."}</p>
                     <div className="failed-actions">
-                      <button type="button" className="secondary-button" onClick={handleUploadAnotherFile}>
+                      <Button type="button" className="secondary-button" onClick={handleUploadAnotherFile}>
                         Upload another file
-                      </button>
+                      </Button>
                       <a className="inline-text-button" href={activeConversionBrief?.support?.href || supportHrefForJob(result.jobId, "conversion")}>
                         {activeConversionBrief?.mode === "refund_review" ? "Refund support" : "Contact support"}
                       </a>
@@ -2687,12 +2690,12 @@ function App() {
                       )}
                       <div className="result-actions">
                         {result.status === "preview_ready" && !result.paid && (
-                          <button className="secondary-button" onClick={downloadPreviewCsv} disabled={sampleDownloading || unlocking} type="button">
+                          <Button className="secondary-button" onClick={downloadPreviewCsv} disabled={sampleDownloading || unlocking} type="button">
                             {sampleDownloading ? "Downloading sample..." : "Free sample CSV"}
                             {sampleDownloading ? <LoaderCircle className="spin" size={17} /> : <Download size={17} />}
-                          </button>
+                          </Button>
                         )}
-                        <button className="primary-button" onClick={handleUnlock} disabled={unlocking || result.status === "converting_full"}>
+                        <Button className="primary-button" onClick={handleUnlock} disabled={unlocking || result.status === "converting_full"}>
                           {resultButtonLabel()}
                           {unlocking ? (
                             <LoaderCircle className="spin" size={17} />
@@ -2701,30 +2704,30 @@ function App() {
                           ) : (
                             <CreditCard size={17} />
                           )}
-                        </button>
+                        </Button>
                         {result.status === "complete" && result.redoAvailable && (
-                          <button className="secondary-button" onClick={handleRedo} disabled={redoing}>
+                          <Button className="secondary-button" onClick={handleRedo} disabled={redoing}>
                             {redoing ? "Redoing..." : "Stronger redo"}
                             {redoing ? <LoaderCircle className="spin" size={16} /> : <RefreshCw size={16} />}
-                          </button>
+                          </Button>
                         )}
                         {result.status === "complete" && result.validationReportAvailable && (
-                          <button className="secondary-button" onClick={downloadValidationReport} type="button">
+                          <Button className="secondary-button" onClick={downloadValidationReport} type="button">
                             Validation report
                             <FileText size={16} />
-                          </button>
+                          </Button>
                         )}
                         {canReviewRows && (
-                          <button className="secondary-button" onClick={loadReviewRows} disabled={reviewRowsLoading} type="button">
+                          <Button className="secondary-button" onClick={loadReviewRows} disabled={reviewRowsLoading} type="button">
                             {reviewRowsLoading ? "Loading rows..." : reviewRowsOpen ? "Hide rows" : "Review rows"}
                             {reviewRowsLoading ? <LoaderCircle className="spin" size={16} /> : <FileSpreadsheet size={16} />}
-                          </button>
+                          </Button>
                         )}
                         {canDeleteServerJob && (
-                          <button className="secondary-button danger-button" onClick={handleDeleteJob} disabled={deletingJob} type="button">
+                          <Button className="secondary-button danger-button" onClick={handleDeleteJob} disabled={deletingJob} type="button">
                             {deletingJob ? "Deleting..." : "Delete now"}
                             {deletingJob ? <LoaderCircle className="spin" size={16} /> : <Trash2 size={16} />}
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -2736,7 +2739,7 @@ function App() {
                           <strong>Review rows</strong>
                           <span>{reviewMessage || "Changes save to the file you download."}</span>
                         </div>
-                        <button
+                        <Button
                           className="secondary-button"
                           type="button"
                           onClick={saveReviewRows}
@@ -2744,7 +2747,7 @@ function App() {
                         >
                           {reviewRowsSaving ? "Saving..." : "Save edits"}
                           {reviewRowsSaving ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />}
-                        </button>
+                        </Button>
                       </div>
                       {reviewRowsLoading ? (
                         <div className="row-review-empty">Loading exported rows...</div>
@@ -2763,7 +2766,7 @@ function App() {
                                 <tr key={`review-row-${rowIndex}`}>
                                   {reviewColumns.map((column) => (
                                     <td key={column.key}>
-                                      <input
+                                      <Input
                                         value={row[column.key] ?? ""}
                                         onChange={(event) => updateReviewCell(rowIndex, column.key, event.target.value)}
                                         aria-label={`${column.label} row ${rowIndex + 1}`}
@@ -2902,7 +2905,7 @@ function App() {
               <strong>{displayPriceForPlan(plan, pricingPreview)}</strong>
               <p>{plan.detail}</p>
               <span>{plan.note}</span>
-              <button
+              <Button
                 className="secondary-button full-width"
                 onClick={() => {
                   setPageCount(plan.pages);
@@ -2911,7 +2914,7 @@ function App() {
               >
                 Upload file
                 <ArrowRight size={16} />
-              </button>
+              </Button>
             </article>
           ))}
         </div>
@@ -2929,10 +2932,10 @@ function App() {
             extraction, completed redo, or the 24-hour lifecycle.
           </p>
         </div>
-        <button className="primary-button" onClick={() => fileInputRef.current?.click()}>
+        <Button className="primary-button" onClick={() => fileInputRef.current?.click()}>
           Upload file
           <Upload size={18} />
-        </button>
+        </Button>
       </section>
 
       <footer className="footer">
