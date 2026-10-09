@@ -67,7 +67,7 @@ Local fixed build of `origin/main` (fresh `npm run build`; bundle
 
 1. Fleet `CLOUDFLARE_API_TOKEN` (`~/.config/fleet-console/cf.env`): token
    verify succeeds (`status: active`) but
-   `GET /accounts/f670a698e17bf160c8e4679823e68916/pages/projects/aiconverter`
+   `GET /accounts/<account-id>/pages/projects/aiconverter`
    → **403**, and `wrangler pages project list` → **Authentication error
    [code: 10000]** — the token still lacks Account > Cloudflare Pages > Edit.
 2. No wrangler binary on the VPS (used `npx wrangler`); no OAuth session in

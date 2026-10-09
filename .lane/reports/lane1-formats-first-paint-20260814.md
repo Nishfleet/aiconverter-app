@@ -62,7 +62,7 @@ build (see "Remaining step", below).
    main with guards; the live gap is purely the stale production bundle.
 2. **Fleet Cloudflare token still lacks Pages access.** Token from
    `~/.config/fleet-console/cf.env` verifies active, but
-   `GET /accounts/f670a698e17bf160c8e4679823e68916/pages/projects/aiconverter`
+   `GET /accounts/<account-id>/pages/projects/aiconverter`
    returns `403 {"code":10000,"message":"Authentication error"}` (tested
    today with the Authorization header). Same 403 in the fleet release log
    for 2026-08-14 08:56 ("wrangler preflight: wrangler is not
