@@ -22,6 +22,41 @@ const DEFAULT_MISTRAL_MODEL = "mistral-ocr-latest";
 const DEFAULT_WHISPER_MODEL = "@cf/openai/whisper-large-v3-turbo";
 const DEFAULT_SCREENSHOT_CODE_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
 
+// Workers AI defaults `max_tokens` to 256 (Workers AI changelog 2025-02-21), which
+// truncates a statement response mid-JSON. Every call that generates text sets its
+// own ceiling, and every text response is checked for a truncation stop reason.
+const STATEMENT_EXTRACT_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
+const STATEMENT_MAX_TOKENS = 4096;
+const SCREENSHOT_HTML_MAX_TOKENS = 8192;
+// One AI call per page-sized slice of statement text. 8k characters is about 2k
+// tokens of input, well inside the 32k context window of the extractor model, so
+// each call can spend the full max_tokens budget on JSON output.
+const STATEMENT_CHUNK_CHARS = 8000;
+// pdfToMarkdown keeps at most 120,000 characters of statement text, so 15 chunks
+// is the most the pipeline can ever hand to the extractor.
+const MAX_MARKDOWN_CHARS = 120000;
+const MAX_STATEMENT_CHUNKS = Math.ceil(MAX_MARKDOWN_CHARS / STATEMENT_CHUNK_CHARS);
+
+// AI Gateway routes every Workers AI call for observability (tokens, cost, errors)
+// and logs it. `default` is auto-created on the first authenticated request and
+// exists in the same account as the binding. Opt out with AI_GATEWAY_ENABLED=false.
+function aiGatewayOptions(env) {
+  if (env?.AI_GATEWAY_ENABLED === "false") return undefined;
+  return { gateway: { id: "default" } };
+}
+
+function finishReason(response) {
+  const candidates = [
+    response?.finish_reason,
+    response?.finishReason,
+    response?.choice?.finish_reason,
+    response?.choices?.[0]?.finish_reason,
+    response?.result?.finish_reason,
+    response?.response?.finish_reason
+  ];
+  return candidates.find((value) => typeof value === "string" && value.trim()) || "";
+}
+
 const extractionSchema = {
   type: "object",
   properties: {
@@ -418,10 +453,14 @@ async function convertAudioToTranscript(env, fileName, contentType, arrayBuffer,
   }
 
   const model = env.WHISPER_MODEL || DEFAULT_WHISPER_MODEL;
-  const response = await env.AI.run(model, {
-    audio: arrayBufferToBase64(arrayBuffer),
-    task: "transcribe"
-  });
+  const response = await env.AI.run(
+    model,
+    {
+      audio: arrayBufferToBase64(arrayBuffer),
+      task: "transcribe"
+    },
+    aiGatewayOptions(env)
+  );
 
   const transcript = String(response?.text || response?.transcription || response?.result?.text || "").trim();
   if (!transcript) {
@@ -537,15 +576,22 @@ async function convertScreenshotToVisionHtml(env, fileName, contentType, arrayBu
     "If exact content is unreadable, use concise neutral placeholders instead of inventing specific private data."
   ].join(" ");
 
-  const response = await env.AI.run(model, {
-    prompt,
-    image: [...new Uint8Array(arrayBuffer)],
-    max_tokens: Number(env.SCREENSHOT_CODE_MAX_TOKENS || 4096),
-    temperature: 0.15
-  });
+  const response = await env.AI.run(
+    model,
+    {
+      prompt,
+      image: [...new Uint8Array(arrayBuffer)],
+      max_tokens: Number(env.SCREENSHOT_CODE_MAX_TOKENS || SCREENSHOT_HTML_MAX_TOKENS),
+      temperature: 0.15
+    },
+    aiGatewayOptions(env)
+  );
+  const truncated = ["length", "max_tokens"].includes(finishReason(response));
   const raw = String(response?.response || response?.text || response?.result?.response || response?.output || "").trim();
   const html = extractHtmlDocument(raw);
-  if (!html) {
+  if (!html || truncated) {
+    // A truncated response is missing the closing document tag, so it can never be a
+    // complete HTML file. Fail instead of shipping half a page to the customer.
     return failConversion("The vision HTML generator could not safely produce a complete HTML file.", "workers-ai-vision-html");
   }
 
@@ -610,12 +656,15 @@ async function documentToMarkdown(env, fileName, contentType, arrayBuffer) {
     return failConversion("Document Markdown conversion is not ready yet.", "workers-ai-markdown");
   }
 
-  const result = await env.AI.toMarkdown({
-    name: fileName || "document",
-    blob: new Blob([arrayBuffer], {
-      type: contentType || mimeTypeFromFileName(fileName)
-    })
-  });
+  const result = await env.AI.toMarkdown(
+    {
+      name: fileName || "document",
+      blob: new Blob([arrayBuffer], {
+        type: contentType || mimeTypeFromFileName(fileName)
+      })
+    },
+    aiGatewayOptions(env)
+  );
   const converted = Array.isArray(result) ? result[0] : Array.isArray(result?.results) ? result.results[0] : result;
   if (!converted || converted.format === "error") {
     return failConversion(converted?.error || "The document converter could not safely convert this file to Markdown.", "workers-ai-markdown");
@@ -1946,10 +1995,13 @@ async function extractWithCloudflareAi(env, fileName, arrayBuffer, options = {})
 }
 
 async function pdfToMarkdown(env, fileName, arrayBuffer) {
-  const result = await env.AI.toMarkdown({
-    name: fileName,
-    blob: new Blob([arrayBuffer], { type: "application/pdf" })
-  });
+  const result = await env.AI.toMarkdown(
+    {
+      name: fileName,
+      blob: new Blob([arrayBuffer], { type: "application/pdf" })
+    },
+    aiGatewayOptions(env)
+  );
 
   const normalized = Array.isArray(result) ? result[0] : result;
   if (!normalized || normalized.format === "error") {
@@ -1961,32 +2013,132 @@ async function pdfToMarkdown(env, fileName, arrayBuffer) {
     throw new Error("The PDF did not contain readable statement text.");
   }
 
-  return markdown.slice(0, 120000);
+  if (markdown.length > MAX_MARKDOWN_CHARS) {
+    // Say the statement is too long instead of returning a file that looks
+    // complete but is missing rows past the cut.
+    throw new Error(
+      `This statement is too long to read in full (over ${MAX_MARKDOWN_CHARS} characters of text). No charge was made.`
+    );
+  }
+
+  return markdown;
 }
 
 async function extractTransactions(env, markdown, options = {}) {
+  const maxChunks = options.previewPages ? 1 : MAX_STATEMENT_CHUNKS;
+  const chunks = chunkStatementText(markdown, maxChunks);
+  if (!chunks.length) {
+    throw new Error("The AI extractor found no readable statement text. No charge was made.");
+  }
+
+  const merged = {
+    confidence: 0,
+    currency: "",
+    warnings: [],
+    transactions: []
+  };
+
+  for (let index = 0; index < chunks.length; index += 1) {
+    const result = await extractTransactionChunk(env, chunks[index], {
+      ...options,
+      chunk: { index, total: chunks.length }
+    });
+    merged.transactions.push(...(result.transactions || []));
+    merged.warnings.push(...(result.warnings || []));
+    merged.confidence = Math.max(merged.confidence, Number(result.confidence || 0));
+    merged.currency = merged.currency || result.currency || "";
+  }
+
+  // Chunks overlap on a page boundary, so the same transaction can come back
+  // from two calls. dedupeRows drops the repeat before validation scores rows.
+  const transactions = dedupeRows(normalizeRows(merged.transactions));
+  return {
+    confidence: merged.confidence,
+    currency: merged.currency,
+    warnings: merged.warnings,
+    transactions
+  };
+}
+
+async function extractTransactionChunk(env, chunk, options = {}) {
   const previewInstruction = options.previewPages
     ? "For preview mode, extract only the first 10 transaction rows visible near the beginning of the statement."
     : "Extract all transaction rows.";
-  const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast", {
-    messages: [
-      {
-        role: "system",
-        content:
-          `Extract bank statement transactions only. ${previewInstruction} Return JSON matching the schema. Use ISO dates. Put deposits in money_in, withdrawals in money_out, and leave unknown balances null. Do not invent rows.`
+  const position = options.chunk?.total > 1
+    ? ` This is part ${options.chunk.index + 1} of ${options.chunk.total} of the same statement. Return only rows visible in this part, and never rows from another part.`
+    : "";
+  const response = await env.AI.run(
+    STATEMENT_EXTRACT_MODEL,
+    {
+      messages: [
+        {
+          role: "system",
+          content:
+            `Extract bank statement transactions only. ${previewInstruction} Return JSON matching the schema. Use ISO dates. Put deposits in money_in, withdrawals in money_out, and leave unknown balances null. Do not invent rows.${position}`
+        },
+        {
+          role: "user",
+          content: `Convert this bank statement text to transaction rows:\n\n${chunk}`
+        }
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: extractionSchema
       },
-      {
-        role: "user",
-        content: `Convert this bank statement text to transaction rows:\n\n${markdown}`
-      }
-    ],
-    response_format: {
-      type: "json_schema",
-      json_schema: extractionSchema
-    }
-  });
+      max_tokens: Number(env.STATEMENT_MAX_TOKENS || STATEMENT_MAX_TOKENS)
+    },
+    aiGatewayOptions(env)
+  );
+
+  const reason = finishReason(response);
+  if (["length", "max_tokens"].includes(reason)) {
+    // The model stopped because it hit max_tokens, so the JSON is cut mid-object.
+    // Parsing it would silently drop the tail of the statement, so fail loudly
+    // instead: the next provider in the chain gets its turn.
+    throw new Error(
+      "The AI extractor hit its response limit before it finished this section of the statement. No charge was made."
+    );
+  }
 
   return parseAiJson(response);
+}
+
+// Split statement text into page-sized pieces so no single call has to fit the
+// whole document in its response. Form feeds are the page breaks Workers AI's
+// markdown conversion emits; when they are absent the text splits on line
+// boundaries instead, so a chunk never cuts a transaction row down the middle.
+function chunkStatementText(markdown, maxChunks = MAX_STATEMENT_CHUNKS) {
+  const text = String(markdown || "").trim();
+  if (!text) return [];
+
+  const byPage = text
+    .split(/\f+/)
+    .map((page) => page.trim())
+    .filter(Boolean);
+
+  const chunks = [];
+  let current = "";
+  for (const piece of byPage.length > 1 ? byPage : text.split("\n")) {
+    if (piece.length > STATEMENT_CHUNK_CHARS) {
+      if (current) {
+        chunks.push(current);
+        current = "";
+      }
+      for (let at = 0; at < piece.length; at += STATEMENT_CHUNK_CHARS) {
+        chunks.push(piece.slice(at, at + STATEMENT_CHUNK_CHARS));
+      }
+      continue;
+    }
+    if (current && current.length + piece.length + 2 > STATEMENT_CHUNK_CHARS) {
+      chunks.push(current);
+      current = piece;
+    } else {
+      current = current ? `${current}\n\n${piece}` : piece;
+    }
+  }
+  if (current) chunks.push(current);
+
+  return chunks.slice(0, Math.max(1, maxChunks));
 }
 
 function parseAiJson(response) {
