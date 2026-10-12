@@ -1,6 +1,8 @@
 import { readdir, readFile, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { defineConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite";
 import Beasties from "beasties";
 
 async function htmlFiles(dir) {
@@ -42,5 +44,10 @@ function inlineCriticalCss() {
 }
 
 export default defineConfig({
-  plugins: [inlineCriticalCss()]
+  plugins: [tailwindcss(), inlineCriticalCss()],
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url))
+    }
+  }
 });
