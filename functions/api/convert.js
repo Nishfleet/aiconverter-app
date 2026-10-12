@@ -1,6 +1,7 @@
 import { convertFileToCsv, detectPdfPageCount } from "../lib/extract.js";
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
 import { verifyTurnstile } from "../lib/turnstile.js";
+import { isSheetsAddonRequest, verifySheetsAddonIdentity } from "../lib/google-identity.js";
 import { recordFunnelEvent } from "../lib/funnel-telemetry.js";
 import {
   bankOutputFileExtension,
@@ -43,7 +44,16 @@ export async function onRequestPost({ request, env }) {
     return serverError("Secure conversion storage is not configured yet.");
   }
 
-  const rateLimit = await enforceRateLimit(env, request);
+  // The Google Sheets add-on calls from Apps Script servers, so it cannot run the
+  // browser Turnstile check and shares Google's egress IPs. It proves a verified
+  // Google account instead, and limits are keyed to that account.
+  const addonIdentity = isSheetsAddonRequest(request) ? await verifySheetsAddonIdentity(env, request) : null;
+  if (addonIdentity && !addonIdentity.ok) {
+    return json({ error: addonIdentity.message }, { status: addonIdentity.status || 401 });
+  }
+  const addonKey = addonIdentity ? `google:${addonIdentity.sub}` : "";
+
+  const rateLimit = await enforceRateLimit(env, request, { key: addonKey });
   if (rateLimit.configurationError) {
     return serverError("Private abuse-prevention salt is not configured yet.");
   }
@@ -81,11 +91,9 @@ export async function onRequestPost({ request, env }) {
     fileCount: 1
   };
 
-  const turnstile = await verifyTurnstile(
-    env,
-    request,
-    form.get("cf-turnstile-response") || form.get("turnstileToken")
-  );
+  const turnstile = addonIdentity
+    ? { ok: true, skipped: true, message: "" }
+    : await verifyTurnstile(env, request, form.get("cf-turnstile-response") || form.get("turnstileToken"));
   if (!turnstile.ok) {
     await safeRecordFunnelEvent(env, request, {
       ...baseFunnelEvent,
@@ -101,7 +109,7 @@ export async function onRequestPost({ request, env }) {
     turnstileState: "verified"
   });
 
-  const email = String(form.get("email") || "").trim().slice(0, 120);
+  const email = String(form.get("email") || addonIdentity?.email || "").trim().slice(0, 120);
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     await safeRecordFunnelEvent(env, request, {
       ...baseFunnelEvent,
@@ -169,7 +177,7 @@ export async function onRequestPost({ request, env }) {
   }
   const plan = planForPages(estimatedPages);
   const fileHash = await sha256Bytes(arrayBuffer);
-  const fingerprint = await requestFingerprint(env, request);
+  const fingerprint = await requestFingerprint(env, request, { key: addonKey });
   const uploadPolicy = await enforceUploadPolicy(env, { ...fingerprint, fileHash });
   if (!uploadPolicy.ok) {
     await safeRecordFunnelEvent(env, request, {

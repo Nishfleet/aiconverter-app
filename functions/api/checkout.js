@@ -2,6 +2,13 @@ import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js"
 import { createDodoCheckout } from "../lib/dodo.js";
 import { getAuthorizedJob, hasRequiredBindings, jobAccessCookie, PLANS, tokenFromBodyOrCookie } from "../lib/jobs.js";
 
+// Where a buyer lands after paying. Sheets add-on buyers go back to their sheet,
+// so they land on a page that tells them to return there.
+const RETURN_PATHS = {
+  web: "/",
+  "sheets-addon": "/google-sheets-pdf-import/"
+};
+
 const TRUSTED_CHECKOUT_HOSTS = new Set([
   "checkout.dodopayments.com",
   "test.checkout.dodopayments.com"
@@ -32,6 +39,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   const plan = PLANS[job.plan_id] || PLANS[String(body.planId || "starter")] || PLANS.starter;
+  const returnPath = RETURN_PATHS[String(body.client || "web")] || RETURN_PATHS.web;
 
   if (job.paid_at) {
     return json({
@@ -59,7 +67,8 @@ export async function onRequestPost({ request, env }) {
       request,
       job,
       plan,
-      email: String(body.email || job.email || "").slice(0, 120)
+      email: String(body.email || job.email || "").slice(0, 120),
+      returnPath
     });
   } catch (error) {
     const message =
@@ -98,7 +107,7 @@ export async function onRequestPost({ request, env }) {
   url.searchParams.set("metadata_plan_id", plan.id);
   url.searchParams.set(
     "redirect_url",
-    `${new URL(request.url).origin}/?jobId=${encodeURIComponent(job.id)}&plan=${encodeURIComponent(plan.id)}`
+    `${new URL(request.url).origin}${returnPath}?jobId=${encodeURIComponent(job.id)}&plan=${encodeURIComponent(plan.id)}`
   );
   if (body.email) {
     const email = String(body.email).slice(0, 120);

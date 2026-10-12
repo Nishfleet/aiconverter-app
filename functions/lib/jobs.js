@@ -457,8 +457,9 @@ export async function insertJob(env, job) {
     .run();
 }
 
-export async function requestFingerprint(env, request) {
+export async function requestFingerprint(env, request, { key = "" } = {}) {
   const ip =
+    key ||
     request.headers.get("CF-Connecting-IP") ||
     request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() ||
     "unknown";
@@ -708,7 +709,7 @@ export function tokenFromBodyOrCookie(request, jobId, token = "") {
   return String(token || "") || tokenFromJobCookie(request, jobId);
 }
 
-export async function enforceRateLimit(env, request) {
+export async function enforceRateLimit(env, request, { key = "", maxPerHour = 0 } = {}) {
   const saltStatus = rateLimitSaltStatus(env);
   if (!saltStatus.ok) {
     return {
@@ -719,8 +720,11 @@ export async function enforceRateLimit(env, request) {
     };
   }
 
-  const max = Math.max(1, Math.min(100, Number(env.RATE_LIMIT_MAX_PER_HOUR || 8)));
+  const max = Math.max(1, Math.min(100, Number(maxPerHour || env.RATE_LIMIT_MAX_PER_HOUR || 8)));
+  // A caller-supplied key (for example a verified Google account) replaces the IP,
+  // because add-on requests all arrive from Google's shared Apps Script egress IPs.
   const ip =
+    key ||
     request.headers.get("CF-Connecting-IP") ||
     request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() ||
     "unknown";

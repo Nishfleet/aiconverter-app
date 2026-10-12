@@ -460,6 +460,10 @@ AI Converter does not use uploaded files or generated outputs to train models. E
 
 Source files are kept only for preview, paid unlock, and the automatic redo window. Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle. Generated files expire after 7 days.
 
+## Google Sheets add-on
+
+The Google Sheets add-on receives your Google account email and account ID through Google sign-in. The account ID is stored only as a salted hash for upload limits, and the email is saved on the job for payment receipts and job recovery. The add-on can only edit the spreadsheet you open it in: it adds new tabs with your converted rows and does not read your other files. Google user data is not sold, used for advertising, or used to train models, and its use follows the Google API Services User Data Policy (https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements.
+
 ## Requests
 
 Use https://aiconverter.app/support/ for deletion, privacy, or payment-related requests. AI Converter is operated by the AI Converter team. Do not send source files through support.
