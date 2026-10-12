@@ -27,7 +27,7 @@ test("bank upload input survives the two-choice redesign", () => {
   const helperEnd = source.indexOf("function selectedRouteTitle(", helperStart);
   const helperBlock = source.slice(helperStart, helperEnd);
   assert.match(helperBlock, /private preview/, "bank upload CTA copy must keep the private preview promise");
-  assert.match(labelBlock, /<input/);
+  assert.match(labelBlock, /<Input\b/);
   assert.match(labelBlock, /type="file"/);
   assert.match(labelBlock, /accept=\{allAcceptedTypes\(selectableConverters\)\}/);
   assert.match(labelBlock, /onChange=\{handleFileChange\}/);
