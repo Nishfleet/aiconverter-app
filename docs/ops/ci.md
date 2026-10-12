@@ -4,27 +4,47 @@ What runs on every pull request, and which checks the merge actually needs.
 
 ## Required checks (merge gate)
 
-This repo enforces branch requirements via rulesets, not classic branch
-protection. The only ruleset is `main-required-checks` (id `23981683`,
-`active`). Its required contexts, live at the time of this deletion:
+This repo enforces branch requirements with rulesets. All rulesets, live:
 
 ```
-$ gh api repos/Nishfleet/aiconverter-app/rulesets/23981683 \
-  --jq '[.rules[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context]'
-["Build","Gitleaks","Pricing check","Unit tests","actionlint","semgrep"]
+$ gh api repos/Nishfleet/aiconverter-app/rulesets --jq '.[] | "\(.id)\t\(.name)\t\(.enforcement)\t\(.target)"'
+23981683	main-required-checks	active	branch
 ```
 
-`grade / grade` is in neither. The removed `grade.yml` declared in its own
-comment that `Ruleset context is the name GitHub reports: grade / grade`, but
-no ruleset in this repo ever required that context, so deleting the workflow
-cannot stall a merge: there was no `grade / grade` context to stop reporting.
+There is exactly one ruleset. It targets branch refs and applies to the default
+branch:
 
-Classic branch protection status: the worker token used here has no
-Administration scope, so `GET /repos/Nishfleet/aiconverter-app/branches/main/protection`
-returns `403 Resource not accessible by integration`. An Admin token can
-re-check it directly; the active ruleset above is the enforced gate.
+```
+$ gh api repos/Nishfleet/aiconverter-app/rulesets/23981683 --jq '{name, enforcement, includes, conditions, contexts: [.rules[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context]}'
+{"name":"main-required-checks","enforcement":"active","includes":null,"conditions":{"ref_name":{"exclude":[],"include":["~DEFAULT_BRANCH"]}},"contexts":["Build","Gitleaks","Pricing check","Unit tests","actionlint","semgrep"]}
+```
+
+Classic branch protection runs no checks at all:
+
+```
+$ gh api repos/Nishfleet/aiconverter-app/branches/main --jq '.protection'
+{"enabled":false,"required_status_checks":{"checks":[],"contexts":[],"enforcement_level":"off"}}
+```
+
+So the required contexts are `Build`, `Gitleaks`, `Pricing check`, `Unit tests`,
+`actionlint` and `semgrep`. `grade / grade` is in neither the ruleset nor
+classic protection.
+
+The removed `grade.yml` declared in its own comment that `Ruleset context is the
+name GitHub reports: grade / grade`, but no ruleset or branch protection in this
+repo ever required that context, so deleting the workflow cannot leave a
+required check without a reporter.
 
 ## Workflow inventory (`.github/workflows/`)
+
+```
+$ ls .github/workflows/
+agent-dispatch.yml
+ci.yml
+deploy.yml
+lighthouse.yml
+secret-scan.yml
+```
 
 - `ci.yml` — PR gates: actionlint, gitleaks, semgrep, unit tests, build.
 - `deploy.yml` — push to `main` builds and deploys to Cloudflare Pages.
@@ -36,37 +56,32 @@ re-check it directly; the active ruleset above is the enforced gate.
 
 `grade.yml` was the only caller of the fleet-ops quality grader
 (`Nishfleet/fleet-ops/.github/workflows/grade.yml@main`), which was deleted
-upstream in fleet-ops#8953. The caller could then never pass: the upstream
-workflow no longer exists:
+upstream in fleet-ops#8953. The upstream workflow no longer exists:
 
 ```
 $ gh api repos/Nishfleet/fleet-ops/contents/.github/workflows/grade.yml
-{"message":"Not Found","status":"404"}
+{"message":"Not Found","documentation_url":"https://docs.github.com/rest/repos/contents","status":"404"}
 ```
 
-and every grade run in this repo has failed since:
+Every grade run in this repo has failed since (summary of
+`gh run list -R Nishfleet/aiconverter-app --workflow grade.yml --limit 5`:
+five rows, all `conclusion=failure`, newest run `38276785159` on
+`2026-10-12T16:21Z`, on branches unrelated to this change). The caller did not
+grade anything; it failed at parse time on every `pull_request` and
+`merge_group` event. Removing it ends that parse failure and drops no gate.
 
-```
-$ gh run list -R Nishfleet/aiconverter-app --workflow grade.yml --limit 5
-  # 5/5 conclusion=failure, all on branches unrelated to this change
-```
+No reference to the deleted caller remains in the repo (summary of
+`grep -rn grade .github/ docs/`, excluding this file: no matches). Other
+workflows still call fleet-ops reusable workflows on purpose
+(`agent-dispatch.yml`, `lighthouse.yml`); those upstream workflows exist and
+are unchanged.
 
-The most recent sample (all `failure`): 38276785159, 38267054161, 38255662973,
-38248658443, 38248390031. The caller did not grade anything; it only failed at
-parse time on every `pull_request` and `merge_group` event, so removing it
-eliminates a parse failure and drops no gate. Quality review of this repo now
-runs through the merge-guard review path that the repo already uses for all
-risky changes.
+The deleted caller passed `CLAUDE_CODE_OAUTH_TOKEN` and `CURSOR_API_KEY` to the
+upstream workflow, pinned to mutable `@main`. No consumer remains (summary of
+`grep -rn "CLAUDE_CODE_OAUTH_TOKEN\|CURSOR_API_KEY" .github/`: no matches).
+Both repo secrets are orphaned; their removal needs repo Administration, so it
+is tracked in #253 rather than done here.
 
-The deleted caller also passed `CLAUDE_CODE_OAUTH_TOKEN` and `CURSOR_API_KEY`
-to the upstream workflow, pinned to mutable `@main`. A grep at the deletion
-head shows no remaining consumer:
-
-```
-$ grep -rn "CLAUDE_CODE_OAUTH_TOKEN\|CURSOR_API_KEY" .github/
-  # (no matches)
-```
-
-Both secrets are orphaned; removing them is tracked in #253 (needs repo
-Administration, so filed for follow-up rather than done in this PR). If a grader
-is re-added, pin the upstream workflow to a commit SHA.
+After this deletion the six required contexts above are the enforced gate, and
+this repo runs no separate quality grader in Actions. If a grader is re-added,
+pin the upstream workflow to a commit SHA.
