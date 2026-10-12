@@ -185,9 +185,64 @@ test("statement extraction sends max_tokens and an AI Gateway on every call", as
   assert.equal(calls.length, 1);
   assert.equal(calls[0].model, STATEMENT_MODEL);
   // Without this the platform caps the response at 256 tokens and the JSON is
-  // cut in half.
+  // cut in half. The gateway header keeps the usage metadata row but never the
+  // statement text itself.
   assert.equal(calls[0].input.max_tokens, 4096);
-  assert.deepEqual(calls[0].options, { gateway: { id: "default" } });
+  assert.deepEqual(calls[0].options, {
+    gateway: { id: "default" },
+    extraHeaders: { "cf-aig-collect-log-payload": "false" }
+  });
+});
+
+test("a response cut at the ceiling is caught even when finish_reason is missing", async () => {
+  // Some Workers AI models never report finish_reason; the usage counts are the
+  // fallback truncation signal, because completion tokens at the ceiling mean
+  // the tail of the JSON is gone.
+  const env = envWithAi(async () => ({
+    response: JSON.stringify({
+      confidence: 0.9,
+      transactions: [transactionRow("2026-04-01", "Opening coffee", 4.5, 1200)],
+      warnings: []
+    }),
+    usage: { prompt_tokens: 2100, completion_tokens: 4096, total_tokens: 6196 }
+  }));
+
+  const result = await convertFileToCsv(env, "bank", "statement.pdf", "application/pdf", STATEMENT_PDF, AI_ROUTE);
+
+  assert.equal(result.ok, false);
+  assert.match(result.message, /response limit/);
+});
+
+test("document conversion is not routed through the gateway option", async () => {
+  // toMarkdown takes conversion options as its second argument (Workers AI docs,
+  // Markdown Conversion > Workers Binding), so passing gateway options there
+  // would be dead weight at best and junk input at worst.
+  const calls = [];
+  const env = {
+    AI: {
+      async toMarkdown(...args) {
+        calls.push(args);
+        return { format: "markdown", mimetype: "application/pdf", data: SIMPLE_STATEMENT };
+      },
+      async run() {
+        return {
+          response: JSON.stringify({
+            confidence: 0.9,
+            transactions: [transactionRow("2026-04-01", "Opening coffee", 4.5, 1200)],
+            warnings: []
+          }),
+          finish_reason: "stop"
+        };
+      }
+    },
+    ALLOW_CLOUDFLARE_FALLBACK: "true"
+  };
+
+  const result = await convertFileToCsv(env, "bank", "statement.pdf", "application/pdf", STATEMENT_PDF, AI_ROUTE);
+
+  assert.equal(result.ok, true);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].length, 1, `toMarkdown must take only the document, got ${calls[0].length} arguments`);
 });
 
 test("a statement response that stops at the token limit fails instead of parsing half a file", async () => {
@@ -252,18 +307,74 @@ test("AI_GATEWAY_ENABLED=false leaves the gateway off", async () => {
   assert.equal(seen, undefined);
 });
 
-test("duplicate rows on a chunk boundary are merged once", async () => {
-  const page = balancedRows(120);
+// Chunks never overlap, so a transaction row comes back from exactly one call.
+// The merge must therefore keep rows as they arrive: deduplicating identical
+// rows would drop genuine repeat charges (same date, description and amounts
+// with no balance to tell them apart) and understate the customer's totals.
+test("genuinely identical repeat charges are not silently dropped", async () => {
+  const rows = balancedRows(20).map((row) => ({ ...row, balance: null }));
+  // A statement can hold two charges that look exactly alike and are both real:
+  // the model returns 21 rows for 20 statement lines plus one repeat.
+  const modelRows = [...rows, rows[5]];
   const env = {
     AI: {
       async toMarkdown() {
-        return { format: "markdown", mimetype: "application/pdf", data: statementPage(page) };
+        return { format: "markdown", mimetype: "application/pdf", data: statementPage(rows) };
       },
       async run(model, input) {
         const chunk = input.messages[1].content;
-        // Chunks overlap on the boundary row, so the model returns it from both
-        // calls that straddle the cut. The merge has to drop the repeat.
-        const rows = page.filter((row) => chunk.includes(row.description));
+        const returned = modelRows.filter((row) => chunk.includes(row.description));
+        return {
+          response: JSON.stringify({ confidence: 0.9, transactions: returned, warnings: [] }),
+          finish_reason: "stop"
+        };
+      }
+    },
+    ALLOW_CLOUDFLARE_FALLBACK: "true"
+  };
+
+  const result = await convertFileToCsv(env, "bank", "statement.pdf", "application/pdf", STATEMENT_PDF, AI_ROUTE);
+
+  assert.equal(result.ok, true);
+  assert.equal(result.rowCount, modelRows.length);
+});
+
+test("a page longer than one chunk is split on line boundaries, never mid-row", async () => {
+  // A statement with a form-feed page whose rows overrun a single chunk. A cut
+  // at an arbitrary offset lands inside a row line; line packing cannot. (With
+  // no page breaks the text already splits on lines, so this fixture needs the
+  // page marker to reach the oversized-page path.)
+  const fixedRow = (index) => {
+    const date = `2026-04-${String((index % 28) + 1).padStart(2, "0")}`;
+    const description = `Payment to merchant ${String(index).padStart(3, "0")}`.padEnd(40, ".");
+    const moneyOut = String((20 + index * 1.5).toFixed(2)).padStart(8, " ");
+    const balance = String((9000 - index * 1.5).toFixed(2)).padStart(10, " ");
+    return `${date}  ${description}  ${moneyOut}  ${balance}`;
+  };
+  const openerRow = fixedRow(200);
+  const pageRows = Array.from({ length: 140 }, (_, index) => fixedRow(index));
+  const statement = `${openerRow}\f\n${pageRows.join("\n")}`;
+  assert.ok(pageRows.join("\n").length > 8000, `fixture page must exceed one chunk, got ${pageRows.join("\n").length}`);
+  const fullLines = new Set([openerRow, ...pageRows]);
+  const allRows = balancedRows(140).map((row, index) => ({
+    ...row,
+    description: `Payment to merchant ${String(index).padStart(3, "0")}`
+  }));
+
+  const env = {
+    AI: {
+      async toMarkdown() {
+        return { format: "markdown", mimetype: "application/pdf", data: statement };
+      },
+      async run(model, input) {
+        const chunk = input.messages[1].content;
+        // Every chunk must end on a complete statement line. A chunk whose last
+        // line is not a real row means the boundary cut a transaction in half.
+        const lastLine = chunk.split("\n").pop();
+        if (lastLine && !fullLines.has(lastLine)) {
+          throw new Error(`chunk boundary cut a row: ${JSON.stringify(lastLine)}`);
+        }
+        const rows = allRows.filter((row) => chunk.includes(row.description));
         return {
           response: JSON.stringify({ confidence: 0.9, transactions: rows, warnings: [] }),
           finish_reason: "stop"
@@ -276,7 +387,67 @@ test("duplicate rows on a chunk boundary are merged once", async () => {
   const result = await convertFileToCsv(env, "bank", "statement.pdf", "application/pdf", STATEMENT_PDF, AI_ROUTE);
 
   assert.equal(result.ok, true);
-  assert.equal(result.rowCount, page.length);
+  assert.equal(result.rowCount, allRows.length);
+});
+
+test("preview still reads only the first section of an over-budget statement", async () => {
+  const page = statementPage(balancedRows(48));
+  const statement = Array.from({ length: 16 }, () => page).join("\f\n");
+  const env = {
+    AI: {
+      async toMarkdown() {
+        return { format: "markdown", mimetype: "application/pdf", data: statement };
+      },
+      async run() {
+        return {
+          response: JSON.stringify({ confidence: 0.9, transactions: balancedRows(2), warnings: [] }),
+          finish_reason: "stop"
+        };
+      }
+    },
+    ALLOW_CLOUDFLARE_FALLBACK: "true"
+  };
+
+  const result = await convertFileToCsv(env, "bank", "statement.pdf", "application/pdf", STATEMENT_PDF, {
+    ...AI_ROUTE,
+    previewPages: true
+  });
+
+  // Preview takes the first section only, so the section budget never trips.
+  assert.equal(result.ok, true);
+});
+
+test("a statement needing more sections than the budget fails instead of dropping pages", async () => {
+  // 16 pages of just over 4000 characters: no two pages fit in one chunk, so
+  // the text needs 16 sections against a budget of 15. Slicing used to drop
+  // the 16th page with no error and an export that looked complete.
+  const pageRows = balancedRows(52);
+  const page = statementPage(pageRows);
+  assert.ok(page.length > 4000 && page.length < 8000, `fixture page must be over half a chunk, got ${page.length}`);
+  const statement = Array.from({ length: 16 }, () => page).join("\f\n");
+  let calls = 0;
+  const env = {
+    AI: {
+      async toMarkdown() {
+        return { format: "markdown", mimetype: "application/pdf", data: statement };
+      },
+      async run() {
+        calls += 1;
+        return {
+          response: JSON.stringify({ confidence: 0.9, transactions: pageRows, warnings: [] }),
+          finish_reason: "stop"
+        };
+      }
+    },
+    ALLOW_CLOUDFLARE_FALLBACK: "true"
+  };
+
+  const result = await convertFileToCsv(env, "bank", "statement.pdf", "application/pdf", STATEMENT_PDF, AI_ROUTE);
+
+  assert.equal(result.ok, false);
+  assert.match(result.message, /too long to read in full/);
+  // The guard runs before any paid call.
+  assert.equal(calls, 0);
 });
 
 test("an over-long statement fails instead of quietly returning only its first pages", async () => {
@@ -335,7 +506,10 @@ test("vision HTML asks for 8192 tokens by default", async () => {
 
   assert.equal(result.ok, true);
   assert.equal(seen.maxTokens, 8192);
-  assert.deepEqual(seen.options, { gateway: { id: "default" } });
+  assert.deepEqual(seen.options, {
+    gateway: { id: "default" },
+    extraHeaders: { "cf-aig-collect-log-payload": "false" }
+  });
 });
 
 test("SCREENSHOT_CODE_MAX_TOKENS still overrides the vision ceiling", async () => {
@@ -408,5 +582,8 @@ test("audio transcription routes through AI Gateway too", async () => {
   assert.equal(result.ok, true);
   assert.equal(seen.model, "@cf/openai/whisper-large-v3-turbo");
   assert.equal(seen.task, "transcribe");
-  assert.deepEqual(seen.options, { gateway: { id: "default" } });
+  assert.deepEqual(seen.options, {
+    gateway: { id: "default" },
+    extraHeaders: { "cf-aig-collect-log-payload": "false" }
+  });
 });

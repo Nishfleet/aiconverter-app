@@ -37,12 +37,21 @@ const STATEMENT_CHUNK_CHARS = 8000;
 const MAX_MARKDOWN_CHARS = 120000;
 const MAX_STATEMENT_CHUNKS = Math.ceil(MAX_MARKDOWN_CHARS / STATEMENT_CHUNK_CHARS);
 
-// AI Gateway routes every Workers AI call for observability (tokens, cost, errors)
-// and logs it. `default` is auto-created on the first authenticated request and
-// exists in the same account as the binding. Opt out with AI_GATEWAY_ENABLED=false.
+// AI Gateway routes every Workers AI model call for observability (tokens, cost,
+// errors). Gateway logs store request and response payloads by default, and these
+// calls carry customer statements, receipts, images and audio, so every request
+// sets the AI Gateway per-request header that skips payload storage: the gateway
+// still keeps the metadata row (model, token counts, cost, duration) but never
+// the customer content (AI Gateway docs, Observability > Logging > "Collect log
+// payload"). `default` is auto-created on the first authenticated request and
+// exists in the same account as the binding. Opt out entirely with
+// AI_GATEWAY_ENABLED=false.
 function aiGatewayOptions(env) {
   if (env?.AI_GATEWAY_ENABLED === "false") return undefined;
-  return { gateway: { id: "default" } };
+  return {
+    gateway: { id: "default" },
+    extraHeaders: { "cf-aig-collect-log-payload": "false" }
+  };
 }
 
 function finishReason(response) {
@@ -55,6 +64,17 @@ function finishReason(response) {
     response?.response?.finish_reason
   ];
   return candidates.find((value) => typeof value === "string" && value.trim()) || "";
+}
+
+// A response was cut at the token ceiling when the stop reason says so, or —
+// because some Workers AI models never report finish_reason — when the usage
+// counts show completion tokens reached the ceiling. A cut response is missing
+// its tail, so callers must not parse or ship it.
+function responseWasTruncated(response, maxTokens) {
+  if (["length", "max_tokens"].includes(finishReason(response))) return true;
+  const usage = response?.usage || response?.result?.usage || response?.response?.usage;
+  const completion = Number(usage?.completion_tokens ?? usage?.completionTokens);
+  return Number.isFinite(completion) && Number.isFinite(maxTokens) && completion >= maxTokens;
 }
 
 const extractionSchema = {
@@ -576,17 +596,18 @@ async function convertScreenshotToVisionHtml(env, fileName, contentType, arrayBu
     "If exact content is unreadable, use concise neutral placeholders instead of inventing specific private data."
   ].join(" ");
 
+  const screenshotMaxTokens = Number(env.SCREENSHOT_CODE_MAX_TOKENS || SCREENSHOT_HTML_MAX_TOKENS);
   const response = await env.AI.run(
     model,
     {
       prompt,
       image: [...new Uint8Array(arrayBuffer)],
-      max_tokens: Number(env.SCREENSHOT_CODE_MAX_TOKENS || SCREENSHOT_HTML_MAX_TOKENS),
+      max_tokens: screenshotMaxTokens,
       temperature: 0.15
     },
     aiGatewayOptions(env)
   );
-  const truncated = ["length", "max_tokens"].includes(finishReason(response));
+  const truncated = responseWasTruncated(response, screenshotMaxTokens);
   const raw = String(response?.response || response?.text || response?.result?.response || response?.output || "").trim();
   const html = extractHtmlDocument(raw);
   if (!html || truncated) {
@@ -656,15 +677,15 @@ async function documentToMarkdown(env, fileName, contentType, arrayBuffer) {
     return failConversion("Document Markdown conversion is not ready yet.", "workers-ai-markdown");
   }
 
-  const result = await env.AI.toMarkdown(
-    {
-      name: fileName || "document",
-      blob: new Blob([arrayBuffer], {
-        type: contentType || mimeTypeFromFileName(fileName)
-      })
-    },
-    aiGatewayOptions(env)
-  );
+  // toMarkdown takes conversion options, not gateway options (Workers AI docs,
+  // Markdown Conversion > Workers Binding), so document conversion is not
+  // gateway-routed; the model calls that consume its output are.
+  const result = await env.AI.toMarkdown({
+    name: fileName || "document",
+    blob: new Blob([arrayBuffer], {
+      type: contentType || mimeTypeFromFileName(fileName)
+    })
+  });
   const converted = Array.isArray(result) ? result[0] : Array.isArray(result?.results) ? result.results[0] : result;
   if (!converted || converted.format === "error") {
     return failConversion(converted?.error || "The document converter could not safely convert this file to Markdown.", "workers-ai-markdown");
@@ -1995,13 +2016,13 @@ async function extractWithCloudflareAi(env, fileName, arrayBuffer, options = {})
 }
 
 async function pdfToMarkdown(env, fileName, arrayBuffer) {
-  const result = await env.AI.toMarkdown(
-    {
-      name: fileName,
-      blob: new Blob([arrayBuffer], { type: "application/pdf" })
-    },
-    aiGatewayOptions(env)
-  );
+  // toMarkdown takes conversion options, not gateway options (Workers AI docs,
+  // Markdown Conversion > Workers Binding), so document conversion is not
+  // gateway-routed; the model calls that consume its output are.
+  const result = await env.AI.toMarkdown({
+    name: fileName,
+    blob: new Blob([arrayBuffer], { type: "application/pdf" })
+  });
 
   const normalized = Array.isArray(result) ? result[0] : result;
   if (!normalized || normalized.format === "error") {
@@ -2049,9 +2070,12 @@ async function extractTransactions(env, markdown, options = {}) {
     merged.currency = merged.currency || result.currency || "";
   }
 
-  // Chunks overlap on a page boundary, so the same transaction can come back
-  // from two calls. dedupeRows drops the repeat before validation scores rows.
-  const transactions = dedupeRows(normalizeRows(merged.transactions));
+  // Each chunk is distinct text with no overlap, so a transaction row comes
+  // back from exactly one call. Rows are merged as they arrive: deduplicating
+  // identical rows here would drop genuine repeat charges (same date,
+  // description and amounts, with no balance to tell them apart) and understate
+  // the customer's totals. validateStatementRows scores real duplicates later.
+  const transactions = normalizeRows(merged.transactions);
   return {
     confidence: merged.confidence,
     currency: merged.currency,
@@ -2067,6 +2091,7 @@ async function extractTransactionChunk(env, chunk, options = {}) {
   const position = options.chunk?.total > 1
     ? ` This is part ${options.chunk.index + 1} of ${options.chunk.total} of the same statement. Return only rows visible in this part, and never rows from another part.`
     : "";
+  const maxTokens = Number(env.STATEMENT_MAX_TOKENS || STATEMENT_MAX_TOKENS);
   const response = await env.AI.run(
     STATEMENT_EXTRACT_MODEL,
     {
@@ -2085,13 +2110,12 @@ async function extractTransactionChunk(env, chunk, options = {}) {
         type: "json_schema",
         json_schema: extractionSchema
       },
-      max_tokens: Number(env.STATEMENT_MAX_TOKENS || STATEMENT_MAX_TOKENS)
+      max_tokens: maxTokens
     },
     aiGatewayOptions(env)
   );
 
-  const reason = finishReason(response);
-  if (["length", "max_tokens"].includes(reason)) {
+  if (responseWasTruncated(response, maxTokens)) {
     // The model stopped because it hit max_tokens, so the JSON is cut mid-object.
     // Parsing it would silently drop the tail of the statement, so fail loudly
     // instead: the next provider in the chain gets its turn.
@@ -2106,7 +2130,10 @@ async function extractTransactionChunk(env, chunk, options = {}) {
 // Split statement text into page-sized pieces so no single call has to fit the
 // whole document in its response. Form feeds are the page breaks Workers AI's
 // markdown conversion emits; when they are absent the text splits on line
-// boundaries instead, so a chunk never cuts a transaction row down the middle.
+// boundaries. A page bigger than one chunk is packed line by line, so the
+// boundary lands between rows; only a single line longer than the chunk limit
+// itself is hard-sliced. Full mode refuses to run when the text needs more
+// chunks than the budget instead of silently dropping the tail pages.
 function chunkStatementText(markdown, maxChunks = MAX_STATEMENT_CHUNKS) {
   const text = String(markdown || "").trim();
   if (!text) return [];
@@ -2124,9 +2151,28 @@ function chunkStatementText(markdown, maxChunks = MAX_STATEMENT_CHUNKS) {
         chunks.push(current);
         current = "";
       }
-      for (let at = 0; at < piece.length; at += STATEMENT_CHUNK_CHARS) {
-        chunks.push(piece.slice(at, at + STATEMENT_CHUNK_CHARS));
+      // Pack the oversized page line by line so no chunk boundary cuts a
+      // transaction row down the middle.
+      let line = "";
+      for (const row of piece.split("\n")) {
+        if (row.length + 1 > STATEMENT_CHUNK_CHARS) {
+          if (line) {
+            chunks.push(line);
+            line = "";
+          }
+          for (let at = 0; at < row.length; at += STATEMENT_CHUNK_CHARS) {
+            chunks.push(row.slice(at, at + STATEMENT_CHUNK_CHARS));
+          }
+          continue;
+        }
+        if (line && line.length + row.length + 1 > STATEMENT_CHUNK_CHARS) {
+          chunks.push(line);
+          line = row;
+        } else {
+          line = line ? `${line}\n${row}` : row;
+        }
       }
+      if (line) chunks.push(line);
       continue;
     }
     if (current && current.length + piece.length + 2 > STATEMENT_CHUNK_CHARS) {
@@ -2138,7 +2184,17 @@ function chunkStatementText(markdown, maxChunks = MAX_STATEMENT_CHUNKS) {
   }
   if (current) chunks.push(current);
 
-  return chunks.slice(0, Math.max(1, maxChunks));
+  // Preview keeps its single first section. Full mode must cover every section:
+  // slicing here would drop whole pages with no error and the export would look
+  // complete with rows missing, so refuse the statement the same way the
+  // character guard in pdfToMarkdown does.
+  if (maxChunks <= 1) return chunks.slice(0, Math.max(1, maxChunks));
+  if (chunks.length > maxChunks) {
+    throw new Error(
+      `This statement is too long to read in full (${chunks.length} sections of statement text, more than the limit of ${maxChunks}). No charge was made.`
+    );
+  }
+  return chunks;
 }
 
 function parseAiJson(response) {
