@@ -113,6 +113,14 @@ $ git grep -n -A1 '^on:' -- .github/workflows/ci.yml .github/workflows/secret-sc
 The six contexts above are exactly these six jobs, so no required check is
 left without a reporter. Nothing in the tree reports a `grade` context.
 
+Neither reporter workflow filters by path or skips conditionally, so none of
+the six can silently not run on a pull request:
+
+```
+$ git grep -n "paths:\|if:\|branches-ignore" -- .github/workflows/ci.yml .github/workflows/secret-scan.yml
+   # no output, exit 1
+```
+
 ## Workflow inventory (`.github/workflows/`)
 
 ```
