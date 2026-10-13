@@ -62,7 +62,7 @@ $ gh api orgs/Nishfleet --jq '.plan.name'
 free
 
 $ gh api orgs/Nishfleet/rulesets
-{"message":"Upgrade to GitHub Team to enable this feature.","documentation_url":"https://docs.github.com/rest/orgs/rules#get-all-organization-rulesets","status":"403"}   # exit 1
+{"message":"Upgrade to GitHub Team to enable this feature.","documentation_url":"https://docs.github.com/rest/orgs/rules#get-all-organization-repository-rulesets","status":"403"}   # exit 1
 ```
 
 Organization rulesets are a GitHub Team feature. With no org ruleset there is
@@ -88,16 +88,27 @@ branch protection (off).
 ## Every required context has a reporter in this tree
 
 The checkable-from-the-diff half of the proof: each required context is
-reported by a job that exists in `.github/workflows/` at this commit.
+reported by a job that exists in `.github/workflows/` at this commit, and both
+reporting workflows declare the `pull_request` trigger, so every context below
+reports on every pull request:
 
-| Required context | Workflow | Job id (`jobs:` key) | Job `name:` |
-| --- | --- | --- | --- |
-| `Build` | `.github/workflows/ci.yml` | `build` | `Build` |
-| `Pricing check` | `.github/workflows/ci.yml` | `pricing` | `Pricing check` |
-| `Unit tests` | `.github/workflows/ci.yml` | `tests` | `Unit tests` |
-| `actionlint` | `.github/workflows/ci.yml` | `actionlint` | `actionlint` |
-| `Gitleaks` | `.github/workflows/secret-scan.yml` | `gitleaks` | `Gitleaks` |
-| `semgrep` | `.github/workflows/secret-scan.yml` | `semgrep` | `semgrep` |
+```
+$ git grep -n -A1 '^on:' -- .github/workflows/ci.yml .github/workflows/secret-scan.yml
+.github/workflows/ci.yml:10:on:
+.github/workflows/ci.yml-11-  pull_request:
+--
+.github/workflows/secret-scan.yml:3:on:
+.github/workflows/secret-scan.yml-4-  pull_request:
+```
+
+| Required context | Workflow | Job id (`jobs:` key) | Job `name:` | Runs on |
+| --- | --- | --- | --- | --- |
+| `Build` | `.github/workflows/ci.yml` | `build` | `Build` | `pull_request` |
+| `Pricing check` | `.github/workflows/ci.yml` | `pricing` | `Pricing check` | `pull_request` |
+| `Unit tests` | `.github/workflows/ci.yml` | `tests` | `Unit tests` | `pull_request` |
+| `actionlint` | `.github/workflows/ci.yml` | `actionlint` | `actionlint` | `pull_request` |
+| `Gitleaks` | `.github/workflows/secret-scan.yml` | `gitleaks` | `Gitleaks` | `pull_request` |
+| `semgrep` | `.github/workflows/secret-scan.yml` | `semgrep` | `semgrep` | `pull_request` |
 
 The six contexts above are exactly these six jobs, so no required check is
 left without a reporter. Nothing in the tree reports a `grade` context.
@@ -139,16 +150,17 @@ grade anything; it failed at parse time on every `pull_request` and
 `merge_group` event. Removing it ends that parse failure and drops no gate.
 
 The deleted file's own header comment said `Ruleset context is the name GitHub
-reports: grade / grade`. That comment was stale when it was written: the
-ruleset and branch-protection reads above show no ruleset or protection
-setting in this repo ever required that context. Deleting the workflow
-therefore cannot strand a required check, and it removes the only producer of
-a context nothing required.
+reports: grade / grade`. That comment did not describe an enforced gate: the
+reads above show no ruleset or protection setting in this repo requires that
+context. Deleting the workflow therefore cannot strand a required check, and it
+removes the only producer of a context nothing required.
 
 No reference to the deleted caller remains. `git grep -rni grade -- .github/`
 at this head matches exactly one line, `pip install --upgrade pip` in
-`secret-scan.yml` (a substring of "upgrade"), and
-`git grep -rn "grade\.yml" -- .` outside this file matches nothing.
+`secret-scan.yml` (a substring of "upgrade"),
+`git grep -rn "grade\.yml" -- .` outside this file matches nothing (exit 1),
+and the context string itself appears nowhere else in the tree:
+`git grep -n "grade / grade" -- .` outside this file matches nothing (exit 1).
 
 Other workflows still call fleet-ops reusable workflows on purpose
 (`agent-dispatch.yml`, `lighthouse.yml`); those upstream workflows exist and
@@ -158,7 +170,7 @@ The deleted caller passed `CLAUDE_CODE_OAUTH_TOKEN` and `CURSOR_API_KEY` to the
 upstream workflow, pinned to mutable `@main`. No consumer remains
 (`git grep -rn "CLAUDE_CODE_OAUTH_TOKEN\|CURSOR_API_KEY" -- .github/` matches
 nothing, exit 1). Both repo secrets are orphaned; their removal needs repo
-Administration, so it is tracked in #253 rather than done here.
+Administration, so it is tracked in #253 (this repo) rather than done here.
 
 After this deletion the six required contexts above are the enforced gate, and
 this repo runs no separate quality grader in Actions. If a grader is re-added,
