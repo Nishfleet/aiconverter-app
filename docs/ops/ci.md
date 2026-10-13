@@ -2,54 +2,122 @@
 
 What runs on every pull request, and which checks the merge actually needs.
 
+Every command block below is literal output captured on **2026-10-13** by a
+repository administrator (token scopes `repo` + `workflow`, not the worker
+App's token, so the reads below are not permission-limited). The live values
+will go stale; re-run the commands rather than trusting this file. What does
+not go stale is the part checkable from this repo's own tree: the
+context-to-reporter table and the workflow inventory below name files and job
+ids that are in the repository.
+
 ## Required checks (merge gate)
 
-This repo enforces branch requirements with rulesets. All rulesets, live:
+This repo enforces branch requirements with rulesets. Every ruleset in the
+repository:
 
 ```
 $ gh api repos/Nishfleet/aiconverter-app/rulesets --jq '.[] | "\(.id)\t\(.name)\t\(.enforcement)\t\(.target)"'
 23981683	main-required-checks	active	branch
 ```
 
-There is exactly one ruleset. It targets branch refs and applies to the default
-branch:
+There is exactly one, `23981683`. Its complete rule list is three types:
 
 ```
-$ gh api repos/Nishfleet/aiconverter-app/rulesets/23981683 --jq '{name, enforcement, includes, conditions, contexts: [.rules[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context]}'
-{"name":"main-required-checks","enforcement":"active","includes":null,"conditions":{"ref_name":{"exclude":[],"include":["~DEFAULT_BRANCH"]}},"contexts":["Build","Gitleaks","Pricing check","Unit tests","actionlint","semgrep"]}
+$ gh api repos/Nishfleet/aiconverter-app/rulesets/23981683 --jq '.rules[].type'
+non_fast_forward
+deletion
+required_status_checks
 ```
 
-Classic branch protection runs no checks at all:
+A ruleset rule type is the only place a check name or a required workflow can
+be declared. `required_status_checks` is the only one of the three that names
+a context, and there is no `required_workflows` rule, so no required workflow
+is configured either. Nothing bypasses the ruleset:
 
 ```
-$ gh api repos/Nishfleet/aiconverter-app/branches/main --jq '.protection'
-{"enabled":false,"required_status_checks":{"checks":[],"contexts":[],"enforcement_level":"off"}}
+$ gh api repos/Nishfleet/aiconverter-app/rulesets/23981683 --jq '.bypass_actors'
+[]
 ```
 
-So the required contexts are `Build`, `Gitleaks`, `Pricing check`, `Unit tests`,
-`actionlint` and `semgrep`. `grade / grade` is in neither the ruleset nor
-classic protection.
+The one `required_status_checks` rule names six contexts, and `grade / grade`
+is not one of them:
 
-The removed `grade.yml` declared in its own comment that `Ruleset context is the
-name GitHub reports: grade / grade`, but no ruleset or branch protection in this
-repo ever required that context, so deleting the workflow cannot leave a
-required check without a reporter.
+```
+$ gh api repos/Nishfleet/aiconverter-app/rulesets/23981683 --jq '.rules[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context'
+Build
+Gitleaks
+Pricing check
+Unit tests
+actionlint
+semgrep
+```
+
+## Organization rulesets cannot exist on this plan
+
+The org is on the free plan, so the organization-rulesets endpoint refuses, and
+says why in its own message:
+
+```
+$ gh api orgs/Nishfleet --jq '.plan.name'
+free
+
+$ gh api orgs/Nishfleet/rulesets
+{"message":"Upgrade to GitHub Team to enable this feature.","documentation_url":"https://docs.github.com/rest/orgs/rules#get-all-organization-rulesets","status":"403"}   # exit 1
+```
+
+Organization rulesets are a GitHub Team feature. With no org ruleset there is
+no org-level required status check and no org-level required workflow that
+could require `grade / grade` either.
+
+## Classic branch protection is off
+
+Read with an administrator token the protection endpoint answers `404`, not
+`403`. A 404 is the API saying the branch is not protected; a 403 would mean
+the reader lacked the Administration scope, which is not the case here:
+
+```
+$ gh api repos/Nishfleet/aiconverter-app/branches/main/protection
+{"message":"Branch not protected","documentation_url":"https://docs.github.com/rest/branches/branch-protection#get-branch-protection","status":"404"}   # exit 1
+```
+
+So the required contexts are `Build`, `Gitleaks`, `Pricing check`,
+`Unit tests`, `actionlint` and `semgrep`, and `grade / grade` appears in
+neither the repo ruleset, nor any org ruleset (none can exist), nor classic
+branch protection (off).
+
+## Every required context has a reporter in this tree
+
+The checkable-from-the-diff half of the proof: each required context is
+reported by a job that exists in `.github/workflows/` at this commit.
+
+| Required context | Workflow | Job id (`jobs:` key) | Job `name:` |
+| --- | --- | --- | --- |
+| `Build` | `.github/workflows/ci.yml` | `build` | `Build` |
+| `Pricing check` | `.github/workflows/ci.yml` | `pricing` | `Pricing check` |
+| `Unit tests` | `.github/workflows/ci.yml` | `tests` | `Unit tests` |
+| `actionlint` | `.github/workflows/ci.yml` | `actionlint` | `actionlint` |
+| `Gitleaks` | `.github/workflows/secret-scan.yml` | `gitleaks` | `Gitleaks` |
+| `semgrep` | `.github/workflows/secret-scan.yml` | `semgrep` | `semgrep` |
+
+The six contexts above are exactly these six jobs, so no required check is
+left without a reporter. Nothing in the tree reports a `grade` context.
 
 ## Workflow inventory (`.github/workflows/`)
 
 ```
-$ ls .github/workflows/
-agent-dispatch.yml
-ci.yml
-deploy.yml
-lighthouse.yml
-secret-scan.yml
+$ git ls-files .github/workflows
+.github/workflows/agent-dispatch.yml
+.github/workflows/ci.yml
+.github/workflows/deploy.yml
+.github/workflows/lighthouse.yml
+.github/workflows/secret-scan.yml
 ```
 
-- `ci.yml` — PR gates: actionlint, gitleaks, semgrep, unit tests, build.
+- `ci.yml` — pull-request gates: `pricing` (Pricing check), `tests` (Unit
+  tests), `build` (Build) and `actionlint`.
+- `secret-scan.yml` — `gitleaks` (Gitleaks) and `semgrep`.
 - `deploy.yml` — push to `main` builds and deploys to Cloudflare Pages.
 - `lighthouse.yml` — scheduled Lighthouse audits.
-- `secret-scan.yml` — `gitleaks` job, which owns the required `Gitleaks` context.
 - `agent-dispatch.yml` — starts a fleet worker run for a labeled issue.
 
 ## Removed: `grade.yml` (deleted 2026-10-12)
@@ -60,7 +128,7 @@ upstream in fleet-ops#8953. The upstream workflow no longer exists:
 
 ```
 $ gh api repos/Nishfleet/fleet-ops/contents/.github/workflows/grade.yml
-{"message":"Not Found","documentation_url":"https://docs.github.com/rest/repos/contents","status":"404"}
+{"message":"Not Found","documentation_url":"https://docs.github.com/rest/repos/contents#get-repository-content","status":"404"}   # exit 1
 ```
 
 Every grade run in this repo has failed since (summary of
@@ -70,17 +138,27 @@ five rows, all `conclusion=failure`, newest run `38276785159` on
 grade anything; it failed at parse time on every `pull_request` and
 `merge_group` event. Removing it ends that parse failure and drops no gate.
 
-No reference to the deleted caller remains in the repo (summary of
-`grep -rn grade .github/ docs/`, excluding this file: no matches). Other
-workflows still call fleet-ops reusable workflows on purpose
+The deleted file's own header comment said `Ruleset context is the name GitHub
+reports: grade / grade`. That comment was stale when it was written: the
+ruleset and branch-protection reads above show no ruleset or protection
+setting in this repo ever required that context. Deleting the workflow
+therefore cannot strand a required check, and it removes the only producer of
+a context nothing required.
+
+No reference to the deleted caller remains. `git grep -rni grade -- .github/`
+at this head matches exactly one line, `pip install --upgrade pip` in
+`secret-scan.yml` (a substring of "upgrade"), and
+`git grep -rn "grade\.yml" -- .` outside this file matches nothing.
+
+Other workflows still call fleet-ops reusable workflows on purpose
 (`agent-dispatch.yml`, `lighthouse.yml`); those upstream workflows exist and
 are unchanged.
 
 The deleted caller passed `CLAUDE_CODE_OAUTH_TOKEN` and `CURSOR_API_KEY` to the
-upstream workflow, pinned to mutable `@main`. No consumer remains (summary of
-`grep -rn "CLAUDE_CODE_OAUTH_TOKEN\|CURSOR_API_KEY" .github/`: no matches).
-Both repo secrets are orphaned; their removal needs repo Administration, so it
-is tracked in #253 rather than done here.
+upstream workflow, pinned to mutable `@main`. No consumer remains
+(`git grep -rn "CLAUDE_CODE_OAUTH_TOKEN\|CURSOR_API_KEY" -- .github/` matches
+nothing, exit 1). Both repo secrets are orphaned; their removal needs repo
+Administration, so it is tracked in #253 rather than done here.
 
 After this deletion the six required contexts above are the enforced gate, and
 this repo runs no separate quality grader in Actions. If a grader is re-added,
