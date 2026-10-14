@@ -84,7 +84,7 @@ export async function onRequestPost({ request, env }) {
 
   await Promise.all(jobs.map((job) => updateJob(env, job.id, { batch_id: batch.id, plan_id: plan.id })));
 
-  let checkoutUrl = "";
+  let checkoutUrl;
   try {
     checkoutUrl = await createDodoBatchCheckout({
       env,

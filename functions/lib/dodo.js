@@ -520,10 +520,6 @@ async function applyDodoPayment(env, payment, options = {}) {
     return applyDodoBatchPayment(env, normalized, options);
   }
 
-  // A payment id may only ever credit one job. The explicit job is excluded so
-  // finalize/verify flows stay idempotent for the job the payment belongs to;
-  // with no explicit job (the webhook path) every job is checked, so a payment
-  // id already attached to another job can never unlock a second one.
   const existing = await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE payment_id = ? AND id != ?")
     .bind(normalized.paymentId, options.explicitJob?.id || "")
     .first();

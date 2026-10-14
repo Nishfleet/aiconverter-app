@@ -190,11 +190,6 @@ export const TOP_CONVERSION_REQUESTS = [
   }
 ];
 
-/**
- * Intent deep-link for a highlighted conversion request.
- * Uses the same `?converter=&output=` parameters the landing pages carry,
- * so a chip click preselects the exact converter and output in the app.
- */
 export function conversionRequestHref(request) {
   if (!request?.converterId) return "/formats/";
   const params = new URLSearchParams({ converter: request.converterId, output: request.outputId || "" });
