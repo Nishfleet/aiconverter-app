@@ -33,10 +33,6 @@ export async function onRequestPost({ request, env }) {
 
   const deletedJob = await deleteJobData(env, job);
   if (!deletedJob || deletedJob.deletionCompleted === false) {
-    // Honest receipt: the files still exist, nothing was marked deleted, and no
-    // pointers were cleared, so the user (or the expiry sweeper via
-    // enforceJobExpiry / sourceExpired, which still has the pointers it needs)
-    // can retry the cleanup later. Keep the access cookie so the user can retry.
     return serverError(
       "Deletion did not complete: the file storage service is temporarily unavailable and not all files could be removed. " +
         "Nothing was marked as deleted and the stored file records were kept intact, so this conversion can be deleted again later; " +

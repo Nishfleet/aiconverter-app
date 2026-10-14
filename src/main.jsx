@@ -48,9 +48,6 @@ const TICKER_MIN_COPY_COUNT = 8;
 const BRAND_NAME = "AI Converter";
 const BATCH_RETURN_KEY = "aiconverter_batch_return";
 
-// Brings the conversion workspace back into view after a file is picked from a
-// distant CTA (e.g. the pricing-card or security-section "Upload file" buttons).
-// Guarded so normal uploads from the workspace itself never cause a scroll jump.
 function scrollWorkspaceIntoView() {
   const workspace = document.getElementById("start");
   if (!workspace) return;
@@ -243,12 +240,7 @@ function pageBucket(count) {
 function trackFunnelEvent(eventType, fields = {}) {
   if (import.meta.env.DEV && ["localhost", "127.0.0.1"].includes(window.location.hostname)) return;
   const payload = JSON.stringify({ eventType, ...fields });
-  // sendBeacon keeps the same POST semantics that let events sent right
-  // before navigation still arrive, but Chromium reports it as a finished
-  // request. A fetch() POST beacon stays "in flight" from the network stack's
-  // view on the Cloudflare edge, so the page never reaches network idle and
-  // rendered-load audits time out on the home page. Fall back to fetch only
-  // when sendBeacon cannot queue the payload.
+  // upstream: https://developer.mozilla.org/en-US/docs/Web/API/Navigator/sendBeacon a fetch() beacon stays in flight and blocks network idle in Chromium
   if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function" && payload.length < 1200) {
     navigator.sendBeacon("/api/funnel-event", new Blob([payload], { type: "application/json" }));
     return;
@@ -283,7 +275,7 @@ async function fetchJsonResponse(url, options = {}, settings = {}) {
     return { response, payload };
   } catch (error) {
     if (error?.name === "AbortError") {
-      throw new Error(settings.timeoutMessage || "The request timed out. Try again.");
+      throw new Error(settings.timeoutMessage || "The request timed out. Try again.", { cause: error });
     }
     throw error;
   } finally {
@@ -563,26 +555,6 @@ function priceInfoForPlan(plan, pricingPreview) {
     amount: Number(preview?.amount ?? resolvedPlan?.amount ?? 0),
     currency: String(preview?.currency || resolvedPlan?.currency || "INR").toUpperCase()
   };
-}
-
-function formatMinorCurrency(amount, currency = "INR") {
-  if (!Number.isFinite(amount)) return "";
-  const normalizedCurrency = String(currency || "INR").toUpperCase();
-  try {
-    const decimals = new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: normalizedCurrency
-    }).resolvedOptions().maximumFractionDigits;
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: normalizedCurrency,
-      currencyDisplay: "narrowSymbol",
-      maximumFractionDigits: 0,
-      minimumFractionDigits: 0
-    }).format(amount / 10 ** decimals);
-  } catch {
-    return `${normalizedCurrency} ${Math.round(amount / 100)}`;
-  }
 }
 
 function formatRetentionCountdown(value, now) {
@@ -917,7 +889,6 @@ function App() {
     () => confidenceDetailsForConverter(selected, outputFormat, { universalProviderReady }),
     [selected, outputFormat, universalProviderReady]
   );
-  const needsTurnstile = Boolean(turnstileSiteKey);
   const shouldRenderTurnstile = Boolean(turnstileSiteKey && file && !isLocalImageConverter);
   const previewColumns = result?.columns?.length ? result.columns : selected?.columns || data.converters[0].columns;
   const previewRows = result?.previewRows || data.sampleRowsByConverter?.[selectedId] || data.sampleRows;
@@ -946,7 +917,6 @@ function App() {
         ),
     [fileQueue]
   );
-  const isPdfFirstConverter = selectedId === "bank";
   const selectedOutputLabel = outputLabel(selected, outputFormat);
   const uploadTargetCopy = uploadTargetCopyFor(selected, outputFormat);
   const needsBankDetailsForOutput = selectedId === "bank" && bankNativeNeedsDetails(outputFormat);
