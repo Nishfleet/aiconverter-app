@@ -109,7 +109,7 @@ function makeTestEnv(job, failKeys) {
       prepare(sql) {
         if (sql.startsWith("SELECT * FROM jobs")) {
           return {
-            bind(id, hash) {
+            bind(id) {
               return {
                 first: async () => (id === job.id ? job : null)
               };

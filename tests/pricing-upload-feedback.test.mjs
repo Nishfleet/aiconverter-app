@@ -17,7 +17,7 @@ test("scroll helper is guarded so an already-visible workspace never jumps", () 
 });
 
 test("handleFileChange calls the scroll helper after applying a new file", () => {
-  assert.match(source, /event\.target\.value = "";\n    scrollWorkspaceIntoView\(\);/, "scroll runs after the file picker input is cleared");
+  assert.match(source, /event\.target\.value = "";\n {4}scrollWorkspaceIntoView\(\);/, "scroll runs after the file picker input is cleared");
 });
 
 test("pricing-card and security-section Upload file CTAs open the same file picker", () => {

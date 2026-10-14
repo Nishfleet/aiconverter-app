@@ -84,7 +84,7 @@ function fakeEnv({ jobs = new Map(), objects = new Map() } = {}) {
         }
         if (sql.startsWith("INSERT INTO rate_limits")) {
           return {
-            bind(...values) {
+            bind() {
               return {
                 first: async () => ({ count: 1 })
               };
@@ -93,7 +93,7 @@ function fakeEnv({ jobs = new Map(), objects = new Map() } = {}) {
         }
         if (sql.startsWith("SELECT count FROM rate_limits WHERE id = ?")) {
           return {
-            bind(id) {
+            bind() {
               return {
                 first: async () => ({ count: 1 })
               };
@@ -119,11 +119,7 @@ function post({ bearer = ADMIN_BEARER, env, body = "{}" } = {}) {
   });
 }
 
-/**
- * Guards every provider network call and counts DB + R2 activity so the 401
- * cases can prove the guard fires before any storage or provider side effect.
- */
-function guardSideEffects(env, jobs, objects) {
+function guardSideEffects(env) {
   const originalFetch = globalThis.fetch;
   let fetchCalls = 0;
   let dbCalls = 0;
@@ -186,7 +182,7 @@ test("admin failover drill returns 401 with zero DB, R2, or provider calls when 
   const jobs = new Map();
   const objects = new Map();
   const env = fakeEnv({ jobs, objects });
-  const guard = guardSideEffects(env, jobs, objects);
+  const guard = guardSideEffects(env);
   try {
     const response = await post({ env, bearer: null });
     assert.equal(response.status, 401);
@@ -205,7 +201,7 @@ test("admin failover drill returns 401 with zero DB, R2, or provider calls for w
   const jobs = new Map();
   const objects = new Map();
   const env = fakeEnv({ jobs, objects });
-  const guard = guardSideEffects(env, jobs, objects);
+  const guard = guardSideEffects(env);
   try {
     const response = await post({ env, bearer: "Bearer wrong-token" });
     assert.equal(response.status, 401);

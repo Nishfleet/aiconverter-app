@@ -71,21 +71,20 @@ test("pricing page is guarded by the pricing consistency check", () => {
 });
 
 test("pricing page keeps the truthful boundaries of live behavior", () => {
-  // Pack assignment and limits (functions/api/convert.js, functions/api/batch-checkout.js).
   assert.match(pricingHtml, /320&nbsp;KB per page/);
   assert.match(pricingHtml, /PDFs above 500 pages are rejected/);
   assert.match(pricingHtml, /up to 50 previewed files/);
-  // Redo is scoped to extraction jobs (functions/api/job.js keeps universal converters out).
+
   assert.match(pricingHtml, /do not include the automatic redo/);
-  // Currency localization (functions/lib/dodo.js adaptive currency).
+
   assert.match(pricingHtml, /localized\s*total/);
-  // Preview honesty: per-job preview is customer data, provider routes show metadata only.
+
   assert.match(pricingHtml, /rows extracted from\s*your own file/);
   assert.match(pricingHtml, /metadata preview/);
   assert.match(pricingHtml, /fictional sample CSV/);
-  // Paid failures go through the recorded refund or credit path, not a blanket "no charge".
+
   assert.match(pricingHtml, /fails\s*closed/);
   assert.match(pricingHtml, /refund due or\s*credit due/);
-  // One-time packs, not subscriptions.
+
   assert.match(pricingHtml, /one-time page packs/);
 });

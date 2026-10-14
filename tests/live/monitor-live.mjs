@@ -24,11 +24,6 @@ const monitorOk = failures.length === 0 && !(strictWarnings && warnings.length);
 const funnelStatus = adminToken ? "active" : "skipped";
 const funnelSummary = overview?.funnel && typeof overview.funnel === "object" ? overview.funnel : null;
 
-// Print the funnel status line so operators can grep a single line in the
-// routine monitor output: "funnel=active pageView=NNN ..." when the admin
-// token is configured, or "funnel=skipped (admin token not configured)"
-// when it is not. The green/red behavior is unchanged — only the line is
-// added — so a skip never flips the run red on its own.
 const funnelLine = adminToken
   ? ["funnel=active", ...formatFunnelSummary(funnelSummary)].join(" ")
   : "funnel=skipped (admin token not configured)";
@@ -128,9 +123,6 @@ async function checkAdminOverview(token) {
   };
 }
 
-// Named live funnel visit counts for the last 24 hours, derived from the
-// admin overview's per-event rows (page_view, preview_success, checkout_click,
-// finalize_success, download_success, ...). Keys are camelCase event types.
 function summarizeFunnel(rows) {
   const summary = {};
   for (const row of rows || []) {
@@ -142,8 +134,6 @@ function summarizeFunnel(rows) {
   return summary;
 }
 
-// Render the funnel summary as `name=value` pairs for the human-readable
-// `funnel=active` line. Stable iteration order so the line is grep-friendly.
 function formatFunnelSummary(summary) {
   if (!summary || typeof summary !== "object") return [];
   const names = Object.keys(summary).sort();

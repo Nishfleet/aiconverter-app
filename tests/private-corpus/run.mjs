@@ -173,7 +173,7 @@ function buildConversionEnv() {
 
 async function loadEnvFiles(files) {
   for (const file of files) {
-    let text = "";
+    let text;
     try {
       text = await fs.readFile(file, "utf8");
     } catch (error) {

@@ -1,13 +1,3 @@
-// Module loader that mocks unpdf for password-protected PDF tests.
-// Replaces unpdf.getDocumentProxy with a function that:
-//  - throws "password required" when no password is provided
-//  - throws "incorrect password" when a non-empty password is provided
-//    but does not equal "secret"
-//  - returns a 3-page PDF document proxy when password === "secret"
-//
-// Activated only when registered via node:module register from
-// tests/pdf-password.test.mjs. Other tests are unaffected because they
-// do not register this loader.
 
 const MOCK_PAGES = 3;
 const CORRECT_PASSWORD = "secret";

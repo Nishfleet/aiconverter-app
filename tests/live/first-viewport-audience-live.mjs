@@ -18,7 +18,7 @@ const started = new Date().toISOString();
 const waitUntil = target.startsWith("file:") ? "load" : "networkidle";
 
 let browser;
-let exitCode = 1;
+let exitCode;
 try {
   browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: WIDTH, height: HEIGHT }, isMobile: true });
