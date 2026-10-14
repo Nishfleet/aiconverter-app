@@ -7,11 +7,6 @@ const futureExpiry = () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOS
 const nowIso = () => new Date().toISOString();
 const dayAgoIso = () => new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString();
 
-// Locks the paid-redo money gate (public promise: "One automatic stronger redo
-// for paid jobs"): unpaid jobs never redo, exactly one redo per paid job, the
-// redo window is bounded by source retention, universal converters do not use
-// the AI redo path, and a failed post-payment redo fails closed with the job
-// marked failed and a refund due (credit_due when no cash payment exists).
 test("redo: GET is not allowed", async () => {
   const response = await redoGet();
   assert.equal(response.status, 405);
@@ -110,8 +105,6 @@ test("redo: failed post-payment redo marks the job failed and refund due, never 
   const { env, updates, inserts } = await fakeEnv({ job }, { sourcePresent: false });
   const response = await redoRequest(job, { env });
 
-  // runFullConversion throws on a missing source object; the redo endpoint
-  // fails closed: failed status, refund due, source lifecycle recorded.
   assert.equal(response.status, 200);
   const payload = await response.json();
   assert.equal(payload.status, "failed");
@@ -127,9 +120,6 @@ test("redo: failed post-payment redo marks the job failed and refund due, never 
 });
 
 test("redo: a paid job keeps redo_count unchanged until the redo actually runs", async () => {
-  // Gate rejection paths must not consume the automatic redo: a 410 window
-  // expiry leaves redo_count untouched, so a redo is not burned on a rejected
-  // request.
   const job = baseJob({ paid_at: nowIso(), source_deleted_at: nowIso() });
   const { env, updates } = await fakeEnv({ job });
   const response = await redoRequest(job, { env });

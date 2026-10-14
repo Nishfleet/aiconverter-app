@@ -155,7 +155,7 @@ test("conversion brief UI is wired into the result panel", () => {
   assert.match(route, /COALESCE\(match_status, ''\) IN \('', 'matched'\)/);
   assert.match(source, /result\?\.conversionBrief/);
   assert.match(source, /const deletionBrief = activeConversionBrief/);
-  assert.match(source, /setConversionBrief\(null\);\n    fetchJson\("\/api\/conversion-brief"/);
+  assert.match(source, /setConversionBrief\(null\);\n {4}fetchJson\("\/api\/conversion-brief"/);
   assert.match(source, /conversionBrief\?\.jobId && conversionBrief\.jobId === result\?\.jobId/);
   assert.match(source, /function renderConversionBriefCard/);
   assert.match(source, /conversionBriefModeLabel/);

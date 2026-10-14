@@ -62,22 +62,16 @@ test("support POST inserts a scrubbed request and returns its id", async () => {
   assert.match(insert.sql, /VALUES \(\?, \?, \?, \?, \?, \?, \?, 'open', \?\)/);
   assert.equal(insert.values[0], body.id);
 
-  // job_id: only [a-zA-Z0-9_-] survive the scrub (<>, ;, and spaces are stripped;
-  // hyphens are allowed, so the trailing -- stays).
   assert.equal(insert.values[1], "job_123DROPTABLEsupport_requests--");
 
-  // email is capped at 160 chars; the y-tail past the slice is cut away.
   assert.equal(insert.values[2].length, 160);
   assert.equal(insert.values[2], "user@example.com" + "y".repeat(144));
 
-  // unknown categories fall back to "other".
   assert.equal(insert.values[3], "other");
 
-  // message is capped at 4000 chars.
   assert.equal(insert.values[4].length, 4000);
   assert.ok(insert.values[4].startsWith("issue "));
 
-  // hashed fingerprints, never raw IP or user agent.
   assert.match(insert.values[5], /^[0-9a-f]{64}$/);
   assert.match(insert.values[6], /^[0-9a-f]{64}$/);
 });

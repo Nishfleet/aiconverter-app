@@ -19,12 +19,6 @@ function completeJob(id, tokenHash, overrides = {}) {
   };
 }
 
-// Faithful SQLite emulation: the fake derives its behavior from the SQL it
-// receives. Today getAuthorizedJob filters by `id = ? AND token_hash = ?`, so
-// a wrong/missing token yields no row. If a mutation drops the token_hash
-// predicate (job-id-only lookup), this fake returns the row regardless of
-// token, exactly like the real database would — which is what makes the
-// focused suite go red under that mutation.
 function fakeEnv(jobs, objects = new Map()) {
   return {
     AICONVERTER_BUCKET: {
@@ -167,8 +161,6 @@ test("missing bucket object (zero bucket reads) is rejected as expired", async (
   const token = "tok_valid";
   const tokenHash = await sha256(token);
   const jobs = new Map([[ "job_expired_object", completeJob("job_expired_object", tokenHash) ]]);
-  // objects map deliberately empty: the report key exists on the job but the
-  // bucket returns nothing for it.
 
   const response = await post(fakeEnv(jobs), { jobId: "job_expired_object", token });
   assert.equal(response.status, 400);
