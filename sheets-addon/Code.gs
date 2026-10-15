@@ -156,12 +156,11 @@ function callApi_(path, options) {
 function writeRows_(title, columns, rows) {
   var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = spreadsheet.insertSheet(uniqueSheetName_(spreadsheet, title));
-  var header = columns.map(function (column) { return column.label || column.key; });
+  var header = columns.map(function (column) { return safeCell_(column.label || column.key); });
   var values = [header].concat(
     rows.map(function (row) {
       return columns.map(function (column) {
-        var value = row[column.key];
-        return value === undefined || value === null ? '' : value;
+        return safeCell_(row[column.key]);
       });
     })
   );
@@ -172,6 +171,18 @@ function writeRows_(title, columns, rows) {
   }
   spreadsheet.setActiveSheet(sheet);
   return { sheetName: sheet.getName(), rowCount: rows.length };
+}
+
+/**
+ * Converted text comes from uploaded documents, so a cell such as
+ * "=IMPORTDATA(...)" must stay text instead of becoming a live formula.
+ * Plain numbers like "-12.50" are left alone so they stay numbers.
+ */
+function safeCell_(value) {
+  if (value === undefined || value === null) return '';
+  if (typeof value !== 'string') return value;
+  if (/^[-+]?\d[\d,]*(\.\d+)?$/.test(value.trim())) return value;
+  return /^[=+\-@]/.test(value) ? "'" + value : value;
 }
 
 function columnsFromRows_(rows) {

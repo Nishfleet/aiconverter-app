@@ -55,9 +55,26 @@ export async function onRequestPost({ request, env }) {
     return serverError("Private abuse-prevention salt is not configured yet.");
   }
 
+  if (rateLimit.ok && addonIdentity) {
+    const addonCap = await enforceRateLimit(env, request, {
+      key: "sheets-addon:all-accounts",
+      maxPerHour: Number(env.SHEETS_ADDON_MAX_UPLOADS_PER_HOUR || 60)
+    });
+    if (!addonCap.ok) {
+      return json(
+        { error: "The Google Sheets add-on is busy right now. Try again in an hour." },
+        { status: 429, headers: { "Retry-After": "3600" } }
+      );
+    }
+  }
+
   if (!rateLimit.ok) {
     return json(
-      { error: `Too many uploads from this connection. Try again later.` },
+      {
+        error: addonIdentity
+          ? "Too many uploads from this Google account. Try again later."
+          : "Too many uploads from this connection. Try again later."
+      },
       {
         status: 429,
         headers: { "Retry-After": "3600" }
@@ -100,11 +117,13 @@ export async function onRequestPost({ request, env }) {
     });
     return json({ error: turnstile.message }, { status: 403 });
   }
-  await safeRecordFunnelEvent(env, request, {
-    ...baseFunnelEvent,
-    eventType: "turnstile_pass",
-    turnstileState: "verified"
-  });
+  if (!addonIdentity) {
+    await safeRecordFunnelEvent(env, request, {
+      ...baseFunnelEvent,
+      eventType: "turnstile_pass",
+      turnstileState: "verified"
+    });
+  }
 
   const email = String(form.get("email") || addonIdentity?.email || "").trim().slice(0, 120);
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {

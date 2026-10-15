@@ -30,7 +30,7 @@
     </div>
     <div class="row">
       <input type="file" id="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp">
-      <div class="muted">PDF, PNG, JPG or WEBP, up to 50 MB.</div>
+      <div class="muted">PDF, PNG, JPG or WEBP, up to 35 MB.</div>
     </div>
     <div class="row hidden" id="passwordRow">
       <input type="password" id="password" placeholder="PDF password (only if locked)">
@@ -110,7 +110,7 @@
       $('previewBtn').onclick = function () {
         var file = $('file').files[0];
         if (!file) return setStatus('Choose a file first.', 'error');
-        if (file.size > 50 * 1024 * 1024) return setStatus('Files must be 50 MB or smaller.', 'error');
+        if (file.size > 35 * 1024 * 1024) return setStatus('Files must be 35 MB or smaller in the add-on. Use aiconverter.app for files up to 50 MB.', 'error');
         busy(true);
         setStatus('Reading your file. This can take up to a minute...');
         var reader = new FileReader();

@@ -3,6 +3,7 @@ const GOOGLE_CERTS_URL = "https://www.googleapis.com/oauth2/v3/certs";
 const GOOGLE_ISSUERS = new Set(["accounts.google.com", "https://accounts.google.com"]);
 const CLOCK_SKEW_SECONDS = 60;
 const DEFAULT_KEY_CACHE_SECONDS = 3600;
+const FAILED_FETCH_RETRY_SECONDS = 30;
 
 let keyCache = { keys: null, expiresAt: 0 };
 
@@ -83,8 +84,16 @@ export function resetGoogleKeyCacheForTests() {
 
 async function googleSigningKeys(fetchImpl, now) {
   if (keyCache.keys && keyCache.expiresAt > now) return keyCache.keys;
-  const response = await fetchImpl(GOOGLE_CERTS_URL);
-  if (!response.ok) return keyCache.keys || [];
+  let response;
+  try {
+    response = await fetchImpl(GOOGLE_CERTS_URL);
+  } catch {
+    response = null;
+  }
+  if (!response?.ok) {
+    keyCache = { keys: keyCache.keys || [], expiresAt: now + FAILED_FETCH_RETRY_SECONDS * 1000 };
+    return keyCache.keys;
+  }
   const body = await response.json().catch(() => ({}));
   const keys = Array.isArray(body.keys) ? body.keys : [];
   const maxAge = Number((response.headers.get("Cache-Control") || "").match(/max-age=(\d+)/)?.[1]);

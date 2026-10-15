@@ -36,7 +36,7 @@ export async function onRequestPost({ request, env }) {
   if (!job.paid_at && env.FREE_DOWNLOADS_ENABLED !== "true") {
     return json({ error: "Payment is required before reviewing the full export." }, { status: 402 });
   }
-  const converterId = job.converter_id || "bank";
+  const converterId = job.converter_id;
   if (converterId !== "bank" && !TABLE_CONVERTERS.has(converterId)) {
     return badRequest("Row review is available for bank, table, receipt and invoice CSV exports.");
   }
