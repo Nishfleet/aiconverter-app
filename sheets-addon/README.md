@@ -37,7 +37,7 @@ Job tokens are kept in the user's Apps Script `UserProperties`, so a buyer can c
    the Cloudflare Pages project `aiconverter` as the variable `GOOGLE_SHEETS_ADDON_CLIENT_IDS`. To allow several IDs,
    separate them with commas. Then redeploy.
 4. **Test.** In Apps Script, use Deploy → Test deployments → Editor add-on on a test spreadsheet, and run one real
-   statement through preview, checkout, webhook and import.
+   statement through preview, checkout, webhook and import. Also try one file near the 35 MB add-on limit to confirm Apps Script accepts the upload.
 5. **List it.** In the Cloud project, enable the Google Workspace Marketplace SDK, fill in the store listing (Sheets
    only, the icons, screenshots and the URLs above), create a versioned deployment, and submit it for OAuth
    verification and Marketplace review.
