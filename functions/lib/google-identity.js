@@ -4,8 +4,9 @@ const GOOGLE_ISSUERS = new Set(["accounts.google.com", "https://accounts.google.
 const CLOCK_SKEW_SECONDS = 60;
 const DEFAULT_KEY_CACHE_SECONDS = 3600;
 const FAILED_FETCH_RETRY_SECONDS = 30;
+const KID_REFRESH_SECONDS = 60;
 
-let keyCache = { keys: null, expiresAt: 0 };
+let keyCache = { keys: null, expiresAt: 0, fetchedAt: 0 };
 
 export const SHEETS_ADDON_CLIENT = "sheets-addon";
 
@@ -51,7 +52,11 @@ export async function verifySheetsAddonIdentity(env, request, { fetchImpl = fetc
     return { ok: false, status: 401, message: "Your Google sign-in could not be verified." };
   }
 
-  const keys = await googleSigningKeys(fetchImpl, now);
+  let keys = await googleSigningKeys(fetchImpl, now);
+  if (!keys.some((key) => key.kid === header.kid) && keyCache.fetchedAt + KID_REFRESH_SECONDS * 1000 < now) {
+    keyCache.expiresAt = 0;
+    keys = await googleSigningKeys(fetchImpl, now);
+  }
   const jwk = keys.find((key) => key.kid === header.kid);
   if (!jwk) return { ok: false, status: 401, message: "Your Google sign-in could not be verified." };
 
@@ -80,7 +85,7 @@ export async function verifySheetsAddonIdentity(env, request, { fetchImpl = fetc
 }
 
 export function resetGoogleKeyCacheForTests() {
-  keyCache = { keys: null, expiresAt: 0 };
+  keyCache = { keys: null, expiresAt: 0, fetchedAt: 0 };
 }
 
 async function googleSigningKeys(fetchImpl, now) {
@@ -92,18 +97,18 @@ async function googleSigningKeys(fetchImpl, now) {
     response = null;
   }
   if (!response?.ok) {
-    keyCache = { keys: keyCache.keys || [], expiresAt: now + FAILED_FETCH_RETRY_SECONDS * 1000 };
+    keyCache = { keys: keyCache.keys || [], expiresAt: now + FAILED_FETCH_RETRY_SECONDS * 1000, fetchedAt: now };
     return keyCache.keys;
   }
   const body = await response.json().catch(() => null);
   const keys = Array.isArray(body?.keys) ? body.keys.filter((key) => key?.kid && key?.n && key?.e) : [];
   if (!keys.length) {
-    keyCache = { keys: keyCache.keys || [], expiresAt: now + FAILED_FETCH_RETRY_SECONDS * 1000 };
+    keyCache = { keys: keyCache.keys || [], expiresAt: now + FAILED_FETCH_RETRY_SECONDS * 1000, fetchedAt: now };
     return keyCache.keys;
   }
   const maxAge = Number((response.headers.get("Cache-Control") || "").match(/max-age=(\d+)/)?.[1]);
   const ttlSeconds = Number.isFinite(maxAge) && maxAge > 0 ? maxAge : DEFAULT_KEY_CACHE_SECONDS;
-  keyCache = { keys, expiresAt: now + ttlSeconds * 1000 };
+  keyCache = { keys, expiresAt: now + ttlSeconds * 1000, fetchedAt: now };
   return keys;
 }
 

@@ -5,6 +5,7 @@ import vm from "node:vm";
 import { onRequestPost as convert } from "../functions/api/convert.js";
 import { onRequestPost as checkout } from "../functions/api/checkout.js";
 import { onRequestPost as loadRows } from "../functions/api/result-rows.js";
+import { onRequestPost as finalize } from "../functions/api/finalize.js";
 import { resetGoogleKeyCacheForTests, verifySheetsAddonIdentity } from "../functions/lib/google-identity.js";
 import { sha256 } from "../functions/lib/jobs.js";
 
@@ -410,6 +411,136 @@ function countingRateLimitDb(counts) {
     }
   };
 }
+
+test("checkout ignores prototype keys in the client field", async () => {
+  const token = "tok_proto_client";
+  const job = {
+    id: "job_proto_client",
+    token_hash: await sha256(token),
+    status: "preview_ready",
+    plan_id: "starter",
+    expires_at: futureExpiry()
+  };
+  for (const client of ["constructor", "__proto__", "toString"]) {
+    const response = await checkout({
+      env: { ...jobEnv(job), CHECKOUT_URL: "https://checkout.dodopayments.com/buy/pdt_test" },
+      request: new Request("https://aiconverter.app/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: job.id, token, client })
+      })
+    });
+    const redirect = new URL(new URL((await response.json()).checkoutUrl).searchParams.get("redirect_url"));
+    assert.equal(redirect.origin, "https://aiconverter.app");
+    assert.equal(redirect.pathname, "/");
+  }
+});
+
+test("a non-numeric add-on cap setting falls back to the default instead of blocking uploads", async () => {
+  resetGoogleKeyCacheForTests();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = certsFetch;
+  try {
+    const form = new FormData();
+    form.set("file", new File(["hello"], "notes.txt", { type: "text/plain" }));
+    const response = await convert({
+      env: {
+        GOOGLE_SHEETS_ADDON_CLIENT_IDS: CLIENT_ID,
+        SHEETS_ADDON_MAX_UPLOADS_PER_HOUR: "sixty",
+        SHEETS_ADDON_MAX_UPLOADS_PER_ACCOUNT_HOUR: "four",
+        RATE_LIMIT_SALT: "a-long-enough-test-salt-for-rate-limits",
+        AICONVERTER_BUCKET: {},
+        AICONVERTER_DB: countingRateLimitDb(new Map())
+      },
+      request: addonRequest("https://aiconverter.app/api/convert", await signIdToken({}), { body: form })
+    });
+    assert.equal(response.status, 400);
+    assert.match((await response.json()).error, /accepts/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Sheets add-on identity refetches Google keys once when a new key id appears", async () => {
+  resetGoogleKeyCacheForTests();
+  const start = Date.now();
+  let served = [{ ...publicJwk, kid: "old-kid" }];
+  let calls = 0;
+  const rotatingFetch = async () => {
+    calls += 1;
+    return new Response(JSON.stringify({ keys: served }), { headers: { "Cache-Control": "public, max-age=20000" } });
+  };
+  const env = { GOOGLE_SHEETS_ADDON_CLIENT_IDS: CLIENT_ID };
+  const oldToken = await signIdToken({}, { kid: "old-kid" });
+  assert.equal((await verifySheetsAddonIdentity(env, addonRequest("https://aiconverter.app/api/convert", oldToken), { fetchImpl: rotatingFetch, now: start })).ok, true);
+  served = [{ ...publicJwk, kid: "new-kid" }];
+  const newToken = await signIdToken({}, { kid: "new-kid" });
+  const result = await verifySheetsAddonIdentity(env, addonRequest("https://aiconverter.app/api/convert", newToken), {
+    fetchImpl: rotatingFetch,
+    now: start + 61000
+  });
+  assert.equal(result.ok, true);
+  assert.equal(calls, 2);
+  resetGoogleKeyCacheForTests();
+});
+
+test("repeated finalize calls on a paid, complete add-on job return the stored result without re-running", async () => {
+  const token = "tok_finalize_repeat";
+  const job = {
+    id: "job_finalize_repeat",
+    token_hash: await sha256(token),
+    status: "complete",
+    paid_at: "2026-10-15T00:00:00.000Z",
+    plan_id: "starter",
+    converter_id: "bank",
+    output_format: "csv",
+    result_key: "jobs/job_finalize_repeat/result.csv",
+    redo_count: 0,
+    expires_at: futureExpiry()
+  };
+  const env = jobEnv(job, new Map([[job.result_key, "Date,Description,Amount\n05/01/2026,Coffee,-3.50\n"]]));
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const response = await finalize({
+      env,
+      request: addonRequest("https://aiconverter.app/api/finalize", "", {
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: job.id, token })
+      })
+    });
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(payload.status, "complete");
+    assert.equal(job.redo_count, 0);
+  }
+});
+
+test("Sheets add-on keeps recent job tokens so a paid file survives a later upload", () => {
+  const store = {};
+  const sandbox = {
+    PropertiesService: {
+      getUserProperties: () => ({
+        getProperty: (key) => (key in store ? store[key] : null),
+        setProperty: (key, value) => {
+          store[key] = value;
+        }
+      })
+    }
+  };
+  vm.createContext(sandbox);
+  vm.runInContext(readFileSync("sheets-addon/Code.gs", "utf8"), sandbox);
+  sandbox.saveJob_({ jobId: "job_a", token: "tok_a", fileName: "a.pdf", kind: "bank" });
+  sandbox.saveJob_({ jobId: "job_b", token: "tok_b", fileName: "b.pdf", kind: "bank" });
+  assert.equal(sandbox.requireJob_("job_a").token, "tok_a");
+  assert.equal(sandbox.requireJob_().jobId, "job_b");
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(sandbox.getRecentJobs())).map((job) => job.jobId),
+    ["job_b", "job_a"]
+  );
+  for (let index = 0; index < 12; index += 1) {
+    sandbox.saveJob_({ jobId: `job_${index}`, token: `tok_${index}`, fileName: `${index}.pdf`, kind: "bank" });
+  }
+  assert.equal(sandbox.getRecentJobs().length, 10);
+});
 
 function hourWindow() {
   const windowStart = new Date();

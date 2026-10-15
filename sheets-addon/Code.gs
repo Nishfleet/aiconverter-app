@@ -8,7 +8,8 @@
 
 var API_BASE = 'https://aiconverter.app';
 var CLIENT_ID = 'sheets-addon';
-var LAST_JOB_KEY = 'aiconverter.lastJob';
+var RECENT_JOBS_KEY = 'aiconverter.recentJobs';
+var MAX_RECENT_JOBS = 10;
 
 var KINDS = {
   bank: { converterId: 'bank', label: 'Bank statement' },
@@ -52,7 +53,7 @@ function convertFile(upload) {
     throw new Error(result.message || result.error || 'This file could not be converted.');
   }
 
-  saveLastJob_({
+  saveJob_({
     jobId: result.jobId,
     token: result.token,
     fileName: upload.name || 'upload.pdf',
@@ -73,7 +74,7 @@ function convertFile(upload) {
 
 /** Inserts the free preview rows (already shown in the sidebar) into a new tab. */
 function insertPreview(preview) {
-  var job = requireLastJob_();
+  var job = requireJob_(preview && preview.jobId);
   var rows = (preview && preview.previewRows) || [];
   if (!rows.length) throw new Error('No preview rows are available for this file.');
   var columns = (preview.columns || []).filter(function (column) {
@@ -84,8 +85,8 @@ function insertPreview(preview) {
 }
 
 /** Creates a checkout link for the full extraction. */
-function startCheckout() {
-  var job = requireLastJob_();
+function startCheckout(jobId) {
+  var job = requireJob_(jobId);
   var result = callApi_('/api/checkout', {
     method: 'post',
     contentType: 'application/json',
@@ -96,8 +97,8 @@ function startCheckout() {
 }
 
 /** After payment, runs the full extraction and writes every row into a new tab. */
-function importAllRows() {
-  var job = requireLastJob_();
+function importAllRows(jobId) {
+  var job = requireJob_(jobId);
   var finalized = callApi_('/api/finalize', {
     method: 'post',
     contentType: 'application/json',
@@ -120,9 +121,11 @@ function importAllRows() {
   return written;
 }
 
-function getLastJob() {
-  var job = loadLastJob_();
-  return job ? { jobId: job.jobId, fileName: job.fileName, kind: job.kind } : null;
+/** Recent uploads, newest first, so a paid file can still be imported after another upload. */
+function getRecentJobs() {
+  return loadJobs_().map(function (job) {
+    return { jobId: job.jobId, fileName: job.fileName, kind: job.kind };
+  });
 }
 
 function callApi_(path, options) {
@@ -200,22 +203,28 @@ function uniqueSheetName_(spreadsheet, title) {
   return name;
 }
 
-function saveLastJob_(job) {
-  PropertiesService.getUserProperties().setProperty(LAST_JOB_KEY, JSON.stringify(job));
+function saveJob_(job) {
+  var jobs = loadJobs_().filter(function (existing) { return existing.jobId !== job.jobId; });
+  jobs.unshift(job);
+  PropertiesService.getUserProperties().setProperty(RECENT_JOBS_KEY, JSON.stringify(jobs.slice(0, MAX_RECENT_JOBS)));
 }
 
-function loadLastJob_() {
-  var raw = PropertiesService.getUserProperties().getProperty(LAST_JOB_KEY);
-  if (!raw) return null;
+function loadJobs_() {
+  var raw = PropertiesService.getUserProperties().getProperty(RECENT_JOBS_KEY);
+  if (!raw) return [];
   try {
-    return JSON.parse(raw);
+    var jobs = JSON.parse(raw);
+    return Array.isArray(jobs) ? jobs.filter(function (job) { return job && job.jobId && job.token; }) : [];
   } catch (error) {
-    return null;
+    return [];
   }
 }
 
-function requireLastJob_() {
-  var job = loadLastJob_();
-  if (!job || !job.jobId || !job.token) throw new Error('Upload a file first.');
+function requireJob_(jobId) {
+  var jobs = loadJobs_();
+  var job = jobId
+    ? jobs.filter(function (candidate) { return candidate.jobId === jobId; })[0]
+    : jobs[0];
+  if (!job) throw new Error('Upload a file first.');
   return job;
 }

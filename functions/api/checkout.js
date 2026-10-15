@@ -37,7 +37,8 @@ export async function onRequestPost({ request, env }) {
   }
 
   const plan = PLANS[job.plan_id] || PLANS[String(body.planId || "starter")] || PLANS.starter;
-  const returnPath = RETURN_PATHS[String(body.client || "web")] || RETURN_PATHS.web;
+  const client = String(body.client || "web");
+  const returnPath = Object.hasOwn(RETURN_PATHS, client) ? RETURN_PATHS[client] : RETURN_PATHS.web;
 
   if (job.paid_at) {
     return json({

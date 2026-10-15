@@ -53,7 +53,7 @@ export async function onRequestPost({ request, env }) {
   const rateLimit = await enforceRateLimit(
     env,
     request,
-    addonKey ? { key: addonKey, maxPerHour: Number(env.SHEETS_ADDON_MAX_UPLOADS_PER_ACCOUNT_HOUR || 4) } : {}
+    addonKey ? { key: addonKey, maxPerHour: positiveNumber(env.SHEETS_ADDON_MAX_UPLOADS_PER_ACCOUNT_HOUR, 4) } : {}
   );
   if (rateLimit.configurationError) {
     return serverError("Private abuse-prevention salt is not configured yet.");
@@ -62,7 +62,7 @@ export async function onRequestPost({ request, env }) {
   if (rateLimit.ok && addonIdentity) {
     const addonCap = await enforceRateLimit(env, request, {
       key: "sheets-addon:all-accounts",
-      maxPerHour: Number(env.SHEETS_ADDON_MAX_UPLOADS_PER_HOUR || 60)
+      maxPerHour: positiveNumber(env.SHEETS_ADDON_MAX_UPLOADS_PER_HOUR, 60)
     });
     if (!addonCap.ok) {
       return json(
@@ -378,6 +378,11 @@ export async function onRequestPost({ request, env }) {
       { status: 200 }
     );
   }
+}
+
+function positiveNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
 }
 
 async function safeRecordFunnelEvent(env, request, event) {

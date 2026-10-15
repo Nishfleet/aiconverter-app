@@ -50,6 +50,10 @@
     </div>
 
     <div id="unlockBox" class="hidden">
+      <div class="row">
+        <label for="jobSelect"><b>File to import</b></label><br>
+        <select id="jobSelect"></select>
+      </div>
       <div class="row muted" id="planLine"></div>
       <div class="row">
         <button class="create" id="unlockBtn">Unlock all rows</button>
@@ -104,7 +108,22 @@
         $('planLine').textContent = plan && plan.name
           ? 'Full extraction: ' + plan.name + ' pack, up to ' + plan.pages + ' pages' + (plan.price ? ' (' + plan.price + ')' : '') + '. Pay once, no subscription.'
           : 'Pay once to import every row. No subscription.';
-        $('unlockBox').classList.remove('hidden');
+        loadRecentJobs(result.jobId);
+      }
+
+      function loadRecentJobs(selectedId) {
+        google.script.run.withSuccessHandler(function (jobs) {
+          var select = $('jobSelect');
+          select.innerHTML = '';
+          (jobs || []).forEach(function (job) {
+            var option = document.createElement('option');
+            option.value = job.jobId;
+            option.textContent = job.fileName;
+            if (job.jobId === selectedId) option.selected = true;
+            select.appendChild(option);
+          });
+          if (select.options.length) $('unlockBox').classList.remove('hidden');
+        }).getRecentJobs();
       }
 
       $('previewBtn').onclick = function () {
@@ -157,7 +176,7 @@
             }
           })
           .withFailureHandler(fail)
-          .startCheckout();
+          .startCheckout($('jobSelect').value);
       };
 
       $('importBtn').onclick = function () {
@@ -170,15 +189,10 @@
             setStatus('Added ' + r.rowCount + ' rows to "' + r.sheetName + '"' + note + '.', 'ok');
           })
           .withFailureHandler(fail)
-          .importAllRows();
+          .importAllRows($('jobSelect').value);
       };
 
-      google.script.run.withSuccessHandler(function (job) {
-        if (job) {
-          $('unlockBox').classList.remove('hidden');
-          setStatus('Last file: ' + job.fileName + '. You can still import its rows after paying.');
-        }
-      }).getLastJob();
+      loadRecentJobs();
     </script>
   </body>
 </html>
