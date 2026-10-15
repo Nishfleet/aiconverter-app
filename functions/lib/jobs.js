@@ -7,7 +7,7 @@ import {
   UNIVERSAL_CONVERTER_ID,
   UNIVERSAL_MAX_FILE_BYTES
 } from "./universal.js";
-import { normalizeBankOutputFormat } from "./accounting-exports.js";
+import { csvCell, normalizeBankOutputFormat, unguardCsvFormula } from "./accounting-exports.js";
 
 export const MAX_FILE_BYTES = 50 * 1024 * 1024;
 export const MAX_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
@@ -750,15 +750,7 @@ export function rowsToCsv(rows, columns = DEFAULT_CSV_COLUMNS) {
   const lines = [header.join(",")];
 
   rows.forEach((row) => {
-    lines.push(
-      header
-        .map((key) => {
-          const value = row[key] ?? "";
-          const text = String(value).replaceAll('"', '""');
-          return /[",\n]/.test(text) ? `"${text}"` : text;
-        })
-        .join(",")
-    );
+    lines.push(header.map((key) => csvCell(row[key])).join(","));
   });
 
   return `${lines.join("\n")}\n`;
@@ -772,7 +764,7 @@ export function parseCsvContent(csv, limit = 5000) {
   const lines = csv.trim().split(/\r?\n/);
   const headers = lines.shift()?.split(",") || [];
   const rows = lines.slice(0, limit).map((line) => {
-    const cells = parseCsvLine(line);
+    const cells = parseCsvLine(line).map(unguardCsvFormula);
     return headers.reduce((row, header, index) => {
       row[header] = cells[index] || "";
       return row;

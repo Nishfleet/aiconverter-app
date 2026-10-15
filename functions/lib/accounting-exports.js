@@ -432,9 +432,24 @@ function rowsToCsv(rows, columns) {
   return `${lines.join("\n")}\n`;
 }
 
-function csvCell(value) {
-  const text = String(value ?? "").replaceAll('"', '""');
-  return /[",\n]/.test(text) ? `"${text}"` : text;
+const CSV_FORMULA_TRIGGER = /^[=+\-@\t\r]/;
+const CSV_PLAIN_NUMBER = /^[+-]?[$€£¥₹]?(?:\d{1,3}(?:,\d{3})+|\d+|(?=\.\d))(?:\.\d+)?$/;
+
+export function guardCsvFormula(value) {
+  if (typeof value === "number") return String(value);
+  const text = String(value ?? "");
+  if (!CSV_FORMULA_TRIGGER.test(text) || CSV_PLAIN_NUMBER.test(text)) return text;
+  return `'${text}`;
+}
+
+export function unguardCsvFormula(value) {
+  const text = String(value ?? "");
+  return text.startsWith("'") && CSV_FORMULA_TRIGGER.test(text.slice(1)) ? text.slice(1) : text;
+}
+
+export function csvCell(value) {
+  const text = guardCsvFormula(value).replaceAll('"', '""');
+  return /[",\n\r]/.test(text) ? `"${text}"` : text;
 }
 
 function signedAmount(row) {
