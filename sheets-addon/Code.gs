@@ -182,7 +182,7 @@ function safeCell_(value) {
   if (value === undefined || value === null) return '';
   if (typeof value !== 'string') return value;
   if (/^[-+]?\d[\d,]*(\.\d+)?$/.test(value.trim())) return value;
-  return /^[=+\-@]/.test(value) ? "'" + value : value;
+  return /^[\s\u0000-\u001f]*[=+\-@]/.test(value) ? "'" + value : value;
 }
 
 function columnsFromRows_(rows) {

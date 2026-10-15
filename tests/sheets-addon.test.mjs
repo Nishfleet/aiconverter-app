@@ -204,6 +204,7 @@ test("paid table CSV rows can be read back for the Sheets import", async () => {
   assert.equal(response.status, 200);
   const payload = await response.json();
   assert.equal(payload.totalRows, 2);
+  assert.equal(payload.outputLabel, "CSV");
   assert.deepEqual(payload.rows[1], { Item: "Pears", Qty: "5" });
 });
 
@@ -242,6 +243,18 @@ test("Apps Script add-on only calls aiconverter.app and identifies itself", () =
   assert.match(code, /ScriptApp\.getIdentityToken\(\)/);
   assert.match(code, /'X-AIConverter-Client': CLIENT_ID/);
   assert.match(code, /var CLIENT_ID = 'sheets-addon'/);
+});
+
+test("Sheets add-on identity drops an email Google has not marked verified", async () => {
+  resetGoogleKeyCacheForTests();
+  const token = await signIdToken({ email_verified: undefined });
+  const result = await verifySheetsAddonIdentity(
+    { GOOGLE_SHEETS_ADDON_CLIENT_IDS: CLIENT_ID },
+    addonRequest("https://aiconverter.app/api/convert", token),
+    { fetchImpl: certsFetch }
+  );
+  assert.equal(result.ok, true);
+  assert.equal(result.email, "");
 });
 
 test("Sheets add-on identity fails closed when Google certs cannot be fetched", async () => {
@@ -347,6 +360,8 @@ test("Sheets add-on writes formula-like text as plain text but keeps numbers", (
   assert.equal(safeCell("-12.50"), "-12.50");
   assert.equal(safeCell("+1,250.00"), "+1,250.00");
   assert.equal(safeCell("Coffee shop"), "Coffee shop");
+  assert.equal(safeCell("  =1+1"), "'  =1+1");
+  assert.equal(safeCell("\t@SUM(A1)"), "'\t@SUM(A1)");
   assert.equal(safeCell(null), "");
   assert.equal(safeCell(42), 42);
 });

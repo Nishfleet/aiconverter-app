@@ -430,7 +430,7 @@ description: How AI Converter handles uploaded source files, generated files, pr
 
 # Privacy Policy
 
-Last updated May 17, 2026.
+Last updated October 15, 2026.
 
 AI Converter is built for private upload, short retention, minimal job metadata, and preview-first conversion. We do not ask for bank credentials, and sensitive files should not be sent through support.
 

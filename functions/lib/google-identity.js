@@ -75,7 +75,8 @@ export async function verifySheetsAddonIdentity(env, request, { fetchImpl = fetc
     return { ok: false, status: 401, message: "Verify your Google account email before using the add-on." };
   }
 
-  return { ok: true, sub: String(payload.sub), email: String(payload.email || "") };
+  const verifiedEmail = payload.email_verified === true || payload.email_verified === "true";
+  return { ok: true, sub: String(payload.sub), email: verifiedEmail ? String(payload.email || "") : "" };
 }
 
 export function resetGoogleKeyCacheForTests() {

@@ -56,7 +56,7 @@ export async function onRequestPost({ request, env }) {
   return json({
     jobId: job.id,
     outputFormat,
-    outputLabel: bankOutputLabel(outputFormat),
+    outputLabel: converterId === "bank" ? bankOutputLabel(outputFormat) : "CSV",
     columns: parsed.columns,
     rows: parsed.rows,
     totalRows: parsed.totalRows,
