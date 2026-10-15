@@ -50,7 +50,11 @@ export async function onRequestPost({ request, env }) {
   }
   const addonKey = addonIdentity ? `google:${addonIdentity.sub}` : "";
 
-  const rateLimit = await enforceRateLimit(env, request, { key: addonKey });
+  const rateLimit = await enforceRateLimit(
+    env,
+    request,
+    addonKey ? { key: addonKey, maxPerHour: Number(env.SHEETS_ADDON_MAX_UPLOADS_PER_ACCOUNT_HOUR || 4) } : {}
+  );
   if (rateLimit.configurationError) {
     return serverError("Private abuse-prevention salt is not configured yet.");
   }

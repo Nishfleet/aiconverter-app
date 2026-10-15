@@ -462,7 +462,7 @@ Source files are kept only for preview, paid unlock, and the automatic redo wind
 
 ## Google Sheets add-on
 
-The Google Sheets add-on receives your Google account email and account ID through Google sign-in. The account ID is stored only as a salted hash for upload limits, and the email is saved on the job for payment receipts and job recovery. The add-on can only edit the spreadsheet you open it in: it adds new tabs with your converted rows and does not read your other files. Google user data is not sold, used for advertising, or used to train models, and its use follows the Google API Services User Data Policy (https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements.
+The Google Sheets add-on receives your Google account email and account ID through Google sign-in. The account ID is stored only as a salted hash for upload limits, and the email is saved on the job for payment receipts and job recovery and is passed to Dodo to prefill checkout. The add-on can only edit the spreadsheet you open it in: it adds new tabs with your converted rows and does not read your other files. Google user data is not sold, used for advertising, or used to train models, and its use follows the Google API Services User Data Policy (https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements.
 
 ## Requests
 

@@ -47,7 +47,7 @@ export async function verifySheetsAddonIdentity(env, request, { fetchImpl = fetc
     return { ok: false, status: 401, message: "Your Google sign-in could not be verified." };
   }
 
-  if (header.alg !== "RS256" || !header.kid) {
+  if (!isPlainObject(header) || !isPlainObject(payload) || header.alg !== "RS256" || !header.kid) {
     return { ok: false, status: 401, message: "Your Google sign-in could not be verified." };
   }
 
@@ -95,12 +95,20 @@ async function googleSigningKeys(fetchImpl, now) {
     keyCache = { keys: keyCache.keys || [], expiresAt: now + FAILED_FETCH_RETRY_SECONDS * 1000 };
     return keyCache.keys;
   }
-  const body = await response.json().catch(() => ({}));
-  const keys = Array.isArray(body.keys) ? body.keys : [];
+  const body = await response.json().catch(() => null);
+  const keys = Array.isArray(body?.keys) ? body.keys.filter((key) => key?.kid && key?.n && key?.e) : [];
+  if (!keys.length) {
+    keyCache = { keys: keyCache.keys || [], expiresAt: now + FAILED_FETCH_RETRY_SECONDS * 1000 };
+    return keyCache.keys;
+  }
   const maxAge = Number((response.headers.get("Cache-Control") || "").match(/max-age=(\d+)/)?.[1]);
   const ttlSeconds = Number.isFinite(maxAge) && maxAge > 0 ? maxAge : DEFAULT_KEY_CACHE_SECONDS;
   keyCache = { keys, expiresAt: now + ttlSeconds * 1000 };
   return keys;
+}
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 async function verifyRs256(jwk, signedText, signature) {

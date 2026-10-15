@@ -257,6 +257,32 @@ test("Sheets add-on identity drops an email Google has not marked verified", asy
   assert.equal(result.email, "");
 });
 
+test("Sheets add-on identity rejects null JWT segments without throwing", async () => {
+  resetGoogleKeyCacheForTests();
+  const nullSegment = base64Url(new TextEncoder().encode("null"));
+  const result = await verifySheetsAddonIdentity(
+    { GOOGLE_SHEETS_ADDON_CLIENT_IDS: CLIENT_ID },
+    addonRequest("https://aiconverter.app/api/convert", `${nullSegment}.${nullSegment}.sig`),
+    { fetchImpl: certsFetch }
+  );
+  assert.equal(result.ok, false);
+  assert.equal(result.status, 401);
+});
+
+test("an empty Google certs response is retried soon instead of cached for hours", async () => {
+  resetGoogleKeyCacheForTests();
+  const token = await signIdToken({});
+  const env = { GOOGLE_SHEETS_ADDON_CLIENT_IDS: CLIENT_ID };
+  const request = addonRequest("https://aiconverter.app/api/convert", token);
+  const start = Date.now();
+  const emptyFetch = async () => new Response("{}", { headers: { "Cache-Control": "public, max-age=20000" } });
+  const failed = await verifySheetsAddonIdentity(env, request, { fetchImpl: emptyFetch, now: start });
+  assert.equal(failed.ok, false);
+  const recovered = await verifySheetsAddonIdentity(env, request, { fetchImpl: certsFetch, now: start + 31000 });
+  assert.equal(recovered.ok, true);
+  resetGoogleKeyCacheForTests();
+});
+
 test("Sheets add-on identity fails closed when Google certs cannot be fetched", async () => {
   resetGoogleKeyCacheForTests();
   const token = await signIdToken({});
