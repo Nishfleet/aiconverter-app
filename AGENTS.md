@@ -2,7 +2,7 @@
 
 Launch stage: 2 (payments). Next trigger: the first business buyer (an accounting firm on batch checkout) who asks for a contract, a DPA or a security review (stage 3).
 
-Success: paid conversions in the last 7 days that finished without a refund, drills left out. Baseline: none yet (only payment drills are on record; run the query below and write the count and date here). Measured by: `npx wrangler d1 execute aiconverter --remote --command "SELECT COUNT(*) FROM jobs WHERE paid_at >= strftime('%Y-%m-%dT%H:%M:%SZ','now','-7 days') AND status = 'complete' AND COALESCE(refund_status, '') = '' AND id NOT LIKE 'checkout_drill_%'"` (read-only); failures and refunds due are on `/api/admin/overview` (`npm run monitor:live`).
+Success: paid conversions in the last 7 days that finished without a refund, drills left out. Baseline: 0 on 2026-10-15 (query below, read-only; only payment drills are on record). Measured by: `npx wrangler d1 execute aiconverter --remote --command "SELECT COUNT(*) FROM jobs WHERE paid_at >= strftime('%Y-%m-%dT%H:%M:%SZ','now','-7 days') AND status = 'complete' AND COALESCE(refund_status, '') = '' AND id NOT LIKE 'checkout_drill_%'"` (read-only); failures and refunds due are on `/api/admin/overview` (`npm run monitor:live`).
 
 Stage 4's India rules already apply: uploads are bank statements and the packs are sold in INR (DPDP Act).
 
