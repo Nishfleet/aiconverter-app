@@ -4,10 +4,6 @@ import { onRequestPost } from "../functions/api/webhooks/dodo.js";
 
 const SECRET = `whsec_${btoa("webhook-test-secret")}`;
 
-// Re-implements the Dodo webhook signature scheme exactly as the production
-// code does (functions/lib/dodo.js verifyDodoWebhookSignature):
-// HMAC-SHA256 over `${webhookId}.${webhookTimestamp}.${payload}` with the
-// base64-decoded secret, delivered as a "v1,<base64>" signature part.
 async function signWebhook({ payload, webhookId, webhookTimestamp, secret = SECRET }) {
   const key = await crypto.subtle.importKey(
     "raw",
@@ -55,14 +51,6 @@ function makeJob(overrides = {}) {
   };
 }
 
-// In-memory D1 stub in the same style as the other node:test suites: it
-// implements exactly the statements the dodo webhook route issues and records
-// every mutation so tests can assert on state change.
-// Options extend the single-job default with multi-job lookups:
-//   jobsById            map of job id -> job for "SELECT * FROM jobs WHERE id = ?"
-//   jobsByPayment       map of payment_id -> job for "SELECT * FROM jobs WHERE payment_id = ?"
-//   reusedPaymentJobId  id returned by the payment-id reuse guard query
-//   env                 extra AICONVERTER_DB-adjacent bindings (DODO_BUSINESS_ID, ...)
 function makeEnv({ job, jobsById, jobsByPayment, reusedPaymentJobId, env: extraEnv = {} } = {}) {
   const webhookRows = new Map();
   const mutations = [];
@@ -116,7 +104,6 @@ function makeEnv({ job, jobsById, jobsByPayment, reusedPaymentJobId, env: extraE
             };
           }
           if (sql.startsWith("SELECT * FROM jobs WHERE payment_id = ? AND id != ?")) {
-            // payment-id reuse guard: any OTHER job already holding this payment id.
             return { first: async () => (reusedPaymentJobId ? { id: reusedPaymentJobId } : null) };
           }
           if (sql.startsWith("SELECT * FROM jobs WHERE id = ?")) {
@@ -176,7 +163,6 @@ function paidEventPayload(job, dataOverrides = {}) {
   });
 }
 
-// Signs and delivers a webhook through the real route, returning the response.
 async function postSigned({ env, payload, webhookId }) {
   const webhookTimestamp = Math.floor(Date.now() / 1000);
   const signature = await signWebhook({ payload, webhookId, webhookTimestamp });
@@ -187,13 +173,10 @@ async function postSigned({ env, payload, webhookId }) {
   return { response, body: await response.json() };
 }
 
-// Every mutation that would credit the customer's job: "UPDATE jobs SET ...".
 function jobCreditMutations(mutations) {
   return mutations.filter((mutation) => mutation.sql.startsWith("UPDATE jobs SET"));
 }
 
-// The dodo_payment_events INSERT binds match_status at index 13 and matched_by
-// at index 12 (see recordDodoPaymentEvent in functions/lib/dodo.js).
 function assertRejectedAs({ mutations, reason, matchedBy }) {
   assert.equal(
     jobCreditMutations(mutations).length,
@@ -264,7 +247,7 @@ test("stale webhook timestamp is rejected with no state change", async () => {
   const { env, mutations } = makeEnv({ job });
   const payload = paidEventPayload(job);
   const webhookId = "msg_webhook_stale";
-  const webhookTimestamp = Math.floor(Date.now() / 1000) - 3600; // 1 hour old
+  const webhookTimestamp = Math.floor(Date.now() / 1000) - 3600; 
   const signature = await signWebhook({ payload, webhookId, webhookTimestamp });
 
   const response = await onRequestPost({
@@ -293,7 +276,6 @@ test("replayed webhook id is not processed twice and never credits the customer 
   const firstBody = await first.json();
   assert.equal(firstBody.ok, true);
 
-  // Dodo replays the exact same event id after a transient delivery failure.
   const replay = await onRequestPost({
     env,
     request: webhookRequest({ payload, webhookId, webhookTimestamp, signature })
@@ -327,7 +309,7 @@ test("payment from a foreign Dodo business is rejected and never credits the job
 });
 
 test("payment carrying a foreign plan id is rejected and never credits the job", async () => {
-  const job = makeJob(); // plan_id: starter
+  const job = makeJob(); 
   const { env, mutations, webhookRows } = makeEnv({ job });
   const payload = paidEventPayload(job, { metadata: { plan_id: "pro" } });
   const webhookId = "msg_webhook_plan_mismatch";
@@ -377,7 +359,7 @@ test("payment in a currency that is not the checkout currency is rejected and ne
 test("underpayment is rejected and never credits the job", async () => {
   const job = makeJob();
   const { env, mutations, webhookRows } = makeEnv({ job, env: { DODO_CURRENCY: "INR" } });
-  const payload = paidEventPayload(job, { amount: 39800 }); // starter costs 39900
+  const payload = paidEventPayload(job, { amount: 39800 }); 
   const webhookId = "msg_webhook_amount_too_low";
 
   const { response, body } = await postSigned({ env, payload, webhookId });
@@ -401,8 +383,7 @@ test("payment id already credited to another job is rejected and never credits a
     reusedPaymentJobId: "job_webhook_b",
     env: { DODO_CURRENCY: "INR" }
   });
-  // A validly signed Dodo event for a payment that was already credited to
-  // job_webhook_b, now claiming job_webhook_a via its own checkout metadata.
+
   const payload = paidEventPayload(targetJob, {
     id: "pay_webhook_reused",
     payment_id: "pay_webhook_reused",

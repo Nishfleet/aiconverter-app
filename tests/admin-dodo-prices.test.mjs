@@ -2,16 +2,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { onRequestGet, onRequestPost } from "../functions/api/admin/dodo-prices.js";
 
-// Route-level regression guard for the admin Dodo price-sync operator route
-// (functions/api/admin/dodo-prices.js). This is a money-mutating route: it can
-// PATCH live Dodo product prices. The guard must fail closed: no credentials
-// means no sync, wrong credentials means no sync, correct credentials may only
-// dry-run, and a live update additionally requires the exact confirmation
-// text. Removing requireAdmin must turn these tests red (sol-sweep finding:
-// "Removing requireAdmin from the live Dodo price-sync route leaves all seven
-// existing admin tests green, so unauthenticated access to a money-mutating
-// operator route has no regression guard.").
-
 const CONFIRM_TEXT = "sync-inr-prices";
 const VALID_TOKEN = "a".repeat(32);
 const ROUTE_URL = "https://aiconverter.app/api/admin/dodo-prices";
@@ -42,10 +32,6 @@ function postRequest(body, headers = {}) {
   });
 }
 
-// Wraps globalThis.fetch so the test can prove the route made exactly zero
-// Dodo API calls (or exactly the expected live PATCHes). Any unexpected call
-// fails the test immediately, which is what makes the requireAdmin-removal
-// mutation turn red even for the dry-run-shaped request bodies.
 async function withFetchSpy(run, expectedCalls = []) {
   const originalFetch = globalThis.fetch;
   const calls = [];
@@ -84,8 +70,6 @@ test("admin dodo price route rejects GET with 405", async () => {
 });
 
 test("missing credentials return 401 with zero price-sync calls", async () => {
-  // A live-update body is used on purpose: if auth were bypassed, this would
-  // fire a real PATCH against Dodo, so the spy also proves the guard blocks it.
   await withFetchSpy(async (calls) => {
     const response = await onRequestPost({
       env: adminEnv(),
@@ -213,7 +197,7 @@ test("live update fires only with the exact confirmation text", async () => {
       assert.equal(result.ok, true);
       assert.equal(result.price, 123456);
     }
-    // Exactly one PATCH per product and nothing else.
+
     assert.deepEqual(
       calls.map((c) => `${c.method} ${c.url}`).sort(),
       expected.map((e) => `${e.method} ${e.url}`).sort()

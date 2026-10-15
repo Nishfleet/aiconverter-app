@@ -22,6 +22,42 @@ const DEFAULT_MISTRAL_MODEL = "mistral-ocr-latest";
 const DEFAULT_WHISPER_MODEL = "@cf/openai/whisper-large-v3-turbo";
 const DEFAULT_SCREENSHOT_CODE_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
 
+// upstream: https://developers.cloudflare.com/changelog/2025-02-21-workers-ai-max-tokens/ Workers AI defaults max_tokens to 256
+const STATEMENT_EXTRACT_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
+const STATEMENT_MAX_TOKENS = 4096;
+const SCREENSHOT_HTML_MAX_TOKENS = 8192;
+const STATEMENT_CHUNK_CHARS = 8000;
+const MAX_MARKDOWN_CHARS = 120000;
+const MAX_STATEMENT_CHUNKS = Math.ceil(MAX_MARKDOWN_CHARS / STATEMENT_CHUNK_CHARS);
+
+// upstream: https://developers.cloudflare.com/ai-gateway/observability/logging/ per-request header that skips payload storage
+function aiGatewayOptions(env) {
+  if (env?.AI_GATEWAY_ENABLED === "false") return undefined;
+  return {
+    gateway: { id: "default" },
+    extraHeaders: { "cf-aig-collect-log-payload": "false" }
+  };
+}
+
+function finishReason(response) {
+  const candidates = [
+    response?.finish_reason,
+    response?.finishReason,
+    response?.choice?.finish_reason,
+    response?.choices?.[0]?.finish_reason,
+    response?.result?.finish_reason,
+    response?.response?.finish_reason
+  ];
+  return candidates.find((value) => typeof value === "string" && value.trim()) || "";
+}
+
+function responseWasTruncated(response, maxTokens) {
+  if (["length", "max_tokens"].includes(finishReason(response))) return true;
+  const usage = response?.usage || response?.result?.usage || response?.response?.usage;
+  const completion = Number(usage?.completion_tokens ?? usage?.completionTokens);
+  return Number.isFinite(completion) && Number.isFinite(maxTokens) && completion >= maxTokens;
+}
+
 const extractionSchema = {
   type: "object",
   properties: {
@@ -418,10 +454,14 @@ async function convertAudioToTranscript(env, fileName, contentType, arrayBuffer,
   }
 
   const model = env.WHISPER_MODEL || DEFAULT_WHISPER_MODEL;
-  const response = await env.AI.run(model, {
-    audio: arrayBufferToBase64(arrayBuffer),
-    task: "transcribe"
-  });
+  const response = await env.AI.run(
+    model,
+    {
+      audio: arrayBufferToBase64(arrayBuffer),
+      task: "transcribe"
+    },
+    aiGatewayOptions(env)
+  );
 
   const transcript = String(response?.text || response?.transcription || response?.result?.text || "").trim();
   if (!transcript) {
@@ -537,15 +577,21 @@ async function convertScreenshotToVisionHtml(env, fileName, contentType, arrayBu
     "If exact content is unreadable, use concise neutral placeholders instead of inventing specific private data."
   ].join(" ");
 
-  const response = await env.AI.run(model, {
-    prompt,
-    image: [...new Uint8Array(arrayBuffer)],
-    max_tokens: Number(env.SCREENSHOT_CODE_MAX_TOKENS || 4096),
-    temperature: 0.15
-  });
+  const screenshotMaxTokens = Number(env.SCREENSHOT_CODE_MAX_TOKENS || SCREENSHOT_HTML_MAX_TOKENS);
+  const response = await env.AI.run(
+    model,
+    {
+      prompt,
+      image: [...new Uint8Array(arrayBuffer)],
+      max_tokens: screenshotMaxTokens,
+      temperature: 0.15
+    },
+    aiGatewayOptions(env)
+  );
+  const truncated = responseWasTruncated(response, screenshotMaxTokens);
   const raw = String(response?.response || response?.text || response?.result?.response || response?.output || "").trim();
   const html = extractHtmlDocument(raw);
-  if (!html) {
+  if (!html || truncated) {
     return failConversion("The vision HTML generator could not safely produce a complete HTML file.", "workers-ai-vision-html");
   }
 
@@ -610,6 +656,7 @@ async function documentToMarkdown(env, fileName, contentType, arrayBuffer) {
     return failConversion("Document Markdown conversion is not ready yet.", "workers-ai-markdown");
   }
 
+  // upstream: https://developers.cloudflare.com/workers-ai/features/markdown-conversion/ toMarkdown takes conversion options, not gateway options
   const result = await env.AI.toMarkdown({
     name: fileName || "document",
     blob: new Blob([arrayBuffer], {
@@ -1946,6 +1993,7 @@ async function extractWithCloudflareAi(env, fileName, arrayBuffer, options = {})
 }
 
 async function pdfToMarkdown(env, fileName, arrayBuffer) {
+  // upstream: https://developers.cloudflare.com/workers-ai/features/markdown-conversion/ toMarkdown takes conversion options, not gateway options
   const result = await env.AI.toMarkdown({
     name: fileName,
     blob: new Blob([arrayBuffer], { type: "application/pdf" })
@@ -1961,32 +2009,144 @@ async function pdfToMarkdown(env, fileName, arrayBuffer) {
     throw new Error("The PDF did not contain readable statement text.");
   }
 
-  return markdown.slice(0, 120000);
+  if (markdown.length > MAX_MARKDOWN_CHARS) {
+    throw new Error(
+      `This statement is too long to read in full (over ${MAX_MARKDOWN_CHARS} characters of text). No charge was made.`
+    );
+  }
+
+  return markdown;
 }
 
 async function extractTransactions(env, markdown, options = {}) {
+  const maxChunks = options.previewPages ? 1 : MAX_STATEMENT_CHUNKS;
+  const chunks = chunkStatementText(markdown, maxChunks);
+  if (!chunks.length) {
+    throw new Error("The AI extractor found no readable statement text. No charge was made.");
+  }
+
+  const merged = {
+    confidence: 0,
+    currency: "",
+    warnings: [],
+    transactions: []
+  };
+
+  for (let index = 0; index < chunks.length; index += 1) {
+    const result = await extractTransactionChunk(env, chunks[index], {
+      ...options,
+      chunk: { index, total: chunks.length }
+    });
+    merged.transactions.push(...(result.transactions || []));
+    merged.warnings.push(...(result.warnings || []));
+    merged.confidence = Math.max(merged.confidence, Number(result.confidence || 0));
+    merged.currency = merged.currency || result.currency || "";
+  }
+
+  const transactions = normalizeRows(merged.transactions);
+  return {
+    confidence: merged.confidence,
+    currency: merged.currency,
+    warnings: merged.warnings,
+    transactions
+  };
+}
+
+async function extractTransactionChunk(env, chunk, options = {}) {
   const previewInstruction = options.previewPages
     ? "For preview mode, extract only the first 10 transaction rows visible near the beginning of the statement."
     : "Extract all transaction rows.";
-  const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast", {
-    messages: [
-      {
-        role: "system",
-        content:
-          `Extract bank statement transactions only. ${previewInstruction} Return JSON matching the schema. Use ISO dates. Put deposits in money_in, withdrawals in money_out, and leave unknown balances null. Do not invent rows.`
+  const position = options.chunk?.total > 1
+    ? ` This is part ${options.chunk.index + 1} of ${options.chunk.total} of the same statement. Return only rows visible in this part, and never rows from another part.`
+    : "";
+  const maxTokens = Number(env.STATEMENT_MAX_TOKENS || STATEMENT_MAX_TOKENS);
+  const response = await env.AI.run(
+    STATEMENT_EXTRACT_MODEL,
+    {
+      messages: [
+        {
+          role: "system",
+          content:
+            `Extract bank statement transactions only. ${previewInstruction} Return JSON matching the schema. Use ISO dates. Put deposits in money_in, withdrawals in money_out, and leave unknown balances null. Do not invent rows.${position}`
+        },
+        {
+          role: "user",
+          content: `Convert this bank statement text to transaction rows:\n\n${chunk}`
+        }
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: extractionSchema
       },
-      {
-        role: "user",
-        content: `Convert this bank statement text to transaction rows:\n\n${markdown}`
-      }
-    ],
-    response_format: {
-      type: "json_schema",
-      json_schema: extractionSchema
-    }
-  });
+      max_tokens: maxTokens
+    },
+    aiGatewayOptions(env)
+  );
+
+  if (responseWasTruncated(response, maxTokens)) {
+    throw new Error(
+      "The AI extractor hit its response limit before it finished this section of the statement. No charge was made."
+    );
+  }
 
   return parseAiJson(response);
+}
+
+function chunkStatementText(markdown, maxChunks = MAX_STATEMENT_CHUNKS) {
+  const text = String(markdown || "").trim();
+  if (!text) return [];
+
+  const byPage = text
+    .split(/\f+/)
+    .map((page) => page.trim())
+    .filter(Boolean);
+
+  const chunks = [];
+  let current = "";
+  for (const piece of byPage.length > 1 ? byPage : text.split("\n")) {
+    if (piece.length > STATEMENT_CHUNK_CHARS) {
+      if (current) {
+        chunks.push(current);
+        current = "";
+      }
+      let line = "";
+      for (const row of piece.split("\n")) {
+        if (row.length + 1 > STATEMENT_CHUNK_CHARS) {
+          if (line) {
+            chunks.push(line);
+            line = "";
+          }
+          for (let at = 0; at < row.length; at += STATEMENT_CHUNK_CHARS) {
+            chunks.push(row.slice(at, at + STATEMENT_CHUNK_CHARS));
+          }
+          continue;
+        }
+        if (line && line.length + row.length + 1 > STATEMENT_CHUNK_CHARS) {
+          chunks.push(line);
+          line = row;
+        } else {
+          line = line ? `${line}\n${row}` : row;
+        }
+      }
+      if (line) chunks.push(line);
+      continue;
+    }
+    if (current && current.length + piece.length + 2 > STATEMENT_CHUNK_CHARS) {
+      chunks.push(current);
+      current = piece;
+    } else {
+      current = current ? `${current}\n\n${piece}` : piece;
+    }
+  }
+  if (current) chunks.push(current);
+
+  if (maxChunks <= 1) return chunks.slice(0, Math.max(1, maxChunks));
+  if (chunks.length > maxChunks) {
+    throw new Error(
+      `This statement is too long to read in full (${chunks.length} sections of statement text, more than the limit of ${maxChunks}). No charge was made.`
+    );
+  }
+  return chunks;
 }
 
 function parseAiJson(response) {

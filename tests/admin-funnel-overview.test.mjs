@@ -14,8 +14,6 @@ function fakeEnv({ db } = {}) {
   };
 }
 
-// Counts every AICONVERTER_DB.prepare call so tests can prove the handler
-// never reads the database before an admin credential check passes.
 function fakeDb() {
   const reads = [];
   const statement = {
@@ -103,8 +101,7 @@ test("admin overview exposes preview funnel counts and safe issue rows", () => {
   assert.match(apiSource, /customerRefundDue/);
   assert.match(apiSource, /drillRefundDue/);
   assert.match(apiSource, /Drill refund retry needed/);
-  // Unmatched-payment noise filter: failed attempts without an app job and
-  // zero-amount succeeded sandbox events are excluded from the alert list.
+
   assert.match(apiSource, /AND COALESCE\(amount, 0\) = 0/);
   assert.match(apiSource, /isNonActionableTestEvent/);
 
@@ -124,8 +121,7 @@ test("failed Dodo attempts and zero-amount sandbox events without an app job do 
     }),
     false
   );
-  // A zero-amount payment.succeeded with no app job is Dodo sandbox/test
-  // noise (decision 2026-08-10): no money moved, so it must not alert.
+
   assert.equal(
     isActionableUnmatchedPayment({
       event_type: "payment.succeeded",
@@ -136,8 +132,7 @@ test("failed Dodo attempts and zero-amount sandbox events without an app job do 
     }),
     false
   );
-  // Any paid-but-unmatched succeeded event still alerts, including a
-  // zero-amount event that carries an app job id.
+
   assert.equal(
     isActionableUnmatchedPayment({
       event_type: "payment.succeeded",

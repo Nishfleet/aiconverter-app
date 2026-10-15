@@ -592,10 +592,6 @@ export async function enforceJobExpiry(env, job) {
     );
     const failedKeys = outcomes.filter((outcome) => !outcome.ok).map((outcome) => outcome.key);
     if (failedKeys.length > 0) {
-      // Do NOT mark the job expired and do NOT stamp source_deleted_at or clear
-      // any pointers: the pointers are the only way a later sweep retry can find
-      // and remove the objects. The job row stays untouched, so resultExpired()
-      // still flags it on the next access and the sweep retries.
       console.error(
         `AIConverter expiry of job ${job.id} did not complete; R2 delete failed for keys: ${failedKeys.join(", ")}`
       );
@@ -613,8 +609,6 @@ export async function enforceJobExpiry(env, job) {
       try {
         await env.AICONVERTER_BUCKET.delete(job.source_key);
       } catch {
-        // Same fail-closed contract as the result-expiry branch: no
-        // source_deleted_at stamp, no pointer change, loud log, retryable.
         console.error(
           `AIConverter expiry of job ${job.id} did not complete; R2 delete failed for key: ${job.source_key}`
         );
@@ -625,8 +619,6 @@ export async function enforceJobExpiry(env, job) {
   }
 
   if (Object.keys(fields).length) {
-    // Let DB update failures propagate: the job row stays in its pre-sweep
-    // state (retryable) and the caller is not told the expiry completed.
     await updateJob(env, job.id, fields);
     return { ...job, ...fields };
   }
@@ -652,9 +644,6 @@ export async function deleteJobData(env, job, now = new Date()) {
   );
   const failedKeys = outcomes.filter((outcome) => !outcome.ok).map((outcome) => outcome.key);
   if (failedKeys.length > 0) {
-    // Do NOT mark the job deleted and do NOT clear any object pointers: the
-    // pointers are the only way a later delete retry or the expiry sweeper
-    // (enforceJobExpiry / sourceExpired) can find and remove the objects.
     console.error(
       `AIConverter delete of job ${job.id} did not complete; R2 delete failed for keys: ${failedKeys.join(", ")}`
     );
@@ -812,7 +801,9 @@ export function parseStoredPreview(content, resultKey = "", limit = 5) {
     if (Array.isArray(parsed)) return parsed.slice(0, limit);
     if (parsed?.invoice) return [parsed.invoice].slice(0, limit);
     if (parsed && typeof parsed === "object") return [parsed].slice(0, limit);
-  } catch {}
+  } catch {
+    return [];
+  }
   return [];
 }
 

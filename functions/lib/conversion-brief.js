@@ -49,7 +49,7 @@ export function buildConversionBrief(job, options = {}) {
       available: redoAvailable
     },
     accountingReadiness,
-    nextActions: nextActionsForJob(job, { mode, paid, outputFormat, accountingReadiness, redoAvailable }),
+    nextActions: nextActionsForJob(job, { mode, outputFormat, accountingReadiness, redoAvailable }),
     support: {
       category: supportCategoryFor(job, paymentEvent),
       href: supportHref(job?.id, supportCategoryFor(job, paymentEvent)),
@@ -89,7 +89,7 @@ function summaryForJob(job, { mode, paid }) {
   return "Upload a supported file and generate a private preview first.";
 }
 
-function nextActionsForJob(job, { mode, paid, outputFormat, accountingReadiness, redoAvailable }) {
+function nextActionsForJob(job, { mode, outputFormat, accountingReadiness, redoAvailable }) {
   const actions = [];
   if (mode === "refund_review") {
     actions.push("Contact refund support with the job ID.");

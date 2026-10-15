@@ -1,7 +1,3 @@
-#!/usr/bin/env node
-// Builds public/sitemap.xml with <lastmod> dates derived from git history.
-// For each URL, the lastmod is the date of the last git commit that touched
-// the corresponding source file. Run before `vite build` or manually.
 import { readFileSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 

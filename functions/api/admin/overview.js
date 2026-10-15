@@ -379,7 +379,7 @@ async function buildCloudConvertOverview(env) {
   };
 }
 
-function buildAlerts({ health, cloudConvert, usage24h, providerFailures, stuckProvider, webhookErrorCount, unmatchedPayments, refundDue, staleCheckoutHandoffs }) {
+function buildAlerts({ health, cloudConvert, usage24h, stuckProvider, webhookErrorCount, unmatchedPayments, refundDue, staleCheckoutHandoffs }) {
   const alerts = [];
   if (health.status !== "ready") {
     alerts.push({
@@ -530,10 +530,6 @@ export function isActionableUnmatchedPayment(row = {}) {
   const matchStatus = String(row.match_status || row.matchStatus || "").toLowerCase();
   const jobId = String(row.job_id || row.jobId || "").trim();
   const amount = Number(row.amount ?? row.amountMinor ?? 0) || 0;
-  // Test/sandbox noise with no app job attached is not actionable:
-  // - payment.failed with no job id (never matched an app job)
-  // - zero-amount payment.succeeded with no job id (Dodo sandbox checkout;
-  //   no money moved, so a real paid-but-unmatched event still alerts)
   const isNonActionableTestEvent =
     (eventType === "payment.failed" && status === "failed" && matchStatus === "job_not_found" && !jobId) ||
     (eventType === "payment.succeeded" && status === "succeeded" && matchStatus === "job_not_found" && !jobId && amount === 0);

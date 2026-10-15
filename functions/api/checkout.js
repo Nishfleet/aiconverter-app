@@ -60,7 +60,7 @@ export async function onRequestPost({ request, env }) {
     });
   }
 
-  let dodoCheckoutUrl = "";
+  let dodoCheckoutUrl;
   try {
     dodoCheckoutUrl = await createDodoCheckout({
       env,

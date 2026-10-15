@@ -89,7 +89,7 @@ export async function onRequestPost({ request, env }) {
   });
 
   const job = await readJob(env, jobId);
-  let checkoutUrl = "";
+  let checkoutUrl;
   try {
     checkoutUrl = await createDodoCheckout({
       env,
