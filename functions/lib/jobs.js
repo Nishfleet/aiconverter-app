@@ -771,8 +771,8 @@ export function parseCsvPreview(csv, limit = 5) {
 }
 
 export function parseCsvContent(csv, limit = 5000) {
-  const lines = csv.trim().split(/\r?\n/);
-  const headers = lines.shift()?.split(",") || [];
+  const lines = splitCsvRecords(csv.trim());
+  const headers = lines.length ? parseCsvLine(lines.shift()) : [];
   const rows = lines.slice(0, limit).map((line) => {
     const cells = parseCsvLine(line);
     return headers.reduce((row, header, index) => {
@@ -803,6 +803,25 @@ export function parseStoredPreview(content, resultKey = "", limit = 5) {
     return [];
   }
   return [];
+}
+
+function splitCsvRecords(csv) {
+  const records = [];
+  let current = "";
+  let quoted = false;
+  for (let index = 0; index < csv.length; index += 1) {
+    const char = csv[index];
+    if (char === '"') quoted = !quoted;
+    if (!quoted && (char === "\n" || (char === "\r" && csv[index + 1] === "\n"))) {
+      records.push(current);
+      current = "";
+      if (char === "\r") index += 1;
+      continue;
+    }
+    current += char;
+  }
+  records.push(current);
+  return records;
 }
 
 function parseCsvLine(line) {

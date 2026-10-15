@@ -542,6 +542,74 @@ test("Sheets add-on keeps recent job tokens so a paid file survives a later uplo
   assert.equal(sandbox.getRecentJobs().length, 10);
 });
 
+test("row read-back keeps quoted multi-line cells in one row", async () => {
+  const token = "tok_multiline_rows";
+  const job = {
+    id: "job_multiline_rows",
+    token_hash: await sha256(token),
+    status: "complete",
+    paid_at: "2026-10-15T00:00:00.000Z",
+    converter_id: "receipt",
+    output_format: "csv",
+    result_key: "jobs/job_multiline_rows/result.csv",
+    expires_at: futureExpiry()
+  };
+  const csv = 'Vendor,Notes,Total\r\nCafe,"Two lines\nof notes, with a comma",4.50\r\n"Shop ""A""",Plain,9.00\r\n';
+  const response = await loadRows({
+    env: jobEnv(job, new Map([[job.result_key, csv]])),
+    request: new Request("https://aiconverter.app/api/result-rows", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId: job.id, token })
+    })
+  });
+  const payload = await response.json();
+  assert.equal(payload.totalRows, 2);
+  assert.deepEqual(payload.rows[0], { Vendor: "Cafe", Notes: "Two lines\nof notes, with a comma", Total: "4.50" });
+  assert.deepEqual(payload.rows[1], { Vendor: 'Shop "A"', Notes: "Plain", Total: "9.00" });
+});
+
+test("invoice JSON exports are not offered as sheet rows", async () => {
+  const token = "tok_invoice_json";
+  const job = {
+    id: "job_invoice_json",
+    token_hash: await sha256(token),
+    status: "complete",
+    paid_at: "2026-10-15T00:00:00.000Z",
+    converter_id: "invoice",
+    output_format: "json",
+    result_key: "jobs/job_invoice_json/result.json",
+    expires_at: futureExpiry()
+  };
+  const response = await loadRows({
+    env: jobEnv(job, new Map([[job.result_key, "{}"]])),
+    request: new Request("https://aiconverter.app/api/result-rows", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId: job.id, token })
+    })
+  });
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /CSV/);
+});
+
+test("a spoofed add-on header without a valid Google token stays blocked once the add-on is on", async () => {
+  resetGoogleKeyCacheForTests();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = certsFetch;
+  try {
+    for (const token of ["", "not-a-jwt", await signIdToken({ aud: "someone-else" })]) {
+      const response = await convert({
+        env: { GOOGLE_SHEETS_ADDON_CLIENT_IDS: CLIENT_ID, AICONVERTER_BUCKET: {}, AICONVERTER_DB: {} },
+        request: addonRequest("https://aiconverter.app/api/convert", token, { body: new FormData() })
+      });
+      assert.equal(response.status, 401);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 function hourWindow() {
   const windowStart = new Date();
   windowStart.setMinutes(0, 0, 0);
