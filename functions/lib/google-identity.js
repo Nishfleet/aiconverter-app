@@ -1,6 +1,3 @@
-// Verifies Google OpenID Connect ID tokens sent by the Google Sheets add-on.
-// The add-on's Apps Script calls ScriptApp.getIdentityToken() and sends the
-// token as a Bearer header; we check signature, issuer, audience and expiry.
 
 const GOOGLE_CERTS_URL = "https://www.googleapis.com/oauth2/v3/certs";
 const GOOGLE_ISSUERS = new Set(["accounts.google.com", "https://accounts.google.com"]);
@@ -28,7 +25,6 @@ export function bearerToken(request) {
   return match ? match[1].trim() : "";
 }
 
-// Returns { ok: true, sub, email } or { ok: false, message }.
 export async function verifySheetsAddonIdentity(env, request, { fetchImpl = fetch, now = Date.now() } = {}) {
   const audiences = sheetsAddonClientIds(env);
   if (!audiences.length) {

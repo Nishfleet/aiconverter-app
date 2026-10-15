@@ -2,8 +2,6 @@ import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js"
 import { createDodoCheckout } from "../lib/dodo.js";
 import { getAuthorizedJob, hasRequiredBindings, jobAccessCookie, PLANS, tokenFromBodyOrCookie } from "../lib/jobs.js";
 
-// Where a buyer lands after paying. Sheets add-on buyers go back to their sheet,
-// so they land on a page that tells them to return there.
 const RETURN_PATHS = {
   web: "/",
   "sheets-addon": "/google-sheets-pdf-import/"

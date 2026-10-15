@@ -9,7 +9,6 @@ import {
 } from "../lib/jobs.js";
 
 const MAX_REVIEW_ROWS = 5000;
-// Non-bank converters whose CSV rows can be read back (used by the Sheets add-on import).
 const TABLE_CONVERTERS = new Set(["screenshot", "receipt", "invoice"]);
 
 export function onRequestGet() {

@@ -44,9 +44,6 @@ export async function onRequestPost({ request, env }) {
     return serverError("Secure conversion storage is not configured yet.");
   }
 
-  // The Google Sheets add-on calls from Apps Script servers, so it cannot run the
-  // browser Turnstile check and shares Google's egress IPs. It proves a verified
-  // Google account instead, and limits are keyed to that account.
   const addonIdentity = isSheetsAddonRequest(request) ? await verifySheetsAddonIdentity(env, request) : null;
   if (addonIdentity && !addonIdentity.ok) {
     return json({ error: addonIdentity.message }, { status: addonIdentity.status || 401 });

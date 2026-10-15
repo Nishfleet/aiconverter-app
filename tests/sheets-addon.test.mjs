@@ -128,7 +128,6 @@ test("Sheets add-on uploads skip Turnstile and rate-limit by Google account, not
         body: form
       })
     });
-    // Without the add-on path this request would fail the human check (403).
     assert.equal(response.status, 400);
     assert.match((await response.json()).error, /accepts/);
     const ipKeyed = await sha256(`a-long-enough-test-salt-for-rate-limits:203.0.113.9:${hourWindow()}`);
