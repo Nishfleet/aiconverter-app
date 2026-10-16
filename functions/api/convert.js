@@ -1,6 +1,7 @@
 import { convertFileToCsv, detectPdfPageCount } from "../lib/extract.js";
 import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js";
 import { verifyTurnstile } from "../lib/turnstile.js";
+import { isSheetsAddonRequest, verifySheetsAddonIdentity } from "../lib/google-identity.js";
 import { recordFunnelEvent } from "../lib/funnel-telemetry.js";
 import {
   bankOutputFileExtension,
@@ -43,14 +44,41 @@ export async function onRequestPost({ request, env }) {
     return serverError("Secure conversion storage is not configured yet.");
   }
 
-  const rateLimit = await enforceRateLimit(env, request);
+  const addonIdentity = isSheetsAddonRequest(request) ? await verifySheetsAddonIdentity(env, request) : null;
+  if (addonIdentity && !addonIdentity.ok) {
+    return json({ error: addonIdentity.message }, { status: addonIdentity.status || 401 });
+  }
+  const addonKey = addonIdentity ? `google:${addonIdentity.sub}` : "";
+
+  const rateLimit = await enforceRateLimit(
+    env,
+    request,
+    addonKey ? { key: addonKey, maxPerHour: positiveNumber(env.SHEETS_ADDON_MAX_UPLOADS_PER_ACCOUNT_HOUR, 4) } : {}
+  );
   if (rateLimit.configurationError) {
     return serverError("Private abuse-prevention salt is not configured yet.");
   }
 
+  if (rateLimit.ok && addonIdentity) {
+    const addonCap = await enforceRateLimit(env, request, {
+      key: "sheets-addon:all-accounts",
+      maxPerHour: positiveNumber(env.SHEETS_ADDON_MAX_UPLOADS_PER_HOUR, 60)
+    });
+    if (!addonCap.ok) {
+      return json(
+        { error: "The Google Sheets add-on is busy right now. Try again in an hour." },
+        { status: 429, headers: { "Retry-After": "3600" } }
+      );
+    }
+  }
+
   if (!rateLimit.ok) {
     return json(
-      { error: `Too many uploads from this connection. Try again later.` },
+      {
+        error: addonIdentity
+          ? "Too many uploads from this Google account. Try again later."
+          : "Too many uploads from this connection. Try again later."
+      },
       {
         status: 429,
         headers: { "Retry-After": "3600" }
@@ -81,11 +109,9 @@ export async function onRequestPost({ request, env }) {
     fileCount: 1
   };
 
-  const turnstile = await verifyTurnstile(
-    env,
-    request,
-    form.get("cf-turnstile-response") || form.get("turnstileToken")
-  );
+  const turnstile = addonIdentity
+    ? { ok: true, skipped: true, message: "" }
+    : await verifyTurnstile(env, request, form.get("cf-turnstile-response") || form.get("turnstileToken"));
   if (!turnstile.ok) {
     await safeRecordFunnelEvent(env, request, {
       ...baseFunnelEvent,
@@ -95,13 +121,15 @@ export async function onRequestPost({ request, env }) {
     });
     return json({ error: turnstile.message }, { status: 403 });
   }
-  await safeRecordFunnelEvent(env, request, {
-    ...baseFunnelEvent,
-    eventType: "turnstile_pass",
-    turnstileState: "verified"
-  });
+  if (!addonIdentity) {
+    await safeRecordFunnelEvent(env, request, {
+      ...baseFunnelEvent,
+      eventType: "turnstile_pass",
+      turnstileState: "verified"
+    });
+  }
 
-  const email = String(form.get("email") || "").trim().slice(0, 120);
+  const email = String(form.get("email") || addonIdentity?.email || "").trim().slice(0, 120);
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     await safeRecordFunnelEvent(env, request, {
       ...baseFunnelEvent,
@@ -169,7 +197,7 @@ export async function onRequestPost({ request, env }) {
   }
   const plan = planForPages(estimatedPages);
   const fileHash = await sha256Bytes(arrayBuffer);
-  const fingerprint = await requestFingerprint(env, request);
+  const fingerprint = await requestFingerprint(env, request, { key: addonKey });
   const uploadPolicy = await enforceUploadPolicy(env, { ...fingerprint, fileHash });
   if (!uploadPolicy.ok) {
     await safeRecordFunnelEvent(env, request, {
@@ -350,6 +378,11 @@ export async function onRequestPost({ request, env }) {
       { status: 200 }
     );
   }
+}
+
+function positiveNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
 }
 
 async function safeRecordFunnelEvent(env, request, event) {

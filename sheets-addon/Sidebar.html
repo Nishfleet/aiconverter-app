@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <style>
+      body { padding: 12px; }
+      .muted { color: #5f6368; font-size: 12px; }
+      .row { margin: 10px 0; }
+      .hidden { display: none; }
+      table { border-collapse: collapse; width: 100%; font-size: 11px; margin-top: 6px; }
+      th, td { border: 1px solid #dadce0; padding: 3px 4px; text-align: left; vertical-align: top; }
+      th { background: #f1f3f4; }
+      .preview { max-height: 220px; overflow: auto; }
+      #status { min-height: 18px; }
+      .error { color: #c5221f; }
+      .ok { color: #188038; }
+      button { margin: 4px 4px 0 0; }
+    </style>
+  </head>
+  <body>
+    <div class="row">
+      <label for="kind"><b>What are you importing?</b></label><br>
+      <select id="kind">
+        <option value="bank">Bank or credit card statement</option>
+        <option value="table">Table in a PDF or screenshot</option>
+        <option value="receipt">Receipt</option>
+        <option value="invoice">Invoice</option>
+      </select>
+    </div>
+    <div class="row">
+      <input type="file" id="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp">
+      <div class="muted">PDF, PNG, JPG or WEBP, up to 35 MB.</div>
+    </div>
+    <div class="row hidden" id="passwordRow">
+      <input type="password" id="password" placeholder="PDF password (only if locked)">
+    </div>
+    <div class="row">
+      <button class="action" id="previewBtn">Get free preview</button>
+    </div>
+
+    <div id="status" class="muted"></div>
+
+    <div id="previewBox" class="hidden">
+      <div class="row"><b id="previewTitle">Preview</b></div>
+      <div class="preview"><table id="previewTable"></table></div>
+      <div class="row">
+        <button id="insertPreviewBtn">Insert preview rows</button>
+      </div>
+    </div>
+
+    <div id="unlockBox" class="hidden">
+      <div class="row">
+        <label for="jobSelect"><b>File to import</b></label><br>
+        <select id="jobSelect"></select>
+      </div>
+      <div class="row muted" id="planLine"></div>
+      <div class="row">
+        <button class="create" id="unlockBtn">Unlock all rows</button>
+        <button id="importBtn">I've paid: import all rows</button>
+      </div>
+    </div>
+
+    <div class="row muted">
+      Files are deleted within about a day and never reviewed by people.
+      <a href="https://aiconverter.app/google-sheets-pdf-import/" target="_blank">How it works</a> ·
+      <a href="https://aiconverter.app/privacy/" target="_blank">Privacy</a>
+    </div>
+
+    <script>
+      var preview = null;
+
+      function $(id) { return document.getElementById(id); }
+      function setStatus(text, kind) {
+        $('status').textContent = text || '';
+        $('status').className = kind || 'muted';
+      }
+      function busy(on) {
+        ['previewBtn', 'insertPreviewBtn', 'unlockBtn', 'importBtn'].forEach(function (id) { $(id).disabled = on; });
+      }
+      function fail(error) {
+        busy(false);
+        var message = (error && error.message) || String(error);
+        if (/password/i.test(message)) $('passwordRow').classList.remove('hidden');
+        setStatus(message, 'error');
+      }
+
+      function renderPreview(result) {
+        preview = result;
+        var rows = result.previewRows || [];
+        var columns = (result.columns || []).filter(function (c) { return rows.length && c.key in rows[0]; });
+        if (!columns.length && rows.length) columns = Object.keys(rows[0]).map(function (k) { return { key: k, label: k }; });
+        var table = $('previewTable');
+        table.innerHTML = '';
+        var head = table.insertRow();
+        columns.forEach(function (c) {
+          var th = document.createElement('th');
+          th.textContent = c.label || c.key;
+          head.appendChild(th);
+        });
+        rows.forEach(function (row) {
+          var tr = table.insertRow();
+          columns.forEach(function (c) { tr.insertCell().textContent = row[c.key] == null ? '' : row[c.key]; });
+        });
+        $('previewTitle').textContent = 'Preview of ' + result.fileName;
+        $('previewBox').classList.remove('hidden');
+        var plan = result.plan;
+        $('planLine').textContent = plan && plan.name
+          ? 'Full extraction: ' + plan.name + ' pack, up to ' + plan.pages + ' pages' + (plan.price ? ' (' + plan.price + ')' : '') + '. Pay once, no subscription.'
+          : 'Pay once to import every row. No subscription.';
+        loadRecentJobs(result.jobId);
+      }
+
+      function loadRecentJobs(selectedId) {
+        google.script.run.withSuccessHandler(function (jobs) {
+          var select = $('jobSelect');
+          select.innerHTML = '';
+          (jobs || []).forEach(function (job) {
+            var option = document.createElement('option');
+            option.value = job.jobId;
+            option.textContent = job.fileName;
+            if (job.jobId === selectedId) option.selected = true;
+            select.appendChild(option);
+          });
+          if (select.options.length) $('unlockBox').classList.remove('hidden');
+        }).getRecentJobs();
+      }
+
+      $('previewBtn').onclick = function () {
+        var file = $('file').files[0];
+        if (!file) return setStatus('Choose a file first.', 'error');
+        if (file.size > 35 * 1024 * 1024) return setStatus('Files must be 35 MB or smaller in the add-on. Use aiconverter.app for files up to 50 MB.', 'error');
+        busy(true);
+        setStatus('Reading your file. This can take up to a minute...');
+        var reader = new FileReader();
+        reader.onload = function () {
+          var data = String(reader.result).split(',')[1] || '';
+          google.script.run
+            .withSuccessHandler(function (result) {
+              busy(false);
+              renderPreview(result);
+              setStatus('Preview ready. Check it looks right before unlocking.', 'ok');
+            })
+            .withFailureHandler(fail)
+            .convertFile({
+              name: file.name,
+              type: file.type,
+              data: data,
+              kind: $('kind').value,
+              password: $('password').value
+            });
+        };
+        reader.onerror = function () { fail(new Error('Could not read that file.')); };
+        reader.readAsDataURL(file);
+      };
+
+      $('insertPreviewBtn').onclick = function () {
+        busy(true);
+        google.script.run
+          .withSuccessHandler(function (r) { busy(false); setStatus('Added ' + r.rowCount + ' preview rows to "' + r.sheetName + '".', 'ok'); })
+          .withFailureHandler(fail)
+          .insertPreview(preview);
+      };
+
+      $('unlockBtn').onclick = function () {
+        busy(true);
+        setStatus('Opening checkout...');
+        google.script.run
+          .withSuccessHandler(function (r) {
+            busy(false);
+            if (r.checkoutUrl) {
+              window.open(r.checkoutUrl, '_blank');
+              setStatus('Checkout opened in a new tab. After paying, come back and click "I\'ve paid".', 'ok');
+            } else {
+              setStatus('Already paid. Click "I\'ve paid: import all rows".', 'ok');
+            }
+          })
+          .withFailureHandler(fail)
+          .startCheckout($('jobSelect').value);
+      };
+
+      $('importBtn').onclick = function () {
+        busy(true);
+        setStatus('Running the full extraction and adding rows...');
+        google.script.run
+          .withSuccessHandler(function (r) {
+            busy(false);
+            var note = r.truncated ? ' (first 5,000 rows; download the rest from aiconverter.app)' : '';
+            setStatus('Added ' + r.rowCount + ' rows to "' + r.sheetName + '"' + note + '.', 'ok');
+          })
+          .withFailureHandler(fail)
+          .importAllRows($('jobSelect').value);
+      };
+
+      loadRecentJobs();
+    </script>
+  </body>
+</html>

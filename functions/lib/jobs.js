@@ -457,8 +457,9 @@ export async function insertJob(env, job) {
     .run();
 }
 
-export async function requestFingerprint(env, request) {
+export async function requestFingerprint(env, request, { key = "" } = {}) {
   const ip =
+    key ||
     request.headers.get("CF-Connecting-IP") ||
     request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() ||
     "unknown";
@@ -697,7 +698,7 @@ export function tokenFromBodyOrCookie(request, jobId, token = "") {
   return String(token || "") || tokenFromJobCookie(request, jobId);
 }
 
-export async function enforceRateLimit(env, request) {
+export async function enforceRateLimit(env, request, { key = "", maxPerHour = 0 } = {}) {
   const saltStatus = rateLimitSaltStatus(env);
   if (!saltStatus.ok) {
     return {
@@ -708,8 +709,9 @@ export async function enforceRateLimit(env, request) {
     };
   }
 
-  const max = Math.max(1, Math.min(100, Number(env.RATE_LIMIT_MAX_PER_HOUR || 8)));
+  const max = Math.max(1, Math.min(100, Number(maxPerHour || env.RATE_LIMIT_MAX_PER_HOUR || 8)));
   const ip =
+    key ||
     request.headers.get("CF-Connecting-IP") ||
     request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() ||
     "unknown";
@@ -761,8 +763,8 @@ export function parseCsvPreview(csv, limit = 5) {
 }
 
 export function parseCsvContent(csv, limit = 5000) {
-  const lines = csv.trim().split(/\r?\n/);
-  const headers = lines.shift()?.split(",") || [];
+  const lines = splitCsvRecords(csv.trim());
+  const headers = lines.length ? parseCsvLine(lines.shift()) : [];
   const rows = lines.slice(0, limit).map((line) => {
     const cells = parseCsvLine(line).map(unguardCsvFormula);
     return headers.reduce((row, header, index) => {
@@ -793,6 +795,25 @@ export function parseStoredPreview(content, resultKey = "", limit = 5) {
     return [];
   }
   return [];
+}
+
+function splitCsvRecords(csv) {
+  const records = [];
+  let current = "";
+  let quoted = false;
+  for (let index = 0; index < csv.length; index += 1) {
+    const char = csv[index];
+    if (char === '"') quoted = !quoted;
+    if (!quoted && (char === "\n" || (char === "\r" && csv[index + 1] === "\n"))) {
+      records.push(current);
+      current = "";
+      if (char === "\r") index += 1;
+      continue;
+    }
+    current += char;
+  }
+  records.push(current);
+  return records;
 }
 
 function parseCsvLine(line) {

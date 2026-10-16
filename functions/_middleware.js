@@ -430,7 +430,7 @@ description: How AI Converter handles uploaded source files, generated files, pr
 
 # Privacy Policy
 
-Last updated May 17, 2026.
+Last updated October 15, 2026.
 
 AI Converter is built for private upload, short retention, minimal job metadata, and preview-first conversion. We do not ask for bank credentials, and sensitive files should not be sent through support.
 
@@ -459,6 +459,10 @@ AI Converter does not use uploaded files or generated outputs to train models. E
 ## Retention
 
 Source files are kept only for preview, paid unlock, and the automatic redo window. Source files are deleted after failed preview, failed full extraction, completed redo, or the 24-hour private source lifecycle. Generated files expire after 7 days.
+
+## Google Sheets add-on
+
+The Google Sheets add-on receives your Google account email and account ID through Google sign-in. The account ID is stored only as a salted hash for upload limits, and the email is saved on the job for payment receipts and job recovery and is passed to Dodo to prefill checkout. The add-on can only edit the spreadsheet you open it in: it adds new tabs with your converted rows and does not read your other files. Google user data is not sold, used for advertising, or used to train models, and its use follows the Google API Services User Data Policy (https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements.
 
 ## Requests
 

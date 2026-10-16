@@ -76,13 +76,13 @@ export async function previewDodoPlanPrices({ env, request }) {
   return value;
 }
 
-export async function createDodoCheckout({ env, request, job, plan, email }) {
+export async function createDodoCheckout({ env, request, job, plan, email, returnPath = "/" }) {
   const apiKey = dodoApiKey(env);
   const productId = dodoProductIdForPlan(env, plan.id);
   if (!apiKey || !productId) return null;
 
   const returnUrl = new URL(request.url);
-  returnUrl.pathname = "/";
+  returnUrl.pathname = returnPath;
   returnUrl.search = "";
   returnUrl.searchParams.set("jobId", job.id);
   returnUrl.searchParams.set("plan", plan.id);

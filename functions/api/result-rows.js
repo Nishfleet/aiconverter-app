@@ -9,6 +9,7 @@ import {
 } from "../lib/jobs.js";
 
 const MAX_REVIEW_ROWS = 5000;
+const TABLE_CONVERTERS = new Set(["screenshot", "receipt", "invoice"]);
 
 export function onRequestGet() {
   return methodNotAllowed("POST");
@@ -35,11 +36,17 @@ export async function onRequestPost({ request, env }) {
   if (!job.paid_at && env.FREE_DOWNLOADS_ENABLED !== "true") {
     return json({ error: "Payment is required before reviewing the full export." }, { status: 402 });
   }
-  if (job.converter_id !== "bank") return badRequest("Row review is available for bank CSV exports.");
+  const converterId = job.converter_id;
+  if (converterId !== "bank" && !TABLE_CONVERTERS.has(converterId)) {
+    return badRequest("Row review is available for bank, table, receipt and invoice CSV exports.");
+  }
 
   const outputFormat = jobOutputFormat(job);
-  if (bankOutputFileExtension(outputFormat) !== "csv") {
+  if (converterId === "bank" && bankOutputFileExtension(outputFormat) !== "csv") {
     return badRequest(`${bankOutputLabel(outputFormat)} is a bank-feed file. Download and review it in your accounting app.`);
+  }
+  if (converterId !== "bank" && outputFormat !== "csv") {
+    return badRequest("Rows are only available for CSV exports.");
   }
 
   const object = await env.AICONVERTER_BUCKET.get(job.result_key);
@@ -49,7 +56,7 @@ export async function onRequestPost({ request, env }) {
   return json({
     jobId: job.id,
     outputFormat,
-    outputLabel: bankOutputLabel(outputFormat),
+    outputLabel: converterId === "bank" ? bankOutputLabel(outputFormat) : "CSV",
     columns: parsed.columns,
     rows: parsed.rows,
     totalRows: parsed.totalRows,
