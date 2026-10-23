@@ -20,18 +20,17 @@ name: Deploy production
 #                           on the account that owns the `aiconverter` project
 #   CLOUDFLARE_ACCOUNT_ID - the account id that owns the `aiconverter` project
 #
-# Until both secrets exist the lane fails every main merge loudly with the
-# provisioning steps printed; the daily schedule is the self-heal net: once
-# the Pages token is provisioned, the lane redeploys on its own within a day
-# instead of waiting for the next main push.
+# Both Pages secrets are provisioned, so the reason the daily schedule
+# existed has expired: it was a self-heal net that picked a stale site back
+# up within a day of the token landing. The push-to-main trigger below is the
+# deploy, and workflow_dispatch covers a manual re-run. Cloudflare's own Git
+# integration in the Pages dashboard is the stock replacement for the same
+# job, and the README documents how to switch this lane off.
 
 on:
   push:
     branches:
       - main
-  schedule:
-    # Daily: pick a stale site back up within a day of the token landing.
-    - cron: "17 3 * * *"
   workflow_dispatch:
 
 permissions:
@@ -66,7 +65,7 @@ jobs:
           echo "  3. gh secret set CLOUDFLARE_API_TOKEN -R nish3451/aiconverter-app"
           echo "  4. Find the account id on the Cloudflare dashboard sidebar (right side of any account page), then:"
           echo "     gh secret set CLOUDFLARE_ACCOUNT_ID -R nish3451/aiconverter-app -b <account-id>"
-          echo "  5. Re-run this lane (or wait for the next main merge / the daily schedule); no code change needed."
+          echo "  5. Re-run this lane from the Actions tab, or push a commit to main; no code change needed."
           exit 1
 
       - name: Set up Node

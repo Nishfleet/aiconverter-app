@@ -131,6 +131,12 @@ $ git ls-files .github/workflows
 - `lighthouse.yml` — scheduled Lighthouse audits.
 - `agent-dispatch.yml` — starts a fleet worker run for a labeled issue.
 
+Each file above carries an off-switch row in the README's "Automation
+Off-Switches" section, which names what fires it and how to stop it. A
+`tests/workflow-contracts.test.mjs` case fails a pull request that adds a
+workflow file without that row, or that puts a `schedule:` trigger back into
+`deploy.yml`.
+
 ## Removed: `grade.yml`
 
 `grade.yml` was the only caller of the fleet-ops quality grader. The upstream
