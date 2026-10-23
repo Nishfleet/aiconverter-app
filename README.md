@@ -31,6 +31,36 @@ Current image modules:
 - Universal provider conversion: CloudConvert
 - Universal provider backup: Convertio
 
+## Automation Off-Switches
+
+Every workflow in `.github/workflows/`, what fires it, and how to switch it
+off. Deleting the file switches the workflow off, because GitHub runs only
+what that directory holds. Removing one trigger is the smaller step when the
+rest of the file must stay for a manual run.
+
+| Workflow | Fires on | Off-switch |
+| --- | --- | --- |
+| `ci.yml` | Every pull request, every push to `main` | Delete the file. It reports four of the six required checks (`Build`, `Pricing check`, `Unit tests`, `actionlint`), so clear those four under Settings → Rules → Rulesets first, or every pull request waits on a check that never reports. |
+| `secret-scan.yml` | Every pull request, every push to `main` and `master`, manual | Delete the file. It reports `Gitleaks` and `semgrep`; clear both under Settings → Rules → Rulesets first. |
+| `deploy.yml` | Push to `main`, manual | Delete the file to stop deploys. Delete the `push:` trigger to keep the manual run and stop deploy-on-merge. Do not turn on the Cloudflare Pages Git integration (Pages → Settings → Builds & deploys) at the same time as this workflow: two deploy paths race each other, and this workflow is the one that runs the pricing check, the tests, the build and the live-site verification. |
+| `lighthouse.yml` | After a successful production deploy, Mondays at 04:41 UTC, manual | Delete the file. Delete the `workflow_run:` and `schedule:` triggers to keep the manual audit only. |
+| `agent-dispatch.yml` | Issue labels and comments, pull-request events, a completed CI run, every 6 hours, manual | Delete the file to stop the fleet from starting worker runs on this repo. Delete the `schedule:` block to keep event-driven dispatch and drop the 6-hour sweep. |
+
+The six required checks and the job that reports each one are listed in
+[docs/ops/ci.md](docs/ops/ci.md).
+
+### Version tags
+
+No release tag exists yet, and `package.json` carries the version (`0.1.0`).
+A tag marks a commit as a release head; it does not by itself build, deploy or
+publish anything. When a release is cut, tag the commit that ships it and push
+the tag:
+
+```bash
+git tag -a v0.1.0 -m "v0.1.0" <commit-sha>
+git push origin v0.1.0
+```
+
 ## Local Commands
 
 ```bash
