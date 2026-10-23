@@ -49,7 +49,7 @@ jobs:
     # starts, so an upstream push would control what executes here, with this
     # repository's automatic token and checkout. Bump the SHA deliberately;
     # Dependabot's github-actions updater keeps it current.
-    uses: Nishfleet/fleet-ops/.github/workflows/agent-dispatch.yml@c315bfa1d88e02f3304236f6adff79add14bef79 # fleet-ops main, 2026-10-14
+    uses: Nishfleet/fleet-ops/.github/workflows/agent-dispatch.yml@f4ade9609ccf4e11b7d706f5c9148be0e64dc7ed # fleet-ops main, 2026-10-14
     permissions:
       issues: write
       pull-requests: write
