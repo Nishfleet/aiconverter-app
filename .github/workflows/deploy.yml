@@ -26,12 +26,14 @@ name: Deploy production
 # deploy, and workflow_dispatch covers a manual re-run.
 #
 # Do not also turn on the Cloudflare Pages Git integration (Pages dashboard,
-# Settings -> Builds & deploys). It is not a replacement for this lane: it
-# publishes dist/ but runs no pricing check, no unit tests, no build and no
-# live-site verification, so two deploy paths would race and the weaker one
-# could ship a broken main. Turning this lane off means removing the push
-# trigger, not adding the Git integration. The README's "Automation
-# Off-Switches" section says how.
+# Settings -> Builds & deploys). It publishes the same dist/ and can chain the
+# same gates into its build command, but that command is configured in the
+# Cloudflare dashboard rather than in this repo, so it drifts out of review.
+# It has no equivalent of the "Verify live site" step below, and two deploy
+# paths writing to the `aiconverter` project race each other with the last
+# writer winning. Turning this lane off means removing the push trigger, not
+# adding the Git integration. The README's "Automation Off-Switches" section
+# says how.
 
 on:
   push:
