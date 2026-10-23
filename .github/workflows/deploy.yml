@@ -23,9 +23,15 @@ name: Deploy production
 # Both Pages secrets are provisioned, so the reason the daily schedule
 # existed has expired: it was a self-heal net that picked a stale site back
 # up within a day of the token landing. The push-to-main trigger below is the
-# deploy, and workflow_dispatch covers a manual re-run. Cloudflare's own Git
-# integration in the Pages dashboard is the stock replacement for the same
-# job, and the README documents how to switch this lane off.
+# deploy, and workflow_dispatch covers a manual re-run.
+#
+# Do not also turn on the Cloudflare Pages Git integration (Pages dashboard,
+# Settings -> Builds & deploys). It is not a replacement for this lane: it
+# publishes dist/ but runs no pricing check, no unit tests, no build and no
+# live-site verification, so two deploy paths would race and the weaker one
+# could ship a broken main. Turning this lane off means removing the push
+# trigger, not adding the Git integration. The README's "Automation
+# Off-Switches" section says how.
 
 on:
   push:
