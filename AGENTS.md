@@ -31,6 +31,14 @@ npm run stress:checkout
 npm run readiness:live
 ```
 
+## Run it and prove it
+
+Live: https://aiconverter.app.
+
+- Prove the deploy: `npm run readiness:live`. It fetches `/api/health` and needs `ok: true`, `status: "ready"` and an empty `missing`, then checks the security headers, the markdown answer to `Accept: text/markdown`, and that `/api/admin/overview` answers 401 to a stranger. Set `AICONVERTER_STRESS_URL` to point it at a preview instead of production.
+- The health route alone: `curl -s https://aiconverter.app/api/health` prints `{"ok":true,…,"status":"ready","missing":[],…}`. A non-empty `missing` names the capability that is down, and a capability that is `false` under `capabilities` is not configured on that deployment.
+- Test login: none. No account or credential reaches the live site: the admin overview is 401 without the admin credential, and `readiness:live` fails if that changes.
+
 ## Deploy
 
 Deploys go through CI, not your terminal. Every push to `main` auto-deploys
