@@ -1,0 +1,16 @@
+# pinact config (https://github.com/suzuki-shunsuke/pinact)
+#
+# Every `uses:` in .github/workflows/*.yml except the fleet-ops refs below is
+# pinned to a full 40-character commit SHA. The dispatcher's reusable
+# workflow caller and any other fleet-ops reusable workflow ref are left
+# unpinned on purpose: the @main ref must match what agent.yml's runner
+# group enforces in fleet-ops, so a SHA pin here would drift and strand
+# jobs (fleet-ops#5231). Keep those refs out of pinact's reach so `pinact
+# run` never rewrites or errors on them.
+version: 3
+
+rules:
+  - ignore: true
+    conditions:
+      - expr: |
+          ActionRepoOwner == "Nishfleet" && ActionRepoName == "fleet-ops"
