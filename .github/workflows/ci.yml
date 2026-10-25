@@ -100,7 +100,9 @@ jobs:
     # Lint job config is wiring, not a ruleset — duplicated per repo is
     # acceptable (the canonical semgrep ruleset is NOT duplicated; it is
     # consumed by pinned raw URL in secret-scan.yml). Same job shape as
-    # siterep-public's actionlint: SHA-pinned action, uses:-only.
+    # siterep-public's actionlint: SHA-pinned action, uses:-only. The pinact
+    # step keeps every `uses:` SHA-pinned except the fleet-ops reusable
+    # workflow refs excluded by .pinact.yaml.
     name: actionlint
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -118,3 +120,26 @@ jobs:
           # and avoid the pipx install path on the hosted runner.
           shellcheck: false
           pyflakes: false
+      - name: Install pinact
+        env:
+          PINACT_VERSION: 5.0.1
+          PINACT_SHA256: 12500c0fff5db94a0155e2e76ed959d1dc0e899056ee168d8fb7b4840e7c04f0
+        run: |
+          set -euo pipefail
+          install_dir="$GITHUB_WORKSPACE/.pinact"
+          mkdir -p "$install_dir"
+          archive="$install_dir/pinact.tgz"
+          curl -fsSL --retry 5 --retry-all-errors --max-time 180 \
+            -o "$archive" \
+            "https://github.com/suzuki-shunsuke/pinact/releases/download/v${PINACT_VERSION}/pinact_linux_amd64.tar.gz"
+          printf '%s  %s\n' "$PINACT_SHA256" "$archive" | sha256sum --check --strict -
+          tar -xzf "$archive" -C "$install_dir" pinact
+          rm -f -- "$archive"
+          chmod +x -- "$install_dir/pinact"
+          "$install_dir/pinact" version
+      # Offline mode only: no API calls, so the job stays hermetic and cannot
+      # be rate-limited. It asserts the 40-character SHA syntactic pin and the
+      # version comments, which .pinact.yaml's ignore rules shape.
+      - name: Check actions are pinned (pinact)
+        run: |
+          "$GITHUB_WORKSPACE/.pinact/pinact" run --fix=false --no-api
