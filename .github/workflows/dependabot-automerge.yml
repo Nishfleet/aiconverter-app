@@ -1,0 +1,52 @@
+name: Dependabot auto-merge
+
+# The stock GitHub recipe for Dependabot auto-merge
+# (docs.github.com "Automating Dependabot with GitHub Actions"), tuned only
+# where this repo's own conventions require it.
+#
+# Why: a weekly dependency bump landed by hand is queue work that no person
+# should hold. Dependabot already groups minor and patch npm updates into one
+# PR and ignores majors (see .github/dependabot.yml), so the patch and minor
+# class is exactly the safe-to-arm class: no breaking change by semver, and
+# every required check plus the merge queue still gates the merge. Major
+# updates stay manual, which is what the update-type condition below encodes.
+#
+# The bot gate uses the PR author rather than github.actor because
+# github.actor is spoofable (zizmor bot-conditions, High): this workflow arms
+# auto-merge, so a forged actor check would merge a pull request nobody
+# reviewed. The PR author cannot be forged, and a Dependabot pull request's
+# author is always dependabot[bot].
+#
+# pull_request_target is safe here for one specific reason, and it is the only
+# reason: this workflow never checks the PR head out, so it runs no code that
+# came from the pull request. The one thing it touches is the pull request
+# object itself, through the auto-merge API call.
+
+on:
+  pull_request_target
+
+permissions:
+  pull-requests: write
+
+concurrency:
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  auto-merge:
+    name: Enable auto-merge for patch and minor updates
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: ${{ github.event.pull_request.user.login == 'dependabot[bot]' }}
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Enable auto-merge
+        if: ${{ contains(steps.metadata.outputs.update-type, 'version-update:semver-patch') || contains(steps.metadata.outputs.update-type, 'version-update:semver-minor') }}
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
