@@ -1,0 +1,73 @@
+name: Dependabot auto-merge
+
+# Dependabot auto-merge for patch and minor updates - GitHub's documented
+# recipe (docs.github.com "Automating Dependabot with GitHub Actions"),
+# shaped to this repo's gates.
+#
+# Why: a weekly dependency bump landed by hand is queue work that no person
+# should hold. Dependabot already groups minor and patch npm updates into one
+# PR and ignores majors (.github/dependabot.yml), so the patch and minor class
+# is exactly the safe-to-arm class: no breaking change by semver. Major
+# updates stay manual, and the update-type condition below encodes that.
+#
+# Dependabot's own token cannot start a pull_request workflow, so the
+# documented trigger is pull_request_target: this workflow runs the base
+# branch's copy of the file and never checks out PR code, so nothing from the
+# pull request is ever executed. The two steps only read PR metadata over the
+# API and arm auto-merge. The required checks (Build, Gitleaks, Pricing check,
+# Unit tests, actionlint, semgrep) still gate the merge itself.
+on:
+  pull_request_target:
+
+permissions:
+  contents: read
+
+# One live arm per PR; a newer event on the same PR supersedes an in-flight
+# older one. Arming an already-armed PR is a no-op, so the superseding run
+# re-arms cleanly.
+concurrency:
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  auto-merge:
+    name: Arm auto-merge for patch and minor updates
+    runs-on: ubuntu-latest
+    # Two API calls and no checkout: well under a minute in practice.
+    # 5 minutes bounds a hung call with headroom, same sizing as ci.yml's
+    # actionlint job.
+    timeout-minutes: 5
+    permissions:
+      # The recipe's pair. contents: write is required in practice: the
+      # enablePullRequestAutoMerge mutation rejects GITHUB_TOKEN with only
+      # pull-requests: write ("Resource not accessible by integration"). The
+      # sibling implementation in Nishfleet/siterep-public proved that against
+      # a real run. Nothing is ever checked out or pushed by this job.
+      contents: write
+      pull-requests: write
+    # PR-author id, not the actor login: zizmor's bot-conditions audit names
+    # login and actor comparisons spoofable, and dependabot[bot]'s user id is
+    # fixed (github.com/dependabot[bot], type Bot, id 49699333). The
+    # author of a pull request cannot be spoofed by the pull request's own
+    # content, which is the thing that matters for a workflow that arms
+    # auto-merge.
+    if: ${{ github.event.pull_request.user.id == 49699333 }} # dependabot[bot]
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Arm auto-merge for patch and minor updates
+        # update-type is the highest semver change across the PR, so a grouped
+        # PR (the npm-minor-patch group in dependabot.yml) reports its worst
+        # change: a minor+patch group arms here, and a security update that
+        # crosses a major line (security updates bypass the ignore list)
+        # reports semver-major, never matches, and stays manual.
+        if: >-
+          contains(steps.metadata.outputs.update-type, 'version-update:semver-patch') ||
+          contains(steps.metadata.outputs.update-type, 'version-update:semver-minor')
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge --auto --squash "$PR_URL"
