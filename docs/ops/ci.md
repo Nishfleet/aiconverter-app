@@ -119,6 +119,7 @@ $ git grep -n "paths:\|if:\|branches-ignore" -- .github/workflows/ci.yml .github
 $ git ls-files .github/workflows
 .github/workflows/agent-dispatch.yml
 .github/workflows/ci.yml
+.github/workflows/dependabot-automerge.yml
 .github/workflows/deploy.yml
 .github/workflows/lighthouse.yml
 .github/workflows/secret-scan.yml
@@ -130,6 +131,9 @@ $ git ls-files .github/workflows
 - `deploy.yml` — push to `main` builds and deploys to Cloudflare Pages.
 - `lighthouse.yml` — scheduled Lighthouse audits.
 - `agent-dispatch.yml` — starts a fleet worker run for a labeled issue.
+- `dependabot-automerge.yml` — arms auto-merge on Dependabot patch and minor
+  pull requests. It reports no required check, and it never checks out pull
+  request code.
 
 Each file above carries an off-switch row in the README's "Automation
 Off-Switches" section, which names what fires it and how to stop it. A
