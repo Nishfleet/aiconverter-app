@@ -1,0 +1,132 @@
+# A weekly sealed SQL dump of the aiconverter D1 database, kept off
+# Cloudflare (issue #289, the sibling of Nishfleet/drive's d1-export.yml).
+#
+# D1 Time Travel covers the last 30 days, so the weekly dump is the copy that
+# survives everything else: a restore older than 30 days, a dropped database,
+# a loss on Cloudflare's side. docs/ops/database.md is the restore drill that
+# proves a dump is readable before anyone needs it, and it names the one place
+# the decrypt key lives: ~/.config/drive/d1-backup-key.txt on the fleet host
+# (fleet-ops#10829). That host is the single escrow of the private half, so a
+# lost host loses the retained dumps; re-running the drill after any change to
+# this file is what keeps that escrow honest.
+#
+# The dump is the stock D1 export, not hand-rolled backup logic:
+# `wrangler d1 export aiconverter --remote` starts the export, polls it and
+# downloads the SQL itself, with the same CLOUDFLARE_API_TOKEN and
+# CLOUDFLARE_ACCOUNT_ID the deploy lane already uses. Wrangler is pinned to
+# the exact release the restore drill runs (docs/ops/database.md, 4.135.0,
+# published 2026-09-27), so a bump is a reviewed diff in two places, never a
+# floating pull. One thing wrangler prints is the dump's one-hour signed
+# download URL, and this is a public repository: the step keeps wrangler's
+# output in $RUNNER_TEMP and out of the Actions log, and a failure prints a
+# scrubbed tail. The sealed file's sha256 below is the only digest this
+# public log carries: the drill hashes the plaintext it decrypts, and a
+# public log must not carry a digest of the plaintext dump.
+#
+# The dumps are sealed with age before upload: anyone with read access to
+# this public repository can download its workflow artifacts, so only the
+# ciphertext leaves the runner, and the age seal is the control that makes a
+# public artifact safe to retain. The recipient below is the backup key's
+# public half and never a secret. It is a literal here because a repository
+# variable would be a GitHub settings change outside this tree; the trade is
+# visible instead: tests/d1-export.test.mjs pins the recipient and
+# cross-checks the fleet host key where that host holds it, so a swap cannot
+# merge quietly.
+#
+# The export blocks queries on the database while it runs, so it waits for
+# the quiet hour: Mondays 05:37 UTC, between the Worker's nightly trips
+# (reconcile 04:00, trash purge 05:00). A run without the Cloudflare secrets
+# fails loud on purpose: a backup that quietly shipped nothing is the
+# invisibility this job exists to end. Retention 90 days keeps 13 weekly
+# points.
+
+name: D1 weekly backup
+
+on:
+  schedule:
+    # Mondays 05:37 UTC, the same minute as the sibling backups.
+    - cron: "37 5 * * 1"
+  workflow_dispatch: {} # a manual run for restore drills
+
+concurrency:
+  group: d1-export
+  cancel-in-progress: false # a backup never kills a backup
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    name: export aiconverter
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      AGE_RECIPIENT: age1650j6pxe55udk93gv3qsjeugfrdkhazc3ynpydjm64qm8k7fvvjqc093e4
+    steps:
+      # wrangler reads the database name and id from wrangler.jsonc, so the
+      # tree must be present; persist-credentials stays off like deploy.yml.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
+
+      - name: Install age, pinned by digest (docs/security.md)
+        env:
+          AGE_VERSION: v1.3.2
+          AGE_LINUX_AMD64_SHA256: cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/age.tar.gz" \
+            "https://github.com/FiloSottile/age/releases/download/$AGE_VERSION/age-$AGE_VERSION-linux-amd64.tar.gz"
+          echo "$AGE_LINUX_AMD64_SHA256  $RUNNER_TEMP/age.tar.gz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/age-bin"
+          tar -xzf "$RUNNER_TEMP/age.tar.gz" -C "$RUNNER_TEMP/age-bin" --strip-components=1 age/age
+          test -x "$RUNNER_TEMP/age-bin/age"
+
+      - name: Dump and seal aiconverter
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/d1-export"
+          dump="$RUNNER_TEMP/d1-export/aiconverter-$(date -u +%Y%m%d).sql"
+          # Wrangler's own output stays in $RUNNER_TEMP: it carries the dump's
+          # one-hour signed download URL, and this repository's Actions log is
+          # public. A failure prints a URL-scrubbed tail, so the run still
+          # shows why it failed.
+          npx --yes wrangler@4.135.0 d1 export aiconverter --remote \
+            --output "$dump" --skip-confirmation \
+            > "$RUNNER_TEMP/d1-export.log" 2>&1 \
+            || {
+              echo "::error::wrangler d1 export failed; scrubbed tail follows"
+              sed -E 's#https://[^[:space:]]+#<scrubbed>#g;
+                      s/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/<id>/g;
+                      s/\b[0-9a-f]{32}\b/<id>/g' "$RUNNER_TEMP/d1-export.log" | tail -10 || true
+              exit 1
+            }
+          # A 200 download that wrote 0 bytes would seal, upload and go green:
+          # an empty artifact is the "quietly shipped nothing" outcome this
+          # job exists to end.
+          test -s "$dump" || { echo "::error::the dump is empty"; exit 1; }
+          # Sealed before anything ships: only the .age ciphertext reaches the
+          # artifact, and the plaintext dies with the runner's temp.
+          "$RUNNER_TEMP/age-bin/age" -r "$AGE_RECIPIENT" -o "$dump.age" "$dump" \
+            || { echo "::error::the age encryption failed"; exit 1; }
+          rm -f "$dump"
+          sha256sum "$dump.age"
+
+      - name: Upload the sealed dump off Cloudflare
+        # A job whose dump failed never reaches this step, so a failed dump is
+        # a red run and never a silently empty artifact.
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: d1-backup-aiconverter
+          path: ${{ runner.temp }}/d1-export/*.sql.age
+          retention-days: 90
+          if-no-files-found: error

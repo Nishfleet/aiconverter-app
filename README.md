@@ -46,6 +46,7 @@ rest of the file must stay for a manual run.
 | `lighthouse.yml` | After a successful production deploy, Mondays at 04:41 UTC, manual | Delete the file. Delete the `workflow_run:` and `schedule:` triggers to keep the manual audit only. |
 | `agent-dispatch.yml` | Issue labels and comments, pull-request events, a completed CI run, every 6 hours, manual | Delete the file to stop the fleet from starting worker runs on this repo. Delete the `schedule:` block to keep event-driven dispatch and drop the 6-hour sweep. |
 | `dependabot-automerge.yml` | Every pull-request event | Delete the file to stop Dependabot pull requests from being armed for auto-merge. Delete the `pull_request_target:` trigger to keep the file in the tree without arming anything. Major version updates never arm either way, so only patch and minor bumps merge on their own. |
+| `d1-export.yml` | Mondays at 05:37 UTC, manual | Delete the file to stop the weekly backup. Delete the `schedule:` trigger to keep the manual restore drill. |
 
 The six required checks and the job that reports each one are listed in
 [docs/ops/ci.md](docs/ops/ci.md).
