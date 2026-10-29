@@ -19,8 +19,9 @@
 # floating pull. One thing wrangler prints is the dump's one-hour signed
 # download URL, and this is a public repository: the step keeps wrangler's
 # output in $RUNNER_TEMP and out of the Actions log, and a failure prints a
-# URL-scrubbed tail. The sealed file's sha256 below is the checksum the drill
-# records.
+# scrubbed tail. The sealed file's sha256 below is the only digest this
+# public log carries: the drill hashes the plaintext it decrypts, and a
+# public log must not carry a digest of the plaintext dump.
 #
 # The dumps are sealed with age before upload: anyone with read access to
 # this public repository can download its workflow artifacts, so only the
@@ -74,7 +75,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: "24"
+          node-version: "22"
           package-manager-cache: false
 
       - name: Install age, pinned by digest (docs/security.md)
@@ -104,7 +105,9 @@ jobs:
             > "$RUNNER_TEMP/d1-export.log" 2>&1 \
             || {
               echo "::error::wrangler d1 export failed; scrubbed tail follows"
-              sed -E 's#https://[^[:space:]]+#<scrubbed>#g' "$RUNNER_TEMP/d1-export.log" | tail -10 || true
+              sed -E 's#https://[^[:space:]]+#<scrubbed>#g;
+                      s/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/<id>/g;
+                      s/\b[0-9a-f]{32}\b/<id>/g' "$RUNNER_TEMP/d1-export.log" | tail -10 || true
               exit 1
             }
           # A 200 download that wrote 0 bytes would seal, upload and go green:

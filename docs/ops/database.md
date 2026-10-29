@@ -105,9 +105,11 @@ The `sha256sum` covers the plaintext dump, `aiconverter-<date>.sql`, so a
 match means these bytes are the ones that run sealed, and a log fetch that
 fails fails the shell rather than looking like a mismatch. A run whose log
 has expired cannot be checked this way: skip that line, because the counts
-below do not need the log. Runs from this repository always skip it: the job
-logs only the sealed file's digest, because a public Actions log should not
-carry a digest of the plaintext dump. The counts below are the check. The dump carries its own schema, so the fresh
+below do not need the log. A run from this repository has no plaintext
+digest to check either: the job logs only the sealed file's digest, because
+a public Actions log should not carry a digest of the plaintext dump. When
+the run under test is one of those, remove the grep line from the block
+before running it. The counts below are the check. The dump carries its own schema, so the fresh
 `--persist-to` directory needs no migration step, and the block then proves
 that every table in the dump exists in the scratch D1 with the same row
 count. The first table that differs stops it, and that is a dump that did not

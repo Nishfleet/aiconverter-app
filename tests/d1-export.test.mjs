@@ -13,11 +13,6 @@ const WORKFLOW = readFileSync(
 const DRILL = readFileSync(path.join(REPO_ROOT, "docs", "ops", "database.md"), "utf8");
 const VERSION = WORKFLOW.match(/npx --yes wrangler@(\d+\.\d+\.\d+) d1 export/)?.[1];
 
-// The public half of the backup key. The private half is
-// ~/.config/drive/d1-backup-key.txt on the fleet host (fleet-ops#10829), and
-// docs/ops/database.md is the restore drill. A change to the recipient must
-// edit this constant in the same change, so the swap is a reviewed diff
-// instead of a quiet redirect of every future dump.
 const PINNED_RECIPIENT =
   "age1650j6pxe55udk93gv3qsjeugfrdkhazc3ynpydjm64qm8k7fvvjqc093e4";
 
@@ -83,6 +78,9 @@ test("only the sealed ciphertext uploads, and an empty dump refuses to ship", ()
   assert.match(upload, /name: d1-backup-aiconverter/);
   assert.match(upload, /path: \$\{\{ runner\.temp \}\}\/d1-export\/\*\.sql\.age/);
   assert.match(upload, /if-no-files-found: error/);
+  const plainGone = WORKFLOW.indexOf('rm -f "$dump"');
+  assert.ok(plainGone >= 0 && plainGone < WORKFLOW.indexOf("upload-artifact"),
+    "the plaintext must be deleted before the upload step runs");
   assert.match(WORKFLOW, /test -s "\$dump"/);
 });
 
