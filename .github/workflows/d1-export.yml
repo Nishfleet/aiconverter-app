@@ -120,7 +120,11 @@ jobs:
           # (/proc/<pid>/cmdline is world-readable).
           DUMP_URL="$url" node -e 'const fs=require("fs");(async()=>{const r=await fetch(process.env.DUMP_URL);if(!r.ok){console.error("download: HTTP "+r.status);process.exit(1);}fs.writeFileSync(process.argv[1],Buffer.from(await r.arrayBuffer()));})()' "$file" \
             || { echo "::error::$DB_NAME export: the dump download failed"; exit 1; }
-          echo "exported $DB_NAME -> ${file##*/} ($(wc -c < "$file") bytes, sha256 $(sha256sum "$file" | cut -d' ' -f1))"
+          # A 200 download that wrote 0 bytes would seal, upload and go green:
+          # an empty artifact is the "quietly shipped nothing" outcome this
+          # job exists to end.
+          test -s "$file" || { echo "::error::$DB_NAME export: the dump is empty"; exit 1; }
+          echo "exported $DB_NAME -> ${file##*/} ($(wc -c < "$file") bytes)"
           # Sealed before anything ships: only the .age ciphertext reaches the
           # artifact, and the plaintext dies with the runner's temp.
           "$RUNNER_TEMP/age-bin/age" -r "$AGE_RECIPIENT" -o "$file.age" "$file" \
