@@ -20,9 +20,10 @@
 #
 # The dump goes through the stock D1 export API (`output_format: "polling"`,
 # Cloudflare's OpenAPI schema): the first call starts the dump, later calls
-# poll with the returned `at_bookmark` until `status: "complete"` carries a
-# `signed_url`, valid one hour. The pinned cf CLI has no d1 export command, so
-# this is the stock REST call, not hand-rolled backup logic.
+# poll with the returned `at_bookmark`, and the wait ends when
+# `status: "complete"` carries a `signed_url`, valid one hour. The pinned cf
+# CLI has no d1 export command, so this is the stock REST call, not
+# hand-rolled backup logic.
 #
 # The matrix keeps the same shape as the other repositories that hold this job,
 # with the one database this repository deploys: GitHub runs one job per
