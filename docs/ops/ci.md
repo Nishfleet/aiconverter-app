@@ -119,6 +119,7 @@ $ git grep -n "paths:\|if:\|branches-ignore" -- .github/workflows/ci.yml .github
 $ git ls-files .github/workflows
 .github/workflows/agent-dispatch.yml
 .github/workflows/ci.yml
+.github/workflows/d1-export.yml
 .github/workflows/dependabot-automerge.yml
 .github/workflows/deploy.yml
 .github/workflows/lighthouse.yml
@@ -129,6 +130,9 @@ $ git ls-files .github/workflows
   tests), `build` (Build) and `actionlint`.
 - `secret-scan.yml` — `gitleaks` (Gitleaks) and `semgrep`.
 - `deploy.yml` — push to `main` builds and deploys to Cloudflare Pages.
+- `d1-export.yml` — seals a weekly SQL dump of the D1 database with age and
+  uploads it as a GitHub artifact, Mondays 05:37 UTC plus manual dispatch
+  (docs/ops/database.md is the restore drill).
 - `lighthouse.yml` — scheduled Lighthouse audits.
 - `agent-dispatch.yml` — starts a fleet worker run for a labeled issue.
 - `dependabot-automerge.yml` — arms auto-merge on Dependabot patch and minor
