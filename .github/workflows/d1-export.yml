@@ -81,6 +81,9 @@ jobs:
       - name: Dump and seal ${{ matrix.database.name }}
         run: |
           test -n "$AGE_RECIPIENT" || { echo "::error::the age recipient is unset: AGE_RECIPIENT in .github/workflows/d1-export.yml must be the backup key's public key — the backup refuses to ship plaintext dumps"; exit 1; }
+          # The dump and its ciphertext hold bank-statement data: keep them
+          # owner-only on the runner, not just the token file.
+          umask 077
           mkdir -p "$RUNNER_TEMP/d1-export"
           file="$RUNNER_TEMP/d1-export/$DB_NAME-$(date -u +%Y%m%d).sql"
           headers="$RUNNER_TEMP/d1-headers"
@@ -112,8 +115,10 @@ jobs:
           # The signed URL's dump is data, not code: it is written to
           # $RUNNER_TEMP and shipped as an artifact, never executed, and it
           # changes every run so no digest can be pinned. The runtime's own
-          # fetch (TLS, no shell quoting) takes it instead of curl.
-          node -e 'const fs=require("fs");(async()=>{const r=await fetch(process.argv[1]);if(!r.ok){console.error("download: HTTP "+r.status);process.exit(1);}fs.writeFileSync(process.argv[2],Buffer.from(await r.arrayBuffer()));})()' "$url" "$file" \
+          # fetch (TLS, no shell quoting) takes it instead of curl, and the
+          # one-hour bearer URL rides in the environment, not in argv
+          # (/proc/<pid>/cmdline is world-readable).
+          DUMP_URL="$url" node -e 'const fs=require("fs");(async()=>{const r=await fetch(process.env.DUMP_URL);if(!r.ok){console.error("download: HTTP "+r.status);process.exit(1);}fs.writeFileSync(process.argv[1],Buffer.from(await r.arrayBuffer()));})()' "$file" \
             || { echo "::error::$DB_NAME export: the dump download failed"; exit 1; }
           echo "exported $DB_NAME -> ${file##*/} ($(wc -c < "$file") bytes, sha256 $(sha256sum "$file" | cut -d' ' -f1))"
           # Sealed before anything ships: only the .age ciphertext reaches the
