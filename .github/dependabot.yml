@@ -8,6 +8,8 @@ updates:
       time: "09:00"
       timezone: "Asia/Kolkata"
     open-pull-requests-limit: 3
+    cooldown:
+      default-days: 3
     commit-message:
       prefix: "deps"
     groups:
@@ -21,7 +23,6 @@ updates:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-major"
-
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -34,3 +35,7 @@ updates:
       default-days: 3
     commit-message:
       prefix: "deps(actions)"
+    groups:
+      github-actions:
+        patterns:
+          - "*"

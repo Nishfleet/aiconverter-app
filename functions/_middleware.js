@@ -786,7 +786,7 @@ export async function onRequest(context) {
   const request = context.request;
   const url = new URL(request.url);
 
-  if (url.hostname === "www.aiconverter.app" || url.hostname.endsWith(".pages.dev")) {
+  if (url.hostname === "www.aiconverter.app" || url.hostname === "aiconverter-wnm.pages.dev") {
     url.hostname = "aiconverter.app";
     return withSecurityHeaders(Response.redirect(url.toString(), 301));
   }
