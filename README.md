@@ -40,7 +40,7 @@ rest of the file must stay for a manual run.
 
 | Workflow | Fires on | Off-switch |
 | --- | --- | --- |
-| `ci.yml` | Every pull request, the merge queue | Delete the file. Clear its five required checks under Settings → Rules → Rulesets first, or every pull request waits on a check that never reports. |
+| `ci.yml` | Every pull request, the merge queue | Delete the file. Clear its six required checks under Settings → Rules → Rulesets first, or every pull request waits on a check that never reports. |
 | `deploy.yml` | Push to `main`, manual | Delete the file to stop deploys. Delete the `push:` trigger to keep the manual run only. Do not turn on the Cloudflare Pages Git integration at the same time: two deploy paths race each other. |
 | `dependabot-automerge.yml` | Every pull-request event | Delete the file to stop Dependabot patch and minor updates from joining the merge queue on their own. |
 | `d1-export.yml` | Mondays at 05:37 UTC, manual | Delete the file to stop the weekly backup. Delete the `schedule:` trigger to keep the manual restore drill. |

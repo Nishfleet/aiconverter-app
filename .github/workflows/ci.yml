@@ -14,7 +14,18 @@ jobs:
     # Pricing check, unit tests, build: AGENTS.md "Checks" (deploy.yml shipped
     # main without them before #284). Lint: the app-code comment ban
     # (aiconverter-app#259). No helper scripts: the no-glue standing rule.
-    name: ci
+    # One matrix leg per check name the main ruleset requires.
+    name: ${{ matrix.check }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - check: Pricing check
+            run: npm run check:pricing
+          - check: Unit tests
+            run: node --test tests/*.test.mjs
+          - check: Build
+            run: npm run lint && npm run build && test -z "$(git ls-files scripts bin tools ops .specify '*.sh')"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -26,17 +37,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run check:pricing
-      - run: node --test tests/*.test.mjs
-      - run: npm run lint
-      - run: npm run build
-      - name: No helper scripts
-        run: test -z "$(git ls-files scripts bin tools ops .specify '*.sh')"
+      - run: ${{ matrix.run }}
 
   gitleaks:
     # Leaked tokens were real (fleet-ops#9578, #8771). Whole history, so a
     # merge-queue head is scanned the same way as a pull request.
-    name: gitleaks
+    name: Gitleaks
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
