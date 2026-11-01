@@ -6,9 +6,6 @@ on:
   pull_request_target:
 permissions:
   contents: read
-concurrency:
-  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
 jobs:
   auto-merge:
     name: Arm auto-merge for patch and minor updates
