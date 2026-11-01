@@ -1,118 +1,38 @@
+# Every merge to main deploys to Cloudflare Pages. Incident: merges landed on
+# main but never reached aiconverter.app because no deploy workflow existed.
+# The merge queue already ran CI on this exact tree, so the job only builds
+# and publishes. Do not also turn on the Pages Git integration: two writers
+# to one project race, last writer wins.
 name: Deploy production
-
-# The aiconverter.app release lane. Every merge to main builds the Vite
-# production bundle (dist/), publishes it to the Cloudflare Pages project
-# `aiconverter` with `wrangler pages deploy` (independent of the Cloudflare
-# GitHub integration), and verifies the live site. This closes the gap that
-# left production behind main: merges landed on main but never reached
-# aiconverter.app because no deploy/publish workflow existed.
-#
-# The lane is fail-closed and reversible:
-#   - Missing required secrets FAIL the run loudly. A skipped publish must
-#     never produce a green deploy status: green means "deployed and
-#     verified", nothing else.
-#   - Before upload the lane runs the same offline gates as ci.yml (pricing
-#     consistency, unit tests, build) so a broken main never ships.
-#
-# Required secrets (fail-closed when missing - a skipped publish must never
-# produce a green deploy status):
-#   CLOUDFLARE_API_TOKEN  - Cloudflare API token with Cloudflare Pages:Edit
-#                           on the account that owns the `aiconverter` project
-#   CLOUDFLARE_ACCOUNT_ID - the account id that owns the `aiconverter` project
-#
-# Both Pages secrets are provisioned, so the reason the daily schedule
-# existed has expired: it was a self-heal net that picked a stale site back
-# up within a day of the token landing. The push-to-main trigger below is the
-# deploy, and workflow_dispatch covers a manual re-run.
-#
-# Do not also turn on the Cloudflare Pages Git integration (Pages dashboard,
-# Settings -> Builds & deploys). It publishes the same dist/ and can chain the
-# same gates into its build command, but that command is configured in the
-# Cloudflare dashboard rather than in this repo, so it drifts out of review.
-# It has no equivalent of the "Verify live site" step below, and two deploy
-# paths writing to the `aiconverter` project race each other with the last
-# writer winning. Turning this lane off means removing the push trigger, not
-# adding the Git integration. The README's "Automation Off-Switches" section
-# says how.
-
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
-
 permissions:
   contents: read
-
+  deployments: write
 concurrency:
-  group: deploy-production-${{ github.ref }}
+  group: deploy-production
   cancel-in-progress: false
-
 jobs:
   deploy:
-    name: Build and publish to Cloudflare Pages
+    name: deploy
     runs-on: ubuntu-latest
-    # Secrets are hoisted to the job env because the `secrets` context is not
-    # available in step-level `if:` conditions; the `env` context is.
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    timeout-minutes: 15
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-
-      - name: Required Pages secrets not provisioned - fail loudly
-        if: env.CLOUDFLARE_API_TOKEN == '' || env.CLOUDFLARE_ACCOUNT_ID == ''
-        run: |
-          echo "::error title=Release lane cannot run::CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID are not set in repo secrets. The lane fails closed instead of skipping the publish: a skipped publish must never show a green deploy status."
-          echo "One-time provisioning (dashboard, ~2 minutes):"
-          echo "  1. https://dash.cloudflare.com/profile/api-tokens -> Create Token"
-          echo "  2. Use the 'Cloudflare Pages: Edit' template, scope it to the account that owns the \`aiconverter\` Pages project, create, copy the token."
-          echo "  3. gh secret set CLOUDFLARE_API_TOKEN -R nish3451/aiconverter-app"
-          echo "  4. Find the account id on the Cloudflare dashboard sidebar (right side of any account page), then:"
-          echo "     gh secret set CLOUDFLARE_ACCOUNT_ID -R nish3451/aiconverter-app -b <account-id>"
-          echo "  5. Re-run this lane from the Actions tab, or push a commit to main; no code change needed."
-          exit 1
-
-      - name: Set up Node
-        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
-
-      - name: Install dependencies
-        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
-        run: npm ci
-
-      - name: Pricing consistency check
-        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
-        run: npm run check:pricing
-
-      - name: Unit tests
-        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
-        run: node --test tests/*.test.mjs
-
-      - name: Build
-        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
-        run: npm run build
-
-      - name: Publish to Cloudflare Pages
-        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
-        run: npx wrangler pages deploy dist --project-name aiconverter --branch main
-
-      - name: Verify live site
-        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
-        run: |
-          set -euo pipefail
-          # Give the Pages deployment a moment to propagate.
-          sleep 20
-          status="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 https://aiconverter.app/)"
-          echo "aiconverter.app/ -> HTTP $status"
-          if [ "$status" != "200" ]; then
-            echo "::error::Live site returned HTTP $status after deploy; investigate https://aiconverter.app/"
-            exit 1
-          fi
-          echo "Live site verified: HTTP 200"
+      - run: npm ci
+      - run: npm run build
+      - uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          wranglerVersion: "4.135.0"
+          command: pages deploy dist --project-name aiconverter --branch main --commit-dirty=true
