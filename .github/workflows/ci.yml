@@ -82,9 +82,10 @@ jobs:
     # click is the last gate of every product PR. Each PR deploys to the
     # pr-<number> branch of the Pages project, so the link is stable across
     # pushes: https://pr-<number>.aiconverter.pages.dev. Skipped in the merge
-    # queue (no PR there), which GitHub counts as passing.
+    # queue (no PR there) and for Dependabot (its runs get no Actions
+    # secrets); GitHub counts a skipped job as passing.
     name: preview
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
