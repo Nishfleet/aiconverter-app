@@ -17,6 +17,9 @@ concurrency:
 jobs:
   deploy:
     name: deploy
+    environment:
+      name: production
+      url: https://aiconverter.app
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -36,3 +39,7 @@ jobs:
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           wranglerVersion: "4.135.0"
           command: pages deploy dist --project-name aiconverter --branch main --commit-dirty=true
+      # Pages keeps every deployment; a failed smoke is rolled back with the dashboard's Rollback button.
+      - id: smoke
+        timeout-minutes: 3
+        run: curl -fsS -o /dev/null --retry 10 --retry-all-errors --retry-delay 6 https://aiconverter.app/
