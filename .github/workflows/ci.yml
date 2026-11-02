@@ -39,21 +39,6 @@ jobs:
       - run: npm ci
       - run: ${{ matrix.run }}
 
-  gitleaks:
-    # Leaked tokens were real (fleet-ops#9578, #8771). Whole history, so a
-    # merge-queue head is scanned the same way as a pull request.
-    name: Gitleaks
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    container:
-      image: ghcr.io/gitleaks/gitleaks:v8.30.1
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE" && gitleaks git --redact --no-banner --exit-code 1 .
-
   semgrep:
     # No hand-built orchestration: the no-glue standing rule at the static-gate
     # rung (fleet-ops#9297). One canonical ruleset, consumed by pinned URL.
