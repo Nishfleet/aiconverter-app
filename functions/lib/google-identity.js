@@ -5,10 +5,16 @@ const GOOGLE_ISSUERS = ["accounts.google.com", "https://accounts.google.com"];
 const CLOCK_SKEW_SECONDS = 60;
 const MAX_TOKEN_AGE = "1h";
 
+/** @type {ReturnType<typeof createRemoteJWKSet> | null}
+ * Google's signing keys, fetched and cached by jose between requests.
+ */
 let googleKeys = null;
 
 export const SHEETS_ADDON_CLIENT = "sheets-addon";
 
+/** @param {Env} env
+ * @returns {string[]}
+ */
 export function sheetsAddonClientIds(env) {
   return String(env?.GOOGLE_SHEETS_ADDON_CLIENT_IDS || "")
     .split(",")
@@ -16,16 +22,29 @@ export function sheetsAddonClientIds(env) {
     .filter(Boolean);
 }
 
+/** @param {Request} request
+ * @returns {boolean}
+ */
 export function isSheetsAddonRequest(request) {
   return (request.headers.get("X-AIConverter-Client") || "").trim().toLowerCase() === SHEETS_ADDON_CLIENT;
 }
 
+/** @param {Request} request
+ * @returns {string}
+ */
 export function bearerToken(request) {
   const header = request.headers.get("Authorization") || "";
   const match = header.match(/^Bearer\s+(.+)$/i);
   return match ? match[1].trim() : "";
 }
 
+/** @param {Env} env
+ * @param {Request} request
+ * @param {{ fetchImpl?: typeof fetch }} [options]
+ * @returns {Promise<{ ok: boolean, status?: number, message?: string, sub?: string, email?: string }>}
+ * Verifies a Google-issued RS256 ID token against the add-on client ids
+ * (audience), Google's issuers, expiry, and Google's published signing keys.
+ */
 export async function verifySheetsAddonIdentity(env, request, { fetchImpl = fetch } = {}) {
   const audiences = sheetsAddonClientIds(env);
   if (!audiences.length) {
@@ -64,10 +83,17 @@ export async function verifySheetsAddonIdentity(env, request, { fetchImpl = fetc
   return { ok: true, sub: String(payload.sub), email: verifiedEmail ? String(payload.email || "") : "" };
 }
 
+/** @returns {void}
+ */
 export function resetGoogleKeyCacheForTests() {
   googleKeys = null;
 }
 
+/** @param {typeof fetch} fetchImpl
+ * @returns {ReturnType<typeof createRemoteJWKSet>}
+ * Google's signing keys through jose's remote JWKS cache. A failed refresh
+ * throws, and the next call fetches again.
+ */
 function googleSigningKeys(fetchImpl) {
   googleKeys ??= createRemoteJWKSet(new URL(GOOGLE_CERTS_URL), { [customFetch]: fetchImpl });
   return googleKeys;

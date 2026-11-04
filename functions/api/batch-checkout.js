@@ -14,6 +14,9 @@ export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -95,7 +98,8 @@ export async function onRequestPost({ request, env }) {
       email: batch.email
     });
   } catch (error) {
-    return json({ error: error?.message || "Batch checkout could not be created.", code: error?.code || "DODO_BATCH_CHECKOUT_ERROR" }, { status: 503 });
+    const checkoutError = /** @type {Error & { code?: string }} */ (error);
+    return json({ error: checkoutError.message || "Batch checkout could not be created.", code: checkoutError.code || "DODO_BATCH_CHECKOUT_ERROR" }, { status: 503 });
   }
 
   if (!checkoutUrl) {

@@ -9,6 +9,37 @@ export const BANK_OUTPUT_FORMATS = [
   "qbo"
 ];
 
+/** @typedef {Object} BankRow
+ * * @property {string} date * @property {string} description
+ * @property {string | number} money_in
+ * @property {string | number} money_out
+ * @property {string | number} balance
+ * @property {number} confidence
+ */
+
+/** @typedef {Object} CsvColumn
+ * @property {string} key
+ * @property {string} [label]
+ */
+
+/** @typedef {Object} ValidationInput
+ * * @property {string[]} [warnings] * @property {Record<string, Record<string, unknown>>} [checks]
+ * @property {number} [confidence]
+ */
+
+/** @typedef {Object} BankExportResult
+ * @property {boolean} ok
+ * @property {string} [message]
+ * @property {string} outputFormat
+ * @property {string} [content]
+ * @property {string} [csv]
+ * @property {string} [contentType]
+ * @property {string} [fileExtension]
+ * @property {CsvColumn[]} [columns]
+ * @property {Array<Record<string, string>>} [previewRows]
+ * @property {string} [validationReport]
+ */
+
 const DEFAULT_METADATA = {
   bankName: "Bank",
   bankId: "",
@@ -22,15 +53,24 @@ const DEFAULT_METADATA = {
 
 const ACCOUNT_TYPES = new Set(["CHECKING", "SAVINGS", "MONEYMRKT", "CREDITLINE", "CD"]);
 
+/** @param {string} [format]
+ * @returns {boolean}
+ */
 export function isBankOutputFormat(format = "") {
   return BANK_OUTPUT_FORMATS.includes(String(format || "").toLowerCase());
 }
 
+/** @param {string} [format]
+ * @returns {string}
+ */
 export function normalizeBankOutputFormat(format = "") {
   const normalized = String(format || "").trim().toLowerCase();
   return isBankOutputFormat(normalized) ? normalized : "csv";
 }
 
+/** @param {string} [format]
+ * @returns {string}
+ */
 export function bankOutputFileExtension(format = "") {
   const normalized = normalizeBankOutputFormat(format);
   if (normalized.endsWith("-csv")) return "csv";
@@ -38,6 +78,9 @@ export function bankOutputFileExtension(format = "") {
   return normalized;
 }
 
+/** @param {string} [format]
+ * @returns {string}
+ */
 export function bankOutputContentType(format = "") {
   const normalized = normalizeBankOutputFormat(format);
   if (normalized === "qif") return "application/x-qif; charset=utf-8";
@@ -46,7 +89,11 @@ export function bankOutputContentType(format = "") {
   return "text/csv; charset=utf-8";
 }
 
+/** @param {string} [format]
+ * @returns {string}
+ */
 export function bankOutputLabel(format = "") {
+  /** @type {Record<string, string>} */
   const labels = {
     csv: "Clean CSV",
     "quickbooks-csv": "QuickBooks CSV",
@@ -60,10 +107,15 @@ export function bankOutputLabel(format = "") {
   return labels[normalizeBankOutputFormat(format)] || "CSV";
 }
 
+/** @param {string} [format]
+ * @param {string} [originalName]
+ * @returns {string}
+ */
 export function bankDownloadFileName(format = "", originalName = "bank-statement") {
   const normalized = normalizeBankOutputFormat(format);
   const extension = bankOutputFileExtension(normalized);
   const stem = cleanFileStem(originalName || "bank-statement");
+  /** @type {Record<string, string>} */
   const suffixes = {
     csv: "clean",
     "quickbooks-csv": "quickbooks",
@@ -77,8 +129,10 @@ export function bankDownloadFileName(format = "", originalName = "bank-statement
   return `aiconverter-${stem}-${suffixes[normalized] || "export"}.${extension}`;
 }
 
+/** @param {Record<string, unknown>} value
+ * * @returns {{ bankName: string, bankId: string, accountId: string, accountType: string, currency: string, country: string, dateFormat: string, intuitBankId: string }} */
 export function sanitizeBankMetadata(value = {}) {
-  const input = typeof value === "string" ? parseJson(value) : value || {};
+  const input = typeof value === "string" ? parseJson(value) : asRecord(value || {});
   const country = cleanCode(input.country || DEFAULT_METADATA.country, 3) || DEFAULT_METADATA.country;
   const currency = cleanCode(input.currency || DEFAULT_METADATA.currency, 3) || DEFAULT_METADATA.currency;
   const accountType = String(input.accountType || DEFAULT_METADATA.accountType).trim().toUpperCase();
@@ -94,6 +148,10 @@ export function sanitizeBankMetadata(value = {}) {
   };
 }
 
+/** @param {string} [format]
+ * @param {Record<string, unknown>} [metadata]
+ * @returns {string[]}
+ */
 export function missingBankMetadata(format = "", metadata = {}) {
   const normalized = normalizeBankOutputFormat(format);
   if (!["ofx", "qbo"].includes(normalized)) return [];
@@ -105,6 +163,10 @@ export function missingBankMetadata(format = "", metadata = {}) {
   return missing;
 }
 
+/** @param {BankRow[]} rows
+ * * @param {string} [format] * @param {{ accountingMetadata?: Record<string, unknown>, bankMetadata?: Record<string, unknown>, validation?: ValidationInput, sourceFileName?: string, format?: string }} [options]
+ * @returns {BankExportResult}
+ */
 export function exportBankRows(rows, format = "csv", options = {}) {
   const normalized = normalizeBankOutputFormat(format);
   const metadata = sanitizeBankMetadata(options.accountingMetadata || options.bankMetadata || {});
@@ -154,6 +216,10 @@ export function exportBankRows(rows, format = "csv", options = {}) {
   });
 }
 
+/** @param {BankRow[]} rows
+ * @param {{ validation?: ValidationInput, metadata?: Record<string, unknown>, format?: string, sourceFileName?: string }} [options]
+ * @returns {string}
+ */
 export function buildValidationReport(rows, options = {}) {
   const validation = options.validation || {};
   const metadata = sanitizeBankMetadata(options.metadata || {});
@@ -200,6 +266,11 @@ export function buildValidationReport(rows, options = {}) {
   return `${lines.join("\n")}\n`;
 }
 
+/** @param {BankRow[]} rows
+ * @param {string} format
+ * @param {{ bankName: string, bankId: string, accountId: string, accountType: string, currency: string, country: string, dateFormat: string, intuitBankId: string }} metadata
+ * @returns {{ columns: CsvColumn[], mappedRows: Array<Record<string, string>> }}
+ */
 function rowsToAccountingCsv(rows, format, metadata) {
   if (format === "quickbooks-csv") {
     const columns = [
@@ -290,6 +361,10 @@ function rowsToAccountingCsv(rows, format, metadata) {
   };
 }
 
+/** @param {BankRow[]} rows
+ * @param {{ bankName: string, bankId: string, accountId: string, accountType: string, currency: string, country: string, dateFormat: string, intuitBankId: string }} metadata
+ * @returns {string}
+ */
 function rowsToQif(rows, metadata) {
   const type = metadata.accountType === "CREDITLINE" ? "CCard" : "Bank";
   const lines = [`!Type:${type}`];
@@ -303,6 +378,11 @@ function rowsToQif(rows, metadata) {
   return `${lines.join("\n")}\n`;
 }
 
+/** @param {BankRow[]} rows
+ * @param {{ bankName: string, bankId: string, accountId: string, accountType: string, currency: string, country: string, dateFormat: string, intuitBankId: string }} metadata
+ * @param {{ quickBooks?: boolean }} [options]
+ * @returns {string}
+ */
 function rowsToOfx(rows, metadata, options = {}) {
   const now = ofxDateTime(new Date());
   const start = rows[0]?.date ? ofxDate(rows[0].date) : now;
@@ -382,6 +462,9 @@ ${transactions}
 `;
 }
 
+/** @param {{ content: string, format: string, rows: BankRow[], columns?: CsvColumn[], previewRows?: Array<Record<string, string>>, validationReport?: string }} parts
+ * @returns {BankExportResult}
+ */
 function output({ content, format, rows, columns, previewRows, validationReport }) {
   const normalized = normalizeBankOutputFormat(format);
   const previewColumns = columns || [
@@ -409,6 +492,9 @@ function output({ content, format, rows, columns, previewRows, validationReport 
   };
 }
 
+/** @param {unknown} rows
+ * @returns {BankRow[]}
+ */
 function normalizeRows(rows) {
   return (Array.isArray(rows) ? rows : [])
     .map((row) => ({
@@ -422,6 +508,10 @@ function normalizeRows(rows) {
     .filter((row) => row.date || row.description || hasNumber(row.money_in) || hasNumber(row.money_out));
 }
 
+/** @param {Array<Record<string, string>>} rows
+ * @param {CsvColumn[]} columns
+ * @returns {string}
+ */
 function rowsToCsv(rows, columns) {
   const header = columns.map((column) => column.key);
   const labels = columns.map((column) => column.label || column.key);
@@ -435,6 +525,9 @@ function rowsToCsv(rows, columns) {
 const CSV_FORMULA_TRIGGER = /^[=+\-@\t\r]/;
 const CSV_PLAIN_NUMBER = /^[+-]?[$€£¥₹]?(?:\d{1,3}(?:,\d{3})+|\d+|(?=\.\d))(?:\.\d+)?$/;
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 export function guardCsvFormula(value) {
   if (typeof value === "number") return String(value);
   const text = String(value ?? "");
@@ -442,20 +535,32 @@ export function guardCsvFormula(value) {
   return `'${text}`;
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 export function unguardCsvFormula(value) {
   const text = String(value ?? "");
   return text.startsWith("'") && CSV_FORMULA_TRIGGER.test(text.slice(1)) ? text.slice(1) : text;
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 export function csvCell(value) {
   const text = guardCsvFormula(value).replaceAll('"', '""');
   return /[",\n\r]/.test(text) ? `"${text}"` : text;
 }
 
+/** @param {BankRow} row
+ * @returns {number}
+ */
 function signedAmount(row) {
   return roundMoney(Number(row.money_in || 0) - Number(row.money_out || 0));
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function normalizeDate(value) {
   const text = String(value || "").trim();
   const iso = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
@@ -468,6 +573,10 @@ function normalizeDate(value) {
   return text.slice(0, 10);
 }
 
+/** @param {unknown} value
+ * @param {string} format
+ * @returns {string}
+ */
 function formatDate(value, format) {
   const iso = normalizeDate(value);
   const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -479,12 +588,18 @@ function formatDate(value, format) {
   return `${mm}/${dd}/${yyyy}`;
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function ofxDate(value) {
   const iso = normalizeDate(value);
   const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   return match ? `${match[1]}${match[2]}${match[3]}120000` : ofxDateTime(new Date());
 }
 
+/** @param {Date} date
+ * @returns {string}
+ */
 function ofxDateTime(date) {
   return [
     date.getUTCFullYear(),
@@ -496,6 +611,11 @@ function ofxDateTime(date) {
   ].join("");
 }
 
+/** @param {BankRow} row
+ * @param {{ bankName: string, bankId: string, accountId: string, accountType: string, currency: string, country: string, dateFormat: string, intuitBankId: string }} metadata
+ * @param {number} index
+ * @returns {string}
+ */
 function stableTransactionId(row, metadata, index) {
   const seed = [
     metadata.bankId,
@@ -508,6 +628,9 @@ function stableTransactionId(row, metadata, index) {
   return `${row.date.replaceAll("-", "")}${String(index + 1).padStart(5, "0")}${stableHash(seed).slice(0, 12)}`.slice(0, 32);
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function stableHash(value) {
   let hash = 2166136261;
   for (const char of String(value || "")) {
@@ -517,14 +640,23 @@ function stableHash(value) {
   return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
+/** @param {unknown} [description]
+ * @returns {string}
+ */
 function payeeFromDescription(description = "") {
   return cleanText(String(description).split(/\s{2,}| - | \| /)[0], 80) || "Transaction";
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function qifText(value) {
   return String(value || "").replace(/\r?\n/g, " ").replace(/\^/g, "").trim();
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function ofxText(value) {
   return String(value || "")
     .replaceAll("&", "&amp;")
@@ -534,27 +666,47 @@ function ofxText(value) {
     .trim();
 }
 
+/** @param {unknown} value
+ * @param {number} [max]
+ * @returns {string}
+ */
 function cleanText(value, max = 120) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function cleanBankId(value) {
   return String(value || "").replace(/[^a-zA-Z0-9-]/g, "").slice(0, 32);
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function cleanAccountId(value) {
   return String(value || "").replace(/[^a-zA-Z0-9*-]/g, "").slice(0, 34);
 }
 
+/** @param {unknown} value
+ * @param {number} max
+ * @returns {string}
+ */
 function cleanCode(value, max) {
   return String(value || "").replace(/[^a-zA-Z]/g, "").slice(0, max).toUpperCase();
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function cleanDateFormat(value) {
   const format = String(value || "").toUpperCase();
   return ["MM/DD/YYYY", "DD/MM/YYYY", "YYYY/MM/DD", "YYYY-MM-DD"].includes(format) ? format : DEFAULT_METADATA.dateFormat;
 }
 
+/** @param {unknown} value
+ * @returns {string | number}
+ */
 function normalizeNumber(value) {
   if (value === null || value === undefined || value === "") return "";
   if (typeof value === "number") return Number.isFinite(value) ? value : "";
@@ -565,19 +717,31 @@ function normalizeNumber(value) {
   return negative ? -number : number;
 }
 
+/** @param {unknown} value
+ * @returns {boolean}
+ */
 function hasNumber(value) {
   return value !== "" && value !== null && value !== undefined && Number.isFinite(Number(value));
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function formatAmount(value) {
   if (!hasNumber(value)) return "";
   return Number(value).toFixed(2);
 }
 
+/** @param {unknown} value
+ * @returns {number}
+ */
 function roundMoney(value) {
   return Math.round(Number(value || 0) * 100) / 100;
 }
 
+/** @param {BankRow[]} rows
+ * @returns {number}
+ */
 function countDuplicateRows(rows) {
   const seen = new Set();
   let count = 0;
@@ -589,11 +753,18 @@ function countDuplicateRows(rows) {
   return count;
 }
 
+/** @param {unknown} value
+ * @param {unknown} total
+ * @returns {string}
+ */
 function countCheck(value, total) {
   if (!Number.isFinite(Number(value))) return "not checked";
   return `${Number(value)}/${Number(total || 0)}`;
 }
 
+/** @param {Record<string, unknown>} [check]
+ * @returns {string}
+ */
 function balanceCheckSummary(check = {}) {
   const checked = Number(check.checked || 0);
   if (!checked) return "not available";
@@ -603,6 +774,9 @@ function balanceCheckSummary(check = {}) {
   return `${status} (${matched}/${checked} checked rows matched)`;
 }
 
+/** @param {Record<string, unknown>} [check]
+ * @returns {string}
+ */
 function pageCoverageSummary(check = {}) {
   const expected = Number(check.expectedPages || 0);
   const covered = Number(check.coveredPages || 0);
@@ -611,18 +785,27 @@ function pageCoverageSummary(check = {}) {
   return `${covered}/${expected} expected page${expected === 1 ? "" : "s"}`;
 }
 
+/** @param {number[]} values
+ * @returns {number}
+ */
 function average(values) {
   const valid = values.filter(Number.isFinite);
   if (!valid.length) return 0;
   return valid.reduce((sum, value) => sum + value, 0) / valid.length;
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function maskAccount(value) {
   const text = String(value || "");
   if (text.length <= 4) return text ? "••••" : "";
   return `${"•".repeat(Math.min(8, text.length - 4))}${text.slice(-4)}`;
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function cleanFileStem(value) {
   return String(value || "bank-statement")
     .replace(/\.[a-z0-9]+$/i, "")
@@ -631,7 +814,12 @@ function cleanFileStem(value) {
     .slice(0, 48) || "bank-statement";
 }
 
+/** @param {string} format
+ * @param {string[]} missing
+ * @returns {string}
+ */
 function missingMetadataMessage(format, missing) {
+  /** @type {Record<string, string>} */
   const labels = {
     bankId: "routing / bank ID",
     accountId: "account number / account ID",
@@ -640,6 +828,16 @@ function missingMetadataMessage(format, missing) {
   return `${bankOutputLabel(format)} needs ${missing.map((item) => labels[item] || item).join(", ")} to create a bank-style import file.`;
 }
 
+/** @param {unknown} value
+ * @returns {Record<string, unknown>}
+ */
+function asRecord(value) {
+  return value && typeof value === "object" ? /** @type {Record<string, unknown>} */ (value) : {};
+}
+
+/** @param {string} value
+ * @returns {Record<string, unknown>}
+ */
 function parseJson(value) {
   try {
     return JSON.parse(value);

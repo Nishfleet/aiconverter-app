@@ -1,6 +1,6 @@
 ---
-name: verify-aiconverter
-description: Launch, health-check, drive, and prove the AI Converter app (`aiconverter.app`) locally and against the live site. Use before claiming any change to the converter, pricing, formats, or policy pages works end-to-end.
+name: verify
+description: Launch, health-check, drive, and prove the AI Converter app (`aiconverter.app`, a Vite SPA plus Cloudflare Pages Functions) locally and against the live site. Use before claiming any change to the converter, pricing, formats, policy pages, payments or the Sheets add-on works end to end, and to write the `run-proof:` line of a PR.
 ---
 
 AI Converter (repo `aiconverter-app`) is a Cloudflare Pages app for preview-first
@@ -32,7 +32,7 @@ npx vite preview --host 127.0.0.1 --port 4180 --strictPort
 `dist/sitemap.xml` with lastmod dates from the git history). `vite build` emits
 `dist/index.html`, the hashed `dist/assets/index-*.js` and `index-*.css`,
 and the pre-rendered marketing pages under `dist/<route>/index.html`
-(23 routes, including `/`, `/about/`, `/formats/`, `/pricing/`,
+(26 sitemap entries, including `/`, `/about/`, `/formats/`, `/pricing/`,
 `/privacy/`, `/terms/`, `/refund/`, `/security/`, `/trust/`,
 `/data-retention/`, `/support/`, plus the long-tail bank-statement,
 receipt, screenshot, and invoice SEO pages).
@@ -90,8 +90,12 @@ the read-only and configuration endpoints listed in `features/`.
 
 ### Never
 
-- `npm run preview` (no such script in this repo) — the only preview
-  command is `npx vite preview` from the Vite CLI.
+- `npm run preview` — it binds `0.0.0.0`, which exposes the server beyond
+  loopback. Use the `npx vite preview --host 127.0.0.1` launch above.
+- Trusting a status code from the local preview for `/api/*` — Vite
+  preview answers every unknown path, `/api/health` included, with the
+  SPA page and HTTP 200. Assert the body (`"status":"ready"`), never just
+  the code.
 - `wrangler pages dev` without a real `CLOUDFLARE_API_TOKEN` — the AI
   binding forces a remote-proxy session that will not start locally.
 - Driving `/api/convert`, `/api/checkout`, `/api/finalize`, `/api/webhooks/*`
@@ -160,6 +164,11 @@ Per-feature steps live in `features/`:
 | Live `/api/config` | `features/api-config.md` |
 | Live `/api/pricing-preview` | `features/api-pricing-preview.md` |
 | Conversion workspace (the SPA on `/` after file selection) | `features/conversion-workspace.md` |
+| Checkout, payment webhook, download, redo, refund | `features/paid-path.md` |
+| Google Sheets add-on | `features/sheets-addon.md` |
+| Admin overview `/api/admin/overview` | `features/admin-overview.md` |
+
+The index with baseline preconditions is `features/README.md`.
 
 ### Two drive styles
 
@@ -167,7 +176,7 @@ Per-feature steps live in `features/`:
   `https://aiconverter.app` for the public read-only `/api/*` endpoints.
   Enough for SPA HTML / SEO / config-shape proof.
 - **Browser drive** — Playwright (`playwright` is in `devDependencies`,
-  pinned to `1.62.1`), or an interactive browser tool. Required for
+  pinned to `1.64.1`), or an interactive browser tool. Required for
   anything about clicking, the Turnstile widget, the file-upload drop
   zone, or the live preview table.
 
@@ -205,8 +214,13 @@ curl -fsS http://127.0.0.1:4180/pricing/ -o /tmp/verify-aiconverter/pricing.html
 
 **Screenshots** (browser drives): the workspace after file selection, the
 preview table, the formats page search, and the pricing toggle. Use
-Playwright (this repo's `playwright` pin is `1.62.1`); artifacts land in
+Playwright (this repo's `playwright` pin is `1.64.1`); artifacts land in
 `test-results/` (gitignored) or the run directory.
+
+**PR proof line.** Paste the commands you ran and their key output into
+the PR body as one `run-proof:` line, copied from the terminal, never
+retyped from memory (#232 quoted output that was never produced). Name
+the feature file you drove.
 
 **What counts as proof:** local `curl /` returns 200 + brand + entry
 script, every drove marketing page returns 200, the pre-rendered HTML
@@ -244,10 +258,13 @@ lsof -i :4180   # must print nothing
 - Cleanup preserves evidence. Teardown never deletes the captured log,
   the HTML files, the `/api/health` JSON, or the screenshots.
 
+## Keeping the map true
+
+See `README.md` in this folder: whoever changes a feature updates its file
+in `features/` in the same PR, and `/maintain-verification-skill` checks the
+whole map against the code.
+
 ## Source pattern
 
-Adopted from `github.com/cursor/plugins` `pstack create-verification-skill`,
+Adopted from pstack `/create-verification-skill` (https://github.com/cursor/plugins),
 adapted for a Cloudflare Pages SPA where the Functions runtime is remote.
-See `global-standing-rules.md` (`Per-repo verification harness`, 2026-08-20)
-in `~/workspaces/tooling/nish-vault/_system/shared-memory/` for the rule
-text and the pstack deep-read notes.

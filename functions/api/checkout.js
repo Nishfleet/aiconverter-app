@@ -2,6 +2,7 @@ import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js"
 import { createDodoCheckout } from "../lib/dodo.js";
 import { getAuthorizedJob, hasRequiredBindings, jobAccessCookie, PLANS, tokenFromBodyOrCookie } from "../lib/jobs.js";
 
+/** @type {Record<string, string>} */
 const RETURN_PATHS = {
   web: "/",
   "sheets-addon": "/google-sheets-pdf-import/"
@@ -16,6 +17,9 @@ export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -70,11 +74,12 @@ export async function onRequestPost({ request, env }) {
       returnPath
     });
   } catch (error) {
+    const checkoutError = /** @type {Error & { code?: string }} */ (error);
     const message =
-      error?.code === "MERCHANT_NOT_LIVE"
+      checkoutError.code === "MERCHANT_NOT_LIVE"
         ? "Dodo live payments are not enabled for this merchant yet. Preview is working; paid unlock will open once Dodo activates live payments."
-        : error?.message || "Dodo checkout could not be created.";
-    return json({ error: message, code: error?.code || "DODO_CHECKOUT_ERROR" }, { status: 503 });
+        : checkoutError.message || "Dodo checkout could not be created.";
+    return json({ error: message, code: checkoutError.code || "DODO_CHECKOUT_ERROR" }, { status: 503 });
   }
   if (dodoCheckoutUrl) {
     return json({
@@ -123,7 +128,12 @@ export async function onRequestPost({ request, env }) {
   });
 }
 
+/** @param {Env} env
+ * @param {string} planId
+ * @returns {string}
+ */
 function checkoutUrlForPlan(env, planId) {
+  /** @type {Record<string, string | undefined>} */
   const urls = {
     starter: env.CHECKOUT_STARTER_URL,
     batch: env.CHECKOUT_BATCH_URL,
@@ -133,6 +143,9 @@ function checkoutUrlForPlan(env, planId) {
   return urls[planId] || env.CHECKOUT_URL || "";
 }
 
+/** @param {URL} url
+ * @returns {boolean}
+ */
 function isTrustedCheckout(url) {
   return (
     url.protocol === "https:" &&

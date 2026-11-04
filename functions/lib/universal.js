@@ -137,22 +137,35 @@ const TEXT_EXTENSIONS = new Set(["txt", "md", "html", "htm", "csv", "rtf"]);
 const ZIP_CONTAINER_EXTENSIONS = new Set(["docx", "xlsx", "pptx", "odt", "ods", "odp", "zip"]);
 const COMPOUND_OFFICE_EXTENSIONS = new Set(["doc", "xls", "ppt"]);
 
+/** @param {string} [converterId]
+ * @returns {boolean}
+ */
 export function isUniversalConverter(converterId = "") {
   return String(converterId || "").toLowerCase() === UNIVERSAL_CONVERTER_ID;
 }
 
+/** @param {string} [value]
+ * @returns {string}
+ */
 export function normalizeUniversalOutputFormat(value = "") {
   const normalized = String(value || "").trim().toLowerCase().replace(/^jpeg$/, "jpg");
   return UNIVERSAL_OUTPUT_FORMATS.includes(normalized) ? normalized : "pdf";
 }
 
+/** @param {string} [value]
+ * @returns {string}
+ */
 export function normalizeAnyOutputFormat(value = "") {
   const normalized = String(value || "").trim().toLowerCase().replace(/^jpeg$/, "jpg");
   if (["qif", "ofx", "qbo"].includes(normalized)) return normalized;
   return normalizeUniversalOutputFormat(normalized);
 }
 
+/** @param {string} [format]
+ * @returns {string}
+ */
 export function universalOutputLabel(format = "") {
+  /** @type {Record<string, string>} */
   const labels = {
     pdf: "PDF",
     docx: "DOCX",
@@ -182,11 +195,17 @@ export function universalOutputLabel(format = "") {
   return labels[format] || String(format || "file").toUpperCase();
 }
 
+/** @param {string} [fileName]
+ * @returns {string}
+ */
 export function extensionFromFileName(fileName = "") {
   const match = String(fileName || "").toLowerCase().match(/\.([a-z0-9]+)$/);
   return match?.[1] || "";
 }
 
+/** @param {string} [fileName]
+ * @returns {string}
+ */
 export function cloudConvertInputFormat(fileName = "") {
   const extension = extensionFromFileName(fileName);
   if (extension === "jpeg") return "jpg";
@@ -196,10 +215,17 @@ export function cloudConvertInputFormat(fileName = "") {
   return extension;
 }
 
+/** @param {string} [format]
+ * @returns {string}
+ */
 export function cloudConvertOutputFormat(format = "") {
   return normalizeUniversalOutputFormat(format);
 }
 
+/** @param {string} [fileName]
+ * @param {string} [contentType]
+ * @returns {string}
+ */
 export function universalFileKind(fileName = "", contentType = "") {
   const extension = extensionFromFileName(fileName);
   const type = String(contentType || "").toLowerCase();
@@ -210,8 +236,12 @@ export function universalFileKind(fileName = "", contentType = "") {
   return "document";
 }
 
+/** @param {string} [format]
+ * @returns {string}
+ */
 export function contentTypeForOutputFormat(format = "") {
   const normalized = normalizeAnyOutputFormat(format);
+  /** @type {Record<string, string>} */
   const types = {
     pdf: "application/pdf",
     docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -244,10 +274,19 @@ export function contentTypeForOutputFormat(format = "") {
   return types[normalized] || "application/octet-stream";
 }
 
+/** @param {string} [format]
+ * @returns {boolean}
+ */
 export function isBinaryOutputFormat(format = "") {
   return !["csv", "json", "txt", "md", "html", "qif", "ofx", "qbo"].includes(String(format || "").toLowerCase());
 }
 
+/** @param {string} fileName
+ * @param {string} contentType
+ * @param {string} outputFormat
+ * @param {string} [route]
+ * @returns {{ file: string, input: string, output: string, route: string, status: string }}
+ */
 export function universalPreviewRow(fileName, contentType, outputFormat, route = "Preview ready") {
   const input = cloudConvertInputFormat(fileName) || universalFileKind(fileName, contentType);
   return {
@@ -259,6 +298,14 @@ export function universalPreviewRow(fileName, contentType, outputFormat, route =
   };
 }
 
+/** @param {string} fileName
+ * @param {string} fileType
+ * @param {ArrayBuffer} arrayBuffer
+ * @returns {string}
+ * Checks the first kilobyte of a file against the magic bytes of its
+ * extension. Returns "" when the file looks valid, or a customer-facing
+ * message when it does not.
+ */
 export function assertUniversalSignature(fileName, fileType, arrayBuffer) {
   const extension = extensionFromFileName(fileName);
   const bytes = new Uint8Array(arrayBuffer.slice(0, Math.min(1024, arrayBuffer.byteLength)));
@@ -286,6 +333,11 @@ export function assertUniversalSignature(fileName, fileType, arrayBuffer) {
   return "";
 }
 
+/** @param {string} extension
+ * @param {Uint8Array} bytes
+ * @param {string} ascii
+ * @returns {boolean}
+ */
 function looksLikeImage(extension, bytes, ascii) {
   const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
   const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
@@ -295,9 +347,16 @@ function looksLikeImage(extension, bytes, ascii) {
   const isTiff = ascii.startsWith("II*\x00") || ascii.startsWith("MM\x00*");
   const brand = ascii.slice(4, 12).toLowerCase();
   const isHeic = brand.startsWith("ftyp") && /(heic|heif|mif1|msf1)/.test(brand + ascii.slice(12, 32).toLowerCase());
-  return { png: isPng, jpg: isJpeg, jpeg: isJpeg, webp: isWebp, gif: isGif, bmp: isBmp, tif: isTiff, tiff: isTiff, heic: isHeic, heif: isHeic }[extension];
+  /** @type {Record<string, boolean>} */
+  const matches = { png: isPng, jpg: isJpeg, jpeg: isJpeg, webp: isWebp, gif: isGif, bmp: isBmp, tif: isTiff, tiff: isTiff, heic: isHeic, heif: isHeic };
+  return matches[extension] || false;
 }
 
+/** @param {string} extension
+ * @param {Uint8Array} bytes
+ * @param {string} ascii
+ * @returns {boolean}
+ */
 function looksLikeAudio(extension, bytes, ascii) {
   const isMp3 = ascii.startsWith("ID3") || (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0);
   const isWav = ascii.startsWith("RIFF") && ascii.slice(8, 12) === "WAVE";
@@ -306,21 +365,36 @@ function looksLikeAudio(extension, bytes, ascii) {
   const isOgg = ascii.startsWith("OggS");
   const isFlac = ascii.startsWith("fLaC");
   const isWebm = bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
-  return { mp3: isMp3, wav: isWav, m4a: isMp4Audio, aac: isMp4Audio || isAdtsAac, ogg: isOgg, flac: isFlac, webm: isWebm }[extension];
+  /** @type {Record<string, boolean>} */
+  const matches = { mp3: isMp3, wav: isWav, m4a: isMp4Audio, aac: isMp4Audio || isAdtsAac, ogg: isOgg, flac: isFlac, webm: isWebm };
+  return matches[extension] || false;
 }
 
+/** @param {string} extension
+ * @param {Uint8Array} bytes
+ * @param {string} ascii
+ * @returns {boolean}
+ */
 function looksLikeVideo(extension, bytes, ascii) {
   const isMp4Family = ascii.slice(4, 8) === "ftyp";
   const isAvi = ascii.startsWith("RIFF") && ascii.slice(8, 12) === "AVI ";
   const isMatroska = bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
   const isWmv = bytes[0] === 0x30 && bytes[1] === 0x26 && bytes[2] === 0xb2 && bytes[3] === 0x75;
-  return { mp4: isMp4Family, mov: isMp4Family, avi: isAvi, mkv: isMatroska, wmv: isWmv }[extension];
+  /** @type {Record<string, boolean>} */
+  const matches = { mp4: isMp4Family, mov: isMp4Family, avi: isAvi, mkv: isMatroska, wmv: isWmv };
+  return matches[extension] || false;
 }
 
+/** @param {Uint8Array} bytes
+ * @returns {boolean}
+ */
 function isZipContainer(bytes) {
   return bytes[0] === 0x50 && bytes[1] === 0x4b;
 }
 
+/** @param {Uint8Array} bytes
+ * @returns {boolean}
+ */
 function isCompoundOffice(bytes) {
   return (
     bytes[0] === 0xd0 &&
@@ -334,11 +408,17 @@ function isCompoundOffice(bytes) {
   );
 }
 
+/** @param {unknown} text
+ * @returns {boolean}
+ */
 function looksLikeSvg(text) {
   const start = String(text || "").trimStart().slice(0, 200).toLowerCase();
   return start.startsWith("<svg") || start.includes("<svg");
 }
 
+/** @param {unknown} text
+ * @returns {boolean}
+ */
 function looksTextLike(text) {
   const sample = String(text || "").slice(0, 512);
   if (!sample.trim()) return false;
