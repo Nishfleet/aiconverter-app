@@ -1,7 +1,17 @@
+/** @param {Env} env
+ * @returns {boolean}
+ */
 export function hasTurnstile(env) {
   return Boolean(env.TURNSTILE_SECRET_KEY && env.TURNSTILE_SITE_KEY);
 }
 
+/** @param {Env} env
+ * @param {Request} request
+ * @param {unknown} token
+ * @returns {Promise<{ ok: boolean, skipped: boolean, message: string, errors?: string[] }>}
+ * Verifies a Turnstile token with Cloudflare's siteverify endpoint when the
+ * keys are configured; returns ok:true/skipped:true when they are not.
+ */
 export async function verifyTurnstile(env, request, token) {
   if (!hasTurnstile(env)) return { ok: true, skipped: true, message: "" };
 

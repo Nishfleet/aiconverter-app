@@ -739,6 +739,9 @@ const markdownByRoute = new Map([
 
 const textLikeRoutes = new Set(markdownByRoute.keys());
 
+/** @param {string} pathname
+ * @returns {string}
+ */
 function notFoundMarkdown(pathname) {
   return `---
 title: Page not found - AI Converter
@@ -766,22 +769,34 @@ Use one of the real routes:
 `;
 }
 
+/** @param {Request} request
+ * @returns {boolean}
+ */
 function wantsMarkdown(request) {
   const accept = request.headers.get("Accept") || "";
   return accept.toLowerCase().includes("text/markdown");
 }
 
+/** @param {URL} url
+ * @returns {boolean}
+ */
 function isPageRequest(url) {
   if (url.pathname.startsWith("/api/")) return false;
   if (textLikeRoutes.has(url.pathname)) return true;
   return !url.pathname.includes(".") && !url.pathname.startsWith("/assets/");
 }
 
+/** @param {string} pathname
+ * @returns {string}
+ */
 function normalizePagePath(pathname) {
   if (pathname === "/") return pathname;
   return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
 }
 
+/** @param {EventContext<Env, string, Record<string, unknown>>} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequest(context) {
   const request = context.request;
   const url = new URL(request.url);

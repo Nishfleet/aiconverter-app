@@ -37,8 +37,8 @@ export default [
     files: ["src/**/*.{js,jsx,mjs}", "functions/**/*.js", "tests/**/*.{js,mjs}"],
     plugins: { "no-comments": noComments },
     rules: {
-      "no-comments/disallowComments": ["error", { allow: ["eslint", "global", "upstream: https://"] }],
-      "no-inline-comments": "error",
+      "no-comments/disallowComments": ["error", { allow: ["eslint", "global", "upstream: https://", "\\* @"] }],
+      "no-inline-comments": ["error", { ignorePattern: "@type" }],
       "no-warning-comments": ["error", { terms: WORKAROUND_TERMS, location: "anywhere" }],
     },
   },

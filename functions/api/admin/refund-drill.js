@@ -10,6 +10,9 @@ export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -25,6 +28,7 @@ export async function onRequestPost({ request, env }) {
     return badRequest("Confirm the exact paid drill job ID before requesting a refund.");
   }
 
+  /** @type {JobRow | null} */
   const job = await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE id = ?").bind(jobId).first();
   if (!job) return badRequest("Unknown drill job.");
   if (!isRefundableDrillJob(job)) {
@@ -61,6 +65,9 @@ export async function onRequestPost({ request, env }) {
   });
 }
 
+/** @param {JobRow} job
+ * @returns {boolean}
+ */
 function isRefundableDrillJob(job) {
   return (
     String(job.id || "").startsWith("checkout_drill_") &&
@@ -69,6 +76,11 @@ function isRefundableDrillJob(job) {
   );
 }
 
+/** @param {Env} env
+ * @param {JobRow} job
+ * @param {Record<string, unknown>} body
+ * @returns {Promise<Response>}
+ */
 async function writeOffDrillJob(env, job, body) {
   const reason = String(body.reason || "").trim();
   if (!reason.toUpperCase().includes("WRITE-OFF")) {
@@ -92,6 +104,9 @@ async function writeOffDrillJob(env, job, body) {
   });
 }
 
+/** @param {Request} request
+ * @returns {Promise<Record<string, unknown>>}
+ */
 async function readJsonBody(request) {
   const contentType = request.headers.get("Content-Type") || "";
   if (!contentType.includes("application/json")) return {};
