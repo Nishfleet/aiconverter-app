@@ -27,4 +27,4 @@ Preconditions:
 ## Gotchas
 
 - Real Google tokens cannot be minted by an agent. The unit test is the identity proof, and a live add-on run is owner-only.
-- The key-rotation and outage tests move a mock clock (`t.mock.timers`). A test that passes a fake time any other way will not reach the key cache.
+- The key-rotation and outage tests move time by passing `now:` (milliseconds) to `verifySheetsAddonIdentity` (`functions/lib/google-identity.js`). The key cache reads that same `now`, so a test that leaves it out runs on the real clock and cannot step past the 30 s certs-outage retry or the 60 s key refresh. Call `resetGoogleKeyCacheForTests()` before each such test, because the cache is module-wide.
