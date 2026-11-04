@@ -6,10 +6,21 @@ const DEFAULT_KEY_CACHE_SECONDS = 3600;
 const FAILED_FETCH_RETRY_SECONDS = 30;
 const KID_REFRESH_SECONDS = 60;
 
+/** @type {{ keys: JsonWebKey[] | null, expiresAt: number, fetchedAt: number }}
+ * Google signing keys cached between requests; keys fall back to [] on a failed refresh.
+ */
 let keyCache = { keys: null, expiresAt: 0, fetchedAt: 0 };
+
+/** @typedef {JsonWebKey & { kid?: string }} GoogleSigningKey
+ * A key from Google's JWKS document: a WebCrypto JWK plus the JWKS-only
+ * kid selector field.
+ */
 
 export const SHEETS_ADDON_CLIENT = "sheets-addon";
 
+/** @param {Env} env
+ * @returns {string[]}
+ */
 export function sheetsAddonClientIds(env) {
   return String(env?.GOOGLE_SHEETS_ADDON_CLIENT_IDS || "")
     .split(",")
@@ -17,16 +28,29 @@ export function sheetsAddonClientIds(env) {
     .filter(Boolean);
 }
 
+/** @param {Request} request
+ * @returns {boolean}
+ */
 export function isSheetsAddonRequest(request) {
   return (request.headers.get("X-AIConverter-Client") || "").trim().toLowerCase() === SHEETS_ADDON_CLIENT;
 }
 
+/** @param {Request} request
+ * @returns {string}
+ */
 export function bearerToken(request) {
   const header = request.headers.get("Authorization") || "";
   const match = header.match(/^Bearer\s+(.+)$/i);
   return match ? match[1].trim() : "";
 }
 
+/** @param {Env} env
+ * @param {Request} request
+ * @param {{ fetchImpl?: typeof fetch, now?: number }} [options]
+ * @returns {Promise<{ ok: boolean, status?: number, message?: string, sub?: string, email?: string }>}
+ * Verifies a Google-issued RS256 ID token against the add-on client ids
+ * (audience), Google's issuers, expiry, and Google's published signing keys.
+ */
 export async function verifySheetsAddonIdentity(env, request, { fetchImpl = fetch, now = Date.now() } = {}) {
   const audiences = sheetsAddonClientIds(env);
   if (!audiences.length) {
@@ -52,6 +76,7 @@ export async function verifySheetsAddonIdentity(env, request, { fetchImpl = fetc
     return { ok: false, status: 401, message: "Your Google sign-in could not be verified." };
   }
 
+  /** @type {GoogleSigningKey[]} */
   let keys = await googleSigningKeys(fetchImpl, now);
   if (!keys.some((key) => key.kid === header.kid) && keyCache.fetchedAt + KID_REFRESH_SECONDS * 1000 < now) {
     keyCache.expiresAt = 0;
@@ -67,7 +92,7 @@ export async function verifySheetsAddonIdentity(env, request, { fetchImpl = fetc
   const tokenAudiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
   if (
     !GOOGLE_ISSUERS.has(payload.iss) ||
-    !tokenAudiences.some((aud) => audiences.includes(aud)) ||
+    !tokenAudiences.some((/** @type {string} */ aud) => audiences.includes(aud)) ||
     !Number.isFinite(payload.exp) ||
     payload.exp + CLOCK_SKEW_SECONDS < nowSeconds ||
     (Number.isFinite(payload.iat) && payload.iat - CLOCK_SKEW_SECONDS > nowSeconds) ||
@@ -84,10 +109,18 @@ export async function verifySheetsAddonIdentity(env, request, { fetchImpl = fetc
   return { ok: true, sub: String(payload.sub), email: verifiedEmail ? String(payload.email || "") : "" };
 }
 
+/** @returns {void}
+ */
 export function resetGoogleKeyCacheForTests() {
   keyCache = { keys: null, expiresAt: 0, fetchedAt: 0 };
 }
 
+/** @param {typeof fetch} fetchImpl
+ * @param {number} now
+ * @returns {Promise<GoogleSigningKey[]>}
+ * Fetches Google's current OAuth signing keys, caching them for the
+ * Cache-Control max-age and retrying 30 seconds after a failed fetch.
+ */
 async function googleSigningKeys(fetchImpl, now) {
   if (keyCache.keys && keyCache.expiresAt > now) return keyCache.keys;
   let response;
@@ -97,14 +130,16 @@ async function googleSigningKeys(fetchImpl, now) {
     response = null;
   }
   if (!response?.ok) {
-    keyCache = { keys: keyCache.keys || [], expiresAt: now + FAILED_FETCH_RETRY_SECONDS * 1000, fetchedAt: now };
-    return keyCache.keys;
+    const previousKeys = keyCache.keys || [];
+    keyCache = { keys: previousKeys, expiresAt: now + FAILED_FETCH_RETRY_SECONDS * 1000, fetchedAt: now };
+    return previousKeys;
   }
   const body = await response.json().catch(() => null);
-  const keys = Array.isArray(body?.keys) ? body.keys.filter((key) => key?.kid && key?.n && key?.e) : [];
+  const keys = Array.isArray(body?.keys) ? body.keys.filter((/** @type {GoogleSigningKey} */ key) => key?.kid && key?.n && key?.e) : [];
   if (!keys.length) {
-    keyCache = { keys: keyCache.keys || [], expiresAt: now + FAILED_FETCH_RETRY_SECONDS * 1000, fetchedAt: now };
-    return keyCache.keys;
+    const previousKeys = keyCache.keys || [];
+    keyCache = { keys: previousKeys, expiresAt: now + FAILED_FETCH_RETRY_SECONDS * 1000, fetchedAt: now };
+    return previousKeys;
   }
   const maxAge = Number((response.headers.get("Cache-Control") || "").match(/max-age=(\d+)/)?.[1]);
   const ttlSeconds = Number.isFinite(maxAge) && maxAge > 0 ? maxAge : DEFAULT_KEY_CACHE_SECONDS;
@@ -112,10 +147,23 @@ async function googleSigningKeys(fetchImpl, now) {
   return keys;
 }
 
+/** @param {unknown} value
+ * @returns {boolean}
+ */
 function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+/** @param {JsonWebKey} jwk
+ * @param {string} signedText
+ * @param {Uint8Array} signature
+ * @returns {Promise<boolean>}
+ */
+/** @param {GoogleSigningKey} jwk
+ * @param {string} signedText
+ * @param {Uint8Array} signature
+ * @returns {Promise<boolean>}
+ */
 async function verifyRs256(jwk, signedText, signature) {
   try {
     const key = await crypto.subtle.importKey(
@@ -131,6 +179,9 @@ async function verifyRs256(jwk, signedText, signature) {
   }
 }
 
+/** @param {string} value
+ * @returns {Uint8Array}
+ */
 function base64UrlToBytes(value) {
   const normalized = String(value).replace(/-/g, "+").replace(/_/g, "/");
   const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
@@ -140,6 +191,9 @@ function base64UrlToBytes(value) {
   return bytes;
 }
 
+/** @param {string} value
+ * @returns {string}
+ */
 function base64UrlToString(value) {
   return new TextDecoder().decode(base64UrlToBytes(value));
 }

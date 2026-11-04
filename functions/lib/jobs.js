@@ -23,12 +23,16 @@ const BLOCKED_RATE_LIMIT_SALTS = new Set(["aiconverter", "change-me", "changeme"
 
 let runtimeRateLimitSalt = "";
 
+/** @type {Record<string, Plan>} */
 export const PLANS = {
   starter: { id: "starter", name: "Starter", price: "₹399", amount: 39900, currency: "INR", pages: 25 },
   batch: { id: "batch", name: "Standard", price: "₹799", amount: 79900, currency: "INR", pages: 100 },
   pro: { id: "pro", name: "Bulk", price: "₹1,399", amount: 139900, currency: "INR", pages: 500 }
 };
 
+/** @param {number} pages
+ * @returns {Plan}
+ */
 export function planForPages(pages) {
   const normalized = Number.isFinite(pages) ? pages : 25;
   if (normalized <= 25) return PLANS.starter;
@@ -36,6 +40,9 @@ export function planForPages(pages) {
   return PLANS.pro;
 }
 
+/** @param {JobRow | null | undefined} job
+ * @returns {boolean}
+ */
 export function sourceAvailableForRedo(job) {
   if (!job || job.source_deleted_at) return false;
   const createdAt = Date.parse(job.created_at || "");
@@ -43,6 +50,9 @@ export function sourceAvailableForRedo(job) {
   return Date.now() - createdAt < SOURCE_RETENTION_SECONDS * 1000;
 }
 
+/** @param {JobRow | null | undefined} job
+ * @returns {string}
+ */
 export function sourceExpiresAt(job) {
   if (!job || job.source_deleted_at) return "";
   const createdAt = Date.parse(job.created_at || "");
@@ -50,6 +60,8 @@ export function sourceExpiresAt(job) {
   return new Date(createdAt + SOURCE_RETENTION_SECONDS * 1000).toISOString();
 }
 
+/** @param {JobRow | null | undefined} job
+ */
 export function retentionFields(job) {
   return {
     sourceExpiresAt: sourceExpiresAt(job),
@@ -58,48 +70,77 @@ export function retentionFields(job) {
   };
 }
 
+/** @param {string} prefix
+ * @returns {string}
+ */
 export function randomId(prefix) {
   return `${prefix}_${crypto.randomUUID().replaceAll("-", "")}`;
 }
 
+/** @returns {string}
+ */
 export function randomToken() {
   const bytes = new Uint8Array(24);
   crypto.getRandomValues(bytes);
   return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+/** @param {string} value
+ * @returns {Promise<string>}
+ */
 export async function sha256(value) {
   const data = new TextEncoder().encode(value);
   const digest = await crypto.subtle.digest("SHA-256", data);
   return digestToHex(digest);
 }
 
+/** @param {ArrayBuffer} arrayBuffer
+ * @returns {Promise<string>}
+ */
 export async function sha256Bytes(arrayBuffer) {
   const digest = await crypto.subtle.digest("SHA-256", arrayBuffer);
   return digestToHex(digest);
 }
 
+/** @param {ArrayBuffer} digest
+ * @returns {string}
+ */
 function digestToHex(digest) {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+/** @param {string} [name]
+ * @returns {string}
+ */
 export function safeFileName(name = "statement.pdf") {
   const base = String(name).split(/[\\/]/).pop() || "statement.pdf";
   return base.replace(/[^a-zA-Z0-9._ -]/g, "").slice(0, 80) || "statement.pdf";
 }
 
+/** @param {Env} env
+ * @returns {boolean}
+ */
 export function hasRequiredBindings(env) {
   return Boolean(env.AICONVERTER_BUCKET && env.AICONVERTER_DB);
 }
 
+/** @param {Env} env
+ * @returns {boolean}
+ */
 export function hasExtractorBinding(env) {
   return Boolean(hasMistralConfig(env) || hasAzureConfig(env) || env.AI);
 }
 
+/** @param {Env} env
+ * @returns {boolean}
+ */
 export function hasMistralConfig(env) {
   return Boolean(env.MISTRAL_API_KEY);
 }
 
+/** @param {Env} env
+ * @returns {boolean}
+ */
 export function hasAzureConfig(env) {
   return Boolean(
     env.ENABLE_AZURE_FALLBACK === "true" &&
@@ -108,6 +149,9 @@ export function hasAzureConfig(env) {
   );
 }
 
+/** @param {Env} env
+ * @returns {{ ok: boolean, salt: string, warning: string }}
+ */
 export function rateLimitSaltStatus(env) {
   const configured = String(env.RATE_LIMIT_SALT || "").trim();
   const normalized = configured.toLowerCase();
@@ -137,6 +181,10 @@ export function rateLimitSaltStatus(env) {
   };
 }
 
+/** @param {File | null} file
+ * @param {ArrayBuffer} arrayBuffer
+ * @returns {Promise<string>}
+ */
 export async function assertPdf(file, arrayBuffer) {
   if (!file) return "Choose a PDF file first.";
   if (file.size <= 0) return "The PDF is empty.";
@@ -153,6 +201,8 @@ export async function assertPdf(file, arrayBuffer) {
   return "";
 }
 
+/** @returns {Record<string, { id: string, label: string, sourcePrefix: string, acceptedTypes: string[], acceptedExtensions: string[], maxBytes?: number }>}
+ */
 export function supportedConverters() {
   return {
     bank: {
@@ -266,6 +316,10 @@ export function supportedConverters() {
   };
 }
 
+/** @param {unknown} value
+ * @param {string} [converterId]
+ * @returns {string}
+ */
 export function normalizeOutputFormat(value, converterId = "bank") {
   const normalized = String(value || "").trim().toLowerCase();
   if (converterId === "bank") return normalizeBankOutputFormat(normalized);
@@ -277,21 +331,35 @@ export function normalizeOutputFormat(value, converterId = "bank") {
   return "csv";
 }
 
+/** @param {string} [resultKey]
+ * @returns {string}
+ */
 export function outputFormatFromResultKey(resultKey = "") {
   const match = String(resultKey || "").toLowerCase().match(/\.([a-z0-9]+)$/);
   const extension = match?.[1] || "csv";
   return ["csv", "json", "txt", "md", "html", "pdf", "docx", "xlsx", "pptx", "png", "jpg", "webp", "gif", "svg", "mp3", "wav", "m4a", "ogg", "flac", "mp4", "webm", "mov", "zip", "7z", "tar", "ofx", "qbo", "qif"].includes(extension) ? extension : "csv";
 }
 
+/** @param {JobRow | null | undefined} job
+ * @returns {string}
+ */
 export function jobOutputFormat(job) {
   return job?.output_format || outputFormatFromResultKey(job?.result_key || "");
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 export function normalizeConverterId(value) {
   const id = String(value || "bank").trim().toLowerCase();
   return supportedConverters()[id] ? id : "bank";
 }
 
+/** @param {File | null} file
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {string} [converterId]
+ * @returns {string}
+ */
 export function assertSupportedUpload(file, arrayBuffer, converterId = "bank") {
   const converter = supportedConverters()[normalizeConverterId(converterId)];
   if (!file) return "Choose a file first.";
@@ -336,6 +404,10 @@ export function assertSupportedUpload(file, arrayBuffer, converterId = "bank") {
   return isPng || isJpeg || isWebp ? "" : "That image file type is not supported yet.";
 }
 
+/** @param {string} fileName
+ * @param {ArrayBuffer} arrayBuffer
+ * @returns {string}
+ */
 function assertAudioSignature(fileName, arrayBuffer) {
   const bytes = new Uint8Array(arrayBuffer.slice(0, 16));
   const ascii = new TextDecoder("latin1").decode(arrayBuffer.slice(0, 16));
@@ -356,6 +428,11 @@ function assertAudioSignature(fileName, arrayBuffer) {
   return matched ? "" : "That audio file type is not supported yet.";
 }
 
+/** @param {string} fileName
+ * @param {string} fileType
+ * @param {ArrayBuffer} arrayBuffer
+ * @returns {string}
+ */
 function assertDocumentMarkdownSignature(fileName, fileType, arrayBuffer) {
   if (fileName.endsWith(".pdf") || fileType === "application/pdf") {
     const signature = new TextDecoder().decode(arrayBuffer.slice(0, 5));
@@ -407,6 +484,9 @@ function assertDocumentMarkdownSignature(fileName, fileType, arrayBuffer) {
   return "";
 }
 
+/** @param {unknown} text
+ * @returns {boolean}
+ */
 function looksTextLike(text) {
   const sample = String(text || "").slice(0, 512);
   if (!sample.trim()) return false;
@@ -417,12 +497,21 @@ function looksTextLike(text) {
   return controlCount / sample.length < 0.05;
 }
 
+/** @param {string} jobId
+ * @param {string} fileName
+ * @param {string} [converterId]
+ * @returns {string}
+ */
 export function sourceObjectKey(jobId, fileName, converterId = "bank") {
   const converter = supportedConverters()[normalizeConverterId(converterId)];
   const extension = safeFileName(fileName).split(".").pop()?.toLowerCase() || "bin";
   return `sources/${jobId}/${converter.sourcePrefix}.${extension}`;
 }
 
+/** @param {Env} env
+ * @param {{ id: string, tokenHash: string, status: string, planId: string, email?: string, sourceKey: string, resultKey: string, originalFileName: string, fileSize: number, estimatedPages: number, fileHash?: string, ipHash?: string, userAgentHash?: string, converterId?: string, inputMimeType?: string, outputFormat?: string, accountingMetadataJson?: string, now: string, expiresAt: string }} job
+ * @returns {Promise<void>}
+ */
 export async function insertJob(env, job) {
   await env.AICONVERTER_DB.prepare(
     `INSERT INTO jobs (
@@ -457,6 +546,11 @@ export async function insertJob(env, job) {
     .run();
 }
 
+/** @param {Env} env
+ * @param {Request} request
+ * @param {{ key?: string }} [options]
+ * @returns {Promise<{ ipHash: string, userAgentHash: string, saltWarning: string }>}
+ */
 export async function requestFingerprint(env, request, { key = "" } = {}) {
   const ip =
     key ||
@@ -473,6 +567,9 @@ export async function requestFingerprint(env, request, { key = "" } = {}) {
   };
 }
 
+/** @param {ArrayBuffer} arrayBuffer
+ * @returns {number}
+ */
 export function estimatePdfPagesFromBytes(arrayBuffer) {
   try {
     const text = new TextDecoder("latin1").decode(arrayBuffer);
@@ -483,6 +580,10 @@ export function estimatePdfPagesFromBytes(arrayBuffer) {
   }
 }
 
+/** @param {Env} env
+ * @param {{ ipHash: string, fileHash: string }} hashes
+ * @returns {Promise<{ ok: boolean, message: string }>}
+ */
 export async function enforceUploadPolicy(env, { ipHash, fileHash }) {
   const now = new Date();
   const nowIso = now.toISOString();
@@ -519,6 +620,11 @@ export async function enforceUploadPolicy(env, { ipHash, fileHash }) {
   return { ok: true, message: "" };
 }
 
+/** @param {Env} env
+ * @param {string} id
+ * @param {Record<string, string | number | null>} fields
+ * @returns {Promise<void>}
+ */
 export async function updateJob(env, id, fields) {
   const assignments = [];
   const values = [];
@@ -536,6 +642,10 @@ export async function updateJob(env, id, fields) {
     .run();
 }
 
+/** @param {Env} env
+ * @param {{ jobId: string, attemptType: string, status: string, error?: string, metadata?: Record<string, unknown> }} entry
+ * @returns {Promise<string>}
+ */
 export async function recordJobAttempt(env, { jobId, attemptType, status, error = "", metadata = {} }) {
   if (!env?.AICONVERTER_DB || !jobId || !attemptType || !status) return "";
   const now = new Date().toISOString();
@@ -558,6 +668,10 @@ export async function recordJobAttempt(env, { jobId, attemptType, status, error 
   return id;
 }
 
+/** @param {JobRow | null | undefined} job
+ * @param {number} [now]
+ * @returns {boolean}
+ */
 export function sourceExpired(job, now = Date.now()) {
   if (!job || job.source_deleted_at) return false;
   const createdAt = Date.parse(job.created_at || "");
@@ -565,21 +679,48 @@ export function sourceExpired(job, now = Date.now()) {
   return now - createdAt >= SOURCE_RETENTION_SECONDS * 1000;
 }
 
+/** @param {JobRow | null | undefined} job
+ * @param {number} [now]
+ * @returns {boolean}
+ */
 export function resultExpired(job, now = Date.now()) {
   if (!job?.expires_at) return false;
   const expiresAt = Date.parse(job.expires_at);
   return Number.isFinite(expiresAt) && expiresAt <= now;
 }
 
+/** @typedef {JobRow & { expiryCompleted?: boolean, deletionCompleted?: boolean, failedKeys?: string[] }} JobExpiryOutcome
+ * A job copy returned when expiry or deletion could not finish (an R2
+ * delete failed); failedKeys lists the keys still holding data.
+ */
+
+/** @param {string | undefined} key
+ * @returns {key is string}
+ */
+function isObjectKey(key) {
+  return typeof key === "string" && key !== "";
+}
+
+/** @param {Env} env
+ * @param {JobRow | null} job
+ * @returns {Promise<JobExpiryOutcome | JobRow | null>}
+ * Expires a job whose result window has passed: deletes the R2 objects and
+ * marks the row expired, or deletes just the source when only its window has
+ * passed. Returns the job untouched when nothing needs to change, or an
+ * expiry-incomplete copy when an R2 delete failed.
+ */
 export async function enforceJobExpiry(env, job) {
   if (!job) return null;
 
   const now = Date.now();
   const nowIso = new Date(now).toISOString();
+  /** @type {Record<string, string | number | null>} */
   const fields = {};
 
   if (resultExpired(job, now)) {
-    const keys = new Set([job.source_key, job.preview_key, job.result_key].filter(Boolean));
+    const keys = new Set(
+      [job.source_key, job.preview_key, job.result_key].filter((key) => isObjectKey(key))
+    );
     const outcomes = await Promise.all(
       [...keys].map(async (key) => {
         try {
@@ -626,11 +767,20 @@ export async function enforceJobExpiry(env, job) {
   return job;
 }
 
+/** @param {Env} env
+ * @param {JobRow | null | undefined} job
+ * @param {Date} [now]
+ * @returns {Promise<JobExpiryOutcome | JobRow | null>}
+ * Deletes every R2 object of a customer-removed job and marks the row
+ * deleted. Returns a deletion-incomplete copy when an R2 delete failed.
+ */
 export async function deleteJobData(env, job, now = new Date()) {
   if (!job?.id || !env?.AICONVERTER_BUCKET || !env?.AICONVERTER_DB) return null;
   const nowIso = now.toISOString();
   const keys = new Set(
-    [job.source_key, job.preview_key, job.result_key, job.validation_report_key].filter(Boolean)
+    [job.source_key, job.preview_key, job.result_key, job.validation_report_key].filter((key) =>
+      isObjectKey(key)
+    )
   );
   const outcomes = await Promise.all(
     [...keys].map(async (key) => {
@@ -662,24 +812,42 @@ export async function deleteJobData(env, job, now = new Date()) {
   return { ...job, ...fields, deletionCompleted: true };
 }
 
+/** @param {Env} env
+ * @param {string} id
+ * @param {string} token
+ * @returns {Promise<JobExpiryOutcome | JobRow | null>}
+ */
 export async function getAuthorizedJob(env, id, token) {
   if (!id || !token) return null;
   const tokenHash = await sha256(token);
-  const job = await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE id = ? AND token_hash = ?")
-    .bind(id, tokenHash)
-    .first();
+  const job = /** @type {JobRow | null} */ (
+    await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE id = ? AND token_hash = ?")
+      .bind(id, tokenHash)
+      .first()
+  );
   return enforceJobExpiry(env, job || null);
 }
 
+/** @param {string} jobId
+ * @param {string} token
+ * @param {number} [maxAgeSeconds]
+ * @returns {string}
+ */
 export function jobAccessCookie(jobId, token, maxAgeSeconds = RESULT_RETENTION_SECONDS) {
   const value = `${encodeURIComponent(String(jobId || ""))}.${encodeURIComponent(String(token || ""))}`;
   return `__Host-aiconverter_job=${value}; Path=/; Max-Age=${maxAgeSeconds}; HttpOnly; Secure; SameSite=Lax`;
 }
 
+/** @returns {string}
+ */
 export function clearJobAccessCookie() {
   return "__Host-aiconverter_job=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax";
 }
 
+/** @param {Request} request
+ * @param {string} jobId
+ * @returns {string}
+ */
 export function tokenFromJobCookie(request, jobId) {
   const cookie = request.headers.get("Cookie") || "";
   const match = cookie.match(/(?:^|;\s*)__Host-aiconverter_job=([^;]+)/);
@@ -694,10 +862,20 @@ export function tokenFromJobCookie(request, jobId) {
   }
 }
 
+/** @param {Request} request
+ * @param {string} jobId
+ * @param {string} [token]
+ * @returns {string}
+ */
 export function tokenFromBodyOrCookie(request, jobId, token = "") {
   return String(token || "") || tokenFromJobCookie(request, jobId);
 }
 
+/** @param {Env} env
+ * @param {Request} request
+ * @param {{ key?: string, maxPerHour?: number }} [options]
+ * @returns {Promise<{ ok: boolean, limit: number, configurationError?: boolean, message?: string, warning?: string }>}
+ */
 export async function enforceRateLimit(env, request, { key = "", maxPerHour = 0 } = {}) {
   const saltStatus = rateLimitSaltStatus(env);
   if (!saltStatus.ok) {
@@ -747,6 +925,10 @@ function runtimeFallbackSalt() {
   return runtimeRateLimitSalt;
 }
 
+/** @param {Array<Record<string, unknown>>} rows
+ * @param {string[] | Array<{ key: string, label?: string }>} [columns]
+ * @returns {string}
+ */
 export function rowsToCsv(rows, columns = DEFAULT_CSV_COLUMNS) {
   const header = columns.map((column) => (typeof column === "string" ? column : column.key)).filter(Boolean);
   const lines = [header.join(",")];
@@ -758,19 +940,31 @@ export function rowsToCsv(rows, columns = DEFAULT_CSV_COLUMNS) {
   return `${lines.join("\n")}\n`;
 }
 
+/** @param {string} csv
+ * @param {number} [limit]
+ * @returns {Array<Record<string, string>>}
+ */
 export function parseCsvPreview(csv, limit = 5) {
   return parseCsvContent(csv, limit).rows;
 }
 
+/** @param {string} csv
+ * @param {number} [limit]
+ * @returns {{ columns: Array<{ key: string, label: string }>, rows: Array<Record<string, string>>, totalRows: number, truncated: boolean }}
+ */
 export function parseCsvContent(csv, limit = 5000) {
   const lines = splitCsvRecords(csv.trim());
-  const headers = lines.length ? parseCsvLine(lines.shift()) : [];
+  const firstLine = lines.length ? lines.shift() : undefined;
+  const headers = firstLine ? parseCsvLine(firstLine) : [];
   const rows = lines.slice(0, limit).map((line) => {
     const cells = parseCsvLine(line).map(unguardCsvFormula);
-    return headers.reduce((row, header, index) => {
-      row[header] = cells[index] || "";
-      return row;
-    }, {});
+    return headers.reduce(
+      (row, header, index) => {
+        row[header] = cells[index] || "";
+        return row;
+      },
+      /** @type {Record<string, string>} */ ({})
+    );
   });
   return {
     columns: headers.map((header) => ({ key: header, label: header })),
@@ -780,6 +974,11 @@ export function parseCsvContent(csv, limit = 5000) {
   };
 }
 
+/** @param {string} content
+ * @param {string} [resultKey]
+ * @param {number} [limit]
+ * @returns {Array<Record<string, unknown>>}
+ */
 export function parseStoredPreview(content, resultKey = "", limit = 5) {
   const format = outputFormatFromResultKey(resultKey);
   if (format === "csv") return parseCsvPreview(content, limit);
@@ -797,6 +996,9 @@ export function parseStoredPreview(content, resultKey = "", limit = 5) {
   return [];
 }
 
+/** @param {string} csv
+ * @returns {string[]}
+ */
 function splitCsvRecords(csv) {
   const records = [];
   let current = "";
@@ -816,6 +1018,9 @@ function splitCsvRecords(csv) {
   return records;
 }
 
+/** @param {string} line
+ * @returns {string[]}
+ */
 function parseCsvLine(line) {
   const cells = [];
   let current = "";

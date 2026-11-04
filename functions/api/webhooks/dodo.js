@@ -12,6 +12,9 @@ export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost({ request, env }) {
   if (!env.AICONVERTER_DB || !dodoWebhookSecret(env)) {
     return json({ error: "Dodo webhook is not configured." }, { status: 503 });
@@ -48,7 +51,8 @@ export async function onRequestPost({ request, env }) {
     await markDodoWebhookProcessed(env, webhookId, "processed");
     return json(result);
   } catch (error) {
-    await markDodoWebhookProcessed(env, webhookId, "error", error?.message || "Webhook processing failed.");
+    const processError = /** @type {Error} */ (error);
+    await markDodoWebhookProcessed(env, webhookId, "error", processError.message || "Webhook processing failed.");
     return json({ error: "Webhook processing failed." }, { status: 500 });
   }
 }
