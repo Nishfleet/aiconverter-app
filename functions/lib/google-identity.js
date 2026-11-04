@@ -4,10 +4,8 @@ const GOOGLE_CERTS_URL = "https://www.googleapis.com/oauth2/v3/certs";
 const GOOGLE_ISSUERS = ["accounts.google.com", "https://accounts.google.com"];
 const CLOCK_SKEW_SECONDS = 60;
 const MAX_TOKEN_AGE = "1h";
-const FAILED_FETCH_RETRY_SECONDS = 30;
 
 let googleKeys = null;
-let certsFailedAt = -Infinity;
 
 export const SHEETS_ADDON_CLIENT = "sheets-addon";
 
@@ -68,22 +66,9 @@ export async function verifySheetsAddonIdentity(env, request, { fetchImpl = fetc
 
 export function resetGoogleKeyCacheForTests() {
   googleKeys = null;
-  certsFailedAt = -Infinity;
 }
 
 function googleSigningKeys(fetchImpl) {
-  googleKeys ??= createRemoteJWKSet(new URL(GOOGLE_CERTS_URL), {
-    [customFetch]: async (url, options) => {
-      if (Date.now() - certsFailedAt < FAILED_FETCH_RETRY_SECONDS * 1000) throw new Error("Google certs fetch failed recently.");
-      try {
-        const response = await fetchImpl(url, options);
-        if (!response.ok) certsFailedAt = Date.now();
-        return response;
-      } catch (error) {
-        certsFailedAt = Date.now();
-        throw error;
-      }
-    }
-  });
+  googleKeys ??= createRemoteJWKSet(new URL(GOOGLE_CERTS_URL), { [customFetch]: fetchImpl });
   return googleKeys;
 }

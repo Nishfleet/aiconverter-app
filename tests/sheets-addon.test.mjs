@@ -287,6 +287,23 @@ test("an empty Google certs response is retried soon instead of cached for hours
   resetGoogleKeyCacheForTests();
 });
 
+test("a Google certs 500 on refresh does not block the next sign-in", async (t) => {
+  resetGoogleKeyCacheForTests();
+  t.mock.timers.enable({ apis: ["Date"], now: Date.now() });
+  const env = { GOOGLE_SHEETS_ADDON_CLIENT_IDS: CLIENT_ID };
+  const request = addonRequest("https://aiconverter.app/api/convert", await signIdToken({}));
+  let status = 200;
+  const certs = async () =>
+    status === 200 ? certsFetch() : new Response("backend error", { status });
+  assert.equal((await verifySheetsAddonIdentity(env, request, { fetchImpl: certs })).ok, true);
+  t.mock.timers.tick(11 * 60 * 1000);
+  status = 500;
+  assert.equal((await verifySheetsAddonIdentity(env, request, { fetchImpl: certs })).ok, false);
+  status = 200;
+  assert.equal((await verifySheetsAddonIdentity(env, request, { fetchImpl: certs })).ok, true);
+  resetGoogleKeyCacheForTests();
+});
+
 test("Sheets add-on identity fails closed when Google certs cannot be fetched", async () => {
   resetGoogleKeyCacheForTests();
   const token = await signIdToken({});
@@ -302,7 +319,7 @@ test("Sheets add-on identity fails closed when Google certs cannot be fetched", 
   assert.equal(first.ok, false);
   assert.equal(first.status, 401);
   assert.equal(second.ok, false);
-  assert.equal(calls, 1, "a failed cert fetch should not be retried on every request");
+  assert.equal(calls, 2, "jose retries a failed cert fetch on the next request");
   resetGoogleKeyCacheForTests();
 });
 
