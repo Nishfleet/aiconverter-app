@@ -143,7 +143,8 @@ export async function startConvertioConversion(env, job, arrayBuffer) {
  * @returns {Promise<ConversionResult>}
  */
 export async function refreshConvertioConversion(env, job) {
-  if (!job?.external_job_id || !job.result_key) return { ok: false, message: "No conversion job is attached." };
+  if (!job?.external_job_id) return { ok: false, message: "No conversion job is attached." };
+  if (!job.result_key) return failConvertioJob(env, job, "This conversion has no result storage key.");
   if (!hasConvertioConfig(env)) {
     return failConvertioJob(env, job, "This conversion option is temporarily unavailable.");
   }

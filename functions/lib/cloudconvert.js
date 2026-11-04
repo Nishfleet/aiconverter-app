@@ -115,7 +115,8 @@ export async function startCloudConvertConversion(env, job, arrayBuffer) {
  * @returns {Promise<ConversionResult>}
  */
 export async function refreshCloudConvertConversion(env, job) {
-  if (!job?.external_job_id || !job.result_key) return { ok: false, message: "No provider job is attached to this conversion." };
+  if (!job?.external_job_id) return { ok: false, message: "No provider job is attached to this conversion." };
+  if (!job.result_key) return failCloudConvertJob(env, job, "This conversion has no result storage key.");
   if (!hasCloudConvertConfig(env)) {
     return failCloudConvertJob(env, job, "CloudConvert API key is missing while a paid conversion is pending.");
   }
