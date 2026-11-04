@@ -28,8 +28,8 @@ npm run build
 npx vite preview --host 127.0.0.1 --port 4180 --strictPort
 ```
 
-`npm run build` runs `src/cli/build-sitemap.mjs` (rebuilds `dist/sitemap.xml`
-from the git history, 25 entries) followed by `vite build`, which emits
+`npm run build` runs `vite build`, then `src/cli/build-sitemap.mjs` (writes
+`dist/sitemap.xml` with lastmod dates from the git history). `vite build` emits
 `dist/index.html`, the hashed `dist/assets/index-*.js` and `index-*.css`,
 and the pre-rendered marketing pages under `dist/<route>/index.html`
 (23 routes, including `/`, `/about/`, `/formats/`, `/pricing/`,
