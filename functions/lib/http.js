@@ -72,4 +72,3 @@ export function badRequest(message) {
 export function serverError(message = "The converter is not ready yet.") {
   return json({ error: message }, { status: 500 });
 }
-export const plantedTypeError = Math.max("x");
