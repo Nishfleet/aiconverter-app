@@ -16,6 +16,9 @@ export function onRequestPost() {
   return methodNotAllowed("GET");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestGet({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -255,7 +258,6 @@ export async function onRequestGet({ request, env }) {
     health,
     cloudConvert,
     usage24h,
-    providerFailures,
     stuckProvider,
     webhookErrorCount,
     unmatchedPayments,
@@ -304,11 +306,11 @@ export async function onRequestGet({ request, env }) {
   });
 }
 
+/** @param {Env} env */
 function runtimeHealth(env) {
-  const dodoProducts = Object.keys(PLANS).reduce((acc, planId) => {
-    acc[planId] = Boolean(dodoProductIdForPlan(env, planId));
-    return acc;
-  }, {});
+  const dodoProducts = Object.fromEntries(
+    Object.keys(PLANS).map((planId) => [planId, Boolean(dodoProductIdForPlan(env, planId))])
+  );
   const missing = [];
   if (!hasRequiredBindings(env)) missing.push("storage/database bindings");
   if (!hasDodoApi(env)) missing.push("Dodo API key");
@@ -355,6 +357,7 @@ function runtimeHealth(env) {
   };
 }
 
+/** @param {Env} env */
 async function buildCloudConvertOverview(env) {
   const configured = hasCloudConvertConfig(env);
   const dailyLimit = cloudConvertDailyJobLimit(env);
@@ -379,6 +382,9 @@ async function buildCloudConvertOverview(env) {
   };
 }
 
+/** @param {{ health: ReturnType<typeof runtimeHealth>, cloudConvert: Awaited<ReturnType<typeof buildCloudConvertOverview>>, usage24h: Record<string, unknown>, stuckProvider: Record<string, unknown>[], webhookErrorCount: Record<string, unknown>, unmatchedPayments: Record<string, unknown>[], refundDue: Record<string, unknown>[], staleCheckoutHandoffs: Record<string, unknown>[] }} signals
+ * @returns {{ severity: string, title: string, detail: string }[]}
+ */
 function buildAlerts({ health, cloudConvert, usage24h, stuckProvider, webhookErrorCount, unmatchedPayments, refundDue, staleCheckoutHandoffs }) {
   const alerts = [];
   if (health.status !== "ready") {
@@ -443,7 +449,7 @@ function buildAlerts({ health, cloudConvert, usage24h, stuckProvider, webhookErr
       alerts.push({
         severity: primaryIssueSeverity,
         title: "CloudConvert credit check failed",
-        detail: account.message || "Could not read CloudConvert account credits."
+        detail: (!account.ok && account.message) || "Could not read CloudConvert account credits."
       });
     }
   }
@@ -515,15 +521,24 @@ function buildAlerts({ health, cloudConvert, usage24h, stuckProvider, webhookErr
     : [{ severity: "ready", title: "No active alerts", detail: "Health, provider, payment, and refund checks are clear." }];
 }
 
+/** @param {unknown} value
+ * @returns {number}
+ */
 function numberOrZero(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+/** @param {Record<string, unknown>} [row]
+ * @returns {boolean}
+ */
 function isDrillRefund(row = {}) {
   return Number(row.is_drill || row.isDrill || 0) === 1 || String(row.id || "").startsWith("checkout_drill_");
 }
 
+/** @param {Record<string, unknown>} [row]
+ * @returns {boolean}
+ */
 export function isActionableUnmatchedPayment(row = {}) {
   const eventType = String(row.event_type || row.eventType || "").toLowerCase();
   const status = String(row.status || "").toLowerCase();
@@ -536,26 +551,40 @@ export function isActionableUnmatchedPayment(row = {}) {
   return !isNonActionableTestEvent;
 }
 
+/** @param {Record<string, unknown>[]} rows
+ * @param {string} eventType
+ * @returns {number}
+ */
 function safeCountFromFunnel(rows, eventType) {
   const row = (rows || []).find((item) => item.event_type === eventType);
   return numberOrZero(row?.count);
 }
 
+/** @param {Env} env
+ * @param {string} sql
+ * @param {unknown[]} [binds]
+ * @returns {Promise<Record<string, unknown>[]>}
+ */
 async function queryAll(env, sql, binds = []) {
   try {
     const statement = env.AICONVERTER_DB.prepare(sql);
     const result = await (binds.length ? statement.bind(...binds) : statement).all();
     return result.results || [];
   } catch (error) {
-    return [{ error: error?.message || "Query failed." }];
+    return [{ error: (error instanceof Error && error.message) || "Query failed." }];
   }
 }
 
+/** @param {Env} env
+ * @param {string} sql
+ * @param {unknown[]} [binds]
+ * @returns {Promise<Record<string, unknown>>}
+ */
 async function queryFirst(env, sql, binds = []) {
   try {
     const statement = env.AICONVERTER_DB.prepare(sql);
     return (await (binds.length ? statement.bind(...binds) : statement).first()) || {};
   } catch (error) {
-    return { error: error?.message || "Query failed." };
+    return { error: (error instanceof Error && error.message) || "Query failed." };
   }
 }

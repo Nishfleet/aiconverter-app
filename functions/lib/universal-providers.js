@@ -1,6 +1,11 @@
 import { refreshCloudConvertConversion, startCloudConvertConversion } from "./cloudconvert.js";
 import { hasConvertioConfig, refreshConvertioConversion, startConvertioConversion } from "./convertio.js";
 
+/** @param {Env} env
+ * @param {JobRow} job
+ * @param {ArrayBuffer} arrayBuffer
+ * @returns {Promise<ConversionResult>}
+ */
 export async function startUniversalProviderConversion(env, job, arrayBuffer) {
   const attempts = [];
 
@@ -14,7 +19,7 @@ export async function startUniversalProviderConversion(env, job, arrayBuffer) {
     attempts.push(convertio.failure);
   }
 
-  const meaningful = attempts.filter(Boolean);
+  const meaningful = attempts.filter((attempt) => attempt !== null);
   const message = meaningful.length
     ? "This conversion option is temporarily unavailable."
     : "This conversion option is not ready yet.";
@@ -29,11 +34,19 @@ export async function startUniversalProviderConversion(env, job, arrayBuffer) {
   };
 }
 
+/** @param {Env} env
+ * @param {JobRow} job
+ * @returns {Promise<ConversionResult>}
+ */
 export async function refreshUniversalProviderConversion(env, job) {
   if (job.external_provider === "convertio") return refreshConvertioConversion(env, job);
   return refreshCloudConvertConversion(env, job);
 }
 
+/** @param {string} provider
+ * @param {() => Promise<ConversionResult>} run
+ * @returns {Promise<{ result: ConversionResult | null, failure: { provider: string, message: string } | null }>}
+ */
 async function attemptProvider(provider, run) {
   try {
     const result = await run();
@@ -50,7 +63,7 @@ async function attemptProvider(provider, run) {
       result: null,
       failure: {
         provider,
-        message: error?.message || "Conversion route failed."
+        message: (error instanceof Error && error.message) || "Conversion route failed."
       }
     };
   }

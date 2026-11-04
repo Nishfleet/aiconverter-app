@@ -15,8 +15,6 @@
     "./env.d.ts"
   ],
   "exclude": [
-    "./api/admin/failover-drill.js",
-    "./api/admin/overview.js",
     "./api/batch-download.js",
     "./api/config.js",
     "./api/conversion-brief.js",

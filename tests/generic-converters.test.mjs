@@ -693,6 +693,39 @@ test("CloudConvert refresh downloads the exported file into private result stora
   restoreFetch();
 });
 
+test("CloudConvert refresh fails and refunds a paid job that has no result key", async () => {
+  const fetchCalls = mockCloudConvertFetch([]);
+  const env = mockJobEnv();
+  const job = { ...mockUniversalJob(), status: "converting_full", external_job_id: "cc-job-1", result_key: null };
+  const result = await refreshCloudConvertConversion(env, job);
+
+  assert.equal(result.status, "failed");
+  assert.equal(result.refundStatus, "credit_due");
+  assert.equal(fetchCalls.length, 0);
+  assert.equal(env.updates.at(-1).values[0], "failed");
+  assert.ok(env.updates.at(-1).values.includes("credit_due"));
+  restoreFetch();
+});
+
+test("Convertio refresh fails and refunds a paid job that has no result key", async () => {
+  mockCloudConvertFetch([{ match: "https://api.convertio.co/convert/convertio-job-77" }]);
+  const env = mockJobEnv({ vars: { CONVERTIO_API_KEY: "convertio-test-key" } });
+  const job = {
+    ...mockUniversalJob(),
+    status: "converting_full",
+    external_provider: "convertio",
+    external_job_id: "convertio-job-77",
+    result_key: null
+  };
+  const result = await refreshUniversalProviderConversion(env, job);
+
+  assert.equal(result.status, "failed");
+  assert.equal(result.refundStatus, "credit_due");
+  assert.equal(env.updates.at(-1).values[0], "failed");
+  assert.ok(env.updates.at(-1).values.includes("credit_due"));
+  restoreFetch();
+});
+
 let originalFetch = globalThis.fetch;
 
 function mockFetch(payload) {

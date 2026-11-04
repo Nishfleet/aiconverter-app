@@ -14,10 +14,18 @@ const DEFAULT_TASK_TIMEOUT_SECONDS = 900;
 const DEFAULT_DAILY_JOB_LIMIT = 10;
 const DEFAULT_MIN_CREDITS = 1;
 
+/** @param {Env} env
+ * @returns {boolean}
+ */
 export function hasCloudConvertConfig(env) {
   return Boolean(String(env.CLOUDCONVERT_API_KEY || "").trim());
 }
 
+/** @param {Env} env
+ * @param {JobRow} job
+ * @param {ArrayBuffer} arrayBuffer
+ * @returns {Promise<ConversionResult>}
+ */
 export async function startCloudConvertConversion(env, job, arrayBuffer) {
   if (!hasCloudConvertConfig(env)) {
     return {
@@ -59,7 +67,8 @@ export async function startCloudConvertConversion(env, job, arrayBuffer) {
       operation: "convert",
       input: "upload-source",
       output_format: cloudConvertOutputFormat(outputFormat),
-      timeout
+      timeout,
+      ...(inputFormat ? { input_format: inputFormat } : {})
     },
     "export-result": {
       operation: "export/url",
@@ -68,7 +77,6 @@ export async function startCloudConvertConversion(env, job, arrayBuffer) {
       archive_multiple_files: false
     }
   };
-  if (inputFormat) tasks["convert-file"].input_format = inputFormat;
 
   const cloudJob = await cloudConvertRequest(env, "/jobs", {
     method: "POST",
@@ -79,11 +87,11 @@ export async function startCloudConvertConversion(env, job, arrayBuffer) {
   });
   const uploadTask = findTask(cloudJob, "import/upload");
   const form = uploadTask?.result?.form;
-  if (!form?.url || !form.parameters) {
+  if (!uploadTask || !form?.url || !form.parameters) {
     throw new Error("CloudConvert did not return an upload form.");
   }
 
-  await uploadCloudConvertFile(form, arrayBuffer, job.original_file_name || "source.bin", job.input_mime_type || "");
+  await uploadCloudConvertFile(form.url, form.parameters, arrayBuffer, job.original_file_name || "source.bin", job.input_mime_type || "");
 
   await updateJob(env, job.id, {
     status: "converting_full",
@@ -102,8 +110,13 @@ export async function startCloudConvertConversion(env, job, arrayBuffer) {
   });
 }
 
+/** @param {Env} env
+ * @param {JobRow} job
+ * @returns {Promise<ConversionResult>}
+ */
 export async function refreshCloudConvertConversion(env, job) {
   if (!job?.external_job_id) return { ok: false, message: "No provider job is attached to this conversion." };
+  if (!job.result_key) return failCloudConvertJob(env, job, "This conversion has no result storage key.");
   if (!hasCloudConvertConfig(env)) {
     return failCloudConvertJob(env, job, "CloudConvert API key is missing while a paid conversion is pending.");
   }
@@ -173,8 +186,13 @@ export async function refreshCloudConvertConversion(env, job) {
   };
 }
 
+/** @param {Env} env
+ * @param {JobRow} job
+ * @param {string} message
+ * @returns {Promise<ConversionResult>}
+ */
 export async function failCloudConvertJob(env, job, message) {
-  await env.AICONVERTER_BUCKET.delete(job.source_key).catch(() => {});
+  if (job.source_key) await env.AICONVERTER_BUCKET.delete(job.source_key).catch(() => {});
   const refund = job.paid_at
     ? await requestDodoRefund(env, job, message, { cashRefund: Number(job.download_count || 0) === 0 })
     : { status: "", refundId: "" };
@@ -199,18 +217,30 @@ export async function failCloudConvertJob(env, job, message) {
   };
 }
 
+/** @param {Env} env
+ * @returns {number}
+ */
 export function cloudConvertDailyJobLimit(env) {
   return boundedNumber(env.CLOUDCONVERT_DAILY_JOB_LIMIT, DEFAULT_DAILY_JOB_LIMIT, 0, 10000);
 }
 
+/** @param {Env} env
+ * @returns {number}
+ */
 export function cloudConvertMinimumCredits(env) {
   return boundedNumber(env.CLOUDCONVERT_MIN_CREDITS, DEFAULT_MIN_CREDITS, 0, 1000000);
 }
 
+/** @param {Env} env
+ * @returns {boolean}
+ */
 export function cloudConvertRequiresCreditCheck(env) {
   return String(env.CLOUDCONVERT_REQUIRE_CREDIT_CHECK || "true").toLowerCase() !== "false";
 }
 
+/** @param {Env} env
+ * @returns {Promise<ProviderUsage>}
+ */
 export async function cloudConvertUsageToday(env) {
   const startedAt = startOfUtcDay();
   const empty = { started: 0, complete: 0, failed: 0, converting: 0, startedAt };
@@ -247,10 +277,13 @@ export async function cloudConvertUsageToday(env) {
       startedAt
     };
   } catch (error) {
-    return { ...empty, error: error?.message || "CloudConvert usage query failed." };
+    return { ...empty, error: (error instanceof Error && error.message) || "CloudConvert usage query failed." };
   }
 }
 
+/** @param {Env} env
+ * @returns {Promise<{ ok: true, configured: true, id: string, credits: number | null, creditsUsed: number | null, username: string, emailDomain: string } | { ok: false, configured: boolean, message: string }>}
+ */
 export async function getCloudConvertAccount(env) {
   if (!hasCloudConvertConfig(env)) return { ok: false, configured: false, message: "CloudConvert API key is missing." };
 
@@ -269,11 +302,13 @@ export async function getCloudConvertAccount(env) {
     return {
       ok: false,
       configured: true,
-      message: error?.message || "CloudConvert account check failed."
+      message: (error instanceof Error && error.message) || "CloudConvert account check failed."
     };
   }
 }
 
+/** @param {Env} env
+ */
 export async function assertCloudConvertGuardrails(env) {
   if (!hasCloudConvertConfig(env)) {
     return { ok: false, message: "CloudConvert API key is missing." };
@@ -376,6 +411,10 @@ export async function assertCloudConvertGuardrails(env) {
   };
 }
 
+/** @param {Env} env
+ * @param {number} limit
+ * @returns {Promise<{ ok: boolean, count: number, remainingToday: number | null, message?: string }>}
+ */
 async function reserveCloudConvertDailySlot(env, limit) {
   if (limit <= 0) return { ok: true, count: 0, remainingToday: null };
   const windowStart = startOfUtcDay();
@@ -412,11 +451,15 @@ async function reserveCloudConvertDailySlot(env, limit) {
       ok: false,
       count: 0,
       remainingToday: 0,
-      message: `CloudConvert daily cap reservation failed: ${error?.message || "unknown error"}`
+      message: `CloudConvert daily cap reservation failed: ${(error instanceof Error && error.message) || "unknown error"}`
     };
   }
 }
 
+/** @param {JobRow} job
+ * @param {string} [status]
+ * @returns {ConversionResult}
+ */
 function pendingResult(job, status = "processing") {
   const outputFormat = jobOutputFormat(job);
   return {
@@ -438,6 +481,10 @@ function pendingResult(job, status = "processing") {
   };
 }
 
+/** @param {Env} env
+ * @param {string} path
+ * @param {{ method?: string, body?: string, headers?: Record<string, string> }} [init]
+ */
 async function cloudConvertRequest(env, path, init = {}) {
   const response = await fetch(`${CLOUDCONVERT_API_BASE}${path}`, {
     ...init,
@@ -455,9 +502,16 @@ async function cloudConvertRequest(env, path, init = {}) {
   return payload.data || payload;
 }
 
-async function uploadCloudConvertFile(form, arrayBuffer, fileName, contentType) {
+/** @param {string} url
+ * @param {Record<string, unknown>} parameters
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {string} fileName
+ * @param {string} contentType
+ * @returns {Promise<void>}
+ */
+async function uploadCloudConvertFile(url, parameters, arrayBuffer, fileName, contentType) {
   const body = new FormData();
-  for (const [key, value] of Object.entries(form.parameters || {})) {
+  for (const [key, value] of Object.entries(parameters)) {
     body.append(key, String(value));
   }
   body.append(
@@ -466,47 +520,74 @@ async function uploadCloudConvertFile(form, arrayBuffer, fileName, contentType) 
     fileName
   );
 
-  const response = await fetch(form.url, {
+  const response = await fetch(url, {
     method: "POST",
     body
   });
   if (!response.ok) throw new Error(`CloudConvert upload failed (${response.status}).`);
 }
 
+/** @param {{ tasks?: { id?: string, operation?: string, result?: { form?: { url?: string, parameters?: Record<string, unknown> }, files?: { url?: string, filename?: string }[] } }[] }} job
+ * @param {string} operation
+ */
 function findTask(job, operation) {
   return (job.tasks || []).find((task) => task.operation === operation);
 }
 
+/** @param {{ tasks?: { status?: string, message?: string, code?: string }[] }} job
+ * @returns {string}
+ */
 function cloudConvertErrorMessage(job) {
   const failed = (job.tasks || []).find((task) => task.status === "error" || task.message || task.code);
   return failed?.message || failed?.code || "CloudConvert could not complete this conversion.";
 }
 
+/** @param {unknown} value
+ * @param {number} fallback
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
 function boundedNumber(value, fallback, min, max) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.max(min, Math.min(max, Math.floor(parsed)));
 }
 
+/** @param {unknown} value
+ * @returns {number}
+ */
 function numberOrZero(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+/** @param {unknown} value
+ * @returns {number | null}
+ */
 function numericOrNull(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/** @param {unknown} email
+ * @returns {string}
+ */
 function emailDomain(email) {
   const parts = String(email || "").split("@");
   return parts.length === 2 ? parts[1] : "";
 }
 
+/** @param {Date} [date]
+ * @returns {string}
+ */
 function startOfUtcDay(date = new Date()) {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())).toISOString();
 }
 
+/** @param {string} windowStart
+ * @returns {string}
+ */
 function cloudConvertDailyCounterId(windowStart) {
   return `cloudconvert:daily:${String(windowStart || "").slice(0, 10)}`;
 }
