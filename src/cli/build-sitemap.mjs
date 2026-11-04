@@ -1,7 +1,8 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 
-const SITEMAP_PATH = "public/sitemap.xml";
+const SOURCE_PATH = "public/sitemap.xml";
+const OUTPUT_PATH = "dist/sitemap.xml";
 const BASE = "https://aiconverter.app";
 
 function gitLastMod(filePath) {
@@ -22,7 +23,7 @@ function resolveSourceFile(path) {
 }
 
 function buildSitemap() {
-  const existing = readFileSync(SITEMAP_PATH, "utf8");
+  const existing = readFileSync(SOURCE_PATH, "utf8");
   const urls = [...existing.matchAll(/<loc>(https:\/\/aiconverter\.app[^<]*)<\/loc>/g)].map((m) => m[1]);
 
   const entries = urls.map((url) => {
@@ -37,8 +38,8 @@ function buildSitemap() {
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join("\n")}\n</urlset>\n`;
 
-  writeFileSync(SITEMAP_PATH, xml);
-  console.log(`sitemap.xml rebuilt with ${entries.length} entries (lastmod from git history)`);
+  writeFileSync(OUTPUT_PATH, xml);
+  console.log(`${OUTPUT_PATH} written with ${entries.length} entries (lastmod from git history)`);
 }
 
 buildSitemap();
