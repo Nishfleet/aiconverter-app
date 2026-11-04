@@ -21,6 +21,8 @@ export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * * @returns {Promise<Response>} */
 export async function onRequestPost({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -44,7 +46,9 @@ export async function onRequestPost({ request, env }) {
     "2026-05-02 Coffee Shop 4.50 0.00 995.50",
     "2026-05-03 Hosting 12.30 0.00 983.20"
   ]);
-  const sourceBuffer = sourceBytes.buffer.slice(sourceBytes.byteOffset, sourceBytes.byteOffset + sourceBytes.byteLength);
+  const sourceBuffer = /** @type {ArrayBuffer} */ (
+    sourceBytes.buffer.slice(sourceBytes.byteOffset, sourceBytes.byteOffset + sourceBytes.byteLength)
+  );
   const sourceKey = `jobs/${jobId}/source.pdf`;
   const previewKey = `jobs/${jobId}/preview.csv`;
   const resultKey = `jobs/${jobId}/result.csv`;
@@ -88,7 +92,9 @@ export async function onRequestPost({ request, env }) {
     extractor: "admin-checkout-drill"
   });
 
+  /** @type {JobRow | null} */
   const job = await readJob(env, jobId);
+  if (!job) return json({ ok: false, jobId, message: "Drill job row was not found after insert." }, { status: 500 });
   let checkoutUrl;
   try {
     checkoutUrl = await createDodoCheckout({
@@ -99,12 +105,13 @@ export async function onRequestPost({ request, env }) {
       email: checkoutEmail
     });
   } catch (error) {
+    const checkoutError = /** @type {Error & { code?: string }} */ (error);
     return json(
       {
         ok: false,
         jobId,
-        code: error?.code || "DODO_CHECKOUT_ERROR",
-        message: error?.message || "Dodo checkout could not be created."
+        code: checkoutError.code || "DODO_CHECKOUT_ERROR",
+        message: checkoutError.message || "Dodo checkout could not be created."
       },
       { status: 503 }
     );
@@ -130,7 +137,6 @@ export async function onRequestPost({ request, env }) {
       ...(includeToken ? { token } : {}),
       plan: {
         id: plan.id,
-        detail: plan.detail,
         amount: plan.amount,
         currency: plan.currency
       },
@@ -144,16 +150,25 @@ export async function onRequestPost({ request, env }) {
   );
 }
 
+/** @param {Request} request
+ * @returns {Promise<Record<string, unknown>>}
+ */
 async function readJsonBody(request) {
   const contentType = request.headers.get("Content-Type") || "";
   if (!contentType.includes("application/json")) return {};
   return request.json().catch(() => ({}));
 }
 
+/** @param {Env} env
+ * @param {string} jobId
+ * @returns {Promise<JobRow | null>}
+ */
 async function readJob(env, jobId) {
   return env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE id = ?").bind(jobId).first();
 }
 
+/** @param {string[]} lines
+ * * @returns {Uint8Array} */
 function buildDrillPdf(lines) {
   const stream = [
     "BT",
@@ -189,10 +204,16 @@ function buildDrillPdf(lines) {
   return new TextEncoder().encode(pdf);
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function pdfTextEscape(value) {
   return String(value).replace(/([\\()])/g, "\\$1");
 }
 
+/** @param {URL} url
+ * @returns {boolean}
+ */
 function isTrustedCheckout(url) {
   return (
     url.protocol === "https:" &&

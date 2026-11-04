@@ -9,6 +9,11 @@ const securityHeaders = {
   "Cross-Origin-Resource-Policy": "same-origin"
 };
 
+/** @param {Response} response
+ * @param {Record<string, string>} [extra]
+ * @returns {Response}
+ * Wraps a Response with the site security headers; extra wins per header.
+ */
 export function withSecurityHeaders(response, extra = {}) {
   const headers = new Headers(response.headers);
   headers.delete("Access-Control-Allow-Origin");
@@ -24,6 +29,10 @@ export function withSecurityHeaders(response, extra = {}) {
   });
 }
 
+/** @param {unknown} body
+ * @param {ResponseInit} [init]
+ * @returns {Response}
+ */
 export function json(body, init = {}) {
   return withSecurityHeaders(
     new Response(JSON.stringify(body), {
@@ -37,6 +46,9 @@ export function json(body, init = {}) {
   );
 }
 
+/** @param {string} [methods]
+ * @returns {Response}
+ */
 export function methodNotAllowed(methods = "POST") {
   return json(
     { error: `Method not allowed. Use ${methods}.` },
@@ -47,10 +59,16 @@ export function methodNotAllowed(methods = "POST") {
   );
 }
 
+/** @param {string} message
+ * @returns {Response}
+ */
 export function badRequest(message) {
   return json({ error: message }, { status: 400 });
 }
 
+/** @param {string} [message]
+ * @returns {Response}
+ */
 export function serverError(message = "The converter is not ready yet.") {
   return json({ error: message }, { status: 500 });
 }

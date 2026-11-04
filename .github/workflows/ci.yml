@@ -13,7 +13,9 @@ jobs:
   ci:
     # Pricing check, unit tests, build: AGENTS.md "Checks" (deploy.yml shipped
     # main without them before #284). Lint: the app-code comment ban
-    # (aiconverter-app#259). No helper scripts: the no-glue standing rule.
+    # (aiconverter-app#259). Typecheck: the payment/sign-in/entry Pages
+    # functions are type-checked with strict checkJs (aiconverter-app#306).
+    # No helper scripts: the no-glue standing rule.
     # One matrix leg per check name the main ruleset requires.
     name: ${{ matrix.check }}
     strategy:
@@ -26,6 +28,8 @@ jobs:
             run: node --test tests/*.test.mjs
           - check: Build
             run: npm run lint && npm run build && test -z "$(git ls-files scripts bin tools ops .specify '*.sh')"
+          - check: Typecheck
+            run: npm run typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

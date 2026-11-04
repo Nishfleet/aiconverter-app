@@ -14,17 +14,133 @@ const PAYMENT_EVENTS = new Set([
 ]);
 const REFUND_EVENTS = new Set(["refund.succeeded", "refund.failed", "refund.pending", "refund.review"]);
 const PAID_STATUSES = new Set(["succeeded", "paid", "completed"]);
+/** @typedef {Object} BatchRow
+ * * @property {string} id * @property {string} plan_id
+ * @property {string} [status]
+ * @property {number} [amount]
+ * @property {string | null} [currency]
+ * @property {number} [job_count]
+ * @property {string | null} [job_ids_json]
+ * @property {string | null} [email]
+ * @property {string | null} [checkout_session_id]
+ * @property {string | null} [payment_id]
+ * @property {string | null} [paid_at]
+ * @property {string} [created_at]
+ * @property {string} [updated_at]
+ */
+
+/** @typedef {Object} DodoPayment
+ * * @property {string} paymentId * @property {string} checkoutSessionId
+ * @property {string} metadataJobId
+ * @property {string} metadataBatchId
+ * @property {string} metadataPlanId
+ * @property {string[]} productIds
+ * @property {number} amount
+ * @property {string} currency
+ * @property {string} businessId
+ * @property {string} status
+ */
+
+/** @typedef {Object} DodoRefund
+ * * @property {string} refundId * @property {string} paymentId
+ * @property {string} metadataJobId
+ * @property {number} amount
+ * @property {string} currency
+ * @property {string} businessId
+ * @property {string} status
+ * @property {string} reason
+ */
+
+/** @typedef {Object} DodoPricePreview
+ * * @property {string} planId * @property {string} display
+ * @property {number | null} amount
+ * @property {string} currency
+ * @property {string} billingCountry
+ * @property {boolean} taxInclusive
+ * @property {number | null} totalTax
+ */
+
+/** @typedef {Object} DodoPricePreviewResult
+ * @property {boolean} available
+ * @property {string} [reason]
+ * @property {string} [provider]
+ * @property {string} [source]
+ * @property {string} [country]
+ * @property {boolean} [adaptiveCurrency]
+ * @property {boolean} [feesInclusive]
+ * @property {Record<string, DodoPricePreview | null>} [prices]
+ */
+
+/** @typedef {{ currency?: unknown, total_price?: unknown, total_amount?: unknown, total_tax?: unknown, billing_country?: unknown, current_breakup?: { currency?: unknown, total_amount?: unknown } | null, product_cart?: Array<{ discounted_price?: unknown, tax_inclusive?: unknown }> | null }} DodoPreviewPayload */
+
+/** @typedef {Object} DodoCheckoutBody
+ * * @property {{ product_id: string, quantity: number }[]} product_cart * @property {string} return_url
+ * @property {boolean} adaptive_currency_fees_inclusive
+ * @property {{ job_id?: string, batch_id?: string, job_count?: string, job_ids?: string, plan_id: string, expected_amount: string, expected_currency?: string }} metadata
+ * @property {{ country: string }} [billing_address]
+ * @property {{ email: string }} [customer]
+ */
+
+/** @typedef {Object} DodoEventOptions
+ * * @property {string} [eventType] * @property {string} [webhookId]
+ * @property {string} [payloadHash]
+ * @property {boolean} [requirePaid]
+ * @property {JobRow} [explicitJob]
+ * @property {JobRow | { id: string, plan_id?: string } | null} [job]
+ * @property {string} [matchedBy]
+ * @property {string} [matchStatus]
+ */
+
+/** @typedef {Object} DodoRefundRequestOptions
+ * @property {boolean} [retryDue]
+ * @property {boolean} [cashRefund]
+ */
+
+/** @typedef {Object} DodoRefundEventInput
+ * @property {JobRow | null} job
+ * @property {string} reason
+ * @property {string} status
+ * @property {string} paymentId
+ * @property {string} [refundId]
+ * @property {number} [amount]
+ * @property {string} [currency]
+ * @property {string} [webhookId]
+ * @property {string} [eventType]
+ * @property {string} [businessId]
+ * @property {string} [payloadHash]
+ * @property {string} [error]
+ */
+
+/** @typedef {Object} DodoRefundEventUpdate
+ * @property {string} [refundId]
+ * @property {string} [status]
+ * @property {number} [amount]
+ * @property {string} [currency]
+ * @property {string} [error]
+ */
+
+/** @type {Map<string, { createdAt: number, value: DodoPricePreviewResult }>} */
 const pricePreviewCache = new Map();
 
+/** @param {Env} env
+ * @returns {boolean}
+ */
 export function hasDodoApi(env) {
   return Boolean(dodoApiKey(env));
 }
 
+/** @param {Env} env
+ * @returns {boolean}
+ */
 export function hasDodoWebhookSecret(env) {
   return Boolean(dodoWebhookSecret(env));
 }
 
+/** @param {Env} env
+ * * @param {string} planId * @returns {string}
+ */
 export function dodoProductIdForPlan(env, planId) {
+  /** @type {Record<string, string | undefined>} */
   const ids = {
     starter: env.DODO_PRODUCT_STARTER_ID || env.DODO_STARTER_PRODUCT_ID,
     batch: env.DODO_PRODUCT_BATCH_ID || env.DODO_BATCH_PRODUCT_ID,
@@ -33,6 +149,8 @@ export function dodoProductIdForPlan(env, planId) {
   return ids[planId] || "";
 }
 
+/** @param {{ env: Env, request: Request }} context
+ * * @returns {Promise<DodoPricePreviewResult>} */
 export async function previewDodoPlanPrices({ env, request }) {
   const apiKey = dodoApiKey(env);
   if (!apiKey) return { available: false, reason: "missing_api_key", prices: {} };
@@ -49,15 +167,16 @@ export async function previewDodoPlanPrices({ env, request }) {
   const cached = pricePreviewCache.get(cacheKey);
   if (cached && Date.now() - cached.createdAt < PRICE_PREVIEW_CACHE_MS) return cached.value;
 
+  /** @type {Array<[string, DodoPricePreview | null]>} */
   const entries = await Promise.all(
     Object.values(PLANS).map(async (plan) => {
       const productId = dodoProductIdForPlan(env, plan.id);
-      if (!productId) return [plan.id, null];
+      if (!productId) return /** @type {[string, DodoPricePreview | null]} */ ([plan.id, null]);
       try {
         const preview = await requestDodoCheckoutPreview(env, apiKey, productId, country);
-        return [plan.id, normalizeDodoPricePreview(preview, plan)];
+        return /** @type {[string, DodoPricePreview | null]} */ ([plan.id, normalizeDodoPricePreview(preview, plan)]);
       } catch {
-        return [plan.id, null];
+        return /** @type {[string, DodoPricePreview | null]} */ ([plan.id, null]);
       }
     })
   );
@@ -76,6 +195,8 @@ export async function previewDodoPlanPrices({ env, request }) {
   return value;
 }
 
+/** @param {{ env: Env, request: Request, job: JobRow, plan: Plan, email: string, returnPath?: string }} context
+ * * @returns {Promise<string | null>} */
 export async function createDodoCheckout({ env, request, job, plan, email, returnPath = "/" }) {
   const apiKey = dodoApiKey(env);
   const productId = dodoProductIdForPlan(env, plan.id);
@@ -89,6 +210,7 @@ export async function createDodoCheckout({ env, request, job, plan, email, retur
 
   const currency = expectedDodoCurrency(env);
   const country = countryFromRequest(request);
+  /** @type {DodoCheckoutBody} */
   const body = {
     product_cart: [{ product_id: productId, quantity: 1 }],
     return_url: returnUrl.toString(),
@@ -114,7 +236,9 @@ export async function createDodoCheckout({ env, request, job, plan, email, retur
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(payload?.message || "Dodo checkout could not be created.");
+    const error = /** @type {Error & { code: string, status: number }} */ (
+      new Error(payload?.message || "Dodo checkout could not be created.")
+    );
     error.code = payload?.code || "";
     error.status = response.status;
     throw error;
@@ -128,6 +252,8 @@ export async function createDodoCheckout({ env, request, job, plan, email, retur
   return payload.checkout_url || payload.payment_link || "";
 }
 
+/** @param {{ env: Env, request: Request, batch: { id: string }, jobs: JobRow[], plan: Plan, email: string }} context
+ * * @returns {Promise<string | null>} */
 export async function createDodoBatchCheckout({ env, request, batch, jobs, plan, email }) {
   const apiKey = dodoApiKey(env);
   const productId = dodoProductIdForPlan(env, plan.id);
@@ -141,6 +267,7 @@ export async function createDodoBatchCheckout({ env, request, batch, jobs, plan,
 
   const currency = expectedDodoCurrency(env);
   const country = countryFromRequest(request);
+  /** @type {DodoCheckoutBody} */
   const body = {
     product_cart: [{ product_id: productId, quantity: 1 }],
     return_url: returnUrl.toString(),
@@ -168,7 +295,9 @@ export async function createDodoBatchCheckout({ env, request, batch, jobs, plan,
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(payload?.message || "Dodo checkout could not be created.");
+    const error = /** @type {Error & { code: string, status: number }} */ (
+      new Error(payload?.message || "Dodo checkout could not be created.")
+    );
     error.code = payload?.code || "";
     error.status = response.status;
     throw error;
@@ -187,6 +316,9 @@ export async function createDodoBatchCheckout({ env, request, batch, jobs, plan,
   return payload.checkout_url || payload.payment_link || "";
 }
 
+/** @param {Env} env
+ * * @param {{ dryRun?: boolean }} [options] * @returns {Promise<{ ok: boolean, dryRun?: boolean, missing?: string[], updates?: { planId: string, productId: string, body: { price: { currency: string, discount: number, price: number, purchasing_power_parity: boolean, tax_inclusive: boolean, type: string } } }[], baseUrl?: string, results?: Array<{ planId: string, productId: string, ok?: boolean, status?: number, message?: string, price?: unknown }> }>}
+ */
 export async function syncDodoProductPrices(env, { dryRun = false } = {}) {
   const apiKey = dodoApiKey(env);
   const updates = Object.values(PLANS).map((plan) => ({
@@ -243,6 +375,10 @@ export async function syncDodoProductPrices(env, { dryRun = false } = {}) {
   return { ok: failed.length === 0, dryRun: false, baseUrl: dodoBaseUrl(env), results };
 }
 
+/** @param {Env} env
+ * * @param {string} paymentId * @param {JobRow} job
+ * @returns {Promise<boolean>}
+ */
 export async function verifyDodoPayment(env, paymentId, job) {
   const apiKey = dodoApiKey(env);
   if (!apiKey || !paymentId || !job) return false;
@@ -262,6 +398,8 @@ export async function verifyDodoPayment(env, paymentId, job) {
   return result.ok;
 }
 
+/** @param {{ payload: string, webhookId: string, webhookTimestamp: string, webhookSignature: string, secret: string }} event
+ * * @returns {Promise<boolean>} */
 export async function verifyDodoWebhookSignature({ payload, webhookId, webhookTimestamp, webhookSignature, secret }) {
   if (!payload || !webhookId || !webhookTimestamp || !webhookSignature || !secret) return false;
 
@@ -289,6 +427,9 @@ export async function verifyDodoWebhookSignature({ payload, webhookId, webhookTi
     .some((part) => timingSafeEqual(part.startsWith("v1,") ? part.slice(3) : part.replace(/^v1=/, ""), expected));
 }
 
+/** @param {Env} env
+ * * @param {{ webhookId: string, eventType: string, payloadHash: string, payload: { business_id?: unknown, data?: Record<string, unknown> } }} event * @returns {Promise<{ duplicate: boolean }>}
+ */
 export async function reserveDodoWebhookEvent(env, { webhookId, eventType, payloadHash, payload }) {
   const now = new Date().toISOString();
   const existing = await env.AICONVERTER_DB.prepare("SELECT status FROM dodo_webhook_events WHERE webhook_id = ?")
@@ -332,6 +473,12 @@ export async function reserveDodoWebhookEvent(env, { webhookId, eventType, paylo
   return { duplicate: false };
 }
 
+/** @param {Env} env
+ * @param {string} webhookId
+ * @param {string} [status]
+ * @param {string} [error]
+ * @returns {Promise<void>}
+ */
 export async function markDodoWebhookProcessed(env, webhookId, status = "processed", error = "") {
   const now = new Date().toISOString();
   await env.AICONVERTER_DB.prepare(
@@ -343,6 +490,10 @@ export async function markDodoWebhookProcessed(env, webhookId, status = "process
     .run();
 }
 
+/** @param {Env} env
+ * * @param {{ type?: string, data?: Record<string, unknown> }} event * @param {{ webhookId?: string, payloadHash?: string }} [options]
+ * @returns {Promise<{ received: boolean, ignored?: boolean, ok?: boolean, reason?: string, batchId?: string, jobId?: string }>}
+ */
 export async function processDodoWebhookEvent(env, event, { webhookId, payloadHash } = {}) {
   const eventType = String(event?.type || "");
   const data = event?.data || {};
@@ -365,6 +516,11 @@ export async function processDodoWebhookEvent(env, event, { webhookId, payloadHa
   return { received: true, ignored: true };
 }
 
+/** @param {Env} env
+ * * @param {JobRow} job * @param {string} reason
+ * @param {DodoRefundRequestOptions} [options]
+ * @returns {Promise<{ status: string, refundId: string }>}
+ */
 export async function requestDodoRefund(env, job, reason, options = {}) {
   if (!job?.payment_id) {
     await insertDodoRefundEvent(env, {
@@ -509,6 +665,10 @@ export async function requestDodoRefund(env, job, reason, options = {}) {
   return { status: refundStatus, refundId: payload.refund_id || "" };
 }
 
+/** @param {Env} env
+ * * @param {Record<string, unknown>} payment * @param {DodoEventOptions} [options]
+ * @returns {Promise<{ ok: boolean, ignored?: boolean, reason?: string, jobId?: string }>}
+ */
 async function applyDodoPayment(env, payment, options = {}) {
   const normalized = normalizeDodoPayment(payment);
   if (!normalized.paymentId) {
@@ -541,6 +701,7 @@ async function applyDodoPayment(env, payment, options = {}) {
     return { ok: false, ignored: true, reason: "not_paid" };
   }
 
+  /** @type {{ payment_id: string, paid_at: string, checkout_session_id?: string }} */
   const updates = {
     payment_id: normalized.paymentId,
     paid_at: match.job.paid_at || new Date().toISOString()
@@ -553,7 +714,12 @@ async function applyDodoPayment(env, payment, options = {}) {
   return { ok: true, jobId: match.job.id };
 }
 
+/** @param {Env} env
+ * * @param {DodoPayment} payment * @param {DodoEventOptions} [options]
+ * @returns {Promise<{ ok: boolean, ignored?: boolean, reason?: string, batchId?: string }>}
+ */
 async function applyDodoBatchPayment(env, payment, options = {}) {
+  /** @type {BatchRow | null} */
   const batch = await env.AICONVERTER_DB.prepare("SELECT * FROM batch_checkouts WHERE id = ?")
     .bind(payment.metadataBatchId)
     .first();
@@ -606,6 +772,10 @@ async function applyDodoBatchPayment(env, payment, options = {}) {
   return { ok: true, batchId: batch.id };
 }
 
+/** @param {Env} env
+ * * @param {DodoPayment} payment * @param {JobRow | undefined} explicitJob
+ * @returns {Promise<{ ok: true, reason: string, job: JobRow, matchedBy: string } | { ok: false, reason: string, job: JobRow | null, matchedBy: string }>}
+ */
 async function matchJobForDodoPayment(env, payment, explicitJob) {
   const job = explicitJob || (await findJobForDodoPayment(env, payment));
   if (!job) return { ok: false, reason: "job_not_found", job: null, matchedBy: "" };
@@ -657,27 +827,40 @@ async function matchJobForDodoPayment(env, payment, explicitJob) {
   return { ok: true, reason: "", job, matchedBy };
 }
 
+/** @param {Env} env
+ * * @param {DodoPayment} payment * @returns {Promise<JobRow | null>}
+ */
 async function findJobForDodoPayment(env, payment) {
   if (payment.metadataJobId) {
-    const job = await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE id = ?").bind(payment.metadataJobId).first();
+    const job = /** @type {JobRow | null} */ (
+      await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE id = ?").bind(payment.metadataJobId).first()
+    );
     if (job) return job;
   }
 
   if (payment.checkoutSessionId) {
-    const job = await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE checkout_session_id = ?")
-      .bind(payment.checkoutSessionId)
-      .first();
+    const job = /** @type {JobRow | null} */ (
+      await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE checkout_session_id = ?")
+        .bind(payment.checkoutSessionId)
+        .first()
+    );
     if (job) return job;
   }
 
   if (payment.paymentId) {
-    const job = await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE payment_id = ?").bind(payment.paymentId).first();
+    const job = /** @type {JobRow | null} */ (
+      await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE payment_id = ?").bind(payment.paymentId).first()
+    );
     if (job) return job;
   }
 
   return null;
 }
 
+/** @param {Env} env
+ * * @param {DodoPayment} payment * @param {DodoEventOptions} [options]
+ * @returns {Promise<void>}
+ */
 async function recordDodoPaymentEvent(env, payment, options = {}) {
   const job = options.job || options.explicitJob || null;
   const now = new Date().toISOString();
@@ -710,6 +893,10 @@ async function recordDodoPaymentEvent(env, payment, options = {}) {
     .run();
 }
 
+/** @param {Env} env
+ * * @param {Record<string, unknown>} refund * @param {DodoEventOptions} [options]
+ * @returns {Promise<{ ok: boolean, ignored?: boolean, reason?: string, jobId?: string }>}
+ */
 async function applyDodoRefundEvent(env, refund, options = {}) {
   const normalized = normalizeDodoRefund(refund);
   const job = await findJobForDodoRefund(env, normalized);
@@ -742,18 +929,28 @@ async function applyDodoRefundEvent(env, refund, options = {}) {
   return { ok: true, jobId: job.id };
 }
 
+/** @param {Env} env
+ * * @param {DodoRefund} refund * @returns {Promise<JobRow | null>}
+ */
 async function findJobForDodoRefund(env, refund) {
   if (refund.metadataJobId) {
-    const job = await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE id = ?").bind(refund.metadataJobId).first();
+    const job = /** @type {JobRow | null} */ (
+      await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE id = ?").bind(refund.metadataJobId).first()
+    );
     if (job) return job;
   }
   if (refund.paymentId) {
-    const job = await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE payment_id = ?").bind(refund.paymentId).first();
+    const job = /** @type {JobRow | null} */ (
+      await env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE payment_id = ?").bind(refund.paymentId).first()
+    );
     if (job) return job;
   }
   return null;
 }
 
+/** @param {Env} env
+ * * @param {DodoRefundEventInput} refund * @returns {Promise<string>}
+ */
 async function insertDodoRefundEvent(env, refund) {
   const now = new Date().toISOString();
   const id = randomId("refevt");
@@ -784,6 +981,11 @@ async function insertDodoRefundEvent(env, refund) {
   return id;
 }
 
+/** @param {Env} env
+ * @param {string} id
+ * @param {DodoRefundEventUpdate} fields
+ * @returns {Promise<void>}
+ */
 async function updateDodoRefundEvent(env, id, fields) {
   if (!id) return;
   const now = new Date().toISOString();
@@ -810,6 +1012,11 @@ async function updateDodoRefundEvent(env, id, fields) {
     .run();
 }
 
+/** @param {Env} env
+ * @param {JobRow | null} job
+ * @param {string} status
+ * @returns {Promise<void>}
+ */
 async function markRefundDue(env, job, status) {
   if (!job?.id) return;
   await updateJob(env, job.id, {
@@ -818,6 +1025,10 @@ async function markRefundDue(env, job, status) {
   });
 }
 
+/** @param {Env} env
+ * * @param {JobRow} job * @param {string} reason
+ * @returns {Promise<{ status: string, refundId: string }>}
+ */
 export async function recordDrillWriteOff(env, job, reason) {
   const now = new Date().toISOString();
   await insertDodoRefundEvent(env, {
@@ -847,6 +1058,9 @@ export async function recordDrillWriteOff(env, job, reason) {
   return { status: "written_off", refundId: job.refund_id || "" };
 }
 
+/** @param {Record<string, unknown>} payment
+ * @returns {DodoPayment}
+ */
 function normalizeDodoPayment(payment = {}) {
   const metadata = objectOrEmpty(payment.metadata);
   const productIds = extractProductIds(payment);
@@ -864,6 +1078,9 @@ function normalizeDodoPayment(payment = {}) {
   };
 }
 
+/** @param {Record<string, unknown>} refund
+ * @returns {DodoRefund}
+ */
 function normalizeDodoRefund(refund = {}) {
   const metadata = objectOrEmpty(refund.metadata);
   return {
@@ -878,44 +1095,74 @@ function normalizeDodoRefund(refund = {}) {
   };
 }
 
+/** @param {Record<string, unknown>} payment
+ * @returns {string[]}
+ */
 function extractProductIds(payment = {}) {
   const carts = [payment.product_cart, payment.productCart, payment.line_items, payment.items].filter(Array.isArray).flat();
   return carts.map((item) => firstText(item?.product_id, item?.productId, item?.id)).filter(Boolean);
 }
 
+/** @param {Record<string, unknown>} data
+ * @returns {string}
+ */
 function providerObjectId(data = {}) {
   return firstText(data.payment_id, data.refund_id, data.dispute_id, data.subscription_id, data.id);
 }
 
+/** @param {Env} env
+ * @returns {string}
+ */
 function dodoApiKey(env) {
   return env.DODO_PAYMENTS_API_KEY || env.DODO_API_KEY || "";
 }
 
+/** @param {Env} env
+ * @returns {string}
+ */
 export function dodoWebhookSecret(env) {
   return env.DODO_PAYMENTS_WEBHOOK_KEY || env.DODO_PAYMENTS_WEBHOOK_SECRET || env.DODO_WEBHOOK_SECRET || "";
 }
 
+/** @param {Env} env
+ * @returns {string}
+ */
 function dodoBaseUrl(env) {
   const mode = String(env.DODO_ENVIRONMENT || env.DODO_MODE || "live").toLowerCase();
   return mode.includes("test") ? DODO_TEST_URL : DODO_LIVE_URL;
 }
 
+/** @param {Env} env
+ * @returns {string}
+ */
 function expectedDodoCurrency(env) {
   return normalizeCurrency(env.DODO_CURRENCY || env.PAYMENT_CURRENCY || env.CHECKOUT_CURRENCY || "");
 }
 
+/** @param {Env} env
+ * @returns {string}
+ */
 function dodoBaseCurrency(env) {
   return expectedDodoCurrency(env) || "USD";
 }
 
+/** @param {Env} env
+ * @returns {boolean}
+ */
 function dodoAdaptiveCurrencyEnabled(env) {
   return String(env.DODO_ADAPTIVE_CURRENCY || env.DODO_ADAPTIVE_PRICING || "true").toLowerCase() !== "false";
 }
 
+/** @param {Env} env
+ * @returns {boolean}
+ */
 function dodoAdaptiveCurrencyFeesInclusive(env) {
   return String(env.DODO_ADAPTIVE_CURRENCY_FEES_INCLUSIVE || "true").toLowerCase() !== "false";
 }
 
+/** @param {Plan} plan
+ * @returns {{ currency: string, discount: number, price: number, purchasing_power_parity: boolean, tax_inclusive: boolean, type: string }}
+ */
 function dodoOneTimePriceBody(plan) {
   return {
     currency: plan.currency || "INR",
@@ -927,6 +1174,10 @@ function dodoOneTimePriceBody(plan) {
   };
 }
 
+/** @param {Env} env
+ * * @param {DodoPayment} payment * @param {Plan} plan
+ * @returns {boolean}
+ */
 export function isDodoPaymentAmountTooLow(env, payment, plan) {
   if (!payment?.amount || payment.amount <= 0) return false;
   const currency = normalizeCurrency(payment.currency);
@@ -934,7 +1185,14 @@ export function isDodoPaymentAmountTooLow(env, payment, plan) {
   return payment.amount < Number(plan?.amount || 0);
 }
 
+/** @param {Env} env
+ * @param {string} apiKey
+ * @param {string} productId
+ * @param {string} country
+ * @returns {Promise<DodoPreviewPayload>}
+ */
 async function requestDodoCheckoutPreview(env, apiKey, productId, country) {
+  /** @type {{ product_cart: { product_id: string, quantity: number }[], billing_address?: { country: string } }} */
   const body = {
     product_cart: [{ product_id: productId, quantity: 1 }]
   };
@@ -950,13 +1208,19 @@ async function requestDodoCheckoutPreview(env, apiKey, productId, country) {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(payload?.message || "Dodo pricing preview could not be created.");
+    const error = /** @type {Error & { status: number }} */ (
+      new Error(payload?.message || "Dodo pricing preview could not be created.")
+    );
     error.status = response.status;
     throw error;
   }
   return payload;
 }
 
+/** @param {DodoPreviewPayload} payload
+ * @param {Plan} plan
+ * @returns {DodoPricePreview | null}
+ */
 function normalizeDodoPricePreview(payload, plan) {
   const currency = normalizeCurrency(payload?.currency || payload?.current_breakup?.currency);
   const amount = numberOrNull(
@@ -978,13 +1242,17 @@ function normalizeDodoPricePreview(payload, plan) {
   };
 }
 
+/** @param {number | null} minorAmount
+ * @param {string} currency
+ * @returns {string}
+ */
 function formatDodoAmount(minorAmount, currency) {
-  if (!Number.isFinite(minorAmount) || !currency) return "";
+  if (minorAmount === null || !Number.isFinite(minorAmount) || !currency) return "";
   try {
     const decimals = new Intl.NumberFormat("en", {
       style: "currency",
       currency
-    }).resolvedOptions().maximumFractionDigits;
+    }).resolvedOptions().maximumFractionDigits || 2;
     const majorAmount = Math.ceil(minorAmount / 10 ** decimals);
     return new Intl.NumberFormat(undefined, {
       style: "currency",
@@ -998,11 +1266,16 @@ function formatDodoAmount(minorAmount, currency) {
   }
 }
 
+/** @param {unknown} value
+ * @returns {number | null}
+ */
 function numberOrNull(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
 
+/** @param {Request} request
+ * * @returns {string} */
 function countryFromRequest(request) {
   const cloudflareCountry = String(request?.cf?.country || "").toUpperCase();
   const headerCountry = String(request?.headers?.get?.("cf-ipcountry") || request?.headers?.get?.("x-country") || "").toUpperCase();
@@ -1010,6 +1283,9 @@ function countryFromRequest(request) {
   return /^[A-Z]{2}$/.test(country) && country !== "XX" ? country : "";
 }
 
+/** @param {string} secret
+ * @returns {Uint8Array}
+ */
 function decodeWebhookSecret(secret) {
   const normalized = String(secret || "").trim().replace(/^whsec_/, "");
   try {
@@ -1019,6 +1295,9 @@ function decodeWebhookSecret(secret) {
   }
 }
 
+/** @param {ArrayBuffer} buffer
+ * @returns {string}
+ */
 function arrayBufferToBase64(buffer) {
   let binary = "";
   const bytes = new Uint8Array(buffer);
@@ -1028,6 +1307,10 @@ function arrayBufferToBase64(buffer) {
   return btoa(binary);
 }
 
+/** @param {string} a
+ * @param {string} b
+ * @returns {boolean}
+ */
 function timingSafeEqual(a, b) {
   if (!a || !b || a.length !== b.length) return false;
   let result = 0;
@@ -1037,6 +1320,8 @@ function timingSafeEqual(a, b) {
   return result === 0;
 }
 
+/** @param {...unknown} values
+ * * @returns {string} */
 function firstText(...values) {
   for (const value of values) {
     if (value !== undefined && value !== null && String(value).trim()) return String(value).trim();
@@ -1044,15 +1329,24 @@ function firstText(...values) {
   return "";
 }
 
+/** @param {unknown} value
+ * @returns {Record<string, unknown>}
+ */
 function objectOrEmpty(value) {
-  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  return value && typeof value === "object" && !Array.isArray(value) ? /** @type {Record<string, unknown>} */ (value) : {};
 }
 
+/** @param {unknown} value
+ * @returns {number}
+ */
 function numberOrZero(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : 0;
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function normalizeCurrency(value) {
   return String(value || "").trim().toUpperCase();
 }
