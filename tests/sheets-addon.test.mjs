@@ -270,17 +270,37 @@ test("Sheets add-on identity rejects null JWT segments without throwing", async 
   assert.equal(result.status, 401);
 });
 
-test("an empty Google certs response is retried soon instead of cached for hours", async () => {
+test("an empty Google certs response is retried soon instead of cached for hours", async (t) => {
   resetGoogleKeyCacheForTests();
+  t.mock.timers.enable({ apis: ["Date"], now: Date.now() });
   const token = await signIdToken({});
   const env = { GOOGLE_SHEETS_ADDON_CLIENT_IDS: CLIENT_ID };
   const request = addonRequest("https://aiconverter.app/api/convert", token);
-  const start = Date.now();
-  const emptyFetch = async () => new Response("{}", { headers: { "Cache-Control": "public, max-age=20000" } });
-  const failed = await verifySheetsAddonIdentity(env, request, { fetchImpl: emptyFetch, now: start });
+  let served = "{}";
+  const certs = async () => new Response(served, { headers: { "Cache-Control": "public, max-age=20000" } });
+  const failed = await verifySheetsAddonIdentity(env, request, { fetchImpl: certs });
   assert.equal(failed.ok, false);
-  const recovered = await verifySheetsAddonIdentity(env, request, { fetchImpl: certsFetch, now: start + 31000 });
+  served = JSON.stringify({ keys: [publicJwk] });
+  t.mock.timers.tick(31000);
+  const recovered = await verifySheetsAddonIdentity(env, request, { fetchImpl: certs });
   assert.equal(recovered.ok, true);
+  resetGoogleKeyCacheForTests();
+});
+
+test("a Google certs 500 on refresh does not block the next sign-in", async (t) => {
+  resetGoogleKeyCacheForTests();
+  t.mock.timers.enable({ apis: ["Date"], now: Date.now() });
+  const env = { GOOGLE_SHEETS_ADDON_CLIENT_IDS: CLIENT_ID };
+  const request = addonRequest("https://aiconverter.app/api/convert", await signIdToken({}));
+  let status = 200;
+  const certs = async () =>
+    status === 200 ? certsFetch() : new Response("backend error", { status });
+  assert.equal((await verifySheetsAddonIdentity(env, request, { fetchImpl: certs })).ok, true);
+  t.mock.timers.tick(11 * 60 * 1000);
+  status = 500;
+  assert.equal((await verifySheetsAddonIdentity(env, request, { fetchImpl: certs })).ok, false);
+  status = 200;
+  assert.equal((await verifySheetsAddonIdentity(env, request, { fetchImpl: certs })).ok, true);
   resetGoogleKeyCacheForTests();
 });
 
@@ -299,7 +319,7 @@ test("Sheets add-on identity fails closed when Google certs cannot be fetched", 
   assert.equal(first.ok, false);
   assert.equal(first.status, 401);
   assert.equal(second.ok, false);
-  assert.equal(calls, 1, "a failed cert fetch should not be retried on every request");
+  assert.equal(calls, 2, "jose retries a failed cert fetch on the next request");
   resetGoogleKeyCacheForTests();
 });
 
@@ -461,9 +481,9 @@ test("a non-numeric add-on cap setting falls back to the default instead of bloc
   }
 });
 
-test("Sheets add-on identity refetches Google keys once when a new key id appears", async () => {
+test("Sheets add-on identity refetches Google keys once when a new key id appears", async (t) => {
   resetGoogleKeyCacheForTests();
-  const start = Date.now();
+  t.mock.timers.enable({ apis: ["Date"], now: Date.now() });
   let served = [{ ...publicJwk, kid: "old-kid" }];
   let calls = 0;
   const rotatingFetch = async () => {
@@ -472,12 +492,12 @@ test("Sheets add-on identity refetches Google keys once when a new key id appear
   };
   const env = { GOOGLE_SHEETS_ADDON_CLIENT_IDS: CLIENT_ID };
   const oldToken = await signIdToken({}, { kid: "old-kid" });
-  assert.equal((await verifySheetsAddonIdentity(env, addonRequest("https://aiconverter.app/api/convert", oldToken), { fetchImpl: rotatingFetch, now: start })).ok, true);
+  assert.equal((await verifySheetsAddonIdentity(env, addonRequest("https://aiconverter.app/api/convert", oldToken), { fetchImpl: rotatingFetch })).ok, true);
   served = [{ ...publicJwk, kid: "new-kid" }];
   const newToken = await signIdToken({}, { kid: "new-kid" });
+  t.mock.timers.tick(61000);
   const result = await verifySheetsAddonIdentity(env, addonRequest("https://aiconverter.app/api/convert", newToken), {
-    fetchImpl: rotatingFetch,
-    now: start + 61000
+    fetchImpl: rotatingFetch
   });
   assert.equal(result.ok, true);
   assert.equal(calls, 2);

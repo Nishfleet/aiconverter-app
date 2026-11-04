@@ -1,3 +1,4 @@
+import { Webhook } from "standardwebhooks";
 import { PLANS, randomId, recordJobAttempt, updateJob } from "./jobs.js";
 
 const DODO_LIVE_URL = "https://live.dodopayments.com";
@@ -402,29 +403,16 @@ export async function verifyDodoPayment(env, paymentId, job) {
  * * @returns {Promise<boolean>} */
 export async function verifyDodoWebhookSignature({ payload, webhookId, webhookTimestamp, webhookSignature, secret }) {
   if (!payload || !webhookId || !webhookTimestamp || !webhookSignature || !secret) return false;
-
-  const timestamp = Number(webhookTimestamp);
-  if (!Number.isFinite(timestamp)) return false;
-  const toleranceSeconds = 5 * 60;
-  if (Math.abs(Date.now() / 1000 - timestamp) > toleranceSeconds) return false;
-
-  const signedPayload = `${webhookId}.${webhookTimestamp}.${payload}`;
-  const key = await crypto.subtle.importKey(
-    "raw",
-    decodeWebhookSecret(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const digest = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(signedPayload));
-  const expected = arrayBufferToBase64(digest);
-
-  return webhookSignature
-    .split(" ")
-    .flatMap((part) => part.split(","))
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .some((part) => timingSafeEqual(part.startsWith("v1,") ? part.slice(3) : part.replace(/^v1=/, ""), expected));
+  try {
+    new Webhook(secret.trim()).verify(payload, {
+      "webhook-id": webhookId,
+      "webhook-timestamp": webhookTimestamp,
+      "webhook-signature": webhookSignature
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** @param {Env} env
@@ -1281,43 +1269,6 @@ function countryFromRequest(request) {
   const headerCountry = String(request?.headers?.get?.("cf-ipcountry") || request?.headers?.get?.("x-country") || "").toUpperCase();
   const country = cloudflareCountry || headerCountry;
   return /^[A-Z]{2}$/.test(country) && country !== "XX" ? country : "";
-}
-
-/** @param {string} secret
- * @returns {Uint8Array}
- */
-function decodeWebhookSecret(secret) {
-  const normalized = String(secret || "").trim().replace(/^whsec_/, "");
-  try {
-    return Uint8Array.from(atob(normalized), (char) => char.charCodeAt(0));
-  } catch {
-    return new TextEncoder().encode(secret);
-  }
-}
-
-/** @param {ArrayBuffer} buffer
- * @returns {string}
- */
-function arrayBufferToBase64(buffer) {
-  let binary = "";
-  const bytes = new Uint8Array(buffer);
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
-}
-
-/** @param {string} a
- * @param {string} b
- * @returns {boolean}
- */
-function timingSafeEqual(a, b) {
-  if (!a || !b || a.length !== b.length) return false;
-  let result = 0;
-  for (let index = 0; index < a.length; index += 1) {
-    result |= a.charCodeAt(index) ^ b.charCodeAt(index);
-  }
-  return result === 0;
 }
 
 /** @param {...unknown} values
