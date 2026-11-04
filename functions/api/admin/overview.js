@@ -258,6 +258,7 @@ export async function onRequestGet({ request, env }) {
     health,
     cloudConvert,
     usage24h,
+    providerFailures,
     stuckProvider,
     webhookErrorCount,
     unmatchedPayments,
