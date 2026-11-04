@@ -10,14 +10,23 @@ import {
 const CONVERTIO_API_BASE = "https://api.convertio.co";
 const DEFAULT_DAILY_JOB_LIMIT = 10;
 
+/** @param {Env} env
+ * @returns {boolean}
+ */
 export function hasConvertioConfig(env) {
   return Boolean(String(env.CONVERTIO_API_KEY || "").trim());
 }
 
+/** @param {Env} env
+ * @returns {number}
+ */
 export function convertioDailyJobLimit(env) {
   return boundedNumber(env.CONVERTIO_DAILY_JOB_LIMIT, DEFAULT_DAILY_JOB_LIMIT, 0, 10000);
 }
 
+/** @param {Env} env
+ * @returns {Promise<ProviderUsage>}
+ */
 export async function convertioUsageToday(env) {
   const startedAt = startOfUtcDay();
   const empty = { started: 0, jobsStarted: 0, reserved: 0, complete: 0, failed: 0, converting: 0, startedAt };
@@ -53,10 +62,15 @@ export async function convertioUsageToday(env) {
       startedAt
     };
   } catch (error) {
-    return { ...empty, error: error?.message || "Convertio usage query failed." };
+    return { ...empty, error: (error instanceof Error && error.message) || "Convertio usage query failed." };
   }
 }
 
+/** @param {Env} env
+ * @param {JobRow} job
+ * @param {ArrayBuffer} arrayBuffer
+ * @returns {Promise<ConversionResult>}
+ */
 export async function startConvertioConversion(env, job, arrayBuffer) {
   if (!hasConvertioConfig(env)) {
     return {
@@ -124,8 +138,12 @@ export async function startConvertioConversion(env, job, arrayBuffer) {
   });
 }
 
+/** @param {Env} env
+ * @param {JobRow} job
+ * @returns {Promise<ConversionResult>}
+ */
 export async function refreshConvertioConversion(env, job) {
-  if (!job?.external_job_id) return { ok: false, message: "No conversion job is attached." };
+  if (!job?.external_job_id || !job.result_key) return { ok: false, message: "No conversion job is attached." };
   if (!hasConvertioConfig(env)) {
     return failConvertioJob(env, job, "This conversion option is temporarily unavailable.");
   }
@@ -142,7 +160,7 @@ export async function refreshConvertioConversion(env, job) {
   }
 
   const outputFormat = jobOutputFormat(job);
-  const resultBuffer = await downloadConvertioResult(env, job, data.output?.url || "");
+  const resultBuffer = await downloadConvertioResult(job.external_job_id, data.output?.url || "");
   const contentType = contentTypeForOutputFormat(outputFormat);
 
   await env.AICONVERTER_BUCKET.put(job.result_key, resultBuffer, {
@@ -186,21 +204,30 @@ export async function refreshConvertioConversion(env, job) {
   };
 }
 
-async function downloadConvertioResult(env, job, outputUrl) {
+/** @param {string} externalJobId
+ * @param {string} outputUrl
+ * @returns {Promise<ArrayBuffer>}
+ */
+async function downloadConvertioResult(externalJobId, outputUrl) {
   if (outputUrl) {
     const response = await fetch(outputUrl);
     if (response.ok) return response.arrayBuffer();
   }
 
-  const payload = await convertioRequest(`/convert/${encodeURIComponent(job.external_job_id)}/dl/base64`);
+  const payload = await convertioRequest(`/convert/${encodeURIComponent(externalJobId)}/dl/base64`);
   const content = payload?.data?.content || "";
   if (!content) throw new Error("Conversion finished without a downloadable file.");
   return base64ToArrayBuffer(content);
 }
 
+/** @param {Env} env
+ * @param {JobRow} job
+ * @param {string} message
+ * @returns {Promise<ConversionResult>}
+ */
 async function failConvertioJob(env, job, message) {
   await deleteConvertioFile(env, job.external_job_id).catch(() => {});
-  await env.AICONVERTER_BUCKET.delete(job.source_key).catch(() => {});
+  if (job.source_key) await env.AICONVERTER_BUCKET.delete(job.source_key).catch(() => {});
   const refund = job.paid_at
     ? await requestDodoRefund(env, job, message, { cashRefund: Number(job.download_count || 0) === 0 })
     : { status: "", refundId: "" };
@@ -225,6 +252,10 @@ async function failConvertioJob(env, job, message) {
   };
 }
 
+/** @param {JobRow} job
+ * @param {string} [status]
+ * @returns {ConversionResult}
+ */
 function pendingResult(job, status = "convert") {
   const outputFormat = jobOutputFormat(job);
   return {
@@ -247,6 +278,10 @@ function pendingResult(job, status = "convert") {
   };
 }
 
+/** @param {Env} env
+ * @param {number} limit
+ * @returns {Promise<{ ok: boolean, count: number, remainingToday: number | null, message?: string }>}
+ */
 async function reserveConvertioDailySlot(env, limit) {
   if (limit <= 0) return { ok: true, count: 0, remainingToday: null };
   const windowStart = startOfUtcDay();
@@ -283,11 +318,15 @@ async function reserveConvertioDailySlot(env, limit) {
       ok: false,
       count: 0,
       remainingToday: 0,
-      message: `Conversion daily cap reservation failed: ${error?.message || "unknown error"}`
+      message: `Conversion daily cap reservation failed: ${(error instanceof Error && error.message) || "unknown error"}`
     };
   }
 }
 
+/** @param {Env} env
+ * @param {string | undefined} id
+ * @returns {Promise<void>}
+ */
 async function deleteConvertioFile(env, id) {
   if (!id) return;
   await fetch(`${CONVERTIO_API_BASE}/convert/${encodeURIComponent(id)}`, {
@@ -295,6 +334,9 @@ async function deleteConvertioFile(env, id) {
   });
 }
 
+/** @param {string} path
+ * @param {{ method?: string, body?: string, headers?: Record<string, string> }} [init]
+ */
 async function convertioRequest(path, init = {}) {
   const response = await fetch(`${CONVERTIO_API_BASE}${path}`, {
     ...init,
@@ -310,6 +352,9 @@ async function convertioRequest(path, init = {}) {
   return payload;
 }
 
+/** @param {string} content
+ * @returns {ArrayBuffer}
+ */
 function base64ToArrayBuffer(content) {
   const binary = atob(content);
   const bytes = new Uint8Array(binary.length);
@@ -319,21 +364,36 @@ function base64ToArrayBuffer(content) {
   return bytes.buffer;
 }
 
+/** @param {unknown} value
+ * @param {number} fallback
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
 function boundedNumber(value, fallback, min, max) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.max(min, Math.min(max, Math.floor(parsed)));
 }
 
+/** @param {unknown} value
+ * @returns {number}
+ */
 function numberOrZero(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+/** @param {Date} [date]
+ * @returns {string}
+ */
 function startOfUtcDay(date = new Date()) {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())).toISOString();
 }
 
+/** @param {string} windowStart
+ * @returns {string}
+ */
 function convertioDailyCounterId(windowStart) {
   return `convertio:daily:${String(windowStart || "").slice(0, 10)}`;
 }

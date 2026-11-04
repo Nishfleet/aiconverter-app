@@ -11,6 +11,7 @@ interface Env {
   // Vars and secrets. Declared optional because each one is absent on a
   // branch/preview deployment; the functions already guard for that.
   ADMIN_TOKEN?: string;
+  ALLOW_CLOUDFLARE_FALLBACK?: string;
   ALLOW_RUNTIME_RATE_LIMIT_SALT?: string;
   AUTO_REFUND_AFTER_DOWNLOAD?: string;
   AUTO_REFUNDS_ENABLED?: string;
@@ -21,6 +22,13 @@ interface Env {
   CHECKOUT_PRO_URL?: string;
   CHECKOUT_STARTER_URL?: string;
   CHECKOUT_URL?: string;
+  CLOUDCONVERT_API_KEY?: string;
+  CLOUDCONVERT_DAILY_JOB_LIMIT?: string;
+  CLOUDCONVERT_MIN_CREDITS?: string;
+  CLOUDCONVERT_REQUIRE_CREDIT_CHECK?: string;
+  CLOUDCONVERT_TASK_TIMEOUT_SECONDS?: string;
+  CONVERTIO_API_KEY?: string;
+  CONVERTIO_DAILY_JOB_LIMIT?: string;
   DODO_ADAPTIVE_CURRENCY?: string;
   DODO_ADAPTIVE_CURRENCY_FEES_INCLUSIVE?: string;
   DODO_ADAPTIVE_PRICING?: string;
@@ -114,4 +122,31 @@ interface Plan {
   amount: number;
   currency: string;
   pages: number;
+}
+
+interface ConversionResult {
+  ok: boolean;
+  pending?: boolean;
+  status?: string;
+  message?: string;
+  confidence?: number;
+  rowCount?: number;
+  provider?: string;
+  outputFormat?: string;
+  refundStatus?: string;
+  previewRows?: Record<string, string>[];
+  columns?: { key: string; label: string }[];
+  guardrails?: unknown;
+  attempts?: { provider: string; message: string }[];
+}
+
+interface ProviderUsage {
+  started: number;
+  jobsStarted?: number;
+  reserved?: number;
+  complete: number;
+  failed: number;
+  converting: number;
+  startedAt: string;
+  error?: string;
 }

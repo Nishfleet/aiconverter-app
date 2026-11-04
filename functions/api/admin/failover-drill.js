@@ -21,6 +21,9 @@ export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost({ request, env }) {
   if (!env.AICONVERTER_BUCKET || !env.AICONVERTER_DB) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -38,7 +41,7 @@ export async function onRequestPost({ request, env }) {
   const sourceKey = sourceObjectKey(jobId, fileName, "universal-file");
   const resultKey = `jobs/${jobId}/result.${DRILL_OUTPUT_FORMAT}`;
   const bytes = new TextEncoder().encode(`name,total\nFailover drill,1.00\ncreated_at,${now}\n`);
-  const arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  const arrayBuffer = new Uint8Array(bytes).buffer;
 
   await insertJob(env, {
     id: jobId,
@@ -74,15 +77,9 @@ export async function onRequestPost({ request, env }) {
     ...env,
     CLOUDCONVERT_API_KEY: ""
   };
-  const started = await startUniversalProviderConversion(drillEnv, {
-    id: jobId,
-    source_key: sourceKey,
-    result_key: resultKey,
-    original_file_name: fileName,
-    input_mime_type: DRILL_MIME,
-    output_format: DRILL_OUTPUT_FORMAT,
-    expires_at: expiresAt
-  }, arrayBuffer);
+  const insertedJob = await readJob(env, jobId);
+  if (!insertedJob) return serverError("Failover drill job could not be read back.");
+  const started = await startUniversalProviderConversion(drillEnv, insertedJob, arrayBuffer);
 
   const firstJob = await readJob(env, jobId);
   const firstProvider = firstJob?.external_provider || started.provider || "";
@@ -119,13 +116,21 @@ export async function onRequestPost({ request, env }) {
   });
 }
 
+/** @param {Request} request
+ * @returns {Promise<number>}
+ */
 async function requestedWaitSeconds(request) {
   const contentType = request.headers.get("Content-Type") || "";
   if (!contentType.includes("application/json")) return 20;
+  /** @type {{ waitSeconds?: unknown }} */
   const body = await request.json().catch(() => ({}));
   return Math.max(0, Math.min(25, Number(body.waitSeconds ?? 20)));
 }
 
+/** @param {Env} env
+ * @param {string} jobId
+ * @param {number} waitSeconds
+ */
 async function waitForProvider(env, jobId, waitSeconds) {
   const deadline = Date.now() + waitSeconds * 1000;
   let result = null;
@@ -141,10 +146,17 @@ async function waitForProvider(env, jobId, waitSeconds) {
   return { result, job };
 }
 
+/** @param {Env} env
+ * @param {string} jobId
+ * @returns {Promise<JobRow | null>}
+ */
 async function readJob(env, jobId) {
   return env.AICONVERTER_DB.prepare("SELECT * FROM jobs WHERE id = ?").bind(jobId).first();
 }
 
+/** @param {number} ms
+ * @returns {Promise<void>}
+ */
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
