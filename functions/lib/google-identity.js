@@ -1,12 +1,13 @@
+import { createRemoteJWKSet, customFetch, errors, jwtVerify } from "jose";
 
 const GOOGLE_CERTS_URL = "https://www.googleapis.com/oauth2/v3/certs";
-const GOOGLE_ISSUERS = new Set(["accounts.google.com", "https://accounts.google.com"]);
+const GOOGLE_ISSUERS = ["accounts.google.com", "https://accounts.google.com"];
 const CLOCK_SKEW_SECONDS = 60;
-const DEFAULT_KEY_CACHE_SECONDS = 3600;
+const MAX_TOKEN_AGE = "1h";
 const FAILED_FETCH_RETRY_SECONDS = 30;
-const KID_REFRESH_SECONDS = 60;
 
-let keyCache = { keys: null, expiresAt: 0, fetchedAt: 0 };
+let googleKeys = null;
+let certsFailedAt = -Infinity;
 
 export const SHEETS_ADDON_CLIENT = "sheets-addon";
 
@@ -27,7 +28,7 @@ export function bearerToken(request) {
   return match ? match[1].trim() : "";
 }
 
-export async function verifySheetsAddonIdentity(env, request, { fetchImpl = fetch, now = Date.now() } = {}) {
+export async function verifySheetsAddonIdentity(env, request, { fetchImpl = fetch } = {}) {
   const audiences = sheetsAddonClientIds(env);
   if (!audiences.length) {
     return { ok: false, status: 503, message: "The Google Sheets add-on is not enabled yet." };
@@ -36,44 +37,25 @@ export async function verifySheetsAddonIdentity(env, request, { fetchImpl = fetc
   const token = bearerToken(request);
   if (!token) return { ok: false, status: 401, message: "Sign in to Google Sheets again and retry." };
 
-  const parts = token.split(".");
-  if (parts.length !== 3) return { ok: false, status: 401, message: "Your Google sign-in could not be verified." };
-
-  let header;
   let payload;
   try {
-    header = JSON.parse(base64UrlToString(parts[0]));
-    payload = JSON.parse(base64UrlToString(parts[1]));
-  } catch {
-    return { ok: false, status: 401, message: "Your Google sign-in could not be verified." };
-  }
-
-  if (!isPlainObject(header) || !isPlainObject(payload) || header.alg !== "RS256" || !header.kid) {
-    return { ok: false, status: 401, message: "Your Google sign-in could not be verified." };
-  }
-
-  let keys = await googleSigningKeys(fetchImpl, now);
-  if (!keys.some((key) => key.kid === header.kid) && keyCache.fetchedAt + KID_REFRESH_SECONDS * 1000 < now) {
-    keyCache.expiresAt = 0;
-    keys = await googleSigningKeys(fetchImpl, now);
-  }
-  const jwk = keys.find((key) => key.kid === header.kid);
-  if (!jwk) return { ok: false, status: 401, message: "Your Google sign-in could not be verified." };
-
-  const signatureValid = await verifyRs256(jwk, `${parts[0]}.${parts[1]}`, base64UrlToBytes(parts[2]));
-  if (!signatureValid) return { ok: false, status: 401, message: "Your Google sign-in could not be verified." };
-
-  const nowSeconds = Math.floor(now / 1000);
-  const tokenAudiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-  if (
-    !GOOGLE_ISSUERS.has(payload.iss) ||
-    !tokenAudiences.some((aud) => audiences.includes(aud)) ||
-    !Number.isFinite(payload.exp) ||
-    payload.exp + CLOCK_SKEW_SECONDS < nowSeconds ||
-    (Number.isFinite(payload.iat) && payload.iat - CLOCK_SKEW_SECONDS > nowSeconds) ||
-    !payload.sub
-  ) {
-    return { ok: false, status: 401, message: "Your Google sign-in has expired. Reopen the add-on and retry." };
+    ({ payload } = await jwtVerify(token, googleSigningKeys(fetchImpl), {
+      algorithms: ["RS256"],
+      issuer: GOOGLE_ISSUERS,
+      audience: audiences,
+      requiredClaims: ["exp", "sub"],
+      maxTokenAge: MAX_TOKEN_AGE,
+      clockTolerance: CLOCK_SKEW_SECONDS
+    }));
+  } catch (error) {
+    const expired = error instanceof errors.JWTExpired || error instanceof errors.JWTClaimValidationFailed;
+    return {
+      ok: false,
+      status: 401,
+      message: expired
+        ? "Your Google sign-in has expired. Reopen the add-on and retry."
+        : "Your Google sign-in could not be verified."
+    };
   }
 
   if (payload.email && payload.email_verified === false) {
@@ -85,61 +67,23 @@ export async function verifySheetsAddonIdentity(env, request, { fetchImpl = fetc
 }
 
 export function resetGoogleKeyCacheForTests() {
-  keyCache = { keys: null, expiresAt: 0, fetchedAt: 0 };
+  googleKeys = null;
+  certsFailedAt = -Infinity;
 }
 
-async function googleSigningKeys(fetchImpl, now) {
-  if (keyCache.keys && keyCache.expiresAt > now) return keyCache.keys;
-  let response;
-  try {
-    response = await fetchImpl(GOOGLE_CERTS_URL);
-  } catch {
-    response = null;
-  }
-  if (!response?.ok) {
-    keyCache = { keys: keyCache.keys || [], expiresAt: now + FAILED_FETCH_RETRY_SECONDS * 1000, fetchedAt: now };
-    return keyCache.keys;
-  }
-  const body = await response.json().catch(() => null);
-  const keys = Array.isArray(body?.keys) ? body.keys.filter((key) => key?.kid && key?.n && key?.e) : [];
-  if (!keys.length) {
-    keyCache = { keys: keyCache.keys || [], expiresAt: now + FAILED_FETCH_RETRY_SECONDS * 1000, fetchedAt: now };
-    return keyCache.keys;
-  }
-  const maxAge = Number((response.headers.get("Cache-Control") || "").match(/max-age=(\d+)/)?.[1]);
-  const ttlSeconds = Number.isFinite(maxAge) && maxAge > 0 ? maxAge : DEFAULT_KEY_CACHE_SECONDS;
-  keyCache = { keys, expiresAt: now + ttlSeconds * 1000, fetchedAt: now };
-  return keys;
-}
-
-function isPlainObject(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-async function verifyRs256(jwk, signedText, signature) {
-  try {
-    const key = await crypto.subtle.importKey(
-      "jwk",
-      { kty: "RSA", n: jwk.n, e: jwk.e, alg: "RS256", ext: true },
-      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-      false,
-      ["verify"]
-    );
-    return await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, new TextEncoder().encode(signedText));
-  } catch {
-    return false;
-  }
-}
-
-function base64UrlToBytes(value) {
-  const normalized = String(value).replace(/-/g, "+").replace(/_/g, "/");
-  const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-  const binary = atob(padded);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-  return bytes;
-}
-
-function base64UrlToString(value) {
-  return new TextDecoder().decode(base64UrlToBytes(value));
+function googleSigningKeys(fetchImpl) {
+  googleKeys ??= createRemoteJWKSet(new URL(GOOGLE_CERTS_URL), {
+    [customFetch]: async (url, options) => {
+      if (Date.now() - certsFailedAt < FAILED_FETCH_RETRY_SECONDS * 1000) throw new Error("Google certs fetch failed recently.");
+      try {
+        const response = await fetchImpl(url, options);
+        if (!response.ok) certsFailedAt = Date.now();
+        return response;
+      } catch (error) {
+        certsFailedAt = Date.now();
+        throw error;
+      }
+    }
+  });
+  return googleKeys;
 }

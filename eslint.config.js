@@ -42,4 +42,18 @@ export default [
       "no-warning-comments": ["error", { terms: WORKAROUND_TERMS, location: "anywhere" }],
     },
   },
+  {
+    files: ["functions/**/*.js"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "MemberExpression[object.object.name='crypto'][object.property.name='subtle'][property.name=/^(sign|verify|importKey)$/]",
+          message:
+            "Do not hand-roll signature checks (#255). Verify Google tokens with jose jwtVerify and webhooks with standardwebhooks Webhook.verify.",
+        },
+      ],
+    },
+  },
 ];
