@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build && node src/cli/build-sitemap.mjs",
+    "test": "node --test tests/*.test.mjs",
     "check:pricing": "node tests/check-pricing.mjs",
     "dodo:sync-prices": "node src/cli/sync-dodo-prices.mjs",
     "corpus:private": "node tests/private-corpus/run.mjs",
