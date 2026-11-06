@@ -15,6 +15,9 @@ export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -36,7 +39,7 @@ export async function onRequestPost({ request, env }) {
   if (!job.paid_at && env.FREE_DOWNLOADS_ENABLED !== "true") {
     return json({ error: "Payment is required before reviewing the full export." }, { status: 402 });
   }
-  const converterId = job.converter_id;
+  const converterId = job.converter_id || "";
   if (converterId !== "bank" && !TABLE_CONVERTERS.has(converterId)) {
     return badRequest("Row review is available for bank, table, receipt and invoice CSV exports.");
   }
@@ -49,7 +52,7 @@ export async function onRequestPost({ request, env }) {
     return badRequest("Rows are only available for CSV exports.");
   }
 
-  const object = await env.AICONVERTER_BUCKET.get(job.result_key);
+  const object = await env.AICONVERTER_BUCKET.get(job.result_key || "");
   if (!object) return badRequest("The converted file has expired.");
 
   const parsed = parseCsvContent(await object.text(), MAX_REVIEW_ROWS);

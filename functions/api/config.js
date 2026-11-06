@@ -6,6 +6,9 @@ export function onRequestPost() {
   return json({ error: "Method not allowed. Use GET." }, { status: 405, headers: { Allow: "GET" } });
 }
 
+/** @param {{ env: Env }} context
+ * @returns {Response}
+ */
 export function onRequestGet({ env }) {
   return json({
     turnstileSiteKey: env.TURNSTILE_SITE_KEY || "",

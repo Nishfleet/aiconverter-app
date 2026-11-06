@@ -6,10 +6,17 @@ import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js"
 import { getAuthorizedJob, hasRequiredBindings, jobOutputFormat, outputFormatFromResultKey, parseStoredPreview, PLANS, retentionFields, sourceAvailableForRedo, tokenFromBodyOrCookie } from "../lib/jobs.js";
 import { isBinaryOutputFormat, isUniversalConverter, UNIVERSAL_COLUMNS } from "../lib/universal.js";
 
+/** @typedef {import("../lib/conversion.js").FullConversionOutcome} FullConversionOutcome
+ * @typedef {import("../lib/jobs.js").JobExpiryOutcome} JobExpiryOutcome
+ */
+
 export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -32,16 +39,17 @@ export async function onRequestPost({ request, env }) {
     const verified = await verifyDodoPayment(env, String(body.paymentId || ""), job);
     if (!verified) return json({ error: "Payment could not be verified yet." }, { status: 402 });
     job = await getAuthorizedJob(env, jobId, token);
+    if (!job) return badRequest("Unknown or expired conversion.");
   }
 
   if (job.status === "complete") {
-    const object = await env.AICONVERTER_BUCKET.get(job.result_key);
+    const object = await env.AICONVERTER_BUCKET.get(job.result_key || "");
     const resultFormat = outputFormatFromResultKey(job.result_key);
     const selectedFormat = jobOutputFormat(job);
     const previewRows = isUniversalConverter(job.converter_id) || isBinaryOutputFormat(resultFormat)
       ? await storedPreviewRows(env, job)
       : object
-        ? parseStoredPreview(await object.text(), job.result_key, 5)
+        ? parseStoredPreview(await object.text(), job.result_key || "", 5)
         : [];
     return json({
       status: "complete",
@@ -65,7 +73,7 @@ export async function onRequestPost({ request, env }) {
   if (job.status !== "preview_ready") {
     if (job.status === "converting_full" && isUniversalConverter(job.converter_id)) {
       const refreshed = await refreshUniversalProviderConversion(env, job);
-      return json(responseForConversion(job, token, bodyToken, refreshed));
+      return json(responseForConversion(job, token, bodyToken, /** @type {FullConversionOutcome} */ (refreshed)));
     }
     return badRequest("The conversion is not ready to finalize.");
   }
@@ -81,7 +89,7 @@ export async function onRequestPost({ request, env }) {
         plan: PLANS[job.plan_id] || PLANS.starter,
         converterId: job.converter_id || "bank",
         outputFormat: jobOutputFormat(job),
-        columns: CONVERTER_COLUMNS[job.converter_id || "bank"] || [],
+        columns: CONVERTER_COLUMNS[/** @type {keyof typeof CONVERTER_COLUMNS} */ (job.converter_id || "bank")] || [],
         message: result.message,
         confidence: result.confidence,
         rowCount: result.rowCount,
@@ -107,7 +115,8 @@ export async function onRequestPost({ request, env }) {
       ...retentionFields(job),
       refundStatus: ""
     });
-  } catch (error) {
+  } catch (catchError) {
+    const error = /** @type {Record<string, any>} */ (catchError);
     return json(
       {
         error: error?.message || "The full file could not be generated."
@@ -117,6 +126,12 @@ export async function onRequestPost({ request, env }) {
   }
 }
 
+/** @param {JobRow | JobExpiryOutcome} job
+ * @param {string} token
+ * @param {string} bodyToken
+ * @param {FullConversionOutcome} result
+ * @returns {Record<string, unknown>}
+ */
 function responseForConversion(job, token, bodyToken, result) {
   const updatedJob = result.job || job;
   return {
@@ -139,6 +154,10 @@ function responseForConversion(job, token, bodyToken, result) {
   };
 }
 
+/** @param {Env} env
+ * @param {JobRow} job
+ * @returns {Promise<Record<string, unknown>[]>}
+ */
 async function storedPreviewRows(env, job) {
   if (!job.preview_key) return [];
   const object = await env.AICONVERTER_BUCKET.get(job.preview_key);
@@ -148,6 +167,10 @@ async function storedPreviewRows(env, job) {
     : rows;
 }
 
+/** @param {string} converterId
+ * @param {Record<string, unknown>[]} previewRows
+ * @returns {{ key: string, label: string }[]}
+ */
 function columnsForPreview(converterId, previewRows) {
   if (previewRows.length) {
     return Object.keys(previewRows[0]).slice(0, 8).map((key) => ({
@@ -155,10 +178,13 @@ function columnsForPreview(converterId, previewRows) {
       label: labelForKey(key)
     }));
   }
-  if (isUniversalConverter(converterId)) return UNIVERSAL_COLUMNS;
-  return CONVERTER_COLUMNS[converterId] || CONVERTER_COLUMNS.bank;
+  if (isUniversalConverter(converterId)) return /** @type {{ key: string, label: string }[]} */ (UNIVERSAL_COLUMNS);
+  return CONVERTER_COLUMNS[/** @type {keyof typeof CONVERTER_COLUMNS} */ (converterId)] || CONVERTER_COLUMNS.bank;
 }
 
+/** @param {string} key
+ * @returns {string}
+ */
 function labelForKey(key) {
   return String(key)
     .replace(/^column_(\d+)$/i, "Column $1")

@@ -8,9 +8,12 @@ export function onRequestPost() {
   return methodNotAllowed("GET");
 }
 
+/** @param {{ env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestGet({ env }) {
   const storage = hasRequiredBindings(env);
-  const dodoProducts = Object.keys(PLANS).reduce((acc, planId) => {
+  const dodoProducts = Object.keys(PLANS).reduce((/** @type {Record<string, boolean>} */ acc, planId) => {
     acc[planId] = Boolean(dodoProductIdForPlan(env, planId));
     return acc;
   }, {});

@@ -13,32 +13,5 @@
   "include": [
     "./**/*.js",
     "./env.d.ts"
-  ],
-  "exclude": [
-    "./api/batch-download.js",
-    "./api/config.js",
-    "./api/conversion-brief.js",
-    "./api/convert.js",
-    "./api/delete-job.js",
-    "./api/download.js",
-    "./api/finalize.js",
-    "./api/funnel-event.js",
-    "./api/health.js",
-    "./api/job.js",
-    "./api/preview-download.js",
-    "./api/redo.js",
-    "./api/result-rows.js",
-    "./api/support.js",
-    "./api/update-result-rows.js",
-    "./api/validation-report.js",
-    "./lib/cloudconvert.js",
-    "./lib/conversion-brief.js",
-    "./lib/conversion.js",
-    "./lib/convertio.js",
-    "./lib/extract.js",
-    "./lib/funnel-telemetry.js",
-    "./lib/universal-providers.js",
-    "./lib/validate-statement.js",
-    "./lib/zip.js"
   ]
 }
