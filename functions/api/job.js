@@ -5,10 +5,16 @@ import { CONVERTER_COLUMNS } from "../lib/extract.js";
 import { getAuthorizedJob, hasRequiredBindings, jobOutputFormat, outputFormatFromResultKey, parseStoredPreview, retentionFields, sourceAvailableForRedo, tokenFromBodyOrCookie } from "../lib/jobs.js";
 import { isBinaryOutputFormat, isUniversalConverter, UNIVERSAL_COLUMNS } from "../lib/universal.js";
 
+/** @typedef {import("../lib/jobs.js").JobExpiryOutcome} JobExpiryOutcome
+ */
+
 export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -32,16 +38,20 @@ export async function onRequestPost({ request, env }) {
   if (!job.paid_at && paymentId && paymentStatus === "succeeded") {
     await verifyDodoPayment(env, paymentId, job);
     job = await getAuthorizedJob(env, jobId, token);
+    if (!job) return badRequest("Unknown or expired conversion.");
   }
+
+  if (!job) return badRequest("Unknown or expired conversion.");
 
   let providerResult = null;
   if (job.status === "converting_full" && isUniversalConverter(job.converter_id)) {
     providerResult = await refreshUniversalProviderConversion(env, job);
     job = await getAuthorizedJob(env, jobId, token);
+    if (!job) return badRequest("Unknown or expired conversion.");
   }
 
-  let previewRows = [];
-  const resultFormat = outputFormatFromResultKey(job.result_key);
+  let previewRows = /** @type {Record<string, unknown>[]} */ ([]);
+  const resultFormat = outputFormatFromResultKey(job.result_key || "");
   const previewKey =
     job.status === "complete" && !isUniversalConverter(job.converter_id) && !isBinaryOutputFormat(resultFormat)
       ? job.result_key
@@ -82,6 +92,10 @@ export async function onRequestPost({ request, env }) {
   });
 }
 
+/** @param {Env} env
+ * @param {string} jobId
+ * @returns {Promise<Record<string, any> | null>}
+ */
 async function latestDodoPaymentEvent(env, jobId) {
   if (!env?.AICONVERTER_DB || !jobId) return null;
   try {
@@ -99,6 +113,10 @@ async function latestDodoPaymentEvent(env, jobId) {
   }
 }
 
+/** @param {Record<string, any> | null} paymentEvent
+ * @param {JobRow | JobExpiryOutcome} [job]
+ * @returns {string}
+ */
 function paymentMessageForEvent(paymentEvent, job) {
   if (!paymentEvent || job?.paid_at) return "";
   const status = String(paymentEvent.status || "").toLowerCase();
@@ -111,6 +129,10 @@ function paymentMessageForEvent(paymentEvent, job) {
   return "";
 }
 
+/** @param {string} converterId
+ * @param {Record<string, unknown>[]} previewRows
+ * @returns {{ key: string, label: string }[]}
+ */
 function columnsForPreview(converterId, previewRows) {
   if (previewRows.length) {
     return Object.keys(previewRows[0]).slice(0, 8).map((key) => ({
@@ -118,10 +140,13 @@ function columnsForPreview(converterId, previewRows) {
       label: labelForKey(key)
     }));
   }
-  if (isUniversalConverter(converterId)) return UNIVERSAL_COLUMNS;
-  return CONVERTER_COLUMNS[converterId] || CONVERTER_COLUMNS.bank;
+  if (isUniversalConverter(converterId)) return /** @type {{ key: string, label: string }[]} */ (UNIVERSAL_COLUMNS);
+  return CONVERTER_COLUMNS[/** @type {keyof typeof CONVERTER_COLUMNS} */ (converterId)] || CONVERTER_COLUMNS.bank;
 }
 
+/** @param {string} key
+ * @returns {string}
+ */
 function labelForKey(key) {
   return String(key)
     .replace(/^column_(\d+)$/i, "Column $1")

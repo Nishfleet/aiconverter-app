@@ -4,6 +4,9 @@ import { getAuthorizedJob, hasRequiredBindings, jobOutputFormat, outputFormatFro
 import { isUniversalConverter } from "../lib/universal.js";
 import { createZip, textBytes } from "../lib/zip.js";
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost(context) {
   return handleBatchDownload(context);
 }
@@ -12,6 +15,9 @@ export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 async function handleBatchDownload({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -56,7 +62,7 @@ async function handleBatchDownload({ request, env }) {
       continue;
     }
 
-    const object = await env.AICONVERTER_BUCKET.get(job.result_key);
+    const object = await env.AICONVERTER_BUCKET.get(job.result_key || "");
     if (!object) {
       manifest.push(`${job.original_file_name || job.id}: skipped, file expired`);
       continue;
@@ -106,9 +112,12 @@ async function handleBatchDownload({ request, env }) {
   );
 }
 
+/** @param {JobRow} job
+ * @returns {string}
+ */
 function downloadFileName(job) {
   if (job.converter_id === "bank") return bankDownloadFileName(jobOutputFormat(job), job.original_file_name || "bank-statement");
-  const extension = outputFormatFromResultKey(job.result_key);
+  const extension = outputFormatFromResultKey(job.result_key || "");
   let prefix = "bank-statement";
   if (job.converter_id === "audio-transcript") prefix = "audio-transcript";
   if (job.converter_id === "document-markdown") prefix = "document-markdown";
@@ -120,6 +129,9 @@ function downloadFileName(job) {
   return `aiconverter-${prefix}.${extension}`;
 }
 
+/** @param {JobRow} job
+ * @returns {string}
+ */
 function reportFileName(job) {
   const stem = String(job.original_file_name || "bank-statement")
     .replace(/\.[a-z0-9]+$/i, "")
@@ -129,6 +141,10 @@ function reportFileName(job) {
   return `aiconverter-${stem}-validation-report.txt`;
 }
 
+/** @param {unknown} name
+ * @param {Set<string>} usedNames
+ * @returns {string}
+ */
 function uniqueZipName(name, usedNames) {
   const clean = String(name || "export.txt");
   if (!usedNames.has(clean)) {
