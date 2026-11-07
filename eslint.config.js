@@ -20,7 +20,7 @@ const WORKAROUND_TERMS = [
 ];
 
 export default [
-  { ignores: ["dist/**", "node_modules/**", "public/**", "var/**", "prototype-context/**", "marketing/**", ".agents/**"] },
+  { ignores: ["dist/**", "node_modules/**", "public/**", "var/**", "prototype-context/**", "marketing/**", ".agents/**", ".worker/**"] },
   js.configs.recommended,
   {
     files: ["**/*.{js,jsx,mjs}"],
@@ -34,7 +34,7 @@ export default [
   },
   { rules: { "no-unused-vars": ["error", { ignoreRestSiblings: true }] } },
   {
-    files: ["src/**/*.{js,jsx,mjs}", "functions/**/*.js", "worker/**/*.js", "tests/**/*.{js,mjs}"],
+    files: ["src/**/*.{js,jsx,mjs}", "functions/**/*.js", "tests/**/*.{js,mjs}"],
     plugins: { "no-comments": noComments },
     rules: {
       "no-comments/disallowComments": ["error", { allow: ["eslint", "global", "upstream: https://", "\\* @"] }],

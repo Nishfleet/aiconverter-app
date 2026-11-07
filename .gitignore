@@ -2,6 +2,7 @@ node_modules/
 dist/
 .drill-artifacts/
 .wrangler/
+.worker/
 .dev.vars
 .env
 .monitor.env
