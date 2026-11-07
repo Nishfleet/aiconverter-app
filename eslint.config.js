@@ -20,7 +20,7 @@ const WORKAROUND_TERMS = [
 ];
 
 export default [
-  { ignores: ["dist/**", "node_modules/**", "public/**", "var/**", "prototype-context/**", "marketing/**", ".agents/**"] },
+  { ignores: ["dist/**", "node_modules/**", "public/**", "var/**", "prototype-context/**", "marketing/**", ".agents/**", ".worker/**"] },
   js.configs.recommended,
   {
     files: ["**/*.{js,jsx,mjs}"],
