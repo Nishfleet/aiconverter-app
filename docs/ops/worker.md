@@ -10,7 +10,8 @@ the repository keeps no route table.
 npm run worker:build
 ```
 
-That runs the Wrangler command the deploy lane already pins:
+The script pins its own Wrangler version, so the build does not depend on
+whatever Wrangler the deploy lane installs:
 
 ```bash
 npx --yes wrangler@4.135.0 pages functions build --outdir=.worker
