@@ -34,7 +34,7 @@ mount to pre-select the route.
    `Pricing preview could not load.` empty states render (defined in
    `src/main.jsx`'s `configError` and pricing-preview `catch`). That
    is the expected local shape.
-3. Use Playwright (this repo's `playwright` is pinned to `1.62.1`):
+3. Use Playwright (this repo's `playwright` is pinned to `1.64.1`):
    - Assert the `Converter` dropdown lists the eleven converter IDs
      from `src/data/converters.json`: `bank`, `receipt`, `screenshot`,
      `invoice`, `image-format`, `raster-vector`, `audio-transcript`,

@@ -21,10 +21,10 @@ Preconditions:
 - `npm ci` has run.
 - The add-on is enabled only where `GOOGLE_SHEETS_ADDON_CLIENT_IDS` is set. Without it, `/api/convert` answers 503 "not enabled" to add-on requests.
 
-- **Identity and limits.** Run `node --test tests/sheets-addon.test.mjs`. It ends `# fail 0`. It signs real RS256 tokens with a test key and covers wrong audience, expired, wrong issuer, unverified email, wrong key, unknown key id, key rotation and a Google certs outage.
+- **Identity and limits.** Run `node --test tests/sheets-addon.test.mjs`. It ends `# fail 0`. It signs real RS256 tokens with a test key and covers wrong audience, expired, wrong issuer, unverified email, wrong key, unknown key id, key rotation, a Google certs outage and a certs 500 on refresh followed by a successful sign-in.
 - **Landing page.** With the local preview up, run `curl -fsS http://127.0.0.1:4180/google-sheets-pdf-import/ -o /tmp/verify-aiconverter/sheets.html` and require HTTP 200 and the text `Google Sheets` in the body.
 
 ## Gotchas
 
 - Real Google tokens cannot be minted by an agent. The unit test is the identity proof, and a live add-on run is owner-only.
-- The key-rotation and outage tests move time by passing `now:` (milliseconds) to `verifySheetsAddonIdentity` (`functions/lib/google-identity.js`). The key cache reads that same `now`, so a test that leaves it out runs on the real clock and cannot step past the 30 s certs-outage retry or the 60 s key refresh. Call `resetGoogleKeyCacheForTests()` before each such test, because the cache is module-wide.
+- The key-rotation and outage tests move time with node:test mock timers (`t.mock.timers.enable({ apis: ["Date"] })` plus `tick`), not with a `now:` argument: jose's key cache in `functions/lib/google-identity.js` reads the real clock, so a test without mock timers cannot step past the ~30 s cooldown after a failed certs fetch or the ~10-minute key cache. Call `resetGoogleKeyCacheForTests()` before each such test, because the cache is module-wide.
