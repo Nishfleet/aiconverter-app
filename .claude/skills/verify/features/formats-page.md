@@ -43,7 +43,7 @@ grep -F 'Use the preview as your quality gate.' /tmp/verify-aiconverter/formats.
 2. The React `<FormatsPage>` reads `data.converters` from
    `src/data/converters.json` and renders a category-tab grid plus a
    `<input type="search">` filter. Use Playwright (this repo's
-   `playwright` is pinned to `1.62.1`):
+   `playwright` is pinned to `1.64.1`):
    - Click the `Images` tab → only the image-format / raster-vector /
      screenshot-code cards remain.
    - Type `quickbooks` into the search input → only the `Bank statement
