@@ -85,7 +85,7 @@ Wedge evidence notes: [docs/ops/serp-wedge-evidence.md](docs/ops/serp-wedge-evid
 Deploy:
 
 ```bash
-wrangler pages deploy dist --project-name aiconverter --branch main
+npx cf deploy --prebuilt --message 'break-glass'
 ```
 
 Use the safe-deploy wrapper on Nish's machine before live commands.

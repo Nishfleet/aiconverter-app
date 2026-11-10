@@ -1,9 +1,8 @@
-// Global bindings for Pages Functions, per the Cloudflare Pages TypeScript
-// guide (https://developers.cloudflare.com/pages/functions/typescript/):
-// declare the bindings from wrangler.jsonc once here, then reference `Env`
-// from JSDoc annotations in the JavaScript functions.
+// Global bindings for the Functions modules, declared once here from the
+// bindings in `cloudflare.config.ts`; the reference is the `Env` type used in
+// JSDoc annotations throughout functions/.
 interface Env {
-  // Bindings (wrangler.jsonc)
+  // Bindings (cloudflare.config.ts)
   AI: Ai;
   AICONVERTER_BUCKET: R2Bucket;
   AICONVERTER_DB: D1Database;

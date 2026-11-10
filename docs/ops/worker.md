@@ -1,31 +1,36 @@
 # Worker entry
 
-`functions/` is the only route source. The Cloudflare Pages runtime and the
-Worker entry both derive their routes from the files under `functions/api/`;
-the repository keeps no route table.
+`functions/` is the only route source. The Pages runtime and the committed
+Worker entry `worker/index.js` both derive their routes from
+`functions/api/`; the repository keeps no route table.
 
 ## Build
 
-```bash
-npm run worker:build
-```
+`vite build` (npm run build) bundles `worker/index.js` as the Worker. The
+entry statically bundles every module under `functions/api/` and maps each
+file to the URL the Pages runtime serves it on: `functions/api/x.js` serves
+`/api/x` and `functions/api/admin/x.js` serves `/api/admin/x`. A request runs
+`functions/_middleware.js` first, as Pages does, and its fallback goes to the
+static assets. New route files under `functions/api/` are served
+automatically; no entry edit. Validation of that mapping: the Build Output
+smoke `npx cf deploy --prebuilt --dry-run` reads the bundle, and the route
+list stays pinned by code (the entry bundles the whole glob, never a copied
+table).
 
-The script pins its own Wrangler version, so the build does not depend on
-whatever Wrangler the deploy lane installs:
+## Config
 
-```bash
-npx --yes wrangler@4.135.0 pages functions build --outdir=.worker
-```
-
-It writes `.worker/index.js`, which is git-ignored. The generated entry runs
-`functions/_middleware.js` first and falls back to `env.ASSETS` for a request
-that matches no function. A Worker host must bind the built site to `ASSETS`
-and supply the bindings listed in `wrangler.jsonc`.
+`cloudflare.config.ts` carries the Worker name, bindings and static assets
+settings.The production Worker is
+`aiconverter`; a cf preview build of the same project deploys with no
+disabled bindings on previews (see the comment in the config file).
 
 ## Deploy
 
-Production still deploys to Cloudflare Pages: `.github/workflows/deploy.yml`
-runs `wrangler pages deploy dist --project-name aiconverter --branch main`.
-This repository has no Worker deploy config, route, or DNS cutover for
-`aiconverter.app`. The generated entry is not wired into the deploy lane;
-moving production to a Worker is a separate production change.
+CI deploys with the `cf` CLI: `.github/workflows/deploy.yml` records the
+serving Worker version, applies D1 migrations, runs `cf deploy --prebuilt`,
+smokes `https://aiconverter.app/` and rolls back on a failed smoke. There is
+no Worker deploy route or DNS cutover for `aiconverter.app` yet; the
+production hostname still serves Cloudflare Pages
+(docs/ops/dns.md), and moving it to the Worker is a separate production
+change. cf preview deploys deploy a preview Worker per pull request
+(`cf previews deploy`), not a Pages project branch.
