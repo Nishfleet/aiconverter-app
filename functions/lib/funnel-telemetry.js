@@ -45,6 +45,10 @@ const SAFE_ERROR_CODES = new Set([
 
 const RETENTION_SECONDS = 30 * 24 * 60 * 60;
 
+/** @typedef {{ id: string, sessionId: string, jobId: string, eventType: string, converterId: string, outputFormat: string, inputKind: string, fileSizeBucket: string, pageBucket: string, fileCount: number, turnstileState: string, errorCode: string, routePath: string }} FunnelEvent
+ * @param {Record<string, any>} [input]
+ * @returns {{ ok: false, message: string } | { ok: true, event: FunnelEvent }}
+ */
 export function sanitizeFunnelEvent(input = {}) {
   const eventType = cleanToken(input.eventType || input.event_type, 48);
   if (!FUNNEL_EVENTS.has(eventType)) {
@@ -72,6 +76,11 @@ export function sanitizeFunnelEvent(input = {}) {
   };
 }
 
+/** @param {Env} env
+ * @param {Request} request
+ * @param {Record<string, any>} [input]
+ * @returns {Promise<{ ok: false, message: string } | { ok: true, event: FunnelEvent }>}
+ */
 export async function recordFunnelEvent(env, request, input = {}) {
   if (!env?.AICONVERTER_DB) return { ok: false, message: "Database is not configured." };
   const sanitized = sanitizeFunnelEvent(input);
@@ -112,25 +121,36 @@ export async function recordFunnelEvent(env, request, input = {}) {
         expiresAt
       )
       .run();
-  } catch (error) {
+  } catch (catchError) {
+    const error = /** @type {Record<string, any>} */ (catchError);
     return { ok: false, message: error?.message || "Funnel event could not be recorded." };
   }
 
   return { ok: true, event };
 }
 
+/** @param {unknown} value
+ * @param {number} maxLength
+ * @returns {string}
+ */
 function cleanToken(value, maxLength) {
   return String(value || "")
     .replace(/[^a-zA-Z0-9_./:-]/g, "")
     .slice(0, maxLength);
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function cleanRoutePath(value) {
   const path = String(value || "/").split("?")[0].slice(0, 120);
   if (!path.startsWith("/")) return "/";
   return path.replace(/[^a-zA-Z0-9_./:-]/g, "") || "/";
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function normalizeErrorCode(value) {
   const cleaned = cleanToken(value, 48);
   if (SAFE_ERROR_CODES.has(cleaned)) return cleaned;
@@ -138,11 +158,20 @@ function normalizeErrorCode(value) {
   return cleaned ? "preview_failed" : "";
 }
 
+/** @param {unknown} value
+ * @param {Set<string>} allowed
+ * @returns {string}
+ */
 function pickAllowed(value, allowed) {
   const cleaned = cleanToken(value, 32);
   return allowed.has(cleaned) ? cleaned : "";
 }
 
+/** @param {unknown} value
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
 function clampInt(value, min, max) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return min;

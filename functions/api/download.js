@@ -3,6 +3,12 @@ import { bankDownloadFileName, bankOutputContentType } from "../lib/accounting-e
 import { getAuthorizedJob, hasRequiredBindings, jobOutputFormat, outputFormatFromResultKey, tokenFromBodyOrCookie, updateJob } from "../lib/jobs.js";
 import { contentTypeForOutputFormat, isUniversalConverter } from "../lib/universal.js";
 
+/** @typedef {import("../lib/jobs.js").JobExpiryOutcome} JobExpiryOutcome
+ */
+
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost(context) {
   return handleDownload(context);
 }
@@ -11,6 +17,9 @@ export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 async function handleDownload({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -27,7 +36,7 @@ async function handleDownload({ request, env }) {
     return json({ error: "Payment is required before downloading the full file." }, { status: 402 });
   }
 
-  const object = await env.AICONVERTER_BUCKET.get(job.result_key);
+  const object = await env.AICONVERTER_BUCKET.get(job.result_key || "");
   if (!object) {
     await updateJob(env, job.id, {
       status: "expired",
@@ -52,10 +61,13 @@ async function handleDownload({ request, env }) {
   );
 }
 
+/** @param {JobRow | JobExpiryOutcome} job
+ * @returns {string}
+ */
 function downloadFileName(job) {
   const selectedFormat = jobOutputFormat(job);
   if (job.converter_id === "bank") return bankDownloadFileName(selectedFormat, job.original_file_name || "bank-statement");
-  const extension = outputFormatFromResultKey(job.result_key);
+  const extension = outputFormatFromResultKey(job.result_key || "");
   let prefix = "bank-statement";
   if (job.converter_id === "audio-transcript") prefix = "audio-transcript";
   if (job.converter_id === "document-markdown") prefix = "document-markdown";
@@ -67,9 +79,12 @@ function downloadFileName(job) {
   return `aiconverter-${prefix}.${extension}`;
 }
 
+/** @param {JobRow | JobExpiryOutcome} job
+ * @returns {string}
+ */
 function contentTypeForJob(job) {
   if (job.converter_id === "bank") return bankOutputContentType(jobOutputFormat(job));
-  const format = outputFormatFromResultKey(job.result_key);
+  const format = outputFormatFromResultKey(job.result_key || "");
   if (format === "json") return "application/json; charset=utf-8";
   if (format === "txt") return "text/plain; charset=utf-8";
   if (format === "md") return "text/markdown; charset=utf-8";
@@ -78,6 +93,9 @@ function contentTypeForJob(job) {
   return "text/csv; charset=utf-8";
 }
 
+/** @param {Request} request
+ * @returns {Promise<{ jobId: string, token: string }>}
+ */
 async function downloadCredentials(request) {
   const url = new URL(request.url);
   const authorization = request.headers.get("Authorization") || "";
@@ -91,6 +109,9 @@ async function downloadCredentials(request) {
   };
 }
 
+/** @param {Request} request
+ * @returns {Promise<Record<string, any>>}
+ */
 async function readDownloadBody(request) {
   const contentType = request.headers.get("Content-Type") || "";
   if (contentType.includes("application/json")) return request.json().catch(() => ({}));

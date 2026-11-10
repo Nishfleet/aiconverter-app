@@ -8,6 +8,9 @@ export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure support storage is not configured yet.");
@@ -74,6 +77,9 @@ export async function onRequestPost({ request, env }) {
   );
 }
 
+/** @param {Request} request
+ * @returns {Promise<Record<string, any>>}
+ */
 async function readBody(request) {
   const contentType = request.headers.get("Content-Type") || "";
   if (contentType.includes("application/json")) return request.json().catch(() => ({}));
@@ -81,6 +87,11 @@ async function readBody(request) {
   return Object.fromEntries(form.entries());
 }
 
+/** @param {unknown} title
+ * @param {unknown} message
+ * @param {number} [status]
+ * @returns {Response}
+ */
 function supportHtml(title, message, status = 200) {
   return new Response(
     `<!doctype html>
@@ -116,9 +127,12 @@ function supportHtml(title, message, status = 200) {
   );
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (char) => {
-    const entities = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+    const entities = /** @type {Record<string, string>} */ ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" });
     return entities[char];
   });
 }
