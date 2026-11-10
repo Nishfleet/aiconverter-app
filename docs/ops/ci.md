@@ -129,7 +129,8 @@ $ git ls-files .github/workflows
 - `ci.yml` — pull-request gates: `pricing` (Pricing check), `tests` (Unit
   tests), `build` (Build) and `actionlint`.
 - `secret-scan.yml` — `gitleaks` (Gitleaks) and `semgrep`.
-- `deploy.yml` — push to `main` builds and deploys to Cloudflare Pages.
+- `deploy.yml` — push to `main` builds and deploys to the cf CLI (record
+  version, D1 migrations apply, deploy --prebuilt, smoke, automatic rollback).
 - `d1-export.yml` — seals a weekly SQL dump of the D1 database with age and
   uploads it as a GitHub artifact, Mondays 05:37 UTC plus manual dispatch
   (docs/ops/database.md is the restore drill).

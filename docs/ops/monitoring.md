@@ -48,7 +48,7 @@ This check proves upload, Turnstile verification, preview creation, and privacy-
 
 ## CloudConvert Guardrails
 
-Configured in `wrangler.jsonc`:
+Configured in `cloudflare.config.ts`:
 
 - `CLOUDCONVERT_DAILY_JOB_LIMIT`: max provider jobs started per UTC day
 - `CLOUDCONVERT_MIN_CREDITS`: reserve threshold before starting new provider jobs
@@ -60,7 +60,7 @@ The private admin page shows credits, started/remaining jobs for today, provider
 
 Set `CONVERTIO_API_KEY` as a secret to enable the backup route for provider-backed universal conversions.
 
-Configured in `wrangler.jsonc`:
+Configured in `cloudflare.config.ts`:
 
 - `CONVERTIO_DAILY_JOB_LIMIT`: max backup provider jobs started per UTC day
 

@@ -1,8 +1,11 @@
-# Every merge to main deploys to Cloudflare Pages. Incident: merges landed on
+# Every merge to main deploys through the cf CLI. Incident: merges landed on
 # main but never reached aiconverter.app because no deploy workflow existed.
 # The merge queue already ran CI on this exact tree, so the job only builds
-# and publishes. Do not also turn on the Pages Git integration: two writers
-# to one project race, last writer wins.
+# and publishes. The site and its API ship as one Worker (aiconverter-app#341);
+# the production hostname still routes to the Pages project until the DNS
+# cutover documented in docs/ops/worker.md, so the smoke check stays the guard
+# on the live site. Same shape as Nishfleet/drive's deploy-production.yml and
+# seo-fix-kit's deploy job.
 name: Deploy production
 on:
   push:
@@ -10,7 +13,6 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-  deployments: write
 concurrency:
   group: deploy-production
   cancel-in-progress: false
@@ -22,26 +24,50 @@ jobs:
       url: https://aiconverter.app
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CF_SEND_TELEMETRY: "false"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
+      # No npm cache in a job that deploys: a poisoned cache entry would ship
+      # (zizmor cache-poisoning, https://docs.zizmor.sh/audits/#cache-poisoning).
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
-          # A deploy never restores the Actions cache (https://docs.zizmor.sh/audits/#cache-poisoning).
           package-manager-cache: false
       - run: npm ci
       - run: npm run build
-      - uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          wranglerVersion: "4.135.0"
-          command: pages deploy dist --project-name aiconverter --branch main --commit-dirty=true
-      # Pages keeps every deployment; a failed smoke is rolled back with the dashboard's Rollback button.
-      - id: smoke
+      # aiconverter is the only D1 database; its id lives in cloudflare.config.ts.
+      - name: Record the serving Worker version (the rollback target)
+        id: live
+        run: |
+          vid=$(npx cf workers deployments list --worker aiconverter --per-page 1 --quiet 2>/dev/null \
+            | jq -er '.deployments[0].versions[] | select(.percentage == 100) | .version_id' \
+            || true)
+          if [ -n "$vid" ]; then echo "version_id=$vid" | tee -a "$GITHUB_OUTPUT"; fi
+      # New migrations go live before the code that needs them
+      # (docs/ops/database.md); Time Travel can restore a bad one.
+      - name: Apply D1 migrations
+        run: npx cf d1 migrations apply 376080eb-60f1-4bb8-aabb-06622acabb63 --dir migrations
+      # --prebuilt deploys the Build Output `npm run build` wrote, not a second
+      # build. Vars and bindings come from cloudflare.config.ts; secrets stay on
+      # the deployed Worker, so they are set once outside CI, never per run.
+      - id: deploy
+        run: npx cf deploy --prebuilt --message "$GITHUB_SHA"
+      # Live-site smoke on the production URL; same contract as before the port
+      # to cf (a failed deploy never stops it, a failed smoke fails the job).
+      - name: Smoke the production URL
+        id: smoke
         timeout-minutes: 3
         run: curl -fsS -o /dev/null --retry 10 --retry-all-errors --retry-delay 6 https://aiconverter.app/
+      - name: Roll back to the serving Worker version
+        if: always() && steps.deploy.outcome == 'success' && steps.smoke.outcome != 'success' && steps.live.outputs.version_id != ''
+        run: |
+          npx cf workers deployments create --worker aiconverter --strategy percentage \
+            --versions "[{\"version_id\":\"$PREVIOUS\",\"percentage\":100}]"
+        env:
+          PREVIOUS: ${{ steps.live.outputs.version_id }}

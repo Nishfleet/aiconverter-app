@@ -22,7 +22,7 @@ function resolveSourceFile(path) {
   return `public${path}index.html`;
 }
 
-function buildSitemap() {
+export function buildSitemap(outputPath = OUTPUT_PATH) {
   const existing = readFileSync(SOURCE_PATH, "utf8");
   const urls = [...existing.matchAll(/<loc>(https:\/\/aiconverter\.app[^<]*)<\/loc>/g)].map((m) => m[1]);
 
@@ -38,8 +38,10 @@ function buildSitemap() {
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join("\n")}\n</urlset>\n`;
 
-  writeFileSync(OUTPUT_PATH, xml);
-  console.log(`${OUTPUT_PATH} written with ${entries.length} entries (lastmod from git history)`);
+  writeFileSync(outputPath, xml);
+  console.log(`${outputPath} written with ${entries.length} entries (lastmod from git history)`);
 }
 
-buildSitemap();
+if (import.meta.url === `file://${process.argv[1]}`) {
+  buildSitemap();
+}

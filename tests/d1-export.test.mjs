@@ -64,7 +64,7 @@ test("the workflow names no internal id and takes the account id from the repo s
   assert.match(WORKFLOW, /CLOUDFLARE_ACCOUNT_ID: \$\{\{ secrets\.CLOUDFLARE_ACCOUNT_ID \}\}/);
   assert.ok(
     !WORKFLOW.includes("376080eb"),
-    "the D1 database id belongs in wrangler.jsonc, not in a public workflow"
+    "the D1 database id belongs in cloudflare.config.ts, not in a public workflow"
   );
   assert.ok(
     !/CLOUDFLARE_ACCOUNT_ID: [0-9a-f]{32}/.test(WORKFLOW),

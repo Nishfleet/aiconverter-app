@@ -2,7 +2,7 @@
 
 Launch stage: 2 (payments). Next trigger: the first business buyer (an accounting firm on batch checkout) who asks for a contract, a DPA or a security review (stage 3).
 
-Success: paid conversions in the last 7 days that finished without a refund, drills left out. Baseline: 0 on 2026-10-15 (query below, read-only; only payment drills are on record). Measured by: `npx wrangler d1 execute aiconverter --remote --command "SELECT COUNT(*) FROM jobs WHERE paid_at >= strftime('%Y-%m-%dT%H:%M:%SZ','now','-7 days') AND status = 'complete' AND COALESCE(refund_status, '') = '' AND id NOT LIKE 'checkout_drill_%'"` (read-only); failures and refunds due are on `/api/admin/overview` (`npm run monitor:live`).
+Success: paid conversions in the last 7 days that finished without a refund, drills left out. Baseline: 0 on 2026-10-15 (query below, read-only; only payment drills are on record). Measured by: `npx cf d1 query 376080eb-60f1-4bb8-aabb-06622acabb63 --sql "SELECT COUNT(*) FROM jobs WHERE paid_at >= strftime('%Y-%m-%dT%H:%M:%SZ','now','-7 days') AND status = 'complete' AND COALESCE(refund_status, '') = '' AND id NOT LIKE 'checkout_drill_%'"` (read-only); failures and refunds due are on `/api/admin/overview` (`npm run monitor:live`).
 
 Stage 4's India rules already apply: uploads are bank statements and the packs are sold in INR (DPDP Act).
 
@@ -42,11 +42,13 @@ Live: https://aiconverter.app.
 ## Deploy
 
 Deploys go through CI, not your terminal. Every push to `main` auto-deploys
-through `.github/workflows/deploy.yml`, which runs pricing check, unit tests,
-build, `wrangler pages deploy dist --project-name aiconverter --branch main`,
-and a live-site verification. Do not run `wrangler pages deploy` locally for
-routine ships. Local deploy is break-glass only when Actions is down and no CI
-deploy is in flight.
+through `.github/workflows/deploy.yml` (the merge queue already ran the
+pricing check, unit tests and build on that tree): it builds, then with the
+`cf` CLI records the serving Worker version, applies the D1 migrations, runs
+`npx cf deploy --prebuilt`, smokes `https://aiconverter.app/`, and rolls back
+to the recorded version on a failed smoke. Do not deploy locally for routine
+ships. Local deploy is break-glass only when Actions is down and no CI deploy
+is in flight.
 
 Required repo secrets (the lane fails closed and red until both exist):
 - `CLOUDFLARE_API_TOKEN` - Cloudflare API token with Cloudflare Pages:Edit on
@@ -63,7 +65,7 @@ Provision once (dashboard, ~2 minutes):
 Break-glass local deploy (only when Actions is down):
 
 ```bash
-SAFE_DEPLOY_APPROVED='pages deploy dist --project-name aiconverter --branch main' wrangler pages deploy dist --project-name aiconverter --branch main
+SAFE_DEPLOY_APPROVED='deploy --prebuilt' npx cf deploy --prebuilt --message 'break-glass'
 ```
 
 <!-- SPECKIT START -->

@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build && node src/cli/build-sitemap.mjs",
-    "worker:build": "npx --yes wrangler@4.135.0 pages functions build --outdir=.worker",
+    "build": "vite build",
     "check:pricing": "node tests/check-pricing.mjs",
     "dodo:sync-prices": "node src/cli/sync-dodo-prices.mjs",
     "corpus:private": "node tests/private-corpus/run.mjs",
@@ -22,9 +21,9 @@
     "stress:all": "npm run stress:converters && npm run stress:live && npm run readiness:live",
     "release:gate": "npm run check:pricing && node --test tests/*.test.mjs && AICONVERTER_PRIVATE_CORPUS_REQUIRED=true npm run corpus:private && npm audit --audit-level=moderate && npm run build && npm run stress:converters && npm run stress:live && AICONVERTER_MONITOR_STRICT=true npm run monitor:live && npm run readiness:live",
     "preview": "vite preview --host 0.0.0.0",
-    "db:migrations:list": "wrangler d1 migrations list aiconverter --remote",
-    "db:migrate:remote": "wrangler d1 migrations apply aiconverter --remote",
-    "db:tables": "wrangler d1 execute aiconverter --remote --command \"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name\"",
+    "db:migrations:list": "npx cf d1 migrations list 376080eb-60f1-4bb8-aabb-06622acabb63 --dir migrations",
+    "db:migrate:remote": "npx cf d1 migrations apply 376080eb-60f1-4bb8-aabb-06622acabb63 --dir migrations",
+    "db:tables": "npx cf d1 query 376080eb-60f1-4bb8-aabb-06622acabb63 --sql \"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name\"",
     "typecheck": "tsc --noEmit -p functions",
     "lint": "eslint ."
   },
@@ -45,10 +44,12 @@
     "vite": "^8.3.5"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "2.0.0-beta.v.14",
     "@cloudflare/workers-types": "^5.20261104.1",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.3",
     "beasties": "^0.5.5",
+    "cf": "^1.0.0-beta.28",
     "eslint": "^10.13.0",
     "eslint-plugin-no-comments": "^1.2.1",
     "globals": "^17.13.0",

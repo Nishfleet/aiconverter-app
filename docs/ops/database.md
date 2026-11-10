@@ -40,7 +40,7 @@ npm run db:tables
 Apply remote migrations:
 
 ```bash
-SAFE_DEPLOY_APPROVED='d1 migrations apply aiconverter --remote' npm run db:migrate:remote
+SAFE_DEPLOY_APPROVED='cf d1 migrations apply 376080eb-60f1-4bb8-aabb-06622acabb63' npx cf d1 migrations apply 376080eb-60f1-4bb8-aabb-06622acabb63 --dir migrations
 ```
 
 ## Restore From The Weekly Backup
