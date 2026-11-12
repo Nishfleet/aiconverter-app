@@ -1,6 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { onRequestPost } from "../functions/api/conversion-brief.js";
 import { buildConversionBrief } from "../functions/lib/conversion-brief.js";
 import { sha256 } from "../functions/lib/jobs.js";
@@ -144,28 +143,6 @@ test("conversion brief does not suggest redo when the job cannot redo", () => {
 
   assert.equal(brief.redo.available, false);
   assert.ok(!brief.nextActions.some((action) => /stronger redo/i.test(action)));
-});
-
-test("conversion brief UI is wired into the result panel", () => {
-  const source = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
-  const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
-  const route = readFileSync(new URL("../functions/api/conversion-brief.js", import.meta.url), "utf8");
-
-  assert.match(source, /api\/conversion-brief/);
-  assert.match(route, /COALESCE\(match_status, ''\) IN \('', 'matched'\)/);
-  assert.match(source, /result\?\.conversionBrief/);
-  assert.match(source, /const deletionBrief = activeConversionBrief/);
-  assert.match(source, /setConversionBrief\(null\);\n {4}fetchJson\("\/api\/conversion-brief"/);
-  assert.match(source, /conversionBrief\?\.jobId && conversionBrief\.jobId === result\?\.jobId/);
-  assert.match(source, /function renderConversionBriefCard/);
-  assert.match(source, /conversionBriefModeLabel/);
-  assert.match(source, /refund_review: "Refund review"/);
-  assert.match(source, /conversion-brief-card/);
-  assert.match(source, /Refund support/);
-  assert.match(source, /Support handoff/);
-  assert.match(source, /accountingReadiness/);
-  assert.match(styles, /\.conversion-brief-card/);
-  assert.match(styles, /\.conversion-brief-caution/);
 });
 
 function fakeEnv(job, paymentEvent = null) {

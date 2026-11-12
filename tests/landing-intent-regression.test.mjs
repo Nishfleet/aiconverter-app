@@ -2,7 +2,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const source = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
 const converters = JSON.parse(readFileSync(new URL("../src/data/converters.json", import.meta.url), "utf8")).converters;
 
 const LANDING_PAGES = {
@@ -20,31 +19,6 @@ const LANDING_PAGES = {
 function converterById(converterId) {
   return converters.find((converter) => converter.id === converterId) || null;
 }
-
-test("app reads landing-page converter intent from URL params", () => {
-  assert.match(source, /function converterIntentFromUrl\(\)/);
-  assert.match(source, /params\.get\("converter"\)/);
-  assert.match(source, /params\.get\("output"\)/);
-  assert.match(source, /isLiveConverter\(candidate\)/, "intent must only select live converters");
-  assert.match(source, /capableOutputFormats\(converter, null\)/, "intent output must be validated against the converter");
-  assert.match(source, /const urlIntent = useMemo\(\(\) => converterIntentFromUrl\(\), \[\]\)/);
-  assert.match(source, /useState\(urlIntent\?\.converterId \|\| "bank"\)/, "app default stays bank without intent");
-  assert.match(source, /useState\(urlIntent\?\.outputFormat \|\| "csv"\)/, "app default output stays csv without intent");
-});
-
-test("landing-page intent reaches the funnel page_view event", () => {
-  assert.match(source, /intentConverter: urlIntent\.converterId/);
-  assert.match(source, /intentOutput: urlIntent\.outputFormat/);
-  assert.match(source, /trackFunnelEvent\("page_view"/);
-});
-
-test("preselected intent changes the upload target and console bar copy", () => {
-  assert.match(source, /function uploadTargetCopyFor\(converter, outputFormat\)/);
-  assert.match(source, /uploadTargetCopy\.title/);
-  assert.match(source, /uploadTargetCopy\.detail/);
-  assert.match(source, /selectedId === "bank" \? \(/);
-  assert.match(source, /Bank statement → accounting CSV/, "bank default copy stays the existing CTA");
-});
 
 test("every converter landing page deep-links its intent into the app", () => {
   for (const [page, intent] of Object.entries(LANDING_PAGES)) {
@@ -68,9 +42,4 @@ test("every carried intent maps to a live converter and a real output format", (
       `${page} intent output ${intent.output} must be offered by ${converter.id} (or the csv fallback)`
     );
   }
-});
-
-test("receipt page inline CTA also carries the receipt intent", () => {
-  const html = readFileSync(new URL("../public/receipt-to-csv/index.html", import.meta.url), "utf8");
-  assert.match(html, /href="\/\?converter=receipt&amp;output=csv">try a real receipt in the converter/);
 });

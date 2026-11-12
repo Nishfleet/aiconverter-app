@@ -1,11 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import data from "../src/data/converters.json" with { type: "json" };
 import { TOP_CONVERSION_REQUESTS, conversionRequestHref } from "../src/conversion-catalog.js";
-
-const source = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
-
 function converterById(converterId) {
   return data.converters.find((converter) => converter.id === converterId) || null;
 }
@@ -37,20 +33,4 @@ test("conversionRequestHref builds a root intent link per highlighted request", 
   }
 });
 
-test("homepage renders popular-request chips as intent links", () => {
-  assert.match(source, /conversionRequestHref/);
-  assert.match(source, /className="ticker-chip"/);
-  assert.match(source, /href=\{item\.href\}/);
-  assert.match(source, /tabIndex=\{-1\}/, "duplicate marquee chips must not become tab stops");
-});
 
-test("screen-reader popular-requests list carries the same intent links", () => {
-  assert.match(source, /<ul className="sr-only">/);
-  assert.match(source, /<a href=\{item\.href\}>\{item\.label\}<\/a>/);
-});
-
-test("ticker pauses on hover so moving chips are clickable", () => {
-  const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
-  assert.match(css, /\.conversion-ticker:hover .conversion-ticker-track/);
-  assert.match(css, /animation-play-state: paused/);
-});

@@ -4,8 +4,7 @@ The interactive workspace is what `/` becomes once `src/main.jsx`
 hydrates. It owns the `Converter` selector, the `Output` format
 selector, the `Pages` input, the file picker, the `Email` input, the
 Turnstile widget, the pricing card, and the result / preview table
-after a file is uploaded. The shape is asserted in
-`tests/preview-ui-regression.test.mjs`, the funnel events in
+after a file is uploaded. The funnel events are asserted in
 `tests/funnel-telemetry.test.mjs`, and the landing-page intent pickup
 in `tests/landing-intent-regression.test.mjs`.
 
