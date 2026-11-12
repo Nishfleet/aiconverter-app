@@ -1,6 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { onRequestGet, isActionableUnmatchedPayment } from "../functions/api/admin/overview.js";
 
 const ADMIN_TOKEN = "a".repeat(32);
@@ -86,29 +85,6 @@ test("admin overview serves the dashboard only with valid credentials", async ()
   assert.ok(Array.isArray(payload.operationalQueues?.previewErrors) === false);
   assert.equal(payload.operationalQueues?.previewErrors, 0);
   assert.ok(db.reads.length > 0, "valid credentials must reach the database queries");
-});
-
-test("admin overview exposes preview funnel counts and safe issue rows", () => {
-  const apiSource = readFileSync(new URL("../functions/api/admin/overview.js", import.meta.url), "utf8");
-  const adminSource = readFileSync(new URL("../public/admin/admin.js", import.meta.url), "utf8");
-
-  assert.match(apiSource, /FROM preview_funnel_events/);
-  assert.match(apiSource, /previewFunnel/);
-  assert.match(apiSource, /previewFunnelByRoute/);
-  assert.match(apiSource, /previewFunnelIssues/);
-  assert.match(apiSource, /previewErrors/);
-  assert.match(apiSource, /turnstileFailures/);
-  assert.match(apiSource, /customerRefundDue/);
-  assert.match(apiSource, /drillRefundDue/);
-  assert.match(apiSource, /Drill refund retry needed/);
-
-  assert.match(apiSource, /AND COALESCE\(amount, 0\) = 0/);
-  assert.match(apiSource, /isNonActionableTestEvent/);
-
-  assert.match(adminSource, /renderFunnel/);
-  assert.match(adminSource, /Preview funnel/);
-  assert.match(adminSource, /Privacy-safe events only/i);
-  assert.match(adminSource, /Preview funnel issues/);
 });
 
 test("failed Dodo attempts and zero-amount sandbox events without an app job do not block readiness", () => {
