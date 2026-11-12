@@ -6,7 +6,7 @@ description: Launch, health-check, drive, and prove the AI Converter app (`aicon
 AI Converter (repo `aiconverter-app`) is a Cloudflare Pages app for preview-first
 file conversion. The repo is a Vite + React 19 SPA in `src/`, with Cloudflare
 Pages Functions in `functions/` and the D1 / R2 / Workers AI bindings declared
-in `wrangler.jsonc`. Node 22 is in `.node-version`. The live site
+in `wrangler.jsonc`. CI and deploys run Node 24. The live site
 (`aiconverter.app`) is the production-runtime the harness drives; a local
 Vite dev/preview server is the deterministic SPA harness the docs use for
 non-API pages. The Cloudflare Pages Functions runtime cannot be reproduced
