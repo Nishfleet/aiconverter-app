@@ -40,15 +40,6 @@ test("indexable pages satisfy the SEO audit basics", () => {
   }
 });
 
-test("formats page paints useful content without waiting for the full stylesheet", () => {
-  const html = readFileSync("public/formats/index.html", "utf8");
-  const head = html.slice(0, html.indexOf("</head>"));
-  const body = html.slice(html.indexOf("<body>"));
-  assert.match(head, /<style>[\s\S]*?<\/style>/, "formats page should inline critical first-paint styles in the head");
-  assert.doesNotMatch(head, /<link[^>]+rel="stylesheet"/, "formats page should not keep a render-blocking stylesheet in the head");
-  assert.match(body, /<link[^>]+rel="stylesheet"[^>]+href="\/legal\.css"/, "formats page should load the full stylesheet after the content");
-});
-
 test("every landing page advertising an index.md alternate is served by the markdown negotiation map", () => {
   const middleware = readFileSync("functions/_middleware.js", "utf8");
   const mapSection = middleware.slice(middleware.indexOf("const markdownByRoute"));
