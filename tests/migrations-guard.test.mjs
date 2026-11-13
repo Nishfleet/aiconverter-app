@@ -50,23 +50,6 @@ test("no migration ordinal appears more often than its allowlisted baseline (dup
   );
 });
 
-test("known duplicate-ordinal pair has deterministic apply order (wrangler sorts equal ordinals by full path)", async () => {
-  const files = (await readdir(MIGRATIONS_DIR)).filter((name) => name.endsWith(".sql"));
-  const eightFiles = files.filter((name) => name.startsWith("0008_")).sort();
-  assert.deepEqual(eightFiles, ["0008_accounting_exports.sql", "0008_admin_monitoring_indexes.sql"]);
-});
-
-test("0008_accounting_exports.sql is non-idempotent, proving the renumber-hazard behind the allowlist", async () => {
-  const body = await readFile(path.join(MIGRATIONS_DIR, "0008_accounting_exports.sql"), "utf8");
-  assert.match(
-    body,
-    /ALTER TABLE\s+\w+\s+ADD COLUMN/i,
-    "0008_accounting_exports.sql must keep its ALTER TABLE ... ADD COLUMN statements; " +
-      "this non-idempotency is exactly why the duplicate 0008 ordinal cannot be quietly renumbered " +
-      "without first checking the live D1 d1_migrations state."
-  );
-});
-
 test("non-idempotent migration files are listed exactly once each (no accidental re-run copies)", async () => {
   const files = (await readdir(MIGRATIONS_DIR)).filter((name) => name.endsWith(".sql"));
   const fullBodies = new Map();

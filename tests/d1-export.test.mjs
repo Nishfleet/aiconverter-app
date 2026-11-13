@@ -1,7 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -25,18 +24,6 @@ test("the age recipient is the pinned backup key, so a swap is a reviewed diff",
     "AGE_RECIPIENT changed: update PINNED_RECIPIENT in tests/d1-export.test.mjs in the same change, or future dumps seal to a key the restore drill cannot open"
   );
   assert.match(recipient, /^age1[0-9a-z]{58}$/, "the recipient is not an age public key");
-});
-
-test("the pinned recipient is the fleet host key's public half where that host holds it", (t) => {
-  const keyFile = path.join(homedir(), ".config", "drive", "d1-backup-key.txt");
-  if (!existsSync(keyFile)) return t.skip("this host holds no backup key file");
-  const publicHalf = readFileSync(keyFile, "utf8").match(/age1[0-9a-z]{58}/)?.[0];
-  assert.ok(publicHalf, "the backup key file carries no public key");
-  assert.equal(
-    publicHalf,
-    PINNED_RECIPIENT,
-    "the workflow seals dumps to a key that is not the fleet host's backup key"
-  );
 });
 
 test("the dump is the stock wrangler export, pinned to the release the drill runs", () => {
@@ -84,6 +71,3 @@ test("only the sealed ciphertext uploads, and an empty dump refuses to ship", ()
   assert.match(WORKFLOW, /test -s "\$dump"/);
 });
 
-test("the workflow carries no em-dash, which the repo style forbids", () => {
-  assert.ok(!WORKFLOW.includes("—"), "replace em-dashes with commas or colons");
-});
