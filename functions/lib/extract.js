@@ -777,7 +777,7 @@ export async function detectPdfPageCount(arrayBuffer, options = {}) {
     pdf = await openPdfDocument(arrayBuffer, options);
     return Number(pdf.numPages || 0);
   } finally {
-    await pdf?.destroy?.();
+    await closePdfDocument(pdf);
   }
 }
 
@@ -832,6 +832,15 @@ async function openPdfDocument(arrayBuffer, options = {}) {
   }
 }
 
+async function closePdfDocument(pdf) {
+  if (!pdf) return;
+  if (typeof pdf.destroy === "function") {
+    await pdf.destroy();
+    return;
+  }
+  await pdf.loadingTask?.destroy?.();
+}
+
 function sanitizePdfPassword$inline(value) {
   if (value === undefined || value === null) return "";
   return String(value).slice(0, 256);
@@ -861,7 +870,7 @@ async function assertPdfDecryptable(arrayBuffer, options = {}) {
       ? await getDocumentProxy(copyPdfBytes(arrayBuffer), { password })
       : await getDocumentProxy(copyPdfBytes(arrayBuffer));
   } catch (error) {
-    await pdf?.destroy?.();
+    await closePdfDocument(pdf);
     if (isPasswordRequiredError(error) && !password) {
       throw new PdfPasswordRequiredError();
     }
@@ -870,7 +879,7 @@ async function assertPdfDecryptable(arrayBuffer, options = {}) {
     }
     throw error;
   }
-  await pdf?.destroy?.();
+  await closePdfDocument(pdf);
 }
 
 async function extractWithBestProvider(env, fileName, arrayBuffer, options) {
@@ -1011,7 +1020,7 @@ async function readPdfTextPages(arrayBuffer, options = {}) {
       pages: Array.isArray(result.text) ? result.text : [String(result.text || "")]
     };
   } finally {
-    await pdf?.destroy?.();
+    await closePdfDocument(pdf);
   }
 }
 
