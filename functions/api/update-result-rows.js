@@ -18,6 +18,9 @@ export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -46,7 +49,7 @@ export async function onRequestPost({ request, env }) {
     return badRequest(`${bankOutputLabel(outputFormat)} is a bank-feed file. Download and review it in your accounting app.`);
   }
 
-  const existing = await env.AICONVERTER_BUCKET.get(job.result_key);
+  const existing = await env.AICONVERTER_BUCKET.get(job.result_key || "");
   if (!existing) return badRequest("The converted file has expired.");
   const existingRows = parseCsvContent(await existing.text(), MAX_REVIEW_ROWS);
   if (existingRows.truncated) {
@@ -60,10 +63,10 @@ export async function onRequestPost({ request, env }) {
   if (!columns.length) return badRequest("The edited export needs at least one column.");
   if (!rows.length) return badRequest("The edited export needs at least one row.");
   const rowCheck = validateEditedRows(outputFormat, columns, rows);
-  if (!rowCheck.ok) return badRequest(rowCheck.message);
+  if (!rowCheck.ok) return badRequest(rowCheck.message || "The edited rows could not be saved.");
 
   const csv = rowsToCsv(rows, columns);
-  await env.AICONVERTER_BUCKET.put(job.result_key, csv, {
+  await env.AICONVERTER_BUCKET.put(job.result_key || "", csv, {
     httpMetadata: { contentType: bankOutputContentType(outputFormat) },
     customMetadata: {
       jobId: job.id,
@@ -99,36 +102,54 @@ export async function onRequestPost({ request, env }) {
   });
 }
 
+/** @param {unknown} value
+ * @returns {{ key: string, label: string }[]}
+ */
 function normalizeColumns(value) {
   const input = Array.isArray(value) ? value : [];
   return input
-    .map((column) => {
+    .map((/** @type {any} */ column) => {
       const key = cleanHeader(column?.key || column?.label || "");
       const label = cleanHeader(column?.label || key);
       return key ? { key, label: label || key } : null;
     })
-    .filter(Boolean)
+    .filter((/** @type {{ key: string, label: string } | null} */ column) => column !== null)
     .slice(0, MAX_REVIEW_COLUMNS);
 }
 
+/** @param {unknown} value
+ * @param {{ key: string, label: string }[]} columns
+ * @returns {Record<string, string>[]}
+ */
 function normalizeRows(value, columns) {
   const input = Array.isArray(value) ? value : [];
-  return input.slice(0, MAX_REVIEW_ROWS).map((row) =>
-    columns.reduce((nextRow, column) => {
+  return input.slice(0, MAX_REVIEW_ROWS).map((/** @type {Record<string, string>} */ row) =>
+    columns.reduce((/** @type {Record<string, string>} */ nextRow, column) => {
       nextRow[column.key] = cleanCell(row?.[column.key]);
       return nextRow;
     }, {})
   );
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function cleanHeader(value) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, 80);
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function cleanCell(value) {
   return String(value ?? "").replace(/\r?\n/g, " ").trim().slice(0, MAX_CELL_LENGTH);
 }
 
+/** @param {string} outputFormat
+ * @param {{ key: string, label: string }[]} columns
+ * @param {Record<string, string>[]} rows
+ * @returns {{ ok: boolean, message?: string, validDates?: number, validAmounts?: number }}
+ */
 function validateEditedRows(outputFormat, columns, rows) {
   const keys = columns.map((column) => column.key);
   const dateKey = keys.find((key) => /^date$/i.test(key));
@@ -147,7 +168,7 @@ function validateEditedRows(outputFormat, columns, rows) {
   if (amountKey) {
     validAmounts = rows.filter((row) => validMoney(row[amountKey])).length;
   } else if (depositKey || withdrawalKey) {
-    validAmounts = rows.filter((row) => validMoney(row[depositKey]) || validMoney(row[withdrawalKey])).length;
+    validAmounts = rows.filter((row) => validMoney(row[depositKey || ""]) || validMoney(row[withdrawalKey || ""])).length;
   }
 
   if (validAmounts / rows.length < 0.8) {
@@ -157,6 +178,9 @@ function validateEditedRows(outputFormat, columns, rows) {
   return { ok: true, validDates, validAmounts };
 }
 
+/** @param {unknown} value
+ * @returns {boolean}
+ */
 function validDate(value) {
   const text = String(value || "").trim();
   if (!text) return false;
@@ -166,6 +190,9 @@ function validDate(value) {
   return false;
 }
 
+/** @param {unknown} value
+ * @returns {boolean}
+ */
 function validMoney(value) {
   const text = String(value ?? "").trim();
   if (!text) return false;
@@ -173,6 +200,12 @@ function validMoney(value) {
   return Number.isFinite(Number(normalized));
 }
 
+/** @param {JobRow} job
+ * @param {string} outputFormat
+ * @param {number} rowCount
+ * @param {{ ok: boolean, message?: string, validDates?: number, validAmounts?: number }} rowCheck
+ * @returns {string}
+ */
 function editedValidationReport(job, outputFormat, rowCount, rowCheck) {
   return [
     "AI Converter validation report",

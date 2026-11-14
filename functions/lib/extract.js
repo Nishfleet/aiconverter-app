@@ -16,14 +16,26 @@ import {
 } from "./universal.js";
 import { validateStatementRows } from "./validate-statement.js";
 
+/** @typedef {{ key: string, label: string }} ConverterColumn
+ * @typedef {{ raw: string, value: number, index: number }} MoneyToken
+ * @typedef {{ date: string, description: string, money_in: string | number, money_out: string | number, balance: string | number, page: string | number, confidence: number, _amount?: number }} TransactionRow
+ * @typedef {{ date: string, vendor: string, category: string, total: string | number, currency: string, subtotal: string | number, tax: string | number, payment_method: string, notes: string, confidence: number }} ReceiptRow
+ * @typedef {{ description: string, amount: string | number, currency: string }} InvoiceLineItem
+ * @typedef {{ vendor: string, invoice_number: string, invoice_date: string, due_date: string, total: string | number, currency: string, subtotal: string | number, tax: string | number, payment_terms: string, notes: string, line_items: InvoiceLineItem[] }} InvoiceRow
+ * @typedef {{ outputFormat?: string, accountingMetadata?: Record<string, unknown>, allowPaidFallback?: boolean, pdfPassword?: string, previewPages?: number, estimatedPages?: number, forceProvider?: string, chunk?: { index?: number, total?: number } }} ConvertOptions
+ * @typedef {{ provider?: string, confidence: number, pagesParsed?: number, totalPages?: number, warnings: string[], transactions: TransactionRow[] }} ExtractionProposal
+ * @typedef {{ columns: ConverterColumn[], rows: Record<string, string>[], fromMarkdownTable: boolean }} ParsedTable
+ * @typedef {{ ok: true, content: string, mimeType: string, tokens: string, warnings: string[] }} MarkdownResult
+ * @typedef {{ ok: false, message: string, confidence: number, trustScore: number, rowCount: number, warnings: string[], provider: string }} ExtractionFailure
+ */
 const DEFAULT_AZURE_MODEL = "prebuilt-bankStatement.us";
 const DEFAULT_AZURE_API_VERSION = "2024-11-30";
 const DEFAULT_MISTRAL_MODEL = "mistral-ocr-latest";
-const DEFAULT_WHISPER_MODEL = "@cf/openai/whisper-large-v3-turbo";
-const DEFAULT_SCREENSHOT_CODE_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
+const DEFAULT_WHISPER_MODEL = /** @type {string} */ ("@cf/openai/whisper-large-v3-turbo");
+const DEFAULT_SCREENSHOT_CODE_MODEL = /** @type {string} */ ("@cf/meta/llama-3.2-11b-vision-instruct");
 
 // upstream: https://developers.cloudflare.com/changelog/2025-02-21-workers-ai-max-tokens/ Workers AI defaults max_tokens to 256
-const STATEMENT_EXTRACT_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
+const STATEMENT_EXTRACT_MODEL = /** @type {string} */ ("@cf/meta/llama-3.1-8b-instruct-fast");
 const STATEMENT_MAX_TOKENS = 4096;
 const SCREENSHOT_HTML_MAX_TOKENS = 8192;
 const STATEMENT_CHUNK_CHARS = 8000;
@@ -31,6 +43,9 @@ const MAX_MARKDOWN_CHARS = 120000;
 const MAX_STATEMENT_CHUNKS = Math.ceil(MAX_MARKDOWN_CHARS / STATEMENT_CHUNK_CHARS);
 
 // upstream: https://developers.cloudflare.com/ai-gateway/observability/logging/ per-request header that skips payload storage
+/** @param {Env} env
+ * @returns {{ gateway: { id: string }, extraHeaders: Record<string, string> } | undefined}
+ */
 function aiGatewayOptions(env) {
   if (env?.AI_GATEWAY_ENABLED === "false") return undefined;
   return {
@@ -39,6 +54,9 @@ function aiGatewayOptions(env) {
   };
 }
 
+/** @param {Record<string, any>} response
+ * @returns {string}
+ */
 function finishReason(response) {
   const candidates = [
     response?.finish_reason,
@@ -51,6 +69,10 @@ function finishReason(response) {
   return candidates.find((value) => typeof value === "string" && value.trim()) || "";
 }
 
+/** @param {Record<string, any>} response
+ * @param {number} maxTokens
+ * @returns {boolean}
+ */
 function responseWasTruncated(response, maxTokens) {
   if (["length", "max_tokens"].includes(finishReason(response))) return true;
   const usage = response?.usage || response?.result?.usage || response?.response?.usage;
@@ -84,7 +106,7 @@ const extractionSchema = {
   required: ["confidence", "transactions", "warnings"]
 };
 
-const MONTHS = {
+const MONTHS = /** @type {Record<string, string>} */ ({
   jan: "01",
   feb: "02",
   mar: "03",
@@ -98,7 +120,7 @@ const MONTHS = {
   oct: "10",
   nov: "11",
   dec: "12"
-};
+});
 
 const DATE_PATTERN =
   /\b(?:\d{4}[/-]\d{1,2}[/-]\d{1,2}|\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?|\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?(?:\s+\d{2,4})?|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2}(?:,?\s+\d{2,4})?)\b/i;
@@ -162,6 +184,14 @@ export const CONVERTER_COLUMNS = {
   "universal-file": UNIVERSAL_COLUMNS
 };
 
+/** @param {Env} env
+ * @param {string} converterId
+ * @param {string} fileName
+ * @param {string} contentType
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<ConversionResult>}
+ */
 export async function convertFileToCsv(env, converterId, fileName, contentType, arrayBuffer, options = {}) {
   const normalized = normalizeConverterId(converterId);
   if (normalized === "receipt") {
@@ -177,7 +207,7 @@ export async function convertFileToCsv(env, converterId, fileName, contentType, 
     return convertAudioToTranscript(env, fileName, contentType, arrayBuffer, options);
   }
   if (normalized === "document-markdown") {
-    return convertDocumentToMarkdown(env, fileName, contentType, arrayBuffer, options);
+    return convertDocumentToMarkdown(env, fileName, contentType, arrayBuffer);
   }
   if (normalized === "screenshot-code") {
     return convertScreenshotToHtml(env, fileName, contentType, arrayBuffer, options);
@@ -188,11 +218,18 @@ export async function convertFileToCsv(env, converterId, fileName, contentType, 
   return convertPdfToCsv(env, fileName, arrayBuffer, options);
 }
 
+/** @param {Env} env
+ * @param {string} fileName
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<ConversionResult>}
+ */
 export async function convertPdfToCsv(env, fileName, arrayBuffer, options = {}) {
   let pageCount;
   try {
     pageCount = await detectPdfPageCount(arrayBuffer, options);
-  } catch (error) {
+  } catch (catchError) {
+    const error = /** @type {Record<string, any>} */ (catchError);
     if (error?.code === "pdf_password_required" || error?.passwordRequired) {
       return {
         ok: false,
@@ -234,7 +271,8 @@ export async function convertPdfToCsv(env, fileName, arrayBuffer, options = {}) 
   let extracted;
   try {
     extracted = await extractWithBestProvider(env, fileName, arrayBuffer, options);
-  } catch (error) {
+  } catch (catchError) {
+    const error = /** @type {Record<string, any>} */ (catchError);
     if (error?.code === "pdf_password_required" || error?.passwordRequired) {
       return {
         ok: false,
@@ -328,6 +366,13 @@ export async function convertPdfToCsv(env, fileName, arrayBuffer, options = {}) 
   };
 }
 
+/** @param {Env} env
+ * @param {string} fileName
+ * @param {string} contentType
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<ConversionResult>}
+ */
 async function convertReceiptToCsv(env, fileName, contentType, arrayBuffer, options = {}) {
   if (!hasMistralConfig(env)) {
     return failConversion("Receipt conversion needs OCR configuration before it can run.", "receipt-ocr");
@@ -371,6 +416,13 @@ async function convertReceiptToCsv(env, fileName, contentType, arrayBuffer, opti
   };
 }
 
+/** @param {Env} env
+ * @param {string} fileName
+ * @param {string} contentType
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<ConversionResult>}
+ */
 async function convertScreenshotTableToCsv(env, fileName, contentType, arrayBuffer, options = {}) {
   if (!hasMistralConfig(env)) {
     return failConversion("Screenshot/table conversion needs OCR configuration before it can run.", "screenshot-ocr");
@@ -400,6 +452,13 @@ async function convertScreenshotTableToCsv(env, fileName, contentType, arrayBuff
   };
 }
 
+/** @param {Env} env
+ * @param {string} fileName
+ * @param {string} contentType
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<ConversionResult>}
+ */
 async function convertInvoiceToStructuredFile(env, fileName, contentType, arrayBuffer, options = {}) {
   if (!hasMistralConfig(env)) {
     return failConversion("Invoice conversion needs OCR configuration before it can run.", "invoice-ocr");
@@ -448,20 +507,27 @@ async function convertInvoiceToStructuredFile(env, fileName, contentType, arrayB
   };
 }
 
+/** @param {Env} env
+ * @param {string} fileName
+ * @param {string} contentType
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<ConversionResult>}
+ */
 async function convertAudioToTranscript(env, fileName, contentType, arrayBuffer, options = {}) {
   if (!env?.AI?.run) {
     return failConversion("Audio transcription is not ready yet.", "workers-ai-whisper");
   }
 
   const model = env.WHISPER_MODEL || DEFAULT_WHISPER_MODEL;
-  const response = await env.AI.run(
+  const response = /** @type {Record<string, any>} */ (await env.AI.run(
     model,
     {
       audio: arrayBufferToBase64(arrayBuffer),
       task: "transcribe"
     },
     aiGatewayOptions(env)
-  );
+  ));
 
   const transcript = String(response?.text || response?.transcription || response?.result?.text || "").trim();
   if (!transcript) {
@@ -504,6 +570,12 @@ async function convertAudioToTranscript(env, fileName, contentType, arrayBuffer,
   };
 }
 
+/** @param {Env} env
+ * @param {string} fileName
+ * @param {string} contentType
+ * @param {ArrayBuffer} arrayBuffer
+ * @returns {Promise<ConversionResult>}
+ */
 async function convertDocumentToMarkdown(env, fileName, contentType, arrayBuffer) {
   const markdown = await documentToMarkdown(env, fileName, contentType, arrayBuffer);
   if (!markdown.ok) return markdown;
@@ -532,8 +604,15 @@ async function convertDocumentToMarkdown(env, fileName, contentType, arrayBuffer
   };
 }
 
+/** @param {Env} env
+ * @param {string} fileName
+ * @param {string} contentType
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<ConversionResult>}
+ */
 async function convertScreenshotToHtml(env, fileName, contentType, arrayBuffer, options = {}) {
-  if (options.allowPaidFallback && env?.AI?.run && String(contentType || "").toLowerCase().startsWith("image/")) {
+  if (options.allowPaidFallback && typeof env?.AI?.run === "function" && String(contentType || "").toLowerCase().startsWith("image/")) {
     return convertScreenshotToVisionHtml(env, fileName, contentType, arrayBuffer);
   }
 
@@ -567,6 +646,12 @@ async function convertScreenshotToHtml(env, fileName, contentType, arrayBuffer, 
   };
 }
 
+/** @param {Env} env
+ * @param {string} fileName
+ * @param {string} contentType
+ * @param {ArrayBuffer} arrayBuffer
+ * @returns {Promise<ConversionResult>}
+ */
 async function convertScreenshotToVisionHtml(env, fileName, contentType, arrayBuffer) {
   const model = env.SCREENSHOT_CODE_MODEL || DEFAULT_SCREENSHOT_CODE_MODEL;
   const prompt = [
@@ -578,7 +663,7 @@ async function convertScreenshotToVisionHtml(env, fileName, contentType, arrayBu
   ].join(" ");
 
   const screenshotMaxTokens = Number(env.SCREENSHOT_CODE_MAX_TOKENS || SCREENSHOT_HTML_MAX_TOKENS);
-  const response = await env.AI.run(
+  const response = /** @type {Record<string, any>} */ (await env.AI.run(
     model,
     {
       prompt,
@@ -587,7 +672,7 @@ async function convertScreenshotToVisionHtml(env, fileName, contentType, arrayBu
       temperature: 0.15
     },
     aiGatewayOptions(env)
-  );
+  ));
   const truncated = responseWasTruncated(response, screenshotMaxTokens);
   const raw = String(response?.response || response?.text || response?.result?.response || response?.output || "").trim();
   const html = extractHtmlDocument(raw);
@@ -618,6 +703,9 @@ async function convertScreenshotToVisionHtml(env, fileName, contentType, arrayBu
   };
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function extractHtmlDocument(value) {
   const text = String(value || "").trim();
   const fenced = text.match(/```html\s*([\s\S]*?)```/i)?.[1] || text.match(/```\s*([\s\S]*?)```/i)?.[1] || text;
@@ -627,6 +715,13 @@ function extractHtmlDocument(value) {
   return /<html[\s>]/i.test(html) && /<\/html>/i.test(html) && /<body[\s>]/i.test(html) ? html : "";
 }
 
+/** @param {Env} env
+ * @param {string} fileName
+ * @param {string} contentType
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<ConversionResult>}
+ */
 async function convertUniversalFile(env, fileName, contentType, arrayBuffer, options = {}) {
   const cloudConvertReady = hasCloudConvertConfig(env);
   const convertioReady = hasConvertioConfig(env);
@@ -651,18 +746,25 @@ async function convertUniversalFile(env, fileName, contentType, arrayBuffer, opt
   };
 }
 
+/** @param {Env} env
+ * @param {string} fileName
+ * @param {string} contentType
+ * @param {ArrayBuffer} arrayBuffer
+ * @returns {Promise<MarkdownResult | ExtractionFailure>}
+ */
 async function documentToMarkdown(env, fileName, contentType, arrayBuffer) {
   if (!env?.AI?.toMarkdown) {
     return failConversion("Document Markdown conversion is not ready yet.", "workers-ai-markdown");
   }
 
   // upstream: https://developers.cloudflare.com/workers-ai/features/markdown-conversion/ toMarkdown takes conversion options, not gateway options
-  const result = await env.AI.toMarkdown({
+  const toMarkdownResponse = await env.AI.toMarkdown({
     name: fileName || "document",
     blob: new Blob([arrayBuffer], {
       type: contentType || mimeTypeFromFileName(fileName)
     })
   });
+  const result = /** @type {Record<string, any>} */ (toMarkdownResponse);
   const converted = Array.isArray(result) ? result[0] : Array.isArray(result?.results) ? result.results[0] : result;
   if (!converted || converted.format === "error") {
     return failConversion(converted?.error || "The document converter could not safely convert this file to Markdown.", "workers-ai-markdown");
@@ -676,12 +778,16 @@ async function documentToMarkdown(env, fileName, contentType, arrayBuffer) {
   return {
     ok: true,
     content,
-    mimeType: converted.mimetype || contentType || "",
-    tokens: converted.tokens || "",
+    mimeType: converted.mimeType || converted.mimetype || contentType || "",
+    tokens: String(converted.tokens || ""),
     warnings: []
   };
 }
 
+/** @param {string} markdown
+ * @param {string} fileName
+ * @returns {string}
+ */
 function htmlStarterFromMarkdown(markdown, fileName) {
   const title = titleFromMarkdown(markdown) || "Converted screen";
   const lines = String(markdown || "")
@@ -733,6 +839,9 @@ function htmlStarterFromMarkdown(markdown, fileName) {
 `;
 }
 
+/** @param {unknown} markdown
+ * @returns {string}
+ */
 function titleFromMarkdown(markdown) {
   const heading = String(markdown || "").match(/^#{1,2}\s+(.+)$/m)?.[1];
   if (heading) return cleanMarkdownText(heading).slice(0, 80);
@@ -743,6 +852,9 @@ function titleFromMarkdown(markdown) {
   return first || "";
 }
 
+/** @param {string} [fileName]
+ * @returns {string}
+ */
 function mimeTypeFromFileName(fileName = "") {
   const lower = String(fileName).toLowerCase();
   if (lower.endsWith(".pdf")) return "application/pdf";
@@ -758,10 +870,16 @@ function mimeTypeFromFileName(fileName = "") {
   return "application/octet-stream";
 }
 
+/** @param {unknown} value
+ * @returns {number}
+ */
 function countWords(value) {
   return String(value || "").trim().split(/\s+/).filter(Boolean).length;
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function escapeHtml(value) {
   return String(value || "")
     .replaceAll("&", "&amp;")
@@ -771,11 +889,15 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+/** @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<number>}
+ */
 export async function detectPdfPageCount(arrayBuffer, options = {}) {
-  let pdf;
+  let pdf = /** @type {{ numPages?: number, destroy?: () => Promise<void> } | undefined} */ (undefined);
   try {
     pdf = await openPdfDocument(arrayBuffer, options);
-    return Number(pdf.numPages || 0);
+    return Number(pdf?.numPages) || 0;
   } finally {
     await pdf?.destroy?.();
   }
@@ -799,19 +921,27 @@ export class PdfIncorrectPasswordError extends Error {
   }
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 export function sanitizePdfPassword(value) {
   if (value === undefined || value === null) return "";
   return String(value).slice(0, 256);
 }
 
+/** @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<any>}
+ */
 async function openPdfDocument(arrayBuffer, options = {}) {
   const password = sanitizePdfPassword(options.pdfPassword);
   const bytes = copyPdfBytes(arrayBuffer);
-  const errors = [];
+  const errors = /** @type {unknown[]} */ ([]);
   if (password) {
     try {
       return await getDocumentProxy(bytes, { password });
-    } catch (error) {
+    } catch (catchError) {
+      const error = /** @type {Record<string, any>} */ (catchError);
       if (isIncorrectPasswordError(error)) {
         throw new PdfIncorrectPasswordError();
       }
@@ -820,7 +950,8 @@ async function openPdfDocument(arrayBuffer, options = {}) {
   }
   try {
     return await getDocumentProxy(bytes);
-  } catch (error) {
+  } catch (catchError) {
+    const error = /** @type {Record<string, any>} */ (catchError);
     if (isPasswordRequiredError(error)) {
       throw new PdfPasswordRequiredError();
     }
@@ -832,11 +963,17 @@ async function openPdfDocument(arrayBuffer, options = {}) {
   }
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function sanitizePdfPassword$inline(value) {
   if (value === undefined || value === null) return "";
   return String(value).slice(0, 256);
 }
 
+/** @param {Record<string, any>} error
+ * @returns {boolean}
+ */
 function isPasswordRequiredError(error) {
   const message = String(error?.message || "");
   const name = String(error?.name || "");
@@ -848,19 +985,28 @@ function isPasswordRequiredError(error) {
   );
 }
 
+/** @param {Record<string, any>} error
+ * @returns {boolean}
+ */
 function isIncorrectPasswordError(error) {
   const message = String(error?.message || "");
   return /incorrect\s*password/i.test(message) || /wrong\s*password/i.test(message);
 }
 
+/** @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<void>}
+ */
 async function assertPdfDecryptable(arrayBuffer, options = {}) {
   const password = sanitizePdfPassword$inline(options.pdfPassword);
+  /** @type {any} */
   let pdf;
   try {
     pdf = password
       ? await getDocumentProxy(copyPdfBytes(arrayBuffer), { password })
       : await getDocumentProxy(copyPdfBytes(arrayBuffer));
-  } catch (error) {
+  } catch (catchError) {
+    const error = /** @type {Record<string, any>} */ (catchError);
     await pdf?.destroy?.();
     if (isPasswordRequiredError(error) && !password) {
       throw new PdfPasswordRequiredError();
@@ -873,19 +1019,24 @@ async function assertPdfDecryptable(arrayBuffer, options = {}) {
   await pdf?.destroy?.();
 }
 
+/** @param {Env} env
+ * @param {string} fileName
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} options
+ * @returns {Promise<Record<string, any>>}
+ */
 async function extractWithBestProvider(env, fileName, arrayBuffer, options) {
   const failures = [];
   const providers = providerOrder(env, options);
 
   for (const provider of providers) {
     try {
-      const extracted = await provider.run(env, fileName, arrayBuffer, options);
+      const extracted = /** @type {Record<string, any>} */ (await provider.run(env, fileName, arrayBuffer, options));
       const validation = validateStatementRows(extracted.transactions || [], extracted.confidence || 0, {
         estimatedPages: options.estimatedPages,
         previewPages: options.previewPages,
         parsedPages: extracted.pagesParsed,
-        totalPages: extracted.totalPages,
-        provider: provider.id
+        totalPages: extracted.totalPages
       });
       if (validation.ok) {
         return {
@@ -909,7 +1060,8 @@ async function extractWithBestProvider(env, fileName, arrayBuffer, options) {
         rowCount: validation.rowCount,
         message: validation.message
       });
-    } catch (error) {
+    } catch (catchError) {
+      const error = /** @type {Record<string, any>} */ (catchError);
       if (error?.passwordRequired || error?.code === "pdf_password_required") {
         return {
           ok: false,
@@ -959,6 +1111,10 @@ async function extractWithBestProvider(env, fileName, arrayBuffer, options) {
   };
 }
 
+/** @param {Env} env
+ * @param {ConvertOptions} [options]
+ * @returns {{ id: string, label: string, run: (env: Env, fileName: string, arrayBuffer: ArrayBuffer, options: ConvertOptions) => Promise<ExtractionProposal> }[]}
+ */
 function providerOrder(env, options = {}) {
   const cloudflareFallback = env.ALLOW_CLOUDFLARE_FALLBACK === "true" && env.AI;
   const paidFallbackAllowed = options.allowPaidFallback || env.ENABLE_AZURE_FALLBACK === "true";
@@ -978,6 +1134,12 @@ function providerOrder(env, options = {}) {
   return providers;
 }
 
+/** @param {Env} env
+ * @param {string} fileName
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<ExtractionProposal>}
+ */
 async function extractWithNativePdf(env, fileName, arrayBuffer, options = {}) {
   const { pages, totalPages } = await readPdfTextPages(arrayBuffer, options);
   if (totalPages > MAX_PAGE_COUNT) {
@@ -1001,7 +1163,12 @@ async function extractWithNativePdf(env, fileName, arrayBuffer, options = {}) {
   };
 }
 
+/** @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<{ totalPages: number, pages: string[] }>}
+ */
 async function readPdfTextPages(arrayBuffer, options = {}) {
+  /** @type {any} */
   let pdf;
   try {
     pdf = await openPdfDocument(arrayBuffer, options);
@@ -1015,10 +1182,19 @@ async function readPdfTextPages(arrayBuffer, options = {}) {
   }
 }
 
+/** @param {ArrayBuffer} arrayBuffer
+ * @returns {Uint8Array}
+ */
 function copyPdfBytes(arrayBuffer) {
   return new Uint8Array(arrayBuffer.slice(0));
 }
 
+/** @param {Env} env
+ * @param {string} fileName
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<ExtractionProposal>}
+ */
 async function extractWithMistralOcr(env, fileName, arrayBuffer, options = {}) {
   await assertPdfDecryptable(arrayBuffer, options);
   const ocr = await runMistralOcr(env, "application/pdf", arrayBuffer, options);
@@ -1034,6 +1210,12 @@ async function extractWithMistralOcr(env, fileName, arrayBuffer, options = {}) {
   };
 }
 
+/** @param {Env} env
+ * @param {string} contentType
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<{ pages: string[], confidence: number, warnings: string[] }>}
+ */
 async function runMistralOcr(env, contentType, arrayBuffer, options = {}) {
   const configuredPreviewLimit = Number(env.MISTRAL_PREVIEW_PAGE_LIMIT || env.OCR_PREVIEW_PAGE_LIMIT || 1);
   const previewPageLimit = Math.max(
@@ -1046,7 +1228,7 @@ async function runMistralOcr(env, contentType, arrayBuffer, options = {}) {
   const mimeType = String(contentType || "application/pdf").toLowerCase();
   const isImage = mimeType.startsWith("image/");
   const documentType = isImage ? "image_url" : "document_url";
-  const body = {
+  const body = /** @type {Record<string, any>} */ ({
     model: env.MISTRAL_OCR_MODEL || DEFAULT_MISTRAL_MODEL,
     document: {
       type: documentType,
@@ -1055,7 +1237,7 @@ async function runMistralOcr(env, contentType, arrayBuffer, options = {}) {
     table_format: "markdown",
     include_image_base64: false,
     confidence_scores_granularity: "page"
-  };
+  });
 
   if (options.previewPages && !isImage) {
     body.pages = Array.from({ length: previewPageLimit }, (_, index) => index);
@@ -1070,14 +1252,14 @@ async function runMistralOcr(env, contentType, arrayBuffer, options = {}) {
     body: JSON.stringify(body)
   });
 
-  const payload = await response.json().catch(() => ({}));
+  const payload = /** @type {Record<string, any>} */ (await response.json().catch(() => ({})));
   if (!response.ok) {
     throw new Error(payload?.message || `OCR failed (${response.status}).`);
   }
 
-  const pages = (payload.pages || []).map((page) => ocrPageText(page));
+  const pages = (payload.pages || []).map((/** @type {any} */ page) => ocrPageText(page));
   const pageScores = (payload.pages || [])
-    .map((page) => Number(page.confidence_scores?.average_page_confidence_score))
+    .map((/** @type {any} */ page) => Number(page.confidence_scores?.average_page_confidence_score))
     .filter(Number.isFinite);
 
   return {
@@ -1087,6 +1269,9 @@ async function runMistralOcr(env, contentType, arrayBuffer, options = {}) {
   };
 }
 
+/** @param {Record<string, any>} page
+ * @returns {string}
+ */
 function ocrPageText(page) {
   const chunks = [String(page?.markdown || "")];
   const tables = Array.isArray(page?.tables) ? page.tables : [];
@@ -1104,6 +1289,9 @@ function ocrPageText(page) {
   return chunks.filter(Boolean).join("\n");
 }
 
+/** @param {string} markdown
+ * @returns {ReceiptRow | null}
+ */
 function parseReceipt(markdown) {
   const text = String(markdown || "");
   const lines = text
@@ -1139,6 +1327,9 @@ function parseReceipt(markdown) {
   };
 }
 
+/** @param {string[]} lines
+ * @returns {string}
+ */
 function inferReceiptVendor(lines) {
   const ignored = /^(receipt|invoice|tax invoice|sale|transaction|merchant copy|customer copy|date|time|subtotal|sub total|total|amount|balance|qty|item|description|order|table|server|cashier|terminal|approval|auth|card|visa|mastercard|amex)\b/i;
   return (
@@ -1148,6 +1339,9 @@ function inferReceiptVendor(lines) {
   ).replace(/[*_`#|]+/g, "").trim();
 }
 
+/** @param {string[]} lines
+ * @returns {string}
+ */
 function inferReceiptTotalLine(lines) {
   const strongTotalLines = lines.filter(
     (line) =>
@@ -1166,16 +1360,25 @@ function inferReceiptTotalLine(lines) {
   return totalLines[totalLines.length - 1] || "";
 }
 
+/** @param {string[]} lines
+ * @returns {string}
+ */
 function inferReceiptSubtotalLine(lines) {
   const subtotalLines = lines.filter((line) => /\b(?:subtotal|sub\s+total)\b/i.test(line) && extractMoneyTokens(line).length);
   return subtotalLines[subtotalLines.length - 1] || "";
 }
 
+/** @param {string[]} lines
+ * @returns {string}
+ */
 function inferReceiptTaxLine(lines) {
   const taxLines = lines.filter((line) => /\b(?:tax|vat|gst|hst|pst|sales\s+tax)\b/i.test(line) && extractMoneyTokens(line).length);
   return taxLines[taxLines.length - 1] || "";
 }
 
+/** @param {string[]} lines
+ * @returns {string}
+ */
 function inferPaymentMethod(lines) {
   const joined = lines.join(" ");
   if (/\b(?:visa|mastercard|amex|american express|discover|card|credit|debit)\b/i.test(joined)) return "card";
@@ -1185,19 +1388,26 @@ function inferPaymentMethod(lines) {
   return "";
 }
 
+/** @param {{ vendor: string, notes: string, lines: string[] }} receiptContext
+ * @returns {string}
+ */
 function inferExpenseCategory({ vendor, notes, lines }) {
   const text = `${vendor} ${notes} ${lines.join(" ")}`.toLowerCase();
-  const categories = [
+  const categories = /** @type {Array<[string, RegExp]>} */ ([
     ["Meals", /\b(coffee|cafe|restaurant|kitchen|bar|grill|pizza|burger|food|meal|latte|bagel|uber eats|doordash|swiggy|zomato)\b/],
     ["Travel", /\b(hotel|airline|flight|uber|lyft|taxi|parking|fuel|gas station|train|metro|booking\.com|airbnb)\b/],
     ["Software", /\b(software|saas|cloud|hosting|domain|api|openai|mistral|azure|aws|google cloud|github|notion|slack|figma)\b/],
     ["Office", /\b(office|stationery|supplies|printer|paper|staples|desk|chair)\b/],
     ["Marketing", /\b(adwords|google ads|meta ads|facebook ads|linkedin ads|marketing|campaign)\b/],
     ["Utilities", /\b(electric|utility|internet|broadband|mobile|phone|water|power)\b/]
-  ];
+  ]);
   return categories.find(([, pattern]) => pattern.test(text))?.[0] || "Other";
 }
 
+/** @param {string[]} lines
+ * @param {string} totalLine
+ * @returns {string}
+ */
 function inferReceiptNotes(lines, totalLine) {
   const itemLines = lines.filter((line) => {
     if (line === totalLine) return false;
@@ -1207,10 +1417,14 @@ function inferReceiptNotes(lines, totalLine) {
   return itemLines.slice(0, 3).map((line) => line.replace(/\s+/g, " ")).join("; ");
 }
 
+/** @typedef {{ date?: string, vendor?: string, category?: string, total?: string | number, tax?: string | number, payment_method?: string }} ReceiptStructureInput
+ * @param {ReceiptStructureInput} row
+ * @returns {number}
+ */
 function receiptStructureScore(row) {
   let score = 0.62;
   if (row.date) score += 0.1;
-  if (row.vendor?.length >= 3) score += 0.12;
+  if ((row.vendor || "").length >= 3) score += 0.12;
   if (Number(row.total) > 0) score += 0.14;
   if (row.category && row.category !== "Other") score += 0.04;
   if (row.tax !== "") score += 0.03;
@@ -1218,10 +1432,17 @@ function receiptStructureScore(row) {
   return clamp(score, 0, 1);
 }
 
+/** @param {ReceiptStructureInput} row
+ * @returns {number}
+ */
 function receiptRowConfidence(row) {
   return receiptStructureScore(row);
 }
 
+/** @param {ReceiptRow} primary
+ * @param {ReceiptRow} fallback
+ * @returns {ReceiptRow}
+ */
 function mergeReceiptRows(primary, fallback) {
   return {
     ...fallback,
@@ -1234,16 +1455,25 @@ function mergeReceiptRows(primary, fallback) {
   };
 }
 
+/** @param {(ReceiptRow | null)[]} rows
+ * @returns {ReceiptRow[]}
+ */
 function dedupeReceiptRows(rows) {
   const seen = new Set();
-  return rows.filter((row) => {
+  const kept = /** @type {ReceiptRow[]} */ ([]);
+  for (const row of rows) {
+    if (!row) continue;
     const key = [normalizeDate(row.date), normalizeKey(row.vendor), row.total].join("|");
-    if (seen.has(key)) return false;
+    if (seen.has(key)) continue;
     seen.add(key);
-    return true;
-  });
+    kept.push(row);
+  }
+  return kept;
 }
 
+/** @param {string} markdown
+ * @returns {InvoiceRow | null}
+ */
 function parseInvoice(markdown) {
   const text = String(markdown || "");
   const lines = text
@@ -1284,6 +1514,9 @@ function parseInvoice(markdown) {
   };
 }
 
+/** @param {string[]} lines
+ * @returns {string}
+ */
 function inferInvoiceVendor(lines) {
   const ignored = /^(invoice|tax invoice|bill|statement|receipt|date|due date|invoice date|invoice number|invoice no|bill to|ship to|sold to|from|to|subtotal|total|amount due|balance due|payment|terms|description|qty|quantity|unit|price|amount)\b/i;
   return (
@@ -1293,6 +1526,9 @@ function inferInvoiceVendor(lines) {
   ).replace(/[*_`#|]+/g, "").trim();
 }
 
+/** @param {string[]} lines
+ * @returns {string}
+ */
 function inferInvoiceNumber(lines) {
   const patterns = [
     /\b(?:invoice|inv|bill)\s*(?:number|no|#|id)?\s*[:#-]?\s*([A-Z0-9][A-Z0-9._/-]{2,})\b/i,
@@ -1307,6 +1543,11 @@ function inferInvoiceNumber(lines) {
   return "";
 }
 
+/** @param {string[]} lines
+ * @param {RegExp} labelPattern
+ * @param {string} year
+ * @returns {string}
+ */
 function inferDateNearLabel(lines, labelPattern, year) {
   for (const line of lines) {
     if (!labelPattern.test(line)) continue;
@@ -1316,12 +1557,19 @@ function inferDateNearLabel(lines, labelPattern, year) {
   return "";
 }
 
+/** @param {string[]} lines
+ * @param {string} year
+ * @returns {string}
+ */
 function inferFirstUsefulDate(lines, year) {
   const line = lines.find((value) => !/\b(?:due|pay\s+by|paid)\b/i.test(value) && value.match(DATE_PATTERN));
   const dateMatch = line?.match(DATE_PATTERN);
   return dateMatch ? parseDateToken(dateMatch[0], year) : "";
 }
 
+/** @param {string[]} lines
+ * @returns {string}
+ */
 function inferInvoiceTotalLine(lines) {
   const strongTotalLines = lines.filter(
     (line) =>
@@ -1340,11 +1588,17 @@ function inferInvoiceTotalLine(lines) {
   return totalLines[totalLines.length - 1] || "";
 }
 
+/** @param {string[]} lines
+ * @returns {string}
+ */
 function inferInvoiceSubtotalLine(lines) {
   const subtotalLines = lines.filter((line) => /\b(?:subtotal|sub\s+total)\b/i.test(line) && extractMoneyTokens(line).length);
   return subtotalLines[subtotalLines.length - 1] || "";
 }
 
+/** @param {string[]} lines
+ * @returns {string}
+ */
 function inferPaymentTerms(lines) {
   const termsLine = lines.find((line) => /\b(?:net\s+\d+|due\s+on\s+receipt|payment\s+terms|terms\s*:|due\s+within\s+\d+)\b/i.test(line));
   if (!termsLine) return "";
@@ -1355,6 +1609,10 @@ function inferPaymentTerms(lines) {
   return termsLine.replace(/^payment\s+terms\s*[:#-]?\s*/i, "").slice(0, 80).trim();
 }
 
+/** @param {string[]} lines
+ * @param {string} totalLine
+ * @returns {InvoiceLineItem[]}
+ */
 function inferInvoiceLineItems(lines, totalLine) {
   return lines
     .filter((line) => {
@@ -1376,6 +1634,9 @@ function inferInvoiceLineItems(lines, totalLine) {
     .filter((item) => item.description && item.amount);
 }
 
+/** @param {string[]} lines
+ * @returns {string}
+ */
 function inferInvoiceNotes(lines) {
   const references = lines
     .filter((line) => /\b(?:po\s*(?:number|#)?|purchase\s+order|reference|memo|project|account)\b/i.test(line))
@@ -1383,6 +1644,10 @@ function inferInvoiceNotes(lines) {
   return references.join("; ");
 }
 
+/** @param {InvoiceRow} invoice
+ * @param {number} confidence
+ * @returns {Record<string, string | number>}
+ */
 function invoiceSummaryRow(invoice, confidence) {
   return {
     vendor: invoice.vendor || "",
@@ -1399,6 +1664,9 @@ function invoiceSummaryRow(invoice, confidence) {
   };
 }
 
+/** @param {InvoiceRow} invoice
+ * @returns {number}
+ */
 function invoiceStructureScore(invoice) {
   let score = 0.48;
   if (invoice.vendor) score += 0.12;
@@ -1411,6 +1679,9 @@ function invoiceStructureScore(invoice) {
   return clamp(score, 0, 1);
 }
 
+/** @param {string} markdown
+ * @returns {ParsedTable}
+ */
 function parseMarkdownTable(markdown) {
   const htmlTable = parseHtmlTable(markdown);
   if (htmlTable.rows.length) return htmlTable;
@@ -1451,6 +1722,9 @@ function parseMarkdownTable(markdown) {
   return { columns, rows, fromMarkdownTable: false };
 }
 
+/** @param {string} markdown
+ * @returns {ParsedTable}
+ */
 function parseHtmlTable(markdown) {
   const tableMatches = [...String(markdown || "").matchAll(/<table[\s\S]*?<\/table>/gi)];
   for (const match of tableMatches) {
@@ -1480,6 +1754,9 @@ function parseHtmlTable(markdown) {
   return { columns: [], rows: [], fromMarkdownTable: false };
 }
 
+/** @param {string} line
+ * @returns {string[]}
+ */
 function parseLooseTableCells(line) {
   const multiSpaceCells = String(line || "")
     .split(/\s{2,}|\t|,/)
@@ -1515,17 +1792,27 @@ function parseLooseTableCells(line) {
   return [];
 }
 
+/** @param {Record<string, string>} row
+ * @returns {boolean}
+ */
 function isUsefulTableRow(row) {
   const values = Object.values(row).map((value) => String(value || "").trim()).filter(Boolean);
   if (!values.length) return false;
   return !isMetadataLikeLine(values.join(" "));
 }
 
+/** @param {string} text
+ * @returns {boolean}
+ */
 function isMetadataLikeLine(text) {
   return /^\s*(?:smoke|generated|created|printed|exported|page\s+\d+)\b/i.test(text) ||
     /\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(text);
 }
 
+/** @param {string[][]} rows
+ * @param {number} width
+ * @returns {ConverterColumn[]}
+ */
 function inferLooseColumns(rows, width) {
   const defaultColumns = Array.from({ length: width }, (_, index) => ({
     key: `column_${index + 1}`,
@@ -1558,6 +1845,10 @@ function inferLooseColumns(rows, width) {
   return defaultColumns;
 }
 
+/** @param {string} value
+ * @param {number} index
+ * @returns {string}
+ */
 function normalizeColumnLabel(value, index) {
   const label = cleanMarkdownText(value)
     .replace(/\[[^\]]+\]\([^)]+\)/g, "")
@@ -1567,6 +1858,9 @@ function normalizeColumnLabel(value, index) {
   return label || `Column ${index + 1}`;
 }
 
+/** @param {ParsedTable} parsed
+ * @returns {number}
+ */
 function tableStructureScore(parsed) {
   let score = parsed.fromMarkdownTable ? 0.82 : 0.68;
   const rows = parsed.rows || [];
@@ -1584,6 +1878,9 @@ function tableStructureScore(parsed) {
   return clamp(score, 0.55, 1);
 }
 
+/** @param {string} line
+ * @returns {string[]}
+ */
 function splitTableCells(line) {
   return String(line || "")
     .replace(/^\|/, "")
@@ -1592,13 +1889,20 @@ function splitTableCells(line) {
     .map((cell) => cleanMarkdownText(cell));
 }
 
+/** @param {string[]} cells
+ * @param {ConverterColumn[]} columns
+ * @returns {Record<string, string>}
+ */
 function rowFromCells(cells, columns) {
   return columns.reduce((row, column, index) => {
     row[column.key] = cells[index] || "";
     return row;
-  }, {});
+  }, /** @type {Record<string, string>} */ ({}));
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function cleanMarkdownText(value) {
   return String(value || "")
     .replace(/<[^>]+>/g, " ")
@@ -1607,17 +1911,26 @@ function cleanMarkdownText(value) {
     .trim();
 }
 
+/** @param {string} text
+ * @returns {MoneyToken | null}
+ */
 function lastMoneyToken(text) {
   const tokens = extractMoneyTokens(text);
   return tokens[tokens.length - 1] || null;
 }
 
+/** @param {string} text
+ * @returns {MoneyToken | null}
+ */
 function largestMoneyToken(text) {
   return extractMoneyTokens(text)
     .filter((token) => Math.abs(Number(token.value)) > 0)
     .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))[0] || null;
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function currencyFromText(value) {
   const text = String(value || "");
   if (text.includes("₹")) return "INR";
@@ -1626,6 +1939,12 @@ function currencyFromText(value) {
   return "USD";
 }
 
+/** @param {string} message
+ * @param {string} provider
+ * @param {number} [confidence]
+ * @param {number} [rowCount]
+ * @returns {ExtractionFailure}
+ */
 function failConversion(message, provider, confidence = 0, rowCount = 0) {
   return {
     ok: false,
@@ -1638,6 +1957,12 @@ function failConversion(message, provider, confidence = 0, rowCount = 0) {
   };
 }
 
+/** @param {Env} env
+ * @param {string} fileName
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<ExtractionProposal>}
+ */
 async function extractWithAzure(env, fileName, arrayBuffer, options = {}) {
   await assertPdfDecryptable(arrayBuffer, options);
   const endpoint = String(env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT || "").replace(/\/+$/, "");
@@ -1652,7 +1977,7 @@ async function extractWithAzure(env, fileName, arrayBuffer, options = {}) {
     method: "POST",
     headers: {
       "Content-Type": "application/pdf",
-      "Ocp-Apim-Subscription-Key": env.AZURE_DOCUMENT_INTELLIGENCE_KEY
+      "Ocp-Apim-Subscription-Key": String(env.AZURE_DOCUMENT_INTELLIGENCE_KEY || "")
     },
     body: arrayBuffer
   });
@@ -1678,12 +2003,16 @@ async function extractWithAzure(env, fileName, arrayBuffer, options = {}) {
   };
 }
 
+/** @param {Env} env
+ * @param {string} operationUrl
+ * @returns {Promise<Record<string, any>>}
+ */
 async function pollAzure(env, operationUrl) {
   let last;
   for (let attempt = 0; attempt < 18; attempt += 1) {
     if (attempt > 0) await sleep(Math.min(900 + attempt * 250, 2600));
     const response = await fetch(operationUrl, {
-      headers: { "Ocp-Apim-Subscription-Key": env.AZURE_DOCUMENT_INTELLIGENCE_KEY }
+      headers: { "Ocp-Apim-Subscription-Key": String(env.AZURE_DOCUMENT_INTELLIGENCE_KEY || "") }
     });
     if (!response.ok) throw new Error(`Fallback extraction status failed (${response.status}).`);
     last = await response.json();
@@ -1693,8 +2022,11 @@ async function pollAzure(env, operationUrl) {
   throw new Error("The bank statement extractor timed out. Try a smaller file.");
 }
 
+/** @param {string[]} pages
+ * @returns {TransactionRow[]}
+ */
 function parseTransactionsFromPages(pages) {
-  const rows = [];
+  const rows = /** @type {TransactionRow[]} */ ([]);
   pages.forEach((pageText, index) => {
     const year = inferStatementYear(pageText);
     for (const line of candidateLines(pageText)) {
@@ -1705,6 +2037,9 @@ function parseTransactionsFromPages(pages) {
   return dedupeRows(inferDirections(rows));
 }
 
+/** @param {unknown} text
+ * @returns {string[]}
+ */
 function candidateLines(text) {
   const lines = String(text || "")
     .replace(/\u00a0/g, " ")
@@ -1724,6 +2059,9 @@ function candidateLines(text) {
   return splitLineOnDates(String(text || "").replace(/\s+/g, " ").trim());
 }
 
+/** @param {string} line
+ * @returns {string[]}
+ */
 function splitLineOnDates(line) {
   const dateMatches = [...line.matchAll(new RegExp(DATE_PATTERN, "gi"))];
   if (dateMatches.length <= 1) return [line];
@@ -1734,6 +2072,11 @@ function splitLineOnDates(line) {
   });
 }
 
+/** @param {string} line
+ * @param {number} page
+ * @param {string} defaultYear
+ * @returns {TransactionRow | null}
+ */
 function parseTransactionLine(line, page, defaultYear) {
   if (line.length < 8 || isNonTransactionLine(line)) return null;
   const dateMatch = line.match(DATE_PATTERN);
@@ -1768,12 +2111,18 @@ function parseTransactionLine(line, page, defaultYear) {
   };
 }
 
+/** @param {string} line
+ * @returns {boolean}
+ */
 function isNonTransactionLine(line) {
   return /(?:opening|closing|available|current)\s+balance/i.test(line) ||
     /statement\s+(?:period|date)|account\s+(?:number|summary)|page\s+\d+\s+of/i.test(line) ||
     /date\s+.*(?:description|details).*(?:amount|debit|credit|balance)/i.test(line);
 }
 
+/** @param {string} text
+ * @returns {MoneyToken[]}
+ */
 function extractMoneyTokens(text) {
   const tokens = [];
   for (const match of text.matchAll(MONEY_PATTERN)) {
@@ -1786,6 +2135,10 @@ function extractMoneyTokens(text) {
   return tokens;
 }
 
+/** @param {string} description
+ * @param {number} amount
+ * @returns {"in" | "out"}
+ */
 function directionFromText(description, amount) {
   if (Number(amount) < 0) return "out";
   if (/\b(?:deposit|credit|payroll|salary|interest|refund|reversal|received|incoming|payout|ach credit|zelle from)\b/i.test(description) ||
@@ -1798,6 +2151,9 @@ function directionFromText(description, amount) {
   return "out";
 }
 
+/** @param {TransactionRow[]} rows
+ * @returns {TransactionRow[]}
+ */
 function inferDirections(rows) {
   const normalized = rows.map((row) => ({ ...row }));
   for (let index = 1; index < normalized.length; index += 1) {
@@ -1814,11 +2170,18 @@ function inferDirections(rows) {
   return normalized.map(({ _amount, ...row }) => row);
 }
 
+/** @param {unknown} text
+ * @returns {string}
+ */
 function inferStatementYear(text) {
   const years = String(text || "").match(/\b20\d{2}\b/g);
   return years?.[0] || String(new Date().getUTCFullYear());
 }
 
+/** @param {unknown} value
+ * @param {string} defaultYear
+ * @returns {string}
+ */
 function parseDateToken(value, defaultYear) {
   const text = String(value || "").replace(",", "").replace(".", "").trim();
   const iso = text.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
@@ -1847,10 +2210,16 @@ function parseDateToken(value, defaultYear) {
   return "";
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function normalizeYear(value) {
   return String(value).length === 2 ? `20${value}` : String(value);
 }
 
+/** @param {Record<string, any>} row
+ * @returns {number}
+ */
 function rowConfidence(row) {
   let score = 0.45;
   if (row.date) score += 0.18;
@@ -1860,6 +2229,11 @@ function rowConfidence(row) {
   return clamp(score, 0, 0.92);
 }
 
+/** @param {TransactionRow[]} rows
+ * @param {string[]} pages
+ * @param {number} totalPages
+ * @returns {number}
+ */
 function scoreParserConfidence(rows, pages, totalPages) {
   const normalized = normalizeRows(rows);
   if (!normalized.length) return 0;
@@ -1868,8 +2242,11 @@ function scoreParserConfidence(rows, pages, totalPages) {
   return clamp(0.72 * rowScore + 0.28 * textDensity, 0, 0.9);
 }
 
+/** @param {Record<string, any>} analyzeResult
+ * @returns {TransactionRow[]}
+ */
 function extractAzureRows(analyzeResult) {
-  const rows = [];
+  const rows = /** @type {TransactionRow[]} */ ([]);
   for (const document of analyzeResult?.documents || []) {
     collectAzureTransactionRows(document.fields, rows);
   }
@@ -1877,15 +2254,19 @@ function extractAzureRows(analyzeResult) {
   return dedupeRows(rows);
 }
 
+/** @param {any} value
+ * @param {TransactionRow[]} rows
+ * @returns {void}
+ */
 function collectAzureTransactionRows(value, rows) {
   if (!value) return;
   if (Array.isArray(value)) {
-    value.forEach((item) => collectAzureTransactionRows(item, rows));
+    value.forEach((/** @type {any} */ item) => collectAzureTransactionRows(item, rows));
     return;
   }
 
   if (value.valueArray) {
-    value.valueArray.forEach((item) => {
+    value.valueArray.forEach((/** @type {any} */ item) => {
       const row = azureObjectToRow(item.valueObject || item);
       if (isLikelyTransaction(row)) rows.push(row);
       else collectAzureTransactionRows(item.valueObject || item, rows);
@@ -1904,8 +2285,11 @@ function collectAzureTransactionRows(value, rows) {
   }
 }
 
+/** @param {Record<string, any> | undefined} [object]
+ * @returns {TransactionRow}
+ */
 function azureObjectToRow(object = {}) {
-  const field = (names) => getField(object, names);
+  const field = (/** @type {string[]} */ names) => getField(object, names);
   const dateField = field(["date", "transactionDate", "postedDate", "postingDate", "valueDate"]);
   const descriptionField = field(["description", "details", "memo", "merchant", "payee", "transactionDescription"]);
   const amountField = field(["amount", "transactionAmount"]);
@@ -1923,8 +2307,8 @@ function azureObjectToRow(object = {}) {
   }
 
   return {
-    date: fieldValue(dateField),
-    description: fieldValue(descriptionField),
+    date: String(fieldValue(dateField)),
+    description: String(fieldValue(descriptionField)),
     money_in: moneyIn,
     money_out: moneyOut,
     balance: moneyValue(balanceField),
@@ -1937,10 +2321,13 @@ function azureObjectToRow(object = {}) {
   };
 }
 
+/** @param {Record<string, any>[]} tables
+ * @returns {TransactionRow[]}
+ */
 function extractRowsFromTables(tables) {
-  const rows = [];
+  const rows = /** @type {TransactionRow[]} */ ([]);
   for (const table of tables) {
-    const grid = [];
+    const grid = /** @type {string[][]} */ ([]);
     for (const cell of table.cells || []) {
       grid[cell.rowIndex] ||= [];
       grid[cell.rowIndex][cell.columnIndex] = cell.content || "";
@@ -1973,8 +2360,11 @@ function extractRowsFromTables(tables) {
   return rows;
 }
 
+/** @param {string[]} headers
+ * @returns {{ date: number, description: number, moneyIn: number, moneyOut: number, amount: number, balance: number }}
+ */
 function mapHeaderIndexes(headers) {
-  const find = (tests) => headers.findIndex((header) => tests.some((test) => header.includes(test)));
+  const find = (/** @type {string[]} */ tests) => headers.findIndex((header) => tests.some((test) => header.includes(test)));
   return {
     date: find(["date", "posted", "posting"]),
     description: find(["description", "details", "memo", "merchant", "payee"]),
@@ -1985,6 +2375,12 @@ function mapHeaderIndexes(headers) {
   };
 }
 
+/** @param {Env} env
+ * @param {string} fileName
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<ExtractionProposal>}
+ */
 async function extractWithCloudflareAi(env, fileName, arrayBuffer, options = {}) {
   await assertPdfDecryptable(arrayBuffer, options);
   const markdown = await pdfToMarkdown(env, fileName, arrayBuffer);
@@ -1992,12 +2388,18 @@ async function extractWithCloudflareAi(env, fileName, arrayBuffer, options = {})
   return { provider: "cloudflare-ai", ...extracted };
 }
 
+/** @param {Env} env
+ * @param {string} fileName
+ * @param {ArrayBuffer} arrayBuffer
+ * @returns {Promise<string>}
+ */
 async function pdfToMarkdown(env, fileName, arrayBuffer) {
   // upstream: https://developers.cloudflare.com/workers-ai/features/markdown-conversion/ toMarkdown takes conversion options, not gateway options
-  const result = await env.AI.toMarkdown({
+  const toMarkdownResponse = await env.AI.toMarkdown({
     name: fileName,
     blob: new Blob([arrayBuffer], { type: "application/pdf" })
   });
+  const result = /** @type {Record<string, any>} */ (toMarkdownResponse);
 
   const normalized = Array.isArray(result) ? result[0] : result;
   if (!normalized || normalized.format === "error") {
@@ -2018,6 +2420,11 @@ async function pdfToMarkdown(env, fileName, arrayBuffer) {
   return markdown;
 }
 
+/** @param {Env} env
+ * @param {string} markdown
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<{ confidence: number, currency: string, warnings: string[], transactions: TransactionRow[] }>}
+ */
 async function extractTransactions(env, markdown, options = {}) {
   const maxChunks = options.previewPages ? 1 : MAX_STATEMENT_CHUNKS;
   const chunks = chunkStatementText(markdown, maxChunks);
@@ -2025,12 +2432,12 @@ async function extractTransactions(env, markdown, options = {}) {
     throw new Error("The AI extractor found no readable statement text. No charge was made.");
   }
 
-  const merged = {
+  const merged = /** @type {{ confidence: number, currency: string, warnings: string[], transactions: TransactionRow[] }} */ ({
     confidence: 0,
     currency: "",
     warnings: [],
     transactions: []
-  };
+  });
 
   for (let index = 0; index < chunks.length; index += 1) {
     const result = await extractTransactionChunk(env, chunks[index], {
@@ -2052,12 +2459,18 @@ async function extractTransactions(env, markdown, options = {}) {
   };
 }
 
+/** @param {Env} env
+ * @param {string} chunk
+ * @param {ConvertOptions} [options]
+ * @returns {Promise<Record<string, any>>}
+ */
 async function extractTransactionChunk(env, chunk, options = {}) {
   const previewInstruction = options.previewPages
     ? "For preview mode, extract only the first 10 transaction rows visible near the beginning of the statement."
     : "Extract all transaction rows.";
-  const position = options.chunk?.total > 1
-    ? ` This is part ${options.chunk.index + 1} of ${options.chunk.total} of the same statement. Return only rows visible in this part, and never rows from another part.`
+  const chunkTotal = Number(options.chunk?.total);
+  const position = chunkTotal > 1
+    ? ` This is part ${(options.chunk?.index || 0) + 1} of ${options.chunk?.total || 0} of the same statement. Return only rows visible in this part, and never rows from another part.`
     : "";
   const maxTokens = Number(env.STATEMENT_MAX_TOKENS || STATEMENT_MAX_TOKENS);
   const response = await env.AI.run(
@@ -2092,6 +2505,10 @@ async function extractTransactionChunk(env, chunk, options = {}) {
   return parseAiJson(response);
 }
 
+/** @param {string} markdown
+ * @param {number} [maxChunks]
+ * @returns {string[]}
+ */
 function chunkStatementText(markdown, maxChunks = MAX_STATEMENT_CHUNKS) {
   const text = String(markdown || "").trim();
   if (!text) return [];
@@ -2101,7 +2518,7 @@ function chunkStatementText(markdown, maxChunks = MAX_STATEMENT_CHUNKS) {
     .map((page) => page.trim())
     .filter(Boolean);
 
-  const chunks = [];
+  const chunks = /** @type {string[]} */ ([]);
   let current = "";
   for (const piece of byPage.length > 1 ? byPage : text.split("\n")) {
     if (piece.length > STATEMENT_CHUNK_CHARS) {
@@ -2149,6 +2566,9 @@ function chunkStatementText(markdown, maxChunks = MAX_STATEMENT_CHUNKS) {
   return chunks;
 }
 
+/** @param {Record<string, any>} response
+ * @returns {Record<string, any>}
+ */
 function parseAiJson(response) {
   if (!response) throw new Error("The AI extractor returned no data.");
   if (response.transactions) return response;
@@ -2165,8 +2585,12 @@ function parseAiJson(response) {
   throw new Error("The AI extractor did not return valid transaction rows.");
 }
 
+/** @param {unknown[] | null} rows
+ * @returns {TransactionRow[]}
+ */
 function normalizeRows(rows) {
-  return (Array.isArray(rows) ? rows : [])
+  const items = Array.isArray(rows) ? /** @type {Record<string, any>[]} */ (rows) : [];
+  return items
     .map((row) => ({
       date: normalizeDate(row.date),
       description: String(row.description || "").trim().slice(0, 220),
@@ -2179,6 +2603,9 @@ function normalizeRows(rows) {
     .filter((row) => row.date || row.description || hasNumber(row.money_in) || hasNumber(row.money_out));
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function normalizeDate(value) {
   const text = String(value || "").trim();
   const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -2186,9 +2613,14 @@ function normalizeDate(value) {
   return parseDateToken(text, String(new Date().getUTCFullYear())) || text.slice(0, 10);
 }
 
+/** @param {unknown} value
+ * @returns {string | number}
+ */
 function normalizeNumber(value) {
   if (value === null || value === undefined || value === "") return "";
-  if (typeof value === "object" && Number.isFinite(Number(value.amount))) return Number(value.amount);
+  if (value !== null && typeof value === "object" && Number.isFinite(Number(/** @type {Record<string, any>} */ (value).amount))) {
+    return Number(/** @type {Record<string, any>} */ (value).amount);
+  }
   const text = String(value);
   const negative = /^\(.*\)$/.test(text) || /-\s*\$?/.test(text);
   const number = Number(text.replace(/[^\d.]/g, ""));
@@ -2196,12 +2628,18 @@ function normalizeNumber(value) {
   return negative ? -number : number;
 }
 
+/** @param {Record<string, any> | null} field
+ * @returns {string | number}
+ */
 function moneyValue(field) {
   if (!field) return "";
   if (field.valueCurrency && Number.isFinite(Number(field.valueCurrency.amount))) return Number(field.valueCurrency.amount);
   return normalizeNumber(fieldValue(field));
 }
 
+/** @param {Record<string, any> | null} field
+ * @returns {string | number}
+ */
 function fieldValue(field) {
   if (!field) return "";
   if (field.valueDate) return field.valueDate;
@@ -2213,11 +2651,18 @@ function fieldValue(field) {
   return "";
 }
 
+/** @param {Record<string, any> | undefined} object
+ * @param {string[]} names
+ * @returns {Record<string, any> | null}
+ */
 function getField(object, names) {
   const wanted = new Set(names.map(normalizeKey));
   return Object.entries(object || {}).find(([key]) => wanted.has(normalizeKey(key)))?.[1] || null;
 }
 
+/** @param {any[]} fields
+ * @returns {string | number}
+ */
 function firstPage(fields) {
   for (const field of fields) {
     const page = field?.boundingRegions?.[0]?.pageNumber;
@@ -2226,10 +2671,16 @@ function firstPage(fields) {
   return "";
 }
 
+/** @param {Record<string, any>} row
+ * @returns {boolean}
+ */
 function isLikelyTransaction(row) {
   return Boolean(row.date && row.description && (hasNumber(row.money_in) || hasNumber(row.money_out)));
 }
 
+/** @param {TransactionRow[]} rows
+ * @returns {TransactionRow[]}
+ */
 function dedupeRows(rows) {
   const seen = new Set();
   return rows.filter((row) => {
@@ -2240,38 +2691,66 @@ function dedupeRows(rows) {
   });
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function normalizeKey(value) {
   return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+/** @param {unknown} value
+ * @returns {boolean}
+ */
 function hasNumber(value) {
   return value !== "" && value !== null && value !== undefined && Number.isFinite(Number(value));
 }
 
+/** @param {number[]} values
+ * @returns {number}
+ */
 function average(values) {
   const valid = values.filter(Number.isFinite);
   if (!valid.length) return 0;
   return valid.reduce((sum, value) => sum + value, 0) / valid.length;
 }
 
+/** @template T
+ * @param {T[]} values
+ * @param {(value: T) => boolean} predicate
+ * @returns {number}
+ */
 function ratio(values, predicate) {
   if (!values.length) return 0;
   return values.filter(predicate).length / values.length;
 }
 
+/** @param {number} value
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
 function clamp(value, min, max) {
   if (!Number.isFinite(value)) return min;
   return Math.min(max, Math.max(min, value));
 }
 
+/** @param {number} value
+ * @returns {number}
+ */
 function roundMoney(value) {
   return Math.round(Number(value) * 100) / 100;
 }
 
+/** @param {number} ms
+ * @returns {Promise<void>}
+ */
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** @param {ArrayBuffer} arrayBuffer
+ * @returns {string}
+ */
 function arrayBufferToBase64(arrayBuffer) {
   const bytes = new Uint8Array(arrayBuffer);
   let binary = "";

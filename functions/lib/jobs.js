@@ -50,7 +50,7 @@ export function sourceAvailableForRedo(job) {
   return Date.now() - createdAt < SOURCE_RETENTION_SECONDS * 1000;
 }
 
-/** @param {JobRow | null | undefined} job
+/** @param {{ created_at?: string, source_deleted_at?: string } | null | undefined} job
  * @returns {string}
  */
 export function sourceExpiresAt(job) {
@@ -60,7 +60,7 @@ export function sourceExpiresAt(job) {
   return new Date(createdAt + SOURCE_RETENTION_SECONDS * 1000).toISOString();
 }
 
-/** @param {JobRow | null | undefined} job
+/** @param {{ created_at?: string, expires_at?: string, source_deleted_at?: string } | null | undefined} job
  */
 export function retentionFields(job) {
   return {
@@ -331,7 +331,7 @@ export function normalizeOutputFormat(value, converterId = "bank") {
   return "csv";
 }
 
-/** @param {string} [resultKey]
+/** @param {string | undefined} [resultKey]
  * @returns {string}
  */
 export function outputFormatFromResultKey(resultKey = "") {

@@ -9,10 +9,16 @@ import {
   tokenFromJobCookie
 } from "../lib/jobs.js";
 
+/** @typedef {import("../lib/jobs.js").JobExpiryOutcome} JobExpiryOutcome
+ */
+
 export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -31,7 +37,7 @@ export async function onRequestPost({ request, env }) {
   const job = await getAuthorizedJob(env, jobId, token);
   if (!job) return badRequest("Unknown or expired conversion.");
 
-  const deletedJob = await deleteJobData(env, job);
+  const deletedJob = /** @type {JobExpiryOutcome | null} */ (await deleteJobData(env, job));
   if (!deletedJob || deletedJob.deletionCompleted === false) {
     return serverError(
       "Deletion did not complete: the file storage service is temporarily unavailable and not all files could be removed. " +
@@ -40,7 +46,7 @@ export async function onRequestPost({ request, env }) {
     );
   }
 
-  const headers = tokenFromJobCookie(request, jobId) ? { "Set-Cookie": clearJobAccessCookie() } : {};
+  const headers = tokenFromJobCookie(request, jobId) ? { "Set-Cookie": clearJobAccessCookie() } : /** @type {Record<string, string>} */ ({});
 
   return json(
     {
@@ -49,6 +55,6 @@ export async function onRequestPost({ request, env }) {
       ...retentionFields(deletedJob),
       message: "This conversion and its stored files were deleted."
     },
-    { headers }
+    { headers: /** @type {HeadersInit} */ (headers) }
   );
 }

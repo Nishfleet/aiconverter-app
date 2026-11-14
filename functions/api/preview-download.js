@@ -1,6 +1,9 @@
 import { badRequest, methodNotAllowed, serverError, withSecurityHeaders } from "../lib/http.js";
 import { getAuthorizedJob, hasRequiredBindings, tokenFromBodyOrCookie } from "../lib/jobs.js";
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost(context) {
   return handlePreviewDownload(context);
 }
@@ -9,6 +12,9 @@ export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 async function handlePreviewDownload({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -38,6 +44,9 @@ async function handlePreviewDownload({ request, env }) {
   );
 }
 
+/** @param {Request} request
+ * @returns {Promise<{ jobId: string, token: string }>}
+ */
 async function previewCredentials(request) {
   const url = new URL(request.url);
   const authorization = request.headers.get("Authorization") || "";
@@ -50,6 +59,9 @@ async function previewCredentials(request) {
   };
 }
 
+/** @param {Request} request
+ * @returns {Promise<Record<string, any>>}
+ */
 async function readPreviewBody(request) {
   const contentType = request.headers.get("Content-Type") || "";
   if (contentType.includes("application/json")) return request.json().catch(() => ({}));
@@ -59,6 +71,9 @@ async function readPreviewBody(request) {
   return {};
 }
 
+/** @param {JobRow} job
+ * @returns {string}
+ */
 function previewFileName(job) {
   const base = String(job.original_file_name || "conversion")
     .replace(/\.[^.]+$/, "")

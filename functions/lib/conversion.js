@@ -4,6 +4,13 @@ import { requestDodoRefund } from "./dodo.js";
 import { startUniversalProviderConversion } from "./universal-providers.js";
 import { isUniversalConverter } from "./universal.js";
 
+/** @typedef {import("./extract.js").ConvertOptions} ConvertOptions
+ * @typedef {{ ok: boolean, message?: string, confidence: number, rowCount: number, refundStatus?: string, previewRows?: Record<string, unknown>[], columns?: { key: string, label?: string }[], outputFormat?: string, validationReportAvailable?: boolean, pending?: boolean, job?: JobRow, status?: string }} FullConversionOutcome
+ * @param {Env} env
+ * @param {JobRow} job
+ * @param {{ cashRefund?: boolean, convertOptions?: Partial<ConvertOptions>, deleteSource?: boolean }} [options]
+ * @returns {Promise<FullConversionOutcome>}
+ */
 export async function runFullConversion(env, job, options = {}) {
   if (!job?.source_key || !job?.result_key) {
     throw new Error("The original file is no longer available.");
@@ -24,11 +31,11 @@ export async function runFullConversion(env, job, options = {}) {
       if (!started.ok) {
         await env.AICONVERTER_BUCKET.delete(job.source_key).catch(() => {});
         const refund = job.paid_at
-          ? await requestDodoRefund(env, job, started.message, { cashRefund: options.cashRefund !== false })
+          ? await requestDodoRefund(env, job, started.message || "", { cashRefund: options.cashRefund !== false })
           : { status: "", refundId: "" };
         await updateJob(env, job.id, {
           status: "failed",
-          error: started.message,
+          error: started.message || "",
           confidence: 0,
           row_count: 0,
           source_deleted_at: new Date().toISOString(),
@@ -44,7 +51,7 @@ export async function runFullConversion(env, job, options = {}) {
           refundStatus: refund.status || ""
         };
       }
-      return started;
+      return /** @type {FullConversionOutcome} */ (started);
     }
 
     const converted = await convertFileToCsv(
@@ -65,11 +72,11 @@ export async function runFullConversion(env, job, options = {}) {
     if (!converted.ok) {
       await env.AICONVERTER_BUCKET.delete(job.source_key).catch(() => {});
       const refund = job.paid_at
-        ? await requestDodoRefund(env, job, converted.message, { cashRefund: options.cashRefund !== false })
+        ? await requestDodoRefund(env, job, converted.message || "", { cashRefund: options.cashRefund !== false })
         : { status: "", refundId: "" };
       await updateJob(env, job.id, {
         status: "failed",
-        error: converted.message,
+        error: converted.message || "",
         confidence: converted.confidence || 0,
         row_count: converted.rowCount || 0,
         source_deleted_at: new Date().toISOString(),
@@ -86,7 +93,7 @@ export async function runFullConversion(env, job, options = {}) {
       };
     }
 
-    await env.AICONVERTER_BUCKET.put(job.result_key, converted.content || converted.csv, {
+    await env.AICONVERTER_BUCKET.put(job.result_key, converted.content || converted.csv || "", {
       httpMetadata: { contentType: converted.contentType || "text/csv; charset=utf-8" },
       customMetadata: {
         jobId: job.id,
@@ -96,7 +103,7 @@ export async function runFullConversion(env, job, options = {}) {
     });
     const validationReportKey = converted.validationReport ? `jobs/${job.id}/validation-report.txt` : "";
     if (validationReportKey) {
-      await env.AICONVERTER_BUCKET.put(validationReportKey, converted.validationReport, {
+      await env.AICONVERTER_BUCKET.put(validationReportKey, converted.validationReport || "", {
         httpMetadata: { contentType: "text/plain; charset=utf-8" },
         customMetadata: {
           jobId: job.id,
@@ -110,8 +117,8 @@ export async function runFullConversion(env, job, options = {}) {
     if (options.deleteSource) await env.AICONVERTER_BUCKET.delete(job.source_key).catch(() => {});
     await updateJob(env, job.id, {
       status: "complete",
-      confidence: converted.confidence,
-      row_count: converted.rowCount,
+      confidence: converted.confidence || 0,
+      row_count: converted.rowCount || 0,
       ...(sourceDeletedAt ? { source_deleted_at: sourceDeletedAt } : {}),
       completed_at: new Date().toISOString(),
       extractor: converted.provider || "",
@@ -122,12 +129,13 @@ export async function runFullConversion(env, job, options = {}) {
       ok: true,
       previewRows: converted.previewRows,
       columns: converted.columns || [],
-      confidence: converted.confidence,
-      rowCount: converted.rowCount,
+      confidence: converted.confidence || 0,
+      rowCount: converted.rowCount || 0,
       outputFormat: converted.outputFormat || jobOutputFormat(job),
       validationReportAvailable: Boolean(validationReportKey)
     };
-  } catch (error) {
+  } catch (catchError) {
+    const error = /** @type {Record<string, any>} */ (catchError);
     const message = error?.message || "The full converted file could not be generated.";
     if (job.paid_at) {
       await env.AICONVERTER_BUCKET.delete(job.source_key).catch(() => {});
@@ -158,6 +166,9 @@ export async function runFullConversion(env, job, options = {}) {
   }
 }
 
+/** @param {string} [value]
+ * @returns {Record<string, unknown>}
+ */
 function parseAccountingMetadata(value = "") {
   if (!value) return {};
   try {

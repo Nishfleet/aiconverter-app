@@ -39,6 +39,9 @@ export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -151,7 +154,7 @@ export async function onRequestPost({ request, env }) {
     return badRequest(uploadError);
   }
   const accountingMetadata =
-    converterId === "bank" ? sanitizeBankMetadata(form.get("accountingMetadata") || {}) : {};
+    converterId === "bank" ? sanitizeBankMetadata(/** @type {string | Record<string, unknown> | undefined} */ (/** @type {unknown} */ (form.get("accountingMetadata")) || undefined)) : {};
   const missingMetadata =
     converterId === "bank" ? missingBankMetadata(outputFormat, accountingMetadata) : [];
   if (missingMetadata.length) {
@@ -166,7 +169,7 @@ export async function onRequestPost({ request, env }) {
   const clientEstimate = Number(form.get("estimatedPages") || 25);
   const clientEstimatedPages = Number.isFinite(clientEstimate) ? Math.max(1, clientEstimate) : 25;
   const isPdf = String(file.type || "").toLowerCase() === "application/pdf" || fileName.toLowerCase().endsWith(".pdf");
-  let passwordBlocked = false;
+  let passwordBlocked = /** @type {boolean | "required" | "incorrect"} */ (false);
   const detectedPages = isPdf
     ? (await detectPdfPageCount(arrayBuffer, { pdfPassword })
         .then((pages) => pages)
@@ -280,7 +283,7 @@ export async function onRequestPost({ request, env }) {
         converted.errorCode === "pdf_incorrect_password";
       await updateJob(env, jobId, {
         status: "failed",
-        error: converted.message,
+        error: converted.message || "",
         confidence: converted.confidence || 0,
         row_count: converted.rowCount || 0,
         source_deleted_at: new Date().toISOString(),
@@ -311,7 +314,7 @@ export async function onRequestPost({ request, env }) {
       });
     }
 
-    await env.AICONVERTER_BUCKET.put(previewKey, converted.csv, {
+    await env.AICONVERTER_BUCKET.put(previewKey, converted.csv || "", {
       httpMetadata: { contentType: "text/csv; charset=utf-8" },
       customMetadata: {
         jobId,
@@ -323,8 +326,8 @@ export async function onRequestPost({ request, env }) {
     await updateJob(env, jobId, {
       status: "preview_ready",
       preview_key: previewKey,
-      confidence: converted.confidence,
-      row_count: converted.rowCount,
+      confidence: converted.confidence || 0,
+      row_count: converted.rowCount || 0,
       extractor: converted.provider || ""
     });
     await safeRecordFunnelEvent(env, request, {
@@ -348,7 +351,8 @@ export async function onRequestPost({ request, env }) {
       ...retentionFields({ created_at: now, expires_at: expiresAt }),
       message: `Preview ready. Pay once to run the full extraction and download the ${outputFormatLabel(outputFormat)}.`
     });
-  } catch (error) {
+  } catch (catchError) {
+    const error = /** @type {Record<string, any>} */ (catchError);
     await env.AICONVERTER_BUCKET.delete(sourceKey).catch(() => {});
     await updateJob(env, jobId, {
       status: "failed",
@@ -380,21 +384,36 @@ export async function onRequestPost({ request, env }) {
   }
 }
 
+/** @param {unknown} value
+ * @param {number} fallback
+ * @returns {number}
+ */
 function positiveNumber(value, fallback) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : fallback;
 }
 
+/** @param {Env} env
+ * @param {Request} request
+ * @param {Record<string, unknown>} event
+ * @returns {Promise<void>}
+ */
 async function safeRecordFunnelEvent(env, request, event) {
   await recordFunnelEvent(env, request, event).catch(() => {});
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function sanitizePdfPasswordInput(value) {
   if (value === undefined || value === null) return "";
   const normalized = String(value);
   return normalized.slice(0, 256);
 }
 
+/** @param {File} [file]
+ * @returns {string}
+ */
 function inputKindForUpload(file) {
   const type = String(file?.type || "").toLowerCase();
   const name = String(file?.name || "").toLowerCase();
@@ -407,6 +426,9 @@ function inputKindForUpload(file) {
   return "other";
 }
 
+/** @param {File} [file]
+ * @returns {string}
+ */
 function fileSizeBucketForUpload(file) {
   const size = Number(file?.size || 0);
   if (!size) return "";
@@ -417,6 +439,9 @@ function fileSizeBucketForUpload(file) {
   return "over_50mb";
 }
 
+/** @param {number} [count]
+ * @returns {string}
+ */
 function pageBucketForEstimate(count) {
   const value = Number(count || 0);
   if (!value) return "";
@@ -427,8 +452,11 @@ function pageBucketForEstimate(count) {
   return "over_500";
 }
 
+/** @param {string} [format]
+ * @returns {string}
+ */
 function outputFormatLabel(format) {
-  const labels = {
+  const labels = /** @type {Record<string, string>} */ ({
     csv: "CSV",
     "quickbooks-csv": "QuickBooks CSV",
     "xero-csv": "Xero CSV",
@@ -461,6 +489,6 @@ function outputFormatLabel(format) {
     zip: "ZIP",
     "7z": "7Z",
     tar: "TAR"
-  };
-  return labels[format] || "converted file";
+  });
+  return labels[/** @type {string} */ (format || "")] || "converted file";
 }

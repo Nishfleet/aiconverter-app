@@ -11,12 +11,15 @@ interface Env {
   // Vars and secrets. Declared optional because each one is absent on a
   // branch/preview deployment; the functions already guard for that.
   ADMIN_TOKEN?: string;
+  AI_GATEWAY_ENABLED?: string;
   ALLOW_CLOUDFLARE_FALLBACK?: string;
   ALLOW_RUNTIME_RATE_LIMIT_SALT?: string;
   AUTO_REFUND_AFTER_DOWNLOAD?: string;
   AUTO_REFUNDS_ENABLED?: string;
   AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT?: string;
   AZURE_DOCUMENT_INTELLIGENCE_KEY?: string;
+  AZURE_DOCUMENT_INTELLIGENCE_MODEL?: string;
+  AZURE_DOCUMENT_INTELLIGENCE_API_VERSION?: string;
   CHECKOUT_BATCH_URL?: string;
   CHECKOUT_CURRENCY?: string;
   CHECKOUT_PRO_URL?: string;
@@ -51,12 +54,21 @@ interface Env {
   ENABLE_AZURE_FALLBACK?: string;
   FREE_DOWNLOADS_ENABLED?: string;
   GOOGLE_SHEETS_ADDON_CLIENT_IDS?: string;
+  SHEETS_ADDON_MAX_UPLOADS_PER_ACCOUNT_HOUR?: string;
+  SHEETS_ADDON_MAX_UPLOADS_PER_HOUR?: string;
   MISTRAL_API_KEY?: string;
+  MISTRAL_OCR_MODEL?: string;
+  MISTRAL_PREVIEW_PAGE_LIMIT?: string;
+  OCR_PREVIEW_PAGE_LIMIT?: string;
   PAYMENT_CURRENCY?: string;
   RATE_LIMIT_MAX_PER_HOUR?: string;
   RATE_LIMIT_SALT?: string;
+  SCREENSHOT_CODE_MAX_TOKENS?: string;
+  SCREENSHOT_CODE_MODEL?: string;
+  STATEMENT_MAX_TOKENS?: string;
   TURNSTILE_SECRET_KEY?: string;
   TURNSTILE_SITE_KEY?: string;
+  WHISPER_MODEL?: string;
 }
 
 /**
@@ -134,10 +146,21 @@ interface ConversionResult {
   provider?: string;
   outputFormat?: string;
   refundStatus?: string;
-  previewRows?: Record<string, string>[];
-  columns?: { key: string; label: string }[];
+  previewRows?: Record<string, unknown>[];
+  columns?: Array<{ key: string; label?: string }>;
   guardrails?: unknown;
   attempts?: { provider: string; message: string }[];
+  csv?: string;
+  content?: string;
+  contentType?: string;
+  fileExtension?: string;
+  trustScore?: number;
+  warnings?: string[];
+  transactions?: unknown[];
+  validationReport?: string | null;
+  validationReportAvailable?: boolean;
+  validationChecks?: Record<string, unknown>;
+  errorCode?: string;
 }
 
 interface ProviderUsage {

@@ -1,6 +1,9 @@
 import { badRequest, methodNotAllowed, serverError, withSecurityHeaders } from "../lib/http.js";
 import { getAuthorizedJob, hasRequiredBindings, tokenFromBodyOrCookie } from "../lib/jobs.js";
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost(context) {
   return handleValidationReport(context);
 }
@@ -9,6 +12,9 @@ export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 async function handleValidationReport({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -36,6 +42,9 @@ async function handleValidationReport({ request, env }) {
   );
 }
 
+/** @param {Request} request
+ * @returns {Promise<{ jobId: string, token: string }>}
+ */
 async function readCredentials(request) {
   const body = await request.json().catch(() => ({}));
   return {
@@ -44,6 +53,9 @@ async function readCredentials(request) {
   };
 }
 
+/** @param {JobRow} job
+ * @returns {string}
+ */
 function reportFileName(job) {
   const stem = String(job.original_file_name || "bank-statement")
     .replace(/\.[a-z0-9]+$/i, "")

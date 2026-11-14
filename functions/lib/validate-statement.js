@@ -1,5 +1,19 @@
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+/** @typedef {{ valid: number, ratio: number, spanDays: number, score: number }} DateCoverage
+ * @typedef {{ valid: number, ratio: number, score: number }} ScalarCoverage
+ * @typedef {{ bothColumns: number, ratio: number, score: number }} OneSidedMoney
+ * @typedef {{ checked: number, matched: number, ratio: number, score: number, direction?: string }} RunningBalance
+ * @typedef {{ count: number, ratio: number, score: number }} DuplicateCheck
+ * @typedef {{ numberedRows: number, numberedRatio: number, coveredPages: number, expectedPages: number, score: number }} PageCoverage
+ * @typedef {{ dateCoverage: DateCoverage, amountCoverage: ScalarCoverage, oneSidedMoney: OneSidedMoney, runningBalance: RunningBalance, duplicates: DuplicateCheck, pageCoverage: PageCoverage, rowConfidence: number }} ValidationChecks
+ * @typedef {{ ok: boolean, message: string, confidence: number, trustScore: number, rowCount: number, warnings: string[], checks: ValidationChecks }} ValidationReport
+ * @typedef {import("./extract.js").ConvertOptions} ConvertOptions
+ * @param {Record<string, any>[]} rows
+ * @param {number} [modelConfidence]
+ * @param {{ previewPages?: number, parsedPages?: number, totalPages?: number, estimatedPages?: number }} [options]
+ * @returns {ValidationReport}
+ */
 export function validateStatementRows(rows, modelConfidence = 0, options = {}) {
   const normalized = normalizeRows(rows);
   const rowCount = normalized.length;
@@ -63,6 +77,11 @@ export function validateStatementRows(rows, modelConfidence = 0, options = {}) {
   };
 }
 
+/** @param {ValidationChecks} checks
+ * @param {number} rowCount
+ * @param {{ previewPages?: number, parsedPages?: number, totalPages?: number, estimatedPages?: number }} options
+ * @returns {string[]}
+ */
 function validationWarnings(checks, rowCount, options) {
   const warnings = [];
   if (checks.runningBalance.checked >= 2 && checks.runningBalance.ratio < 0.85) {
@@ -91,6 +110,9 @@ function validationWarnings(checks, rowCount, options) {
   return warnings;
 }
 
+/** @param {Record<string, any>[]} rows
+ * @returns {DateCoverage}
+ */
 function dateCoverage(rows) {
   const dates = rows
     .map((row) => row.date)
@@ -108,18 +130,27 @@ function dateCoverage(rows) {
   };
 }
 
+/** @param {Record<string, any>[]} rows
+ * @returns {ScalarCoverage}
+ */
 function amountCoverage(rows) {
   const valid = rows.filter((row) => hasNumber(row.money_in) || hasNumber(row.money_out)).length;
   const ratio = valid / rows.length;
   return { valid, ratio, score: ratio };
 }
 
+/** @param {Record<string, any>[]} rows
+ * @returns {OneSidedMoney}
+ */
 function oneSidedMoney(rows) {
   const bothColumns = rows.filter((row) => hasNumber(row.money_in) && hasNumber(row.money_out)).length;
   const ratio = (rows.length - bothColumns) / rows.length;
   return { bothColumns, ratio, score: ratio };
 }
 
+/** @param {Record<string, any>[]} rows
+ * @returns {RunningBalance}
+ */
 function runningBalanceContinuity(rows) {
   const chronological = continuityForOrder(rows);
   const reverse = continuityForOrder(rows.slice().reverse());
@@ -130,6 +161,9 @@ function runningBalanceContinuity(rows) {
   };
 }
 
+/** @param {Record<string, any>[]} rows
+ * @returns {RunningBalance}
+ */
 function continuityForOrder(rows) {
   let checked = 0;
   let matched = 0;
@@ -159,6 +193,9 @@ function continuityForOrder(rows) {
   return { checked, matched, ratio, score: clamp(0.25 + 0.75 * ratio, 0, 1) };
 }
 
+/** @param {Record<string, any>[]} rows
+ * @returns {DuplicateCheck}
+ */
 function duplicateCheck(rows) {
   const seen = new Set();
   let count = 0;
@@ -177,6 +214,10 @@ function duplicateCheck(rows) {
   return { count, ratio, score: clamp(1 - ratio * 2, 0, 1) };
 }
 
+/** @param {Record<string, any>[]} rows
+ * @param {{ previewPages?: number, parsedPages?: number, totalPages?: number, estimatedPages?: number }} options
+ * @returns {PageCoverage}
+ */
 function pageCoverage(rows, options) {
   const pages = rows.map((row) => Number(row.page)).filter((page) => Number.isInteger(page) && page > 0);
   const uniquePages = new Set(pages);
@@ -201,6 +242,9 @@ function pageCoverage(rows, options) {
   };
 }
 
+/** @param {Record<string, any>} row
+ * @returns {string | number}
+ */
 function signedTransactionAmount(row) {
   const moneyIn = hasNumber(row.money_in) ? Number(row.money_in) : 0;
   const moneyOut = hasNumber(row.money_out) ? Number(row.money_out) : 0;
@@ -210,6 +254,10 @@ function signedTransactionAmount(row) {
   return "";
 }
 
+/** @param {string} message
+ * @param {{ confidence: number, rowCount: number, warnings?: string[], checks?: ValidationChecks }} result
+ * @returns {ValidationReport}
+ */
 function fail(message, result) {
   return {
     ok: false,
@@ -222,6 +270,8 @@ function fail(message, result) {
   };
 }
 
+/** @returns {ValidationChecks}
+ */
 function emptyChecks() {
   return {
     dateCoverage: { valid: 0, ratio: 0, spanDays: 0, score: 0 },
@@ -234,6 +284,9 @@ function emptyChecks() {
   };
 }
 
+/** @param {Record<string, any>[]} rows
+ * @returns {Record<string, any>[]}
+ */
 function normalizeRows(rows) {
   return (Array.isArray(rows) ? rows : [])
     .map((row) => ({
@@ -248,6 +301,9 @@ function normalizeRows(rows) {
     .filter((row) => row.date || row.description || hasNumber(row.money_in) || hasNumber(row.money_out));
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function normalizeDate(value) {
   const text = String(value || "").trim();
   const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -255,9 +311,14 @@ function normalizeDate(value) {
   return text.slice(0, 10);
 }
 
+/** @param {unknown} value
+ * @returns {string | number}
+ */
 function normalizeNumber(value) {
   if (value === null || value === undefined || value === "") return "";
-  if (typeof value === "object" && Number.isFinite(Number(value.amount))) return Number(value.amount);
+  if (value !== null && typeof value === "object" && Number.isFinite(Number(/** @type {Record<string, any>} */ (value).amount))) {
+    return Number(/** @type {Record<string, any>} */ (value).amount);
+  }
   const text = String(value);
   const negative = /^\(.*\)$/.test(text) || /-\s*\$?/.test(text);
   const number = Number(text.replace(/[^\d.]/g, ""));
@@ -265,33 +326,56 @@ function normalizeNumber(value) {
   return negative ? -number : number;
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function moneyKey(value) {
   return hasNumber(value) ? roundMoney(value).toFixed(2) : "";
 }
 
+/** @param {unknown} value
+ * @returns {string}
+ */
 function normalizeKey(value) {
   return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+/** @param {unknown} value
+ * @returns {boolean}
+ */
 function hasNumber(value) {
   return value !== "" && value !== null && value !== undefined && Number.isFinite(Number(value));
 }
 
+/** @param {unknown[]} values
+ * @returns {number}
+ */
 function average(values) {
   const valid = values.filter(Number.isFinite);
   if (!valid.length) return 0;
-  return valid.reduce((sum, value) => sum + value, 0) / valid.length;
+  return /** @type {number[]} */ (valid).reduce((sum, value) => sum + value, 0) / valid.length;
 }
 
+/** @param {number} value
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
 function clamp(value, min, max) {
   if (!Number.isFinite(value)) return min;
   return Math.min(max, Math.max(min, value));
 }
 
+/** @param {unknown} value
+ * @returns {number}
+ */
 function roundMoney(value) {
   return Math.round(Number(value) * 100) / 100;
 }
 
+/** @param {number} count
+ * @returns {string}
+ */
 function plural(count) {
   return count === 1 ? "" : "s";
 }

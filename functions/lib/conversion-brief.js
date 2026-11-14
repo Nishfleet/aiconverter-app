@@ -13,6 +13,11 @@ const CONVERTER_LABELS = {
   "universal-file": "Universal file"
 };
 
+/** @typedef {{ applicable: boolean, status: string, outputLabel: string, checks: string[], cautions?: string[] }} AccountingReadiness
+ * @param {JobRow | null | undefined} [job]
+ * @param {{ paymentEvent?: Record<string, any> | null }} [options]
+ * @returns {{ generatedAt: string, jobId: string, mode: string, status: string, converterId: string, converterLabel: string, outputFormat: string, outputLabel: string, summary: string, validation: Record<string, unknown>, payment: Record<string, unknown>, retention: Record<string, unknown>, redo: { available: boolean }, accountingReadiness: AccountingReadiness, nextActions: string[], support: Record<string, unknown>, handoffRules: string[] }}
+ */
 export function buildConversionBrief(job, options = {}) {
   const status = String(job?.status || "");
   const converterId = String(job?.converter_id || "bank");
@@ -22,6 +27,7 @@ export function buildConversionBrief(job, options = {}) {
   const mode = modeForJob(job, { paid });
   const accountingReadiness = buildAccountingReadiness(job, outputFormat);
   const redoAvailable = redoAvailableFor(job, { converterId, paid, status });
+  const converterLabel = converterId in CONVERTER_LABELS ? /** @type {keyof typeof CONVERTER_LABELS} */ (converterId) : /** @type {keyof typeof CONVERTER_LABELS} */ ("bank");
 
   return {
     generatedAt: new Date().toISOString(),
@@ -29,7 +35,7 @@ export function buildConversionBrief(job, options = {}) {
     mode,
     status,
     converterId,
-    converterLabel: CONVERTER_LABELS[converterId] || CONVERTER_LABELS.bank,
+    converterLabel,
     outputFormat,
     outputLabel: outputLabelFor(converterId, outputFormat),
     summary: summaryForJob(job, { mode, paid }),
@@ -66,6 +72,10 @@ export function buildConversionBrief(job, options = {}) {
   };
 }
 
+/** @param {JobRow | null | undefined} job
+ * @param {{ paid: boolean }} { paid }
+ * @returns {string}
+ */
 function modeForJob(job, { paid }) {
   const status = String(job?.status || "");
   if (["deleted", "expired"].includes(status)) return "expired_or_deleted";
@@ -77,6 +87,10 @@ function modeForJob(job, { paid }) {
   return "self_serve_preview";
 }
 
+/** @param {JobRow | null | undefined} job
+ * @param {{ mode: string, paid: boolean }} { mode, paid }
+ * @returns {string}
+ */
 function summaryForJob(job, { mode, paid }) {
   const status = String(job?.status || "");
   if (mode === "refund_review") return "The paid export failed after checkout. Keep the job ID and use the refund/support path.";
@@ -89,6 +103,10 @@ function summaryForJob(job, { mode, paid }) {
   return "Upload a supported file and generate a private preview first.";
 }
 
+/** @param {JobRow | null | undefined} job
+ * @param {{ mode: string, outputFormat: string, accountingReadiness: AccountingReadiness, redoAvailable: boolean }} { mode, outputFormat, accountingReadiness, redoAvailable }
+ * @returns {string[]}
+ */
 function nextActionsForJob(job, { mode, outputFormat, accountingReadiness, redoAvailable }) {
   const actions = [];
   if (mode === "refund_review") {
@@ -133,10 +151,18 @@ function nextActionsForJob(job, { mode, outputFormat, accountingReadiness, redoA
   return actions;
 }
 
+/** @param {JobRow | null | undefined} job
+ * @param {{ converterId: string, paid: boolean, status: string }} { converterId, paid, status }
+ * @returns {boolean}
+ */
 function redoAvailableFor(job, { converterId, paid, status }) {
   return paid && status === "complete" && !isUniversalConverter(converterId) && Number(job?.redo_count || 0) < 1 && sourceAvailableForRedo(job);
 }
 
+/** @param {JobRow | null | undefined} job
+ * @param {string} outputFormat
+ * @returns {AccountingReadiness}
+ */
 function buildAccountingReadiness(job, outputFormat) {
   const converterId = String(job?.converter_id || "bank");
   const applicable = converterId === "bank" && isBankOutputFormat(outputFormat);
@@ -165,11 +191,19 @@ function buildAccountingReadiness(job, outputFormat) {
   };
 }
 
+/** @param {string} converterId
+ * @param {string} outputFormat
+ * @returns {string}
+ */
 function outputLabelFor(converterId, outputFormat) {
   if (converterId === "bank" && isBankOutputFormat(outputFormat)) return bankOutputLabel(outputFormat);
   return String(outputFormat || "output").toUpperCase();
 }
 
+/** @param {JobRow | null | undefined} job
+ * @param {Record<string, any> | null | undefined} [paymentEvent]
+ * @returns {string}
+ */
 function supportCategoryFor(job, paymentEvent) {
   const eventType = String(paymentEvent?.event_type || "").toLowerCase();
   const status = String(paymentEvent?.status || "").toLowerCase();
@@ -185,6 +219,9 @@ function supportCategoryFor(job, paymentEvent) {
   return "conversion";
 }
 
+/** @param {Record<string, any> | null | undefined} [paymentEvent]
+ * @returns {boolean}
+ */
 function paymentSucceeded(paymentEvent) {
   const eventType = String(paymentEvent?.event_type || "").toLowerCase();
   const status = String(paymentEvent?.status || "").toLowerCase();
@@ -193,6 +230,10 @@ function paymentSucceeded(paymentEvent) {
   return ["succeeded", "paid", "complete", "completed"].includes(status) || ["payment.succeeded", "payment.paid", "payment.completed"].includes(eventType);
 }
 
+/** @param {string} [jobId]
+ * @param {string} [category]
+ * @returns {string}
+ */
 function supportHref(jobId = "", category = "conversion") {
   const params = new URLSearchParams();
   if (category) params.set("category", category);

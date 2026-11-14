@@ -23,8 +23,11 @@ export const BANK_OUTPUT_FORMATS = [
  */
 
 /** @typedef {Object} ValidationInput
- * * @property {string[]} [warnings] * @property {Record<string, Record<string, unknown>>} [checks]
+ * @property {string[]} [warnings]
+ * @property {Record<string, Record<string, unknown>>} [checks]
  * @property {number} [confidence]
+ * @property {number} [trustScore]
+ * @property {string} [provider]
  */
 
 /** @typedef {Object} BankExportResult
@@ -129,8 +132,9 @@ export function bankDownloadFileName(format = "", originalName = "bank-statement
   return `aiconverter-${stem}-${suffixes[normalized] || "export"}.${extension}`;
 }
 
-/** @param {Record<string, unknown>} value
- * * @returns {{ bankName: string, bankId: string, accountId: string, accountType: string, currency: string, country: string, dateFormat: string, intuitBankId: string }} */
+/** @param {Record<string, unknown> | string} [value]
+ * @returns {{ bankName: string, bankId: string, accountId: string, accountType: string, currency: string, country: string, dateFormat: string, intuitBankId: string }}
+ */
 export function sanitizeBankMetadata(value = {}) {
   const input = typeof value === "string" ? parseJson(value) : asRecord(value || {});
   const country = cleanCode(input.country || DEFAULT_METADATA.country, 3) || DEFAULT_METADATA.country;

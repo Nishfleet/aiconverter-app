@@ -2,6 +2,12 @@ import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js"
 import { buildConversionBrief } from "../lib/conversion-brief.js";
 import { getAuthorizedJob, hasRequiredBindings, tokenFromBodyOrCookie } from "../lib/jobs.js";
 
+/** @typedef {import("../lib/jobs.js").JobExpiryOutcome} JobExpiryOutcome
+ */
+
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -27,6 +33,10 @@ export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {Env} env
+ * @param {string} jobId
+ * @returns {Promise<Record<string, any> | null>}
+ */
 async function latestPaymentEvent(env, jobId) {
   if (!env?.AICONVERTER_DB || !jobId) return null;
   try {

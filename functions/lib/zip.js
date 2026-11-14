@@ -6,6 +6,10 @@ const CRC_TABLE = new Uint32Array(256).map((_, index) => {
   return crc >>> 0;
 });
 
+/** @typedef {{ name: string, bytes: Uint8Array, date?: Date }} ZipEntry
+ * @param {ZipEntry[]} entries
+ * @returns {Uint8Array}
+ */
 export function createZip(entries) {
   const files = entries.map((entry) => ({
     name: safeZipName(entry.name),
@@ -77,10 +81,16 @@ export function createZip(entries) {
   return concat([...localParts, ...centralParts, end]);
 }
 
+/** @param {unknown} value
+ * @returns {Uint8Array}
+ */
 export function textBytes(value) {
   return encode(String(value || ""));
 }
 
+/** @param {Uint8Array} buffer
+ * @returns {{ u16: (value: number) => void, u32: (value: number) => void, bytes: (value: Uint8Array) => void }}
+ */
 function writer(buffer) {
   const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
   let offset = 0;
@@ -100,10 +110,16 @@ function writer(buffer) {
   };
 }
 
+/** @param {string} value
+ * @returns {Uint8Array}
+ */
 function encode(value) {
   return new TextEncoder().encode(value);
 }
 
+/** @param {Uint8Array[]} parts
+ * @returns {Uint8Array}
+ */
 function concat(parts) {
   const length = parts.reduce((sum, part) => sum + part.length, 0);
   const output = new Uint8Array(length);
@@ -115,6 +131,9 @@ function concat(parts) {
   return output;
 }
 
+/** @param {Uint8Array} bytes
+ * @returns {number}
+ */
 function crc32(bytes) {
   let crc = 0xffffffff;
   for (const byte of bytes) {
@@ -123,6 +142,9 @@ function crc32(bytes) {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
+/** @param {Date} date
+ * @returns {{ time: number, date: number }}
+ */
 function dosDateTime(date) {
   const year = Math.max(1980, date.getFullYear());
   return {
@@ -131,6 +153,9 @@ function dosDateTime(date) {
   };
 }
 
+/** @param {unknown} name
+ * @returns {string}
+ */
 function safeZipName(name) {
   return String(name || "file")
     .replace(/\\/g, "/")

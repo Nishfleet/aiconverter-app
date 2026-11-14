@@ -5,10 +5,17 @@ import { badRequest, json, methodNotAllowed, serverError } from "../lib/http.js"
 import { getAuthorizedJob, hasRequiredBindings, jobOutputFormat, PLANS, sourceAvailableForRedo, tokenFromBodyOrCookie, updateJob } from "../lib/jobs.js";
 import { isUniversalConverter } from "../lib/universal.js";
 
+/** @typedef {import("../lib/conversion.js").FullConversionOutcome} FullConversionOutcome
+ * @typedef {import("../lib/jobs.js").JobExpiryOutcome} JobExpiryOutcome
+ */
+
 export function onRequestGet() {
   return methodNotAllowed("POST");
 }
 
+/** @param {{ request: Request, env: Env }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost({ request, env }) {
   if (!hasRequiredBindings(env)) {
     return serverError("Secure conversion storage is not configured yet.");
@@ -43,6 +50,7 @@ export async function onRequestPost({ request, env }) {
     last_redo_at: new Date().toISOString()
   });
   job = await getAuthorizedJob(env, jobId, token);
+  if (!job) return badRequest("Unknown or expired conversion.");
 
   try {
     const result = await runFullConversion(env, job, {
@@ -62,7 +70,7 @@ export async function onRequestPost({ request, env }) {
         plan: PLANS[job.plan_id] || PLANS.starter,
         converterId: job.converter_id || "bank",
         outputFormat: jobOutputFormat(job),
-        columns: CONVERTER_COLUMNS[job.converter_id || "bank"] || [],
+        columns: CONVERTER_COLUMNS[/** @type {keyof typeof CONVERTER_COLUMNS} */ (job.converter_id || "bank")] || [],
         message: result.message,
         confidence: result.confidence,
         rowCount: result.rowCount,
@@ -87,7 +95,8 @@ export async function onRequestPost({ request, env }) {
       redoAvailable: false,
       refundStatus: ""
     });
-  } catch (error) {
+  } catch (catchError) {
+    const error = /** @type {Record<string, any>} */ (catchError);
     const refund = await requestDodoRefund(env, job, error?.message || "Automatic redo could not be completed.", {
       cashRefund: Number(job.download_count || 0) === 0
     });
@@ -106,7 +115,7 @@ export async function onRequestPost({ request, env }) {
       plan: PLANS[job.plan_id] || PLANS.starter,
       converterId: job.converter_id || "bank",
       outputFormat: jobOutputFormat(job),
-      columns: CONVERTER_COLUMNS[job.converter_id || "bank"] || [],
+      columns: CONVERTER_COLUMNS[/** @type {keyof typeof CONVERTER_COLUMNS} */ (job.converter_id || "bank")] || [],
       message: error?.message || "Automatic redo could not be completed.",
       confidence: 0,
       rowCount: 0,
@@ -116,6 +125,10 @@ export async function onRequestPost({ request, env }) {
   }
 }
 
+/** @param {string} converterId
+ * @param {Record<string, unknown>[]} previewRows
+ * @returns {{ key: string, label: string }[]}
+ */
 function columnsForPreview(converterId, previewRows) {
   if (previewRows.length) {
     return Object.keys(previewRows[0]).slice(0, 8).map((key) => ({
@@ -123,9 +136,12 @@ function columnsForPreview(converterId, previewRows) {
       label: labelForKey(key)
     }));
   }
-  return CONVERTER_COLUMNS[converterId] || CONVERTER_COLUMNS.bank;
+  return CONVERTER_COLUMNS[/** @type {keyof typeof CONVERTER_COLUMNS} */ (converterId)] || CONVERTER_COLUMNS.bank;
 }
 
+/** @param {string} key
+ * @returns {string}
+ */
 function labelForKey(key) {
   return String(key)
     .replace(/^column_(\d+)$/i, "Column $1")
